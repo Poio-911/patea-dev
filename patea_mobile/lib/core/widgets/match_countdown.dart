@@ -13,8 +13,17 @@ import '../theme/app_typography.dart';
 /// Se apaga sola cuando llega a cero y muestra "¡Es ahora!".
 class MatchCountdown extends StatefulWidget {
   final DateTime kickoff;
+  final double? size;
+  final Color? color;
+  final bool isItalic;
 
-  const MatchCountdown({super.key, required this.kickoff});
+  const MatchCountdown({
+    super.key,
+    required this.kickoff,
+    this.size,
+    this.color,
+    this.isItalic = false,
+  });
 
   @override
   State<MatchCountdown> createState() => _MatchCountdownState();
@@ -75,16 +84,16 @@ class _MatchCountdownState extends State<MatchCountdown> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (days > 0) ...[
-          _Unit(value: days, label: 'D'),
-          const _Sep(),
+          _Unit(value: days, label: 'D', size: widget.size, color: widget.color, isItalic: widget.isItalic),
+          _Sep(size: widget.size, color: widget.color),
         ],
-        _Unit(value: hours, label: 'H'),
-        const _Sep(),
-        _Unit(value: minutes, label: 'M'),
+        _Unit(value: hours, label: 'H', size: widget.size, color: widget.color, isItalic: widget.isItalic),
+        _Sep(size: widget.size, color: widget.color),
+        _Unit(value: minutes, label: 'M', size: widget.size, color: widget.color, isItalic: widget.isItalic),
         // Los segundos sólo cuando ya falta poco: en tres días son ruido.
         if (days == 0) ...[
-          const _Sep(),
-          _Unit(value: seconds, label: 'S', dim: true),
+          _Sep(size: widget.size, color: widget.color),
+          _Unit(value: seconds, label: 'S', dim: true, size: widget.size, color: widget.color, isItalic: widget.isItalic),
         ],
       ],
     );
@@ -95,26 +104,42 @@ class _Unit extends StatelessWidget {
   final int value;
   final String label;
   final bool dim;
+  final double? size;
+  final Color? color;
+  final bool isItalic;
 
-  const _Unit({required this.value, required this.label, this.dim = false});
+  const _Unit({
+    required this.value,
+    required this.label,
+    this.dim = false,
+    this.size,
+    this.color,
+    this.isItalic = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final baseSize = size ?? 30;
+    final displaySize = dim ? baseSize * 0.75 : baseSize;
+    final displayColor = color ?? (dim ? AppColors.textSecondary : AppColors.textPrimary);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
           value.toString().padLeft(2, '0'),
           style: AppTypography.sportNumber(
-            size: dim ? 22 : 30,
-            color: dim ? AppColors.textSecondary : AppColors.textPrimary,
+            size: displaySize,
+            color: displayColor,
+          ).copyWith(
+            fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 4, left: 1),
           child: Text(
             label,
-            style: AppTypography.code(size: 9, color: AppColors.textMuted),
+            style: AppTypography.code(size: (baseSize * 0.3).clamp(8.0, 12.0), color: AppColors.textMuted),
           ),
         ),
       ],
@@ -123,15 +148,26 @@ class _Unit extends StatelessWidget {
 }
 
 class _Sep extends StatelessWidget {
-  const _Sep();
+  final double? size;
+  final Color? color;
+
+  const _Sep({this.size, this.color});
 
   @override
   Widget build(BuildContext context) {
+    final baseSize = size ?? 30;
     return Padding(
-      padding: const EdgeInsets.only(left: 7, right: 7, bottom: 5),
+      padding: EdgeInsets.only(
+        left: (baseSize * 0.18).clamp(4.0, 8.0),
+        right: (baseSize * 0.18).clamp(4.0, 8.0),
+        bottom: 5,
+      ),
       child: Text(
         ':',
-        style: AppTypography.sportNumber(size: 20, color: AppColors.textMuted),
+        style: AppTypography.sportNumber(
+          size: baseSize * 0.65,
+          color: color?.withValues(alpha: 0.6) ?? AppColors.textMuted,
+        ),
       ),
     );
   }

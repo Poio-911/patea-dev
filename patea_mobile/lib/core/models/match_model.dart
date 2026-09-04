@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'group_model.dart' show JerseyModel;
 
 /// Port de MatchLocation (src/lib/types.ts) — el string plano en
@@ -65,55 +66,284 @@ class MatchPlayerEntry {
 
 /// Port de Match['weather'] — igual forma que genera weather_service.dart al
 /// crear el partido (temperatura + icono simbólico, no el forecast completo).
+/// El pronóstico guardado en el partido.
+///
+/// Los partidos creados desde la web sólo tienen descripción, ícono y
+/// temperatura — su API route recorta el resto. Los creados desde el móvil
+/// traen el pronóstico entero, que es lo que necesita la alerta de clima
+/// para avisar de lluvia, viento o UV.
 class MatchWeatherModel {
   final int temperature;
   final String? icon;
   final String? description;
+  final int feelsLike;
+  final int humidity;
 
-  MatchWeatherModel({required this.temperature, this.icon, this.description});
+  /// km/h.
+  final int windSpeed;
+
+  /// Probabilidad de lluvia, 0-100.
+  final int precipitation;
+  final int uvIndex;
+
+  MatchWeatherModel({
+    required this.temperature,
+    this.icon,
+    this.description,
+    this.feelsLike = 0,
+    this.humidity = 0,
+    this.windSpeed = 0,
+    this.precipitation = 0,
+    this.uvIndex = 0,
+  });
 
   factory MatchWeatherModel.fromMap(Map<String, dynamic> map) {
+    int intOf(String key) => (map[key] as num?)?.toInt() ?? 0;
     return MatchWeatherModel(
-      temperature: (map['temperature'] as num?)?.toInt() ?? 0,
+      temperature: intOf('temperature'),
       icon: map['icon'] as String?,
       description: map['description'] as String?,
+      feelsLike: intOf('feelsLike'),
+      humidity: intOf('humidity'),
+      windSpeed: intOf('windSpeed'),
+      precipitation: intOf('precipitation'),
+      uvIndex: intOf('uvIndex'),
     );
   }
 }
 
+/// Evento de un partido. Port de `MatchEvent` (src/lib/types.ts:216).
+///
+/// Antes esto era `{type, playerId, playerName, minute, detail}` y `detail`
+/// hacía de todo: el color de la tarjeta, el autor de la asistencia, el motivo
+/// del cambio. Como la web escribe y lee campos separados, un evento cargado
+/// desde el móvil aparecía incompleto allá y viceversa. `detail` se mantiene
+/// para poder leer los eventos viejos que ya están en Firestore.
 class MatchEvent {
-  final String type; // goal, card, substitution, foul, save
+  /// goal, card, substitution, foul, corner, penalty, save...
+  final String type;
+  final int minute;
   final String playerId;
   final String playerName;
-  final int minute;
-  final String? detail; // yellow/red for cards, assist playerId for goals
+  final String? teamId;
+  final String? description;
+
+  // Gol
+  final String? assistId;
+  final String? assistName;
+
+  /// regular, penalty, free_kick, header, own_goal, volley
+  final String? goalType;
+
+  /// left_foot, right_foot, head, chest, other
+  final String? bodyPart;
+
+  // Tarjeta
+  final String? cardType; // yellow | red
+  final String? cardReason;
+
+  // Cambio
+  final String? playerOutId;
+  final String? playerOutName;
+  final String? playerInId;
+  final String? playerInName;
+  final String? substitutionReason;
+
+  final String? id;
+  final String? timestamp;
+  final String? recordedBy;
+
+  /// Sólo para eventos viejos, de cuando el móvil guardaba todo acá.
+  final String? detail;
 
   MatchEvent({
     required this.type,
     required this.playerId,
     required this.playerName,
     required this.minute,
+    this.teamId,
+    this.description,
+    this.assistId,
+    this.assistName,
+    this.goalType,
+    this.bodyPart,
+    this.cardType,
+    this.cardReason,
+    this.playerOutId,
+    this.playerOutName,
+    this.playerInId,
+    this.playerInName,
+    this.substitutionReason,
+    this.id,
+    this.timestamp,
+    this.recordedBy,
     this.detail,
   });
 
+  static String? _s(dynamic v) => v is String && v.isNotEmpty ? v : null;
+
   factory MatchEvent.fromMap(Map<String, dynamic> map) {
+    final legacy = _s(map['detail']);
     return MatchEvent(
-      type: map['type'] ?? 'goal',
-      playerId: map['playerId'] ?? '',
-      playerName: map['playerName'] ?? '',
+      type: _s(map['type']) ?? 'goal',
       minute: (map['minute'] as num?)?.toInt() ?? 0,
-      detail: map['detail'],
+      playerId: _s(map['playerId']) ?? '',
+      playerName: _s(map['playerName']) ?? '',
+      teamId: _s(map['teamId']),
+      description: _s(map['description']),
+      assistId: _s(map['assistId']),
+      assistName: _s(map['assistName']),
+      goalType: _s(map['goalType']),
+      bodyPart: _s(map['bodyPart']),
+      // Los eventos viejos de tarjeta guardaban "yellow"/"red" en `detail`.
+      cardType: _s(map['cardType']) ??
+          (legacy == 'yellow' || legacy == 'red' ? legacy : null),
+      cardReason: _s(map['cardReason']),
+      playerOutId: _s(map['playerOutId']),
+      playerOutName: _s(map['playerOutName']),
+      playerInId: _s(map['playerInId']),
+      playerInName: _s(map['playerInName']),
+      substitutionReason: _s(map['substitutionReason']),
+      id: _s(map['id']),
+      timestamp: _s(map['timestamp']),
+      recordedBy: _s(map['recordedBy']),
+      detail: legacy,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      if (id != null) 'id': id,
       'type': type,
+      'minute': minute,
       'playerId': playerId,
       'playerName': playerName,
-      'minute': minute,
-      if (detail != null) 'detail': detail,
+      if (teamId != null) 'teamId': teamId,
+      if (description != null) 'description': description,
+      if (assistId != null) 'assistId': assistId,
+      if (assistName != null) 'assistName': assistName,
+      if (goalType != null) 'goalType': goalType,
+      if (bodyPart != null) 'bodyPart': bodyPart,
+      if (cardType != null) 'cardType': cardType,
+      if (cardReason != null) 'cardReason': cardReason,
+      if (playerOutId != null) 'playerOutId': playerOutId,
+      if (playerOutName != null) 'playerOutName': playerOutName,
+      if (playerInId != null) 'playerInId': playerInId,
+      if (playerInName != null) 'playerInName': playerInName,
+      if (substitutionReason != null) 'substitutionReason': substitutionReason,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (recordedBy != null) 'recordedBy': recordedBy,
     };
+  }
+}
+
+/// Crónica del partido escrita por la IA, tal como la guarda la Cloud Function
+/// `generateMatchChronicle` en el documento del partido.
+class MatchChronicle {
+  final String headline;
+  final String story;
+  final List<({String playerName, String quote})> playerVoices;
+
+  const MatchChronicle({
+    required this.headline,
+    required this.story,
+    this.playerVoices = const [],
+  });
+
+  static MatchChronicle? fromMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final map = raw.cast<String, dynamic>();
+    final headline = map['headline'];
+    final story = map['story'];
+    if (headline is! String || story is! String) return null;
+
+    final voices = <({String playerName, String quote})>[];
+    for (final v in (map['playerVoices'] as List<dynamic>? ?? const [])) {
+      if (v is! Map) continue;
+      final name = v['playerName'];
+      final quote = v['quote'];
+      if (name is String && quote is String && quote.trim().isNotEmpty) {
+        voices.add((playerName: name, quote: quote));
+      }
+    }
+
+    return MatchChronicle(headline: headline, story: story, playerVoices: voices);
+  }
+}
+
+/// Una fecha propuesta para un partido que todavía no tiene ninguna.
+///
+/// Port de MatchDateProposal (src/lib/types.ts:1195). Los votos son toggles
+/// independientes: se puede marcar más de un día ("puedo martes o jueves").
+class MatchDateProposal {
+  final String id;
+  final String proposedBy;
+
+  /// ISO 8601. Sólo importa el día; la hora va aparte en [time].
+  final String date;
+
+  /// HH:mm.
+  final String time;
+  final List<String> votes;
+  final String createdAt;
+
+  const MatchDateProposal({
+    required this.id,
+    required this.proposedBy,
+    required this.date,
+    required this.time,
+    required this.votes,
+    required this.createdAt,
+  });
+
+  static MatchDateProposal? fromMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final map = raw.cast<String, dynamic>();
+    final id = map['id'];
+    if (id is! String || id.isEmpty) return null;
+    return MatchDateProposal(
+      id: id,
+      proposedBy: map['proposedBy'] as String? ?? '',
+      date: map['date'] as String? ?? '',
+      time: map['time'] as String? ?? '',
+      votes: ((map['votes'] as List<dynamic>?) ?? const []).whereType<String>().toList(),
+      createdAt: map['createdAt'] as String? ?? '',
+    );
+  }
+
+  DateTime? get dateTime => DateTime.tryParse(date)?.toLocal();
+}
+
+/// Una cancha propuesta. A diferencia de la fecha, acá el voto es único:
+/// se juega en un solo lado.
+class MatchLocationProposal {
+  final String id;
+  final String proposedBy;
+  final MatchLocationModel location;
+  final List<String> votes;
+  final String createdAt;
+
+  const MatchLocationProposal({
+    required this.id,
+    required this.proposedBy,
+    required this.location,
+    required this.votes,
+    required this.createdAt,
+  });
+
+  static MatchLocationProposal? fromMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final map = raw.cast<String, dynamic>();
+    final id = map['id'];
+    final loc = map['location'];
+    if (id is! String || id.isEmpty || loc is! Map) return null;
+    return MatchLocationProposal(
+      id: id,
+      proposedBy: map['proposedBy'] as String? ?? '',
+      location: MatchLocationModel.fromMap(loc.cast<String, dynamic>()),
+      votes: ((map['votes'] as List<dynamic>?) ?? const []).whereType<String>().toList(),
+      createdAt: map['createdAt'] as String? ?? '',
+    );
   }
 }
 
@@ -197,11 +427,46 @@ class MatchModel {
   final MatchTeam? teamA;
   final MatchTeam? teamB;
   final List<String> playerUids;
+
+  /// Quienes pidieron entrar y todavía esperan respuesta del organizador.
+  /// Sólo se llena en partidos 'manual': ver requestJoinMatch.
+  final List<String> pendingPlayerUids;
   final List<MatchPlayerEntry> players;
   final List<MatchEvent> events;
+  /// Minuto BASE del tramo en curso, no el que se muestra. Ver [periodStartTs].
   final int? currentMinute;
   final String? liveStatus; // first_half, half_time, second_half, extra_time
+
+  /// Cuándo arrancó a correr el tramo actual. El minuto que se muestra es
+  /// `currentMinute + (ahora - periodStartTs)`; así el reloj sigue avanzando
+  /// aunque nadie tenga la pantalla abierta. Mismo contrato que la web.
+  final DateTime? periodStartTs;
+
+  /// Con el cronómetro pausado, [currentMinute] ya es el minuto congelado.
+  final bool timerPaused;
+
   final MatchWeatherModel? weather;
+  /// MVP del partido. Lo escribe la finalización de evaluaciones.
+  final String? bestPlayerId;
+
+  /// Si para entrar hay que pedir permiso en vez de anotarse derecho.
+  ///
+  /// Un partido 'manual' lo armó alguien eligiendo a dedo, así que se pide y
+  /// el organizador decide; uno colaborativo es abierto. Misma regla que la
+  /// web (use-match-actions.ts:88). Vive acá y no en cada pantalla porque la
+  /// usan la tarjeta de Partidos Abiertos y el detalle del partido, y si se
+  /// separan terminan diciendo cosas distintas del mismo partido.
+  bool needsApprovalFrom(String? uid) => type == 'manual' && ownerUid != uid;
+
+  /// Fechas y canchas propuestas mientras el partido está en 'planning'.
+  final List<MatchDateProposal> dateProposals;
+  final List<MatchLocationProposal> locationProposals;
+
+  /// Si la votación sigue abierta. Se apaga al confirmar fecha o cancha.
+  final bool isVotingOpen;
+
+  /// Relato del partido. Existe recién cuando alguien lo pidió.
+  final MatchChronicle? chronicle;
 
   MatchModel({
     required this.id,
@@ -218,14 +483,32 @@ class MatchModel {
     this.teamA,
     this.teamB,
     this.playerUids = const [],
+    this.pendingPlayerUids = const [],
     this.players = const [],
     this.events = const [],
     this.currentMinute,
     this.liveStatus,
+    this.periodStartTs,
+    this.timerPaused = false,
     this.weather,
+    this.bestPlayerId,
+    this.chronicle,
+    this.dateProposals = const [],
+    this.locationProposals = const [],
+    this.isVotingOpen = false,
   });
 
   static String? _str(dynamic v) => v is String ? v : null;
+
+  /// Firestore devuelve `Timestamp`, pero un partido creado desde la web puede
+  /// traer la fecha como ISO.
+  static DateTime? _toDate(dynamic v) {
+    if (v == null) return null;
+    if (v is Timestamp) return v.toDate();
+    if (v is DateTime) return v;
+    if (v is String) return DateTime.tryParse(v);
+    return null;
+  }
 
   factory MatchModel.fromFirestore(Map<String, dynamic> data, String id) {
     final teams = data['teams'] as List<dynamic>?;
@@ -278,10 +561,26 @@ class MatchModel {
       teamA: tA,
       teamB: tB,
       playerUids: playerUids,
+      pendingPlayerUids: ((data['pendingPlayerUids'] as List<dynamic>?) ?? const [])
+          .whereType<String>()
+          .toList(),
       players: players,
       events: rawEvents.whereType<Map<String, dynamic>>().map(MatchEvent.fromMap).toList(),
       currentMinute: (data['currentMinute'] as num?)?.toInt(),
       liveStatus: _str(data['liveStatus']),
+      periodStartTs: _toDate(data['periodStartTs']),
+      timerPaused: data['timerPaused'] == true,
+      bestPlayerId: _str(data['bestPlayerId']),
+      chronicle: MatchChronicle.fromMap(data['chronicle']),
+      dateProposals: ((data['dateProposals'] as List<dynamic>?) ?? const [])
+          .map(MatchDateProposal.fromMap)
+          .whereType<MatchDateProposal>()
+          .toList(),
+      locationProposals: ((data['locationProposals'] as List<dynamic>?) ?? const [])
+          .map(MatchLocationProposal.fromMap)
+          .whereType<MatchLocationProposal>()
+          .toList(),
+      isVotingOpen: data['isVotingOpen'] == true,
       weather: rawWeather is Map ? MatchWeatherModel.fromMap(rawWeather.cast<String, dynamic>()) : null,
     );
   }

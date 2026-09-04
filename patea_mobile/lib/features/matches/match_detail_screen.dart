@@ -14,7 +14,14 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/match_service.dart';
+import '../../core/services/push_permission.dart';
 import '../../core/models/match_model.dart';
+import 'widgets/edit_teams_sheet.dart';
+import 'widgets/join_requests_section.dart';
+import 'widgets/match_planning_view.dart';
+import 'widgets/recruit_players_sheet.dart';
+import 'widgets/weather_alert.dart';
+import 'widgets/match_story_view.dart';
 import '../../core/widgets/jersey_painter.dart';
 
 const _spanishMonths = [
@@ -54,12 +61,9 @@ IconData _weatherIcon(String? icon) {
 /// (MatchManagementActions), unirse/salir, y chat (MatchChatView).
 ///
 /// Deliberadamente NO portado en esta pasada (ver plan de migración):
-/// CupMatchView/LeagueMatchView (Sección 6 Competiciones), solicitud de
-/// unión con aprobación del organizador (requestJoinMatchAction —  acá
-/// "unirse" es directo tanto para manual como colaborativo, simplificación
-/// consciente), AvailablePlayersSection, EditableTeamsDialog,
-/// PhysicalMetricsCard/salud, IntegratedMatchStory, countdown, compartir
-/// nativo, alerta de jugadores duplicados entre equipos.
+/// CupMatchView/LeagueMatchView (Sección 6 Competiciones), countdown y
+/// compartir nativo. Las métricas físicas (PhysicalMetricsCard / Google Fit)
+/// quedaron descartadas por decisión del usuario, no pendientes.
 class MatchDetailScreen extends ConsumerStatefulWidget {
   final String matchId;
 
@@ -80,8 +84,27 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     try {
       if (isUserInMatch) {
         await ref.read(matchServiceProvider).leaveMatch(match.id, uid);
+      } else if (match.type == 'manual' && match.ownerUid != uid) {
+        // Un partido manual lo armó alguien eligiendo a dedo: no te metés,
+        // pedís. Misma regla que la web (use-match-actions.ts:88).
+        final already = await ref.read(matchServiceProvider).requestJoinMatch(match.id);
+        if (mounted) {
+          _showSnack(already
+              ? 'Ya habías pedido entrar a este partido.'
+              : 'Solicitud enviada. El organizador te va a responder.');
+        }
       } else {
         await ref.read(matchServiceProvider).joinMatch(match.id, uid);
+        // Momento con contexto para pedir el permiso de notificaciones:
+        // acabás de anotarte, el recordatorio del partido tiene sentido.
+        if (mounted) {
+          await PushPermission.askOnce(
+            context,
+            reason:
+                'Te anotaste a "${match.title}". Podemos avisarte cuando se acerque el partido, '
+                'cuando cambien la cancha o la hora, y cuando te inviten a otro.',
+          );
+        }
       }
     } catch (e) {
       if (mounted) _showError('$e');
@@ -338,6 +361,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
 
           final isOwner = uid != null && match.ownerUid == uid;
           final isUserInMatch = uid != null && match.playerUids.contains(uid);
+          final isPending = uid != null && match.pendingPlayerUids.contains(uid);
           final isMatchFull = match.players.length >= match.matchSize;
           final canFinalize = isOwner && match.status == 'upcoming' && match.players.length >= 2;
           final hasTeams = match.teamA != null && match.teamB != null;
@@ -349,14 +373,58 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               _HeroCard(
                 match: match,
                 isOwner: isOwner,
+                uid: uid,
                 isUserInMatch: isUserInMatch,
+                isPending: isPending,
                 isMatchFull: isMatchFull,
                 isJoining: _isJoining,
                 onJoinLeave: (uid == null || isCompetition) ? null : () => _handleJoinLeave(match, uid, isUserInMatch),
                 onOpenMaps: () => _openMaps(match),
               ),
+              MatchWeatherAlert(match: match),
+              if (isOwner && hasTeams) ...[
+                const SizedBox(height: 16),
+                DuplicatePlayersAlert(match: match),
+              ],
+              if (match.status == 'planning' || match.isVotingOpen) ...[
+                const SizedBox(height: 20),
+                MatchPlanningView(match: match, uid: uid),
+              ],
+              if (match.status == 'completed' || match.status == 'evaluated') ...[
+                const SizedBox(height: 20),
+                MatchStoryView(match: match),
+              ],
+              if (isOwner && match.type == 'manual' && match.status == 'upcoming') ...[
+                const SizedBox(height: 20),
+                JoinRequestsSection(matchId: match.id),
+              ],
               const SizedBox(height: 16),
               hasTeams ? _TeamsRoster(match: match) : _PlayersConfirmedRoster(match: match),
+              if (isOwner && !isCompetition && match.status == 'upcoming') ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (match.players.length < match.matchSize)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => RecruitPlayersSheet.show(context, match),
+                          icon: const Icon(Icons.person_search_outlined, size: 16),
+                          label: const Text('Nos falta uno'),
+                        ),
+                      ),
+                    if (match.players.length < match.matchSize && hasTeams)
+                      const SizedBox(width: 8),
+                    if (hasTeams)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => EditTeamsSheet.show(context, match),
+                          icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                          label: const Text('Armar equipos'),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 16),
               if (isOwner)
                 _ManagementActions(
@@ -372,12 +440,21 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                   onReschedule: () => _showRescheduleDialog(match),
                   onChangeVenue: () => _showChangeVenueDialog(match),
                 ),
-              if (isOwner && !isCompetition && (match.status == 'upcoming' || match.status == 'active')) ...[
+              if (!isCompetition && match.status != 'upcoming') ...[
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => context.push('/matches/${match.id}/live'),
                   icon: const Icon(Icons.timer_outlined, size: 16),
-                  label: const Text('Panel de partido en vivo'),
+                  label: Text(isOwner && match.status == 'active'
+                      ? 'Dirigir el partido'
+                      : 'Minuto a minuto'),
+                ),
+              ] else if (isOwner && !isCompetition) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/matches/${match.id}/live'),
+                  icon: const Icon(Icons.timer_outlined, size: 16),
+                  label: const Text('Dirigir el partido'),
                 ),
               ],
               const SizedBox(height: 16),
@@ -395,7 +472,14 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
 class _HeroCard extends StatelessWidget {
   final MatchModel match;
   final bool isOwner;
+
+  /// Quién está mirando. Hace falta para saber si tiene que pedir permiso o
+  /// puede anotarse derecho.
+  final String? uid;
   final bool isUserInMatch;
+
+  /// Pediste entrar y todavía no te contestaron.
+  final bool isPending;
   final bool isMatchFull;
   final bool isJoining;
   final VoidCallback? onJoinLeave;
@@ -404,7 +488,9 @@ class _HeroCard extends StatelessWidget {
   const _HeroCard({
     required this.match,
     required this.isOwner,
+    required this.uid,
     required this.isUserInMatch,
+    required this.isPending,
     required this.isMatchFull,
     required this.isJoining,
     required this.onJoinLeave,
@@ -418,6 +504,7 @@ class _HeroCard extends StatelessWidget {
     final hasScore = match.status == 'completed' || match.status == 'evaluated';
     final isLive = match.status == 'active';
     final spotsLeft = match.matchSize - match.players.length;
+    final needsApproval = match.needsApprovalFrom(uid);
     final showJoinButton = onJoinLeave != null &&
         (match.type == 'manual' || match.type == 'collaborative') &&
         match.status == 'upcoming' &&
@@ -546,22 +633,36 @@ class _HeroCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 2,
-                  child: isMatchFull && !isUserInMatch
-                      ? ElevatedButton(
+                  child: isPending
+                      ? OutlinedButton.icon(
                           onPressed: null,
-                          child: const Text('Lleno'),
+                          icon: const Icon(Icons.hourglass_top_rounded, size: 16),
+                          label: const Text('Pedido enviado'),
                         )
-                      : ElevatedButton.icon(
-                          onPressed: isJoining ? null : onJoinLeave,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isUserInMatch ? AppColors.cardSurface : AppColors.voltNeon,
-                            foregroundColor: isUserInMatch ? AppColors.textPrimary : Colors.black,
-                          ),
-                          icon: isJoining
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                              : Icon(isUserInMatch ? Icons.logout : Icons.person_add_alt_1, size: 16),
-                          label: Text(isUserInMatch ? 'Baja' : 'Apuntarse'),
-                        ),
+                      : isMatchFull && !isUserInMatch
+                          ? ElevatedButton(
+                              onPressed: null,
+                              child: const Text('Lleno'),
+                            )
+                          : ElevatedButton.icon(
+                              onPressed: isJoining ? null : onJoinLeave,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isUserInMatch ? AppColors.cardSurface : AppColors.voltNeon,
+                                foregroundColor: isUserInMatch ? AppColors.textPrimary : Colors.black,
+                              ),
+                              icon: isJoining
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Icon(isUserInMatch
+                                      ? Icons.logout
+                                      : needsApproval
+                                          ? Icons.how_to_reg_rounded
+                                          : Icons.person_add_alt_1, size: 16),
+                              label: Text(isUserInMatch
+                                  ? 'Baja'
+                                  : needsApproval
+                                      ? 'Pedir entrar'
+                                      : 'Apuntarse'),
+                            ),
                 ),
               ],
             ],

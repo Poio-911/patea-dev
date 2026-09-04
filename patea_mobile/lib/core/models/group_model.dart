@@ -95,7 +95,6 @@ class GroupModel {
   final String inviteCode;
   final List<String> members;
   final String? logoUrl;
-
   GroupModel({
     required this.id,
     required this.name,

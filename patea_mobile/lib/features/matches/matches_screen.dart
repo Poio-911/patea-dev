@@ -15,6 +15,7 @@ import '../../core/models/match_model.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/parallax_background.dart';
 import '../../core/widgets/patea_page_header.dart';
+import '../../core/theme/app_insets.dart';
 
 const _spanishMonths = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
@@ -452,7 +453,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 )
               else if (_viewMode == MatchViewMode.grid)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset(context, extra: 24)),
                   sliver: SliverList.separated(
                     itemCount: filtered.length,
                     separatorBuilder: (_, index) => const SizedBox(height: 14),
@@ -466,7 +467,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset(context, extra: 24)),
                   sliver: SliverGrid(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,

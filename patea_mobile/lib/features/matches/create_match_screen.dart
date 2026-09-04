@@ -10,11 +10,20 @@ import '../../core/services/ai_service.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/weather_service.dart';
 import '../../core/models/player_model.dart';
+import '../../core/theme/app_radii.dart';
+import '../../core/widgets/jersey_painter.dart';
 
 /// Port de add-match-dialog.tsx (web): wizard de 3 pasos (2 si es
-/// colaborativo). 'by_teams' (elegir 2 equipos de grupo ya armados) y las
-/// "Canchas del Grupo" quedan deshabilitados hasta que exista la Sección 5
-/// (Grupos/Equipos) y el dominio Venues del plan de migración.
+/// colaborativo).
+///
+/// Los tres tipos de amistoso andan: 'manual' (elegís el plantel y la IA parte
+/// los equipos), 'collaborative' (arranca vacío y la gente se anota) y
+/// 'by_teams' (dos equipos ya armados del grupo). Este último estuvo mucho
+/// tiempo en gris con un "Próximamente" porque todavía no existían
+/// Grupos/Equipos en el móvil, y encima la Cloud Function lo rechazaba de
+/// entrada; las dos cosas ya están.
+///
+/// Las "Canchas del Grupo" siguen pendientes: falta el dominio Venues.
 class CreateMatchScreen extends ConsumerStatefulWidget {
   const CreateMatchScreen({super.key});
 
@@ -72,6 +81,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   String _playerSearch = '';
   String _positionFilter = 'all';
   final Set<String> _selectedPlayerIds = {};
+
+  /// Para 'by_teams': los dos equipos que se enfrentan, en orden de elección.
+  final List<String> _selectedTeamIds = [];
 
   bool _isSubmitting = false;
   String? _aiStatus;
@@ -233,6 +245,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         }
       }
       // 'collaborative': arranca sin jugadores, se suman después con joinMatch.
+      // 'by_teams': sólo van los ids; el plantel y las camisetas los arma el
+      // servidor leyendo `teams/`, para que nadie pueda inventar un equipo
+      // desde el cliente.
 
       await ref
           .read(matchServiceProvider)
@@ -252,6 +267,21 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             players: players,
             playerUids: playerUids,
             teams: teams,
+            selectedTeams: _selectedType == 'by_teams' ? _selectedTeamIds : const [],
+            // El pronóstico se consultaba para mostrarlo en el wizard y se
+            // perdía al crear: el partido nacía sin clima.
+            weather: _weather == null
+                ? null
+                : {
+                    'description': _weather!.description,
+                    'icon': _weather!.icon,
+                    'temperature': _weather!.temperature,
+                    'feelsLike': _weather!.feelsLike,
+                    'humidity': _weather!.humidity,
+                    'windSpeed': _weather!.windSpeed,
+                    'precipitation': _weather!.precipitation,
+                    'uvIndex': _weather!.uvIndex,
+                  },
           )
           .timeout(const Duration(seconds: 20));
 
@@ -306,13 +336,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       case 2:
         return _buildStep2();
       default:
-        return _buildStep3(allPlayers);
+        return _selectedType == 'by_teams' ? _buildTeamPicker() : _buildStep3(allPlayers);
     }
   }
 
   Widget _buildFooter(List<PlayerModel> allPlayers) {
     final selectedCount = _selectedPlayerIds.length;
-    final canSubmitStep3 = _selectedType != 'manual' || selectedCount >= (_matchSize / 2).ceil();
+    final canSubmitStep3 = _selectedType == 'by_teams'
+        ? _selectedTeamIds.length == 2
+        : _selectedType != 'manual' || selectedCount >= (_matchSize / 2).ceil();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -543,7 +575,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           Text('TIPO DE PARTIDO', style: AppTypography.headline(size: 13, color: AppColors.textMuted)),
           const SizedBox(height: 4),
           Text(
-            'Manual: elegís vos, la IA arma los equipos. Colaborativo: los jugadores se apuntan solos.',
+            'Manual: elegís vos, la IA arma los equipos. Colaborativo: los jugadores se apuntan solos. '
+            'Por Equipos: se enfrentan dos equipos del grupo, con su plantel y su camiseta.',
             style: AppTypography.body(size: 11, color: AppColors.textMuted),
           ),
           const SizedBox(height: 8),
@@ -564,10 +597,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           _TypeOption(
             icon: Icons.checkroom,
             label: 'Por Equipos',
-            selected: false,
-            enabled: false,
-            trailing: 'Próximamente',
-            onTap: () {},
+            selected: _selectedType == 'by_teams',
+            onTap: () => setState(() => _selectedType = 'by_teams'),
           ),
           const SizedBox(height: 24),
 
@@ -603,6 +634,110 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   // ---------------------------------------------------------------------
   // Paso 3: participantes
   // ---------------------------------------------------------------------
+  /// Elegir los dos equipos que se enfrentan.
+  Widget _buildTeamPicker() {
+    final groupId = ref.watch(activeGroupIdProvider).value;
+
+    if (groupId == null) {
+      return _EmptyHint(
+        icon: Icons.groups_outlined,
+        text: 'Necesitás un grupo activo para armar un partido entre equipos.',
+      );
+    }
+
+    final teamsAsync = ref.watch(groupTeamsStreamProvider(groupId));
+
+    return teamsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+      error: (e, _) => _EmptyHint(icon: Icons.error_outline, text: 'No se pudieron cargar los equipos.\n$e'),
+      data: (teams) {
+        if (teams.length < 2) {
+          return _EmptyHint(
+            icon: Icons.checkroom_outlined,
+            text: teams.isEmpty
+                ? 'El grupo todavía no tiene equipos armados.'
+                : 'Hace falta al menos un equipo más para armar un partido.',
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('QUIÉN JUEGA CONTRA QUIÉN',
+                style: AppTypography.headline(size: 13, color: AppColors.textMuted)),
+            const SizedBox(height: 4),
+            Text(
+              'Elegí dos equipos. El primero que toques es el local.',
+              style: AppTypography.body(size: 11, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 16),
+            for (final team in teams)
+              Builder(builder: (context) {
+                final index = _selectedTeamIds.indexOf(team.id);
+                final selected = index >= 0;
+                final full = _selectedTeamIds.length >= 2 && !selected;
+
+                return Opacity(
+                  opacity: full ? 0.4 : 1,
+                  child: InkWell(
+                    onTap: full
+                        ? null
+                        : () => setState(() {
+                              if (selected) {
+                                _selectedTeamIds.remove(team.id);
+                              } else {
+                                _selectedTeamIds.add(team.id);
+                              }
+                            }),
+                    borderRadius: AppRadii.cardAll,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        borderRadius: AppRadii.cardAll,
+                        border: Border.all(
+                          color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          JerseyWidget(jersey: team.jersey, size: 44),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(team.name,
+                                    style: AppTypography.headline(size: 15, weight: FontWeight.w800)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  team.members.isEmpty
+                                      ? 'Sin jugadores'
+                                      : '${team.members.length} jugadores',
+                                  style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (selected)
+                            Text(index == 0 ? 'LOCAL' : 'VISITANTE',
+                                style: AppTypography.headline(
+                                    size: 10,
+                                    weight: FontWeight.w800,
+                                    color: AppColors.voltNeon,
+                                    letterSpacing: 1)),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildStep3(List<PlayerModel> allPlayers) {
     final filtered = allPlayers.where((p) {
       final matchesName = p.name.toLowerCase().contains(_playerSearch.toLowerCase());
@@ -790,8 +925,6 @@ class _TypeOption extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool selected;
-  final bool enabled;
-  final String? trailing;
   final VoidCallback onTap;
 
   const _TypeOption({
@@ -799,35 +932,28 @@ class _TypeOption extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.enabled = true,
-    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.4,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.voltNeon.withValues(alpha: 0.12) : AppColors.cardSurface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: selected ? AppColors.voltNeon : AppColors.textMuted),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(label, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary)),
-              ),
-              if (trailing != null)
-                Text(trailing!, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
-            ],
-          ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.voltNeon.withValues(alpha: 0.12) : AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: selected ? AppColors.voltNeon : AppColors.textMuted),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary)),
+            ),
+          ],
         ),
       ),
     );
@@ -892,6 +1018,34 @@ class _PlayerSelectRow extends StatelessWidget {
                 border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textMuted),
               ),
               child: selected ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyHint extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _EmptyHint({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 40, color: AppColors.textMuted.withValues(alpha: 0.5)),
+            const SizedBox(height: 12),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: AppTypography.body(size: 13, color: AppColors.textMuted),
             ),
           ],
         ),

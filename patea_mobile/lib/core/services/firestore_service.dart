@@ -7,7 +7,22 @@ import '../models/group_model.dart';
 import '../models/evaluation_models.dart';
 import 'auth_service.dart';
 
+/// Ojo con la dependencia de abajo: NO es decorativa.
+///
+/// Todo stream de Firestore tiene que colgar de la sesión. Al cerrar sesión
+/// las pantallas siguen montadas un instante y sus listeners salen sin token;
+/// Firestore los rechaza con permission-denied y **no los reintenta** — da el
+/// listener por terminado. Riverpod cachea ese error, y como estos providers
+/// no dependían de la sesión, al entrar el usuario siguiente nadie los volvía
+/// a crear: la app quedaba mostrando "permission denied" en TODAS las
+/// pantallas hasta reiniciarla. Bug real, encontrado cambiando de usuario
+/// (2026-09-04).
+///
+/// Al observar el uid, este provider se reconstruye en cada cambio de sesión
+/// y con él los 20 streams que lo usan: se cancelan los viejos y se abren
+/// nuevos con la sesión nueva.
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
+  ref.watch(currentUidProvider);
   return FirestoreService(FirebaseFirestore.instance);
 });
 
