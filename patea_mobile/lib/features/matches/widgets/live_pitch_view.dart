@@ -229,7 +229,7 @@ class _PlayerDot extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: AppTypography.headline(
-              size: 9.5, weight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.92)),
+              size: 9.5, weight: FontWeight.w700, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -242,7 +242,7 @@ class _PitchPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final line = Paint()
-      ..color = Colors.white.withValues(alpha: 0.13)
+      ..color = AppColors.overlayLine
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
 
@@ -261,7 +261,7 @@ class _PitchPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(w / 2, h / 2),
       2.5,
-      Paint()..color = Colors.white.withValues(alpha: 0.18),
+      Paint()..color = AppColors.overlayStrong,
     );
 
     // Áreas grandes, arriba y abajo.

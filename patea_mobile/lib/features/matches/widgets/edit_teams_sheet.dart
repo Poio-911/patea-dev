@@ -130,7 +130,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: _TeamColumn(team: teamA, players: _playersOf(0), onTap: _move)),
-                Container(width: 1, color: Colors.white.withValues(alpha: 0.08)),
+                Container(width: 1, color: AppColors.overlaySubtle),
                 Expanded(child: _TeamColumn(team: teamB, players: _playersOf(1), onTap: _move)),
               ],
             ),

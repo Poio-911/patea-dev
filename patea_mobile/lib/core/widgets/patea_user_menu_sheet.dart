@@ -45,7 +45,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
         color: AppColors.popover,
         borderRadius: AppRadii.surfaceTop,
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.15), width: 1),
+          top: BorderSide(color: AppColors.overlayLine, width: 1),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
@@ -61,7 +61,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: AppColors.overlayStrong,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -165,7 +165,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
             ),
 
             const SizedBox(height: 8),
-            Divider(color: Colors.white.withValues(alpha: 0.10), height: 1),
+            Divider(color: AppColors.overlayLine, height: 1),
             const SizedBox(height: 8),
 
             // La galeria del sistema de diseno. Solo en debug: es la vista con

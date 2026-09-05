@@ -110,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
+                      color: AppColors.onPrimary.withValues(alpha: 0.4),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -256,7 +256,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.voltNeon,
-                        foregroundColor: Colors.black,
+                        foregroundColor: AppColors.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -268,14 +268,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                              child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2),
                             )
                           : Text(
                               _isRegister ? 'CREAR CUENTA' : 'INICIAR SESIÓN',
                               style: AppTypography.headline(
                                 size: 14,
                                 weight: FontWeight.w800,
-                                color: Colors.black,
+                                color: AppColors.onPrimary,
                               ),
                             ),
                     ),
@@ -391,7 +391,7 @@ class _PositionChip extends StatelessWidget {
           color: selected ? AppColors.voltNeon : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.18),
+            color: selected ? AppColors.voltNeon : AppColors.overlayStrong,
           ),
         ),
         child: Text(
@@ -399,7 +399,7 @@ class _PositionChip extends StatelessWidget {
           style: AppTypography.headline(
             size: 12,
             weight: FontWeight.w800,
-            color: selected ? Colors.black : AppColors.textSecondary,
+            color: selected ? AppColors.onPrimary : AppColors.textSecondary,
           ),
         ),
       ),

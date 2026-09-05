@@ -80,7 +80,7 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
             color: AppColors.card.withValues(alpha: 0.40),
             border: Border(
               bottom: BorderSide(
-                color: Colors.white.withValues(alpha: 0.12),
+                color: AppColors.overlayLine,
                 width: 1,
               ),
             ),
@@ -281,7 +281,7 @@ class _Avatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
+          color: AppColors.overlayStrong,
           width: 1.5,
         ),
       ),

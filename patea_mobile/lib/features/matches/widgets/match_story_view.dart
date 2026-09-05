@@ -419,7 +419,7 @@ class _Boxscore extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.28),
+        color: AppColors.onPrimary.withValues(alpha: 0.28),
         border: Border(
           top: BorderSide(color: AppColors.border.withValues(alpha: 0.30)),
           bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.30)),
@@ -632,7 +632,7 @@ class _VoiceCard extends StatelessWidget {
               child: Icon(
                 Icons.format_quote_rounded,
                 size: 86,
-                color: Colors.white.withValues(alpha: 0.045),
+                color: AppColors.overlaySubtle,
               ),
             ),
           ),
@@ -755,7 +755,7 @@ class _CoverPending extends StatelessWidget {
               onPressed: generating ? null : onTap,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.voltNeon,
-                foregroundColor: Colors.black,
+                foregroundColor: AppColors.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -763,12 +763,12 @@ class _CoverPending extends StatelessWidget {
                   ? const SizedBox(
                       width: 15,
                       height: 15,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
                     )
-                  : const Icon(Icons.auto_awesome, size: 16, color: Colors.black),
+                  : const Icon(Icons.auto_awesome, size: 16, color: AppColors.onPrimary),
               label: Text(
                 generating ? 'ESCRIBIENDO RELATO...' : 'GENERAR CRÓNICA CON IA',
-                style: AppTypography.jersey(size: 14, color: Colors.black, letterSpacing: 1),
+                style: AppTypography.jersey(size: 14, color: AppColors.onPrimary, letterSpacing: 1),
               ),
             ),
           ),

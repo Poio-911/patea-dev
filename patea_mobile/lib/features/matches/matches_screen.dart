@@ -253,9 +253,9 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                             if (context.mounted) Navigator.pop(context);
                           }
                         },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
                   icon: isLoading
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                       : const Icon(Icons.check_circle_outline, size: 18),
                   label: Text(pending.length == 1 ? 'Finalizar Partido' : 'Finalizar ${pending.length} Partidos'),
                 ),
@@ -386,14 +386,14 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                         onPressed: () => context.push('/matches/create'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.voltNeon,
-                          foregroundColor: Colors.black,
+                          foregroundColor: AppColors.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         icon: const Icon(Icons.add_circle, size: 18),
                         label: Text(
                           'Armar Partido',
-                          style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: Colors.black),
+                          style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: AppColors.onPrimary),
                         ),
                       ),
                     ),
@@ -554,7 +554,7 @@ class _QuickTimeFilterTabs extends StatelessWidget {
                             style: AppTypography.body(
                               size: 10,
                               weight: FontWeight.w700,
-                              color: isActive ? Colors.black : AppColors.textSecondary,
+                              color: isActive ? AppColors.onPrimary : AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -592,7 +592,7 @@ class _ViewModeToggle extends StatelessWidget {
             color: selected ? AppColors.voltNeon : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(icon, size: 16, color: selected ? Colors.black : AppColors.textSecondary),
+          child: Icon(icon, size: 16, color: selected ? AppColors.onPrimary : AppColors.textSecondary),
         ),
       );
     }
@@ -713,7 +713,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                   context,
                   MatchFiltersState(types: _types, statuses: _statuses, onlyMine: _onlyMine),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
                 child: const Text('Aplicar'),
               ),
             ),
@@ -816,7 +816,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
           border: Border.all(color: theme.brandColor.withValues(alpha: 0.5), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: AppColors.onPrimary.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -844,7 +844,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                 ),
               ),
             ),
-            Container(color: Colors.black.withValues(alpha: 0.45)),
+            Container(color: AppColors.onPrimary.withValues(alpha: 0.45)),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -869,16 +869,16 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
+                          color: AppColors.onPrimary.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          border: Border.all(color: AppColors.overlayStrong),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
                             const SizedBox(width: 6),
-                            Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: Colors.white)),
+                            Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textPrimary)),
                           ],
                         ),
                       ),
@@ -893,7 +893,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 Expanded(child: _BannerTeam(team: match.teamA!)),
-                                Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: Colors.white.withValues(alpha: 0.15))),
+                                Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: AppColors.overlayLine)),
                                 Expanded(child: _BannerTeam(team: match.teamB!)),
                               ],
                             )
@@ -904,14 +904,14 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.headline(size: 24, weight: FontWeight.w900, color: Colors.white),
+                                style: AppTypography.headline(size: 24, weight: FontWeight.w900, color: AppColors.textPrimary),
                               ),
                             ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1)))),
+                    decoration: BoxDecoration(border: Border(top: BorderSide(color: AppColors.overlayLine))),
                     child: Wrap(
                       spacing: 16,
                       runSpacing: 4,
@@ -928,7 +928,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                       onPressed: () => context.push('/matches/${match.id}'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.voltNeon,
-                        foregroundColor: Colors.black,
+                        foregroundColor: AppColors.onPrimary,
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
@@ -948,7 +948,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                           width: active ? 20 : 6,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: active ? Colors.white : Colors.white.withValues(alpha: 0.4),
+                            color: active ? AppColors.textPrimary : AppColors.overlayStrong,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         );
@@ -978,14 +978,14 @@ class _BannerInfoRow extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: Colors.white.withValues(alpha: 0.7)),
+          Icon(icon, size: 13, color: AppColors.textSecondary),
           const SizedBox(width: 5),
           Flexible(
             child: Text(
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.body(size: 11, weight: FontWeight.w600, color: Colors.white),
+              style: AppTypography.body(size: 11, weight: FontWeight.w600, color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -1007,14 +1007,14 @@ class _BannerTeam extends StatelessWidget {
         if (team.jersey != null)
           JerseyWidget(jersey: team.jersey!, size: 56)
         else
-          const Icon(Icons.checkroom, size: 48, color: Colors.white70),
+          const Icon(Icons.checkroom, size: 48, color: AppColors.textSecondary),
         const SizedBox(height: 6),
         Text(
           team.name.toUpperCase(),
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: Colors.white),
+          style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textPrimary),
         ),
       ],
     );
@@ -1036,14 +1036,14 @@ class _BannerOrganizerBadge extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.6),
+            color: AppColors.onPrimary.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(color: AppColors.overlayLine),
           ),
           child: Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: 'Organiza: ', style: AppTypography.body(size: 9, weight: FontWeight.w700, color: Colors.white)),
+                TextSpan(text: 'Organiza: ', style: AppTypography.body(size: 9, weight: FontWeight.w700, color: AppColors.textPrimary)),
                 TextSpan(text: name.toUpperCase(), style: AppTypography.body(size: 9, weight: FontWeight.w800, color: AppColors.voltNeon)),
               ],
             ),
@@ -1147,7 +1147,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: AppColors.onPrimary.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1336,12 +1336,12 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                 onPressed: () => context.push('/matches/${match.id}'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isLive ? AppColors.destructive : AppColors.voltNeon,
-                  foregroundColor: isLive ? Colors.white : Colors.black,
+                  foregroundColor: isLive ? AppColors.textPrimary : AppColors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 icon: const Icon(Icons.visibility_outlined, size: 18),
-                label: Text(_actionLabel(match.status), style: AppTypography.headline(size: 13, color: isLive ? Colors.white : Colors.black)),
+                label: Text(_actionLabel(match.status), style: AppTypography.headline(size: 13, color: isLive ? AppColors.textPrimary : AppColors.onPrimary)),
               ),
             ),
           ],
@@ -1383,7 +1383,7 @@ class _CompactMatchCard extends StatelessWidget {
             border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: AppColors.onPrimary.withValues(alpha: 0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),

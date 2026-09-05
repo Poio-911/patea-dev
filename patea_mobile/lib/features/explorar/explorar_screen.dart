@@ -356,7 +356,7 @@ class _FreeAgentBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(shape: BoxShape.circle, color: isFreeAgent ? AppColors.voltNeon : AppColors.cardSurface),
-            child: Icon(Icons.campaign_outlined, size: 18, color: isFreeAgent ? Colors.black : AppColors.textSecondary),
+            child: Icon(Icons.campaign_outlined, size: 18, color: isFreeAgent ? AppColors.onPrimary : AppColors.textSecondary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -523,9 +523,9 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isInviting ? null : _invite,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 12)),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 12)),
                 icon: _isInviting
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                     : const Icon(Icons.person_add_alt_1, size: 18),
                 label: const Text('Invitar a mi partido'),
               ),

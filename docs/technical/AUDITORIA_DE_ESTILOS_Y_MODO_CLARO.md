@@ -108,11 +108,12 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 
 ### Fase 2 · Los 211 colores absolutos
 
-- [ ] Definir el widget de **superficie** (la isla oscura del tema claro)
-- [ ] Texto e íconos: `Colors.white`/`black` → token (~50)
-- [ ] Overlays: 81 `white.withValues` y 20 alphas → 3 tokens
-- [ ] Velos sobre foto: se quedan negros (21)
-- [ ] `onPrimary` único, en vez de `Colors.black` (27) y `background` (9)
+- [x] ~~Widget de superficie~~ — **no hace falta: la isla oscura no existe** (ver abajo)
+- [x] Texto e íconos: 130 sitios → token
+- [x] Veladuras: 79 `white.withValues` y 20 alphas → 3 tokens
+- [x] Velos sobre foto y sombras: se quedan negros (10)
+- [x] `onPrimary` único (`#141926`), en vez de `Colors.black` y `background`
+- [x] 219 absolutos → **10**, todos deliberados y comentados
 
 ### Fase 3 · Unificar lo duplicado
 
@@ -621,13 +622,6 @@ clasifican en tres grupos:
 | Overlay / línea fina (`white.withValues`) | 81 | `overlaySubtle` .06 · `overlayLine` .12 · `overlayStrong` .20 — **en claro invierten a negro** |
 | Velo sobre foto (`black.withValues`) | 21 | se queda negro: es correcto en los dos temas |
 
-> **Ojo: los overlays no se invierten en todos lados.** En claro la app tiene
-> una isla oscura (ver Fase 4, punto 1), y adentro de esa isla el overlay sigue
-> siendo blanco. Un token global no alcanza: hace falta un widget de
-> **superficie** que declare "acá adentro el fondo es oscuro aunque el tema sea
-> claro", y que los tres overlays lean de ahí en vez de leer del tema. Es barato
-> decidirlo ahora y caro descubrirlo migrando.
-
 Los 20 alphas se colapsan a tres. Acá también se resuelve el `onPrimary`: hoy
 el texto sobre volt es `Colors.black` en 27 sitios y `AppColors.background` en
 9 — dos valores para lo mismo, y ninguno es el `--primary-foreground` de la web.
@@ -737,18 +731,26 @@ Valores listos, convertidos del bloque `:root` de `globals.css`:
 
 Lo que **no** se traduce solo al cambiar los tokens:
 
-1. **El fondo, y la isla oscura.** En claro `PateaBackground` no monta foto:
-   devuelve el degradado suave (azul 6% → ámbar 5% → blanco roto). Pero las
-   tarjetas de partido no sólo conservan su foto: **se quedan oscuras enteras**.
-   Está decidido del lado de la web, en `src/lib/match-theme.ts` línea 6:
+1. **El fondo.** En claro `PateaBackground` no monta foto: devuelve el
+   degradado suave (azul 6% → ámbar 5% → blanco roto). Las tarjetas de partido
+   sí conservan la suya, pero **atenuada**: `MatchInfoCard` la baja de
+   `opacity-50` a `opacity-20`, apaga las scanlines y pasa el texto de blanco a
+   `text-foreground`.
 
-   > *Cards are always dark (FIFA FUT / Sofascore style) — **independent of the
-   > app theme**.*
+   > **Corrección.** Este documento afirmaba que en claro las tarjetas se
+   > quedaban oscuras enteras, citando `src/lib/match-theme.ts:6` (*"Cards are
+   > always dark — independent of the app theme"*), y sobre eso proponía un
+   > widget de superficie para una "isla oscura". **Es falso.** El comentario
+   > describe la intención del lenguaje visual (cartas estilo FUT), no lo que el
+   > CSS hace: `MatchInfoCard` en claro usa `text-foreground`, `bg-muted` y
+   > `border-border`; las `.fifa-*-card` en claro son un tinte translúcido sobre
+   > el fondo de página; y `:root .player-card` lleva sombra suave justamente
+   > porque *"float over white background"*. No hay isla oscura, y el widget de
+   > superficie no se construyó.
+   >
+   > Lo que sí existe es texto sobre foto, que es blanco en los dos temas. Eso
+   > lo resuelve la regla de los velos, no un tema anidado.
 
-   O sea que el tema claro tiene una isla oscura adentro, y ahí adentro los
-   overlays de la Fase 2 siguen siendo blancos y el texto sigue siendo claro. Es
-   lo que obliga al widget de superficie que se menciona en esa fase. Lo que sí
-   se apaga en claro son las scanlines.
 2. **El volt no es el primario en claro — y hay dos volts.** En claro el
    primario es azul y el acento es ámbar, así que los **321
    `AppColors.voltNeon`** no son todos "el color primario". Y la web declara

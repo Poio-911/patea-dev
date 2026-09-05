@@ -71,10 +71,10 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
         decoration: BoxDecoration(
           color: AppColors.popover,
           borderRadius: AppRadii.surfaceAll,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+          border: Border.all(color: AppColors.overlayLine, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: AppColors.onPrimary.withValues(alpha: 0.6),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -175,7 +175,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   width: isCurrent ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: isCurrent ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.2),
+                    color: isCurrent ? AppColors.voltNeon : AppColors.overlayStrong,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 );

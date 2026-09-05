@@ -100,7 +100,7 @@ class _ClipChip extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          border: Border.all(color: AppColors.overlayLine),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,7 +354,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
                 child: LinearProgressIndicator(
                   value: _progress == 0 ? null : _progress,
                   minHeight: 6,
-                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.overlayLine,
                   valueColor: const AlwaysStoppedAnimation(AppColors.voltNeon),
                 ),
               ),
@@ -441,7 +441,7 @@ class _PlayerChip extends StatelessWidget {
           color: selected ? AppColors.voltNeon : Colors.transparent,
           borderRadius: AppRadii.chipAll,
           border: Border.all(
-            color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.18),
+            color: selected ? AppColors.voltNeon : AppColors.overlayStrong,
           ),
         ),
         child: Text(name,
@@ -600,7 +600,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
                       children: [
                         VideoPlayer(controller),
                         if (!controller.value.isPlaying)
-                          const Icon(Icons.play_arrow_rounded, size: 64, color: Colors.white70),
+                          const Icon(Icons.play_arrow_rounded, size: 64, color: AppColors.textSecondary),
                       ],
                     ),
                   ),

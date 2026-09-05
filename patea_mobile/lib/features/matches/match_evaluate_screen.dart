@@ -163,9 +163,9 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: (completedAssignments.isEmpty || _isFinalizing) ? null : _finalize,
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14)),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
                           icon: _isFinalizing
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                               : const Icon(Icons.emoji_events_outlined),
                           label: Text(_isFinalizing ? 'Finalizando...' : 'FINALIZAR EVALUACIÓN'),
                         ),

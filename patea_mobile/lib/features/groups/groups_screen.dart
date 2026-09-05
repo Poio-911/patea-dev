@@ -93,9 +93,9 @@ class GroupsScreen extends ConsumerWidget {
                         }
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
               child: submitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                   : const Text('Crear'),
             ),
           ],
@@ -135,9 +135,9 @@ class GroupsScreen extends ConsumerWidget {
                         }
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
               child: submitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                   : const Text('Unirme'),
             ),
           ],
@@ -759,7 +759,7 @@ class _GroupHeroCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.07),
+                  color: AppColors.overlaySubtle,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(roleLabel(role!).toUpperCase(),
@@ -797,7 +797,7 @@ class _GroupHeroCard extends StatelessWidget {
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: () => _shareInvite(context),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: AppColors.textPrimary),
                 icon: const Icon(Icons.share, size: 16),
                 label: const Text('Invitar'),
               ),

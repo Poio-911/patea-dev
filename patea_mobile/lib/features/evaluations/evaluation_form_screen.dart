@@ -228,9 +228,9 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: _isSubmitting ? null : _submit,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
             icon: _isSubmitting
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                 : const Icon(Icons.save_outlined),
             label: Text(_isSubmitting ? 'Enviando...' : 'ENVIAR EVALUACIONES'),
           ),

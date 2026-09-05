@@ -332,7 +332,7 @@ class _Tab extends StatelessWidget {
           color: selected ? AppColors.voltNeon : Colors.transparent,
           borderRadius: AppRadii.chipAll,
           border: Border.all(
-            color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.18),
+            color: selected ? AppColors.voltNeon : AppColors.overlayStrong,
           ),
         ),
         child: Text(label,

@@ -119,7 +119,7 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.destructive,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.textPrimary,
             ),
             child: const Text('Finalizar'),
           ),
@@ -255,7 +255,7 @@ class _Scoreboard extends StatelessWidget {
         border: Border.all(
           color: live
               ? AppColors.destructive.withValues(alpha: 0.55)
-              : Colors.white.withValues(alpha: 0.08),
+              : AppColors.overlaySubtle,
           width: live ? 1.5 : 1,
         ),
       ),
@@ -312,7 +312,7 @@ class _StatusLine extends StatelessWidget {
         ),
         if (live) ...[
           const SizedBox(width: 10),
-          Container(width: 1, height: 12, color: Colors.white.withValues(alpha: 0.15)),
+          Container(width: 1, height: 12, color: AppColors.overlayLine),
           const SizedBox(width: 10),
           Text(
             clock.display,
@@ -461,7 +461,7 @@ class _ControlButton extends StatelessWidget {
         ? AppColors.voltNeon
         : danger
             ? AppColors.destructive.withValues(alpha: 0.5)
-            : Colors.white.withValues(alpha: 0.15);
+            : AppColors.overlayLine;
 
     return InkWell(
       onTap: onTap,
@@ -530,7 +530,7 @@ class _QuickEvents extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
                       borderRadius: AppRadii.cardAll,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      border: Border.all(color: AppColors.overlayLine),
                     ),
                     child: Column(
                       children: [

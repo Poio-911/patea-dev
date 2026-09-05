@@ -46,7 +46,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
   // Accion y marca
   /// volt en game, azul en claro
   final Color primary;
-  /// FASE 2 -> 0xFF141926 (--primary-foreground)
+  /// --primary-foreground
   final Color onPrimary;
   /// Corregido contra globals.css en la Fase 1.
   final Color accent;
@@ -141,7 +141,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
 
   // Accion y marca
     primary: Color(0xFFCCFF33),
-    onPrimary: Color(0xFF000000),
+    onPrimary: Color(0xFF141926),
     accent: Color(0xFF00E6D2),
     brandVolt: Color(0xFFCCFF33),
 

@@ -124,7 +124,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
         color: AppColors.popover,
         borderRadius: AppRadii.surfaceTop,
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.15), width: 1),
+          top: BorderSide(color: AppColors.overlayLine, width: 1),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -140,7 +140,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: AppColors.overlayStrong,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -198,7 +198,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                           Icon(
                             Icons.notifications_off_outlined,
                             size: 40,
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: AppColors.overlayStrong,
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -216,7 +216,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                   return ListView.separated(
                     itemCount: docs.length,
                     separatorBuilder: (context, index) => Divider(
-                      color: Colors.white.withValues(alpha: 0.06),
+                      color: AppColors.overlaySubtle,
                       height: 1,
                     ),
                     itemBuilder: (context, index) => _NotificationRow(doc: docs[index]),
@@ -283,7 +283,7 @@ class _NotificationRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.card,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                border: Border.all(color: AppColors.overlayLine),
               ),
               child: Icon(
                 _iconForType(data['type'] as String?),

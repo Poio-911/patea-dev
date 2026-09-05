@@ -167,7 +167,7 @@ class _TimelineRow extends StatelessWidget {
                 const SizedBox(height: 4),
                 badge,
                 Expanded(
-                  child: Container(width: 1, color: Colors.white.withValues(alpha: 0.10)),
+                  child: Container(width: 1, color: AppColors.overlayLine),
                 ),
               ],
             ),
@@ -242,14 +242,14 @@ class OpposedBar extends StatelessWidget {
                     flex: (fracA * 1000).round().clamp(1, 999),
                     child: Container(
                       color: total == 0
-                          ? Colors.white.withValues(alpha: 0.08)
+                          ? AppColors.overlaySubtle
                           : color.withValues(alpha: 0.85),
                     ),
                   ),
                   const SizedBox(width: 2),
                   Expanded(
                     flex: ((1 - fracA) * 1000).round().clamp(1, 999),
-                    child: Container(color: Colors.white.withValues(alpha: 0.18)),
+                    child: Container(color: AppColors.overlayStrong),
                   ),
                 ],
               ),

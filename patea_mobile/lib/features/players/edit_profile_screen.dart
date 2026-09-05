@@ -501,7 +501,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.card,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                          border: Border.all(color: AppColors.overlayLine),
                         ),
                         child: Row(
                           children: [
@@ -586,7 +586,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         onPressed: _saving ? null : _save,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.voltNeon,
-                          foregroundColor: Colors.black,
+                          foregroundColor: AppColors.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -596,7 +596,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
                               )
                             : const Icon(Icons.check, size: 18),
                         label: Text(
@@ -604,7 +604,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           style: AppTypography.headline(
                             size: 14,
                             weight: FontWeight.w700,
-                            color: Colors.black,
+                            color: AppColors.onPrimary,
                           ),
                         ),
                       ),
@@ -658,18 +658,18 @@ class _Field extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(color: AppColors.overlayLine),
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
         maxLength: maxLength,
         onChanged: onChanged,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           hintText: hint,
           counterText: '',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 13),
+          hintStyle: TextStyle(color: AppColors.overlayStrong, fontSize: 13),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
@@ -703,7 +703,7 @@ class _ChoiceChip extends StatelessWidget {
           color: selected ? color.withValues(alpha: 0.16) : AppColors.card,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? color : Colors.white.withValues(alpha: 0.12),
+            color: selected ? color : AppColors.overlayLine,
             width: selected ? 1.5 : 1,
           ),
         ),

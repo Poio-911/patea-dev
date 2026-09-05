@@ -115,9 +115,9 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                             }
                           }
                         },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
                   child: submitting
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                       : const Text('Guardar'),
                 ),
               ],
@@ -470,13 +470,13 @@ class _ActionButton extends StatelessWidget {
     final fg = danger
         ? AppColors.destructive
         : primary
-            ? Colors.black
+            ? AppColors.onPrimary
             : AppColors.textPrimary;
     final bg = danger
         ? AppColors.destructive.withValues(alpha: 0.12)
         : primary
             ? AppColors.voltNeon
-            : Colors.white.withValues(alpha: 0.07);
+            : AppColors.overlaySubtle;
 
     return InkWell(
       onTap: onTap,

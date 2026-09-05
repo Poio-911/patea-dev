@@ -147,7 +147,7 @@ class PateaPageHeader extends StatelessWidget {
                     Icon(
                       Icons.filter_list_rounded,
                       size: 15,
-                      color: activeFilterCount > 0 ? AppColors.voltNeon : Colors.white,
+                      color: activeFilterCount > 0 ? AppColors.voltNeon : AppColors.textPrimary,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -155,7 +155,7 @@ class PateaPageHeader extends StatelessWidget {
                       style: AppTypography.headline(
                         size: 12,
                         weight: FontWeight.w700,
-                        color: activeFilterCount > 0 ? AppColors.voltNeon : Colors.white,
+                        color: activeFilterCount > 0 ? AppColors.voltNeon : AppColors.textPrimary,
                       ),
                     ),
                     if (activeFilterCount > 0) ...[
@@ -170,12 +170,12 @@ class PateaPageHeader extends StatelessWidget {
                         ),
                         child: Text(
                           '$activeFilterCount',
-                          style: AppTypography.code(size: 9, color: Colors.black),
+                          style: AppTypography.code(size: 9, color: AppColors.onPrimary),
                         ),
                       ),
                     ],
                     const SizedBox(width: 2),
-                    const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Colors.white70),
+                    const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.textSecondary),
                   ],
                 ),
               ),

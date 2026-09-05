@@ -52,6 +52,21 @@ class AppColors {
   @Deprecated('Usar context.c.info')
   static const Color info = Color(0xFF25C0F4);
 
+  // Veladuras. Reemplazan los 20 valores de alpha distintos que habia sobre
+  // blanco: en el tema claro invierten a negro.
+  @Deprecated('Usar context.c.overlaySubtle')
+  static const Color overlaySubtle = Color(0x0FFFFFFF);
+  @Deprecated('Usar context.c.overlayLine')
+  static const Color overlayLine = Color(0x1FFFFFFF);
+  @Deprecated('Usar context.c.overlayStrong')
+  static const Color overlayStrong = Color(0x33FFFFFF);
+
+  /// Lo que va ENCIMA del primario. Antes eran dos valores para lo mismo:
+  /// `Colors.black` en 30 sitios y `AppColors.background` en 9, y ninguno era
+  /// el `--primary-foreground` de la web.
+  @Deprecated('Usar context.c.onPrimary')
+  static const Color onPrimary = Color(0xFF141926);
+
   // Textos
   @Deprecated('Usar context.c.textPrimary')
   static const Color textPrimary = Color(0xFFF8FAFC);

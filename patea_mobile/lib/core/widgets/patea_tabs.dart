@@ -102,7 +102,7 @@ class _Tab extends StatelessWidget {
                   style: AppTypography.body(
                     size: 10,
                     weight: FontWeight.w700,
-                    color: active ? Colors.black : AppColors.textSecondary,
+                    color: active ? AppColors.onPrimary : AppColors.textSecondary,
                   ),
                 ),
               ),

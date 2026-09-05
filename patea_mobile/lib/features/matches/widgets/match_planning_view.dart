@@ -463,7 +463,7 @@ class _ProposalRow extends StatelessWidget {
             height: 38,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
-              color: leading ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
+              color: leading ? AppColors.voltNeon : AppColors.overlayLine,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -530,7 +530,7 @@ class _VoteButton extends StatelessWidget {
           color: voted ? AppColors.voltNeon : Colors.transparent,
           borderRadius: AppRadii.chipAll,
           border: Border.all(
-            color: voted ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.2),
+            color: voted ? AppColors.voltNeon : AppColors.overlayStrong,
           ),
         ),
         child: Icon(

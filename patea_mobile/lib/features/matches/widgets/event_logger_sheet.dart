@@ -207,7 +207,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 18),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: AppColors.overlayStrong,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -323,7 +323,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.voltNeon,
                     foregroundColor: AppColors.background,
-                    disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
+                    disabledBackgroundColor: AppColors.overlaySubtle,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
@@ -360,7 +360,7 @@ class _MinuteStepper extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: AppRadii.chipAll,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        border: Border.all(color: AppColors.overlayLine),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -418,7 +418,7 @@ class _TeamToggle extends StatelessWidget {
             color: selected ? AppColors.voltNeon.withValues(alpha: 0.12) : Colors.transparent,
             borderRadius: AppRadii.cardAll,
             border: Border.all(
-              color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
+              color: selected ? AppColors.voltNeon : AppColors.overlayLine,
             ),
           ),
           child: Text(
@@ -488,7 +488,7 @@ class _PlayerPicker extends StatelessWidget {
             color: selected ? AppColors.voltNeon.withValues(alpha: 0.14) : Colors.transparent,
             borderRadius: AppRadii.chipAll,
             border: Border.all(
-              color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
+              color: selected ? AppColors.voltNeon : AppColors.overlayLine,
             ),
           ),
           child: Text(
@@ -544,7 +544,7 @@ class _OptionRow extends StatelessWidget {
                     border: Border.all(
                       color: entry.key == value
                           ? AppColors.voltNeon
-                          : Colors.white.withValues(alpha: 0.12),
+                          : AppColors.overlayLine,
                     ),
                   ),
                   child: Text(
@@ -590,7 +590,7 @@ class _CardColorPicker extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? color.withValues(alpha: 0.14) : Colors.transparent,
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? color : Colors.white.withValues(alpha: 0.12)),
+          border: Border.all(color: selected ? color : AppColors.overlayLine),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

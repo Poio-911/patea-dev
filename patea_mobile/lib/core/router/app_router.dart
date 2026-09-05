@@ -369,13 +369,13 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
               color: AppColors.card.withValues(alpha: 0.40), // bg-card/40
               border: Border(
                 top: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: AppColors.overlayLine,
                   width: 1.0,
                 ),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: AppColors.onPrimary.withValues(alpha: 0.4),
                   blurRadius: 16,
                   offset: const Offset(0, -4),
                 ),
@@ -522,7 +522,7 @@ class _PartidosSheetItem extends StatelessWidget {
                 color: isActive ? AppColors.voltNeon : AppColors.cardSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, size: 20, color: isActive ? Colors.black : AppColors.textSecondary),
+              child: Icon(icon, size: 20, color: isActive ? AppColors.onPrimary : AppColors.textSecondary),
             ),
             const SizedBox(width: 14),
             Text(

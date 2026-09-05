@@ -367,7 +367,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       ? (_step == 1 ? (_canGoToStep2 ? _goNext : null) : _goNext)
                       : (canSubmitStep3 ? () => _handleCreate(allPlayers) : null),
               child: _isSubmitting
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2))
                   : Text(_step < 3 && !(_step == 2 && _selectedType == 'collaborative')
                       ? 'Siguiente'
                       : 'CREAR PARTIDO'),
@@ -696,7 +696,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       decoration: BoxDecoration(
                         borderRadius: AppRadii.cardAll,
                         border: Border.all(
-                          color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),
+                          color: selected ? AppColors.voltNeon : AppColors.overlayLine,
                         ),
                       ),
                       child: Row(
@@ -1017,7 +1017,7 @@ class _PlayerSelectRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(5),
                 border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textSecondary),
               ),
-              child: selected ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
+              child: selected ? const Icon(Icons.check, size: 16, color: AppColors.onPrimary) : null,
             ),
           ],
         ),

@@ -325,7 +325,7 @@ class _PendingList extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/evaluations/${item.matchId}'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
                   icon: const Icon(Icons.edit_outlined, size: 16),
                   label: const Text('EVALUAR AHORA'),
                 ),
@@ -492,8 +492,8 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _loading != null ? null : () => _respond('accepted'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
-                  icon: _loading == 'accepted' ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Icon(Icons.visibility_outlined, size: 14),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+                  icon: _loading == 'accepted' ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary)) : const Icon(Icons.visibility_outlined, size: 14),
                   label: const Text('Revelar identidad', style: TextStyle(fontSize: 11)),
                 ),
               ),

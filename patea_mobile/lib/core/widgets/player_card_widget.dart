@@ -286,6 +286,9 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                           right: 0,
                           height: cardH * 0.54,
                           child: ShaderMask(
+                            // Los blancos de este degradado no son un color:
+                            // son la mascara de opacidad del ShaderMask. No
+                            // pasan a token.
                             shaderCallback: (rect) {
                               return const LinearGradient(
                                 begin: Alignment.topCenter,
@@ -355,6 +358,8 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               ),
                               colors: [
                                 Colors.transparent,
+                                // Brillo especular: la opacidad sale de la
+                                // inclinacion, no es una veladura del tema.
                                 Colors.white.withValues(
                                   alpha: 0.10 * (_curX.abs() + _curY.abs()) / _maxTilt,
                                 ),
@@ -406,12 +411,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               style: AppTypography.headline(
                                 size: 14,
                                 weight: FontWeight.w800,
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 letterSpacing: 0.5,
                               ).copyWith(
                                 shadows: [
                                   Shadow(
-                                    color: Colors.black.withValues(alpha: 0.8),
+                                    color: AppColors.onPrimary.withValues(alpha: 0.8),
                                     blurRadius: 4,
                                     offset: const Offset(0, 1),
                                   ),
@@ -427,12 +432,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                   '${player.ovr}',
                                   style: AppTypography.sportNumber(
                                     size: 38,
-                                    color: Colors.white,
+                                    color: AppColors.textPrimary,
                                   ).copyWith(
                                     height: 0.92,
                                     shadows: [
                                       Shadow(
-                                        color: Colors.black.withValues(alpha: 0.9),
+                                        color: AppColors.onPrimary.withValues(alpha: 0.9),
                                         blurRadius: 6,
                                         offset: const Offset(0, 1),
                                       ),
@@ -484,12 +489,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                             style: AppTypography.headline(
                               size: 15,
                               weight: FontWeight.w800,
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               letterSpacing: 0.6,
                             ).copyWith(
                               shadows: [
                                 Shadow(
-                                  color: Colors.black.withValues(alpha: 0.85),
+                                  color: AppColors.onPrimary.withValues(alpha: 0.85),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -561,7 +566,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     // decide por luminancia y no por tier para que siga andando si algún día
     // cambian los colores.
     final onMetal =
-        tierColor.computeLuminance() > 0.45 ? AppColors.background : Colors.white;
+        tierColor.computeLuminance() > 0.45 ? AppColors.background : AppColors.textPrimary;
 
     return Transform.translate(
       // Sale del padding del contenido (10) para tocar el borde de la carta.
@@ -690,12 +695,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       decoration: BoxDecoration(
         color: isSorted
             ? AppColors.voltNeon.withValues(alpha: 0.16)
-            : Colors.white.withValues(alpha: 0.08),
+            : AppColors.overlaySubtle,
         borderRadius: BorderRadius.circular(5),
         border: Border.all(
           color: isSorted
               ? AppColors.voltNeon.withValues(alpha: 0.65)
-              : Colors.white.withValues(alpha: 0.08),
+              : AppColors.overlaySubtle,
           width: isSorted ? 1.2 : 0.8,
         ),
       ),
@@ -723,7 +728,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               borderRadius: BorderRadius.circular(2),
               child: Container(
                 height: 3.5,
-                color: Colors.white.withValues(alpha: 0.12),
+                color: AppColors.overlayLine,
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: (val / 99.0).clamp(0.05, 1.0),
@@ -731,7 +736,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                     decoration: BoxDecoration(
                       color: isSorted
                           ? AppColors.voltNeon.withValues(alpha: 0.75)
-                          : Colors.white.withValues(alpha: 0.30),
+                          : AppColors.overlayStrong,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -747,7 +752,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
             style: AppTypography.code(
               size: 10,
               weight: FontWeight.w800,
-              color: Colors.white,
+              color: AppColors.textPrimary,
             ),
           ),
         ],

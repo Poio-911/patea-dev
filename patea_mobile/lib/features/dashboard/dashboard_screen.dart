@@ -235,7 +235,7 @@ class _DashboardTabBar extends StatelessWidget {
             tab('Mi Grupo', 1),
           ],
         ),
-        Container(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+        Container(height: 1, color: AppColors.overlaySubtle),
       ],
     );
   }
@@ -356,7 +356,7 @@ class _ResumenTabBody extends ConsumerWidget {
               ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
             const SizedBox(height: 16),
 
             // ── 2. TUS NÚMEROS (OVR MONUMENTAL + EFECTIVIDAD) ───────────
@@ -370,7 +370,7 @@ class _ResumenTabBody extends ConsumerWidget {
               ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
             const SizedBox(height: 16),
 
             // ── 3. ÚLTIMO PARTIDO JUGADO EN LÍNEA ABIERTA ────────────────
@@ -726,7 +726,7 @@ class _CleanTunnelSide extends StatelessWidget {
                   width: 50,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
+                    color: AppColors.onPrimary.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -749,7 +749,7 @@ class _CleanTunnelSide extends StatelessWidget {
                           style: GoogleFonts.bebasNeue(
                             fontSize: 22,
                             letterSpacing: 1.5,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -809,7 +809,7 @@ class _CleanVsDivider extends StatelessWidget {
                 style: GoogleFonts.bebasNeue(
                   fontSize: 26,
                   letterSpacing: 2.0,
-                  color: live ? AppColors.destructive : Colors.white,
+                  color: live ? AppColors.destructive : AppColors.textPrimary,
                 ),
               ),
             ),
@@ -878,7 +878,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
                 children: [
                   Text(
                     '${player.ovr}',
-                    style: AppTypography.sportNumber(size: 68, color: Colors.white)
+                    style: AppTypography.sportNumber(size: 68, color: AppColors.textPrimary)
                         .copyWith(fontStyle: FontStyle.italic, letterSpacing: -2),
                   ),
                   if (trend != 0) ...[
@@ -924,7 +924,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'PROMEDIO: $avg G/PJ',
-                style: AppTypography.code(size: 10, weight: FontWeight.w700, color: Colors.white),
+                style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -1132,7 +1132,7 @@ class _GrupoTabBody extends ConsumerWidget {
             ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
             const SizedBox(height: 16),
 
             // ── 2. TOTALES DEL PLANTEL (EN LÍNEA ABIERTA) ────────────────
@@ -1159,7 +1159,7 @@ class _GrupoTabBody extends ConsumerWidget {
             ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
             const SizedBox(height: 16),
 
             // ── 3. DESTACADOS DEL PLANTEL (MEJOR OVR Y GOLEADOR) ────────
@@ -1174,7 +1174,7 @@ class _GrupoTabBody extends ConsumerWidget {
                 label: 'MEJOR OVR · ${topOvr.tier.toUpperCase()}',
                 name: topOvr.name,
                 value: '${topOvr.ovr}',
-                valueColor: Colors.white,
+                valueColor: AppColors.textPrimary,
                 tierColor: AppColors.getOvrBorderColor(topOvr.ovr),
                 onTap: () => context.push('/players/${topOvr.id}'),
               ),
@@ -1192,7 +1192,7 @@ class _GrupoTabBody extends ConsumerWidget {
             ],
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: Colors.white.withValues(alpha: 0.1)),
+            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
             const SizedBox(height: 16),
 
             // ── 4. EN AGENDA (LISTA ABIERTA) ─────────────────────────────
@@ -1399,7 +1399,7 @@ class _EmptyMural extends StatelessWidget {
             onPressed: onAction,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.voltNeon,
-              foregroundColor: Colors.black,
+              foregroundColor: AppColors.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(actionLabel, style: AppTypography.headline(size: 12, weight: FontWeight.w800)),

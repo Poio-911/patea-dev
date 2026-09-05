@@ -268,13 +268,13 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                   onPressed: _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.voltNeon,
-                    foregroundColor: Colors.black,
+                    foregroundColor: AppColors.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text('Guardar plantel',
                       style: AppTypography.headline(
-                          size: 14, weight: FontWeight.w700, color: Colors.black)),
+                          size: 14, weight: FontWeight.w700, color: AppColors.onPrimary)),
                 ),
               ),
             ),
@@ -344,7 +344,7 @@ class _RosterRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: entry.starter
                         ? AppColors.voltNeon.withValues(alpha: 0.16)
-                        : Colors.white.withValues(alpha: 0.07),
+                        : AppColors.overlaySubtle,
                     borderRadius: BorderRadius.circular(7),
                   ),
                   child: Text(
@@ -369,7 +369,7 @@ class _RosterRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: duplicated
                         ? AppColors.warning.withValues(alpha: 0.18)
-                        : Colors.white.withValues(alpha: 0.07),
+                        : AppColors.overlaySubtle,
                     borderRadius: BorderRadius.circular(7),
                     border: duplicated
                         ? Border.all(color: AppColors.warning.withValues(alpha: 0.7))

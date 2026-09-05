@@ -182,7 +182,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     min: _minZoom,
                     max: _maxZoom,
                     activeColor: AppColors.voltNeon,
-                    inactiveColor: Colors.white.withValues(alpha: 0.15),
+                    inactiveColor: AppColors.overlayLine,
                     onChanged: _saving ? null : (v) => setState(() => _zoom = v),
                   ),
                 ),
@@ -215,7 +215,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.voltNeon,
-                  foregroundColor: Colors.black,
+                  foregroundColor: AppColors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -223,13 +223,13 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
                       )
                     : const Icon(Icons.check, size: 18),
                 label: Text(
                   _saving ? 'Guardando…' : 'Usar este encuadre',
                   style: AppTypography.headline(
-                      size: 14, weight: FontWeight.w700, color: Colors.black),
+                      size: 14, weight: FontWeight.w700, color: AppColors.onPrimary),
                 ),
               ),
             ),

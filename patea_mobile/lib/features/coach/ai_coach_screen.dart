@@ -84,7 +84,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                     child: Text(
                       msg['text'] ?? '',
                       style: AppTypography.body(
-                        color: isUser ? Colors.black : AppColors.textPrimary,
+                        color: isUser ? AppColors.onPrimary : AppColors.textPrimary,
                         size: 14,
                       ),
                     ),

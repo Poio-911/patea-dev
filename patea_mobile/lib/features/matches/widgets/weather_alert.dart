@@ -62,9 +62,9 @@ class MatchWeatherAlert extends StatelessWidget {
         borderRadius: AppRadii.cardAll,
         border: Border(
           left: BorderSide(color: warning.color, width: 3),
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-          right: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          top: BorderSide(color: AppColors.overlaySubtle),
+          right: BorderSide(color: AppColors.overlaySubtle),
+          bottom: BorderSide(color: AppColors.overlaySubtle),
         ),
       ),
       child: Row(

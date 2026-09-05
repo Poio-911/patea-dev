@@ -108,9 +108,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         : _step == 1
                             ? (_canGoToStep2 ? () => setState(() => _step = 2) : null)
                             : (_selectedPlayerIds.isNotEmpty ? _handleCreate : null),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: Colors.black),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
                     child: _isSubmitting
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                         : Text(_step == 1 ? 'Siguiente' : 'CREAR EQUIPO'),
                   ),
                 ),
@@ -205,7 +205,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                                 borderRadius: BorderRadius.circular(5),
                                 border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textSecondary),
                               ),
-                              child: selected ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
+                              child: selected ? const Icon(Icons.check, size: 16, color: AppColors.onPrimary) : null,
                             ),
                           ],
                         ),

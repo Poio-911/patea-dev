@@ -96,7 +96,7 @@ class PushPermission {
                     onPressed: () => Navigator.pop(ctx, true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.voltNeon,
-                      foregroundColor: Colors.black,
+                      foregroundColor: AppColors.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -105,7 +105,7 @@ class PushPermission {
                         style: AppTypography.headline(
                             size: 13,
                             weight: FontWeight.w700,
-                            color: Colors.black)),
+                            color: AppColors.onPrimary)),
                   ),
                 ),
               ],
