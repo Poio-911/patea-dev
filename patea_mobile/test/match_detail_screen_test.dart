@@ -58,8 +58,8 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('CLÁSICO DEL BARRIO'), findsWidgets);
-    expect(find.text('VS'), findsOneWidget);
+    expect(find.text('CLÁSICO DEL BARRIO'), findsOneWidget);
+    expect(find.text('AMISTOSO'), findsOneWidget);
     expect(find.text('Cancha 5 Prado'), findsOneWidget);
     expect(find.text('LOS GALÁCTICOS'), findsWidgets);
     expect(find.text('LA FURIA'), findsWidgets);
@@ -70,7 +70,7 @@ void main() {
     expect(find.text('ANOTARME AL PARTIDO'), findsOneWidget);
   });
 
-  testWidgets('Detalle de Partido: Partido completed muestra EVALUANDO en lugar de SIN RESULTADO', (tester) async {
+  testWidgets('Detalle de Partido: Partido completed muestra estado y boton EVALUAR PARTIDO', (tester) async {
     tester.view.physicalSize = const Size(1080, 2424);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.reset);
@@ -106,9 +106,8 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('EVALUANDO'), findsOneWidget);
-    expect(find.text('Esperando votos'), findsOneWidget);
-    expect(find.text('SIN RESULTADO'), findsNothing);
+    expect(find.text('FINAL DE COPA'), findsOneWidget);
+    expect(find.text('Complejo Central'), findsOneWidget);
     expect(find.text('EVALUAR PARTIDO'), findsOneWidget);
   });
 

@@ -32,16 +32,22 @@ import 'widgets/match_timeline.dart';
 import 'widgets/recruit_players_sheet.dart';
 import 'widgets/weather_alert.dart';
 
-const _spanishMonths = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+const _spanishWeekdays = [
+  'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo',
 ];
 
-String _fmtDate(String raw) {
+const _spanishFullMonths = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+
+String _fmtHeroDate(String raw) {
   final d = DateTime.tryParse(raw);
   if (d == null) return raw;
   final local = d.toLocal();
-  return '${local.day.toString().padLeft(2, '0')} ${_spanishMonths[local.month - 1]}';
+  final wd = _spanishWeekdays[local.weekday - 1];
+  final mo = _spanishFullMonths[local.month - 1];
+  return '$wd ${local.day} de $mo';
 }
 
 /// Pantalla de Detalle de Partido: experiencia deportiva estilo broadcast de TV
@@ -348,15 +354,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: Text(
-              match.title.toUpperCase(),
-              style: AppTypography.jersey(size: 18, letterSpacing: 1),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            leading: const BackButton(color: Colors.white),
             actions: [
               IconButton(
-                icon: const Icon(Icons.share_outlined, size: 20),
+                icon: const Icon(Icons.share_outlined, size: 20, color: Colors.white),
                 tooltip: 'Compartir partido',
                 onPressed: () {
                   SharePlus.instance.share(
@@ -445,16 +446,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             children: [
               _HeroCard(
                 match: match,
-                isOwner: isOwner,
-                uid: uid,
-                isUserInMatch: isUserInMatch,
-                isPending: isPending,
-                isMatchFull: isMatchFull,
-                isJoining: _isJoining,
                 onOpenMaps: () => _openMaps(match),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -526,39 +521,38 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 }
 
-/// Banner superior estilo Broadcast TV deportivo.
+/// Banner superior de Detalle de Partido:
+/// Enfocado en el título del partido, tipo (en texto limpio), fecha y hora con protagonismo,
+/// y sede resumida (nombre del local o dirección corta), sin equipos duplicados ni contenedores pesados.
 class _HeroCard extends StatelessWidget {
   final MatchModel match;
-  final bool isOwner;
-  final String? uid;
-  final bool isUserInMatch;
-  final bool isPending;
-  final bool isMatchFull;
-  final bool isJoining;
   final VoidCallback onOpenMaps;
 
   const _HeroCard({
     required this.match,
-    required this.isOwner,
-    required this.uid,
-    required this.isUserInMatch,
-    required this.isPending,
-    required this.isMatchFull,
-    required this.isJoining,
     required this.onOpenMaps,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = getMatchTypeTheme(match.type);
-    final hasTeams = match.teamA != null && match.teamB != null;
-    final isFinished = match.status == 'completed' || match.status == 'evaluated';
     final isLive = match.status == 'active';
-    final hasScore = isFinished && match.hasFinalScore;
     final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
+    // Resumen de la sede: nombre del local o primera parte de la dirección
     final hasVenue = match.location != null && match.location!.trim().isNotEmpty;
-    final venueText = hasVenue ? match.location!.trim() : 'Sede a confirmar';
+    String venueName = 'Sede a confirmar';
+    if (match.locationDetail != null && match.locationDetail!.name.trim().isNotEmpty) {
+      venueName = match.locationDetail!.name.trim();
+    } else if (hasVenue) {
+      venueName = match.location!.trim().split(',').first.trim();
+    }
+
+    final dateStr = match.date.isNotEmpty ? _fmtHeroDate(match.date) : 'Fecha a definir';
+    final timeStr = (match.time != null && match.time!.trim().isNotEmpty) ? '${match.time!.trim()} hs' : '';
+    final dateTimeStr = timeStr.isNotEmpty ? '$dateStr • $timeStr' : dateStr;
+
+    final categoryText = isLive ? '🔴 EN VIVO' : theme.label.toUpperCase();
 
     return Stack(
       children: [
@@ -567,23 +561,7 @@ class _HeroCard extends StatelessWidget {
           child: Image.asset(
             'assets/backgrounds/fondo_$photoIndex.jpg',
             fit: BoxFit.cover,
-            opacity: AlwaysStoppedAnimation(isLive ? 0.95 : 0.82),
-          ),
-        ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0, -0.2),
-                radius: 1.15,
-                colors: [
-                  Colors.transparent,
-                  AppColors.background.withValues(alpha: 0.65),
-                  AppColors.background.withValues(alpha: 0.98),
-                ],
-                stops: const [0.15, 0.65, 1.0],
-              ),
-            ),
+            opacity: AlwaysStoppedAnimation(isLive ? 0.90 : 0.72),
           ),
         ),
         Positioned.fill(
@@ -592,10 +570,10 @@ class _HeroCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: const [0.0, 0.45, 1.0],
+                stops: const [0.0, 0.50, 1.0],
                 colors: [
-                  Colors.black.withValues(alpha: 0.55),
-                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.75),
+                  Colors.black.withValues(alpha: 0.40),
                   AppColors.background,
                 ],
               ),
@@ -603,318 +581,94 @@ class _HeroCard extends StatelessWidget {
           ),
         ),
 
-        // Etiqueta de tipo de partido / Transmisión
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 50,
-          left: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-            ),
-            child: Row(
+        // Contenido tipográfico puro (sin cajas ni contenedores pesados)
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isLive ? AppColors.destructive : AppColors.voltNeon,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
+                const SizedBox(height: 36), // Espacio para botones del AppBar transparente (back / share)
+
+                // Tipo de partido como texto puro
                 Text(
-                  isLive ? 'EN VIVO' : theme.label.toUpperCase(),
+                  categoryText,
                   style: AppTypography.code(
-                    size: 9.5,
+                    size: 11,
                     weight: FontWeight.w800,
                     color: isLive ? AppColors.destructive : AppColors.voltNeon,
-                  ).copyWith(letterSpacing: 1.5),
+                  ).copyWith(letterSpacing: 2.0),
+                ),
+                const SizedBox(height: 8),
+
+                // Nombre del partido protagonista
+                Text(
+                  match.title.toUpperCase(),
+                  style: AppTypography.jersey(
+                    size: 34,
+                    height: 1.05,
+                    letterSpacing: 1.2,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Fecha y hora protagonista
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.voltNeon),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        dateTimeStr.toUpperCase(),
+                        style: AppTypography.jersey(
+                          size: 18,
+                          letterSpacing: 0.8,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Lugar resumido interactivo (sin contenedor)
+                GestureDetector(
+                  onTap: hasVenue ? onOpenMaps : null,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.place_outlined,
+                        size: 17,
+                        color: hasVenue ? AppColors.voltNeon : AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: Text(
+                          venueName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.body(
+                            size: 14.5,
+                            weight: FontWeight.w600,
+                            color: hasVenue ? AppColors.textPrimary : AppColors.textMuted,
+                          ),
+                        ),
+                      ),
+                      if (hasVenue) ...[
+                        const SizedBox(width: 5),
+                        const Icon(Icons.arrow_outward_rounded, size: 12, color: AppColors.voltNeon),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ),
-
-        // Contenido del Hero
-        Container(
-          padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 52, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (hasTeams) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(child: _HeroTeam(team: match.teamA!, isWinner: hasScore && match.teamA!.score > match.teamB!.score)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: hasScore
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${match.teamA!.score}',
-                                  style: AppTypography.jersey(
-                                    size: 48,
-                                    color: match.teamA!.score > match.teamB!.score ? AppColors.voltNeon : Colors.white,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                                  child: Text('-', style: AppTypography.jersey(size: 32, color: AppColors.textMuted)),
-                                ),
-                                Text(
-                                  '${match.teamB!.score}',
-                                  style: AppTypography.jersey(
-                                    size: 48,
-                                    color: match.teamB!.score > match.teamA!.score ? AppColors.voltNeon : Colors.white,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : isLive
-                              ? Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.destructive.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppColors.destructive.withValues(alpha: 0.6)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 7,
-                                        height: 7,
-                                        decoration: const BoxDecoration(color: AppColors.destructive, shape: BoxShape.circle),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'EN JUEGO',
-                                        style: AppTypography.code(
-                                          size: 10,
-                                          weight: FontWeight.w900,
-                                          color: AppColors.destructive,
-                                        ).copyWith(letterSpacing: 1.2),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : match.status == 'completed'
-                                  ? Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.cardSurface.withValues(alpha: 0.85),
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.4)),
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const SizedBox(
-                                                width: 8,
-                                                height: 8,
-                                                child: CircularProgressIndicator(strokeWidth: 1.8, color: AppColors.voltNeon),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                'EVALUANDO',
-                                                style: AppTypography.code(
-                                                  size: 9,
-                                                  weight: FontWeight.w800,
-                                                  color: AppColors.voltNeon,
-                                                ).copyWith(letterSpacing: 1.2),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'Esperando votos',
-                                            style: AppTypography.body(size: 8.5, color: AppColors.textMuted),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.5),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                                      ),
-                                      child: Text(
-                                        'VS',
-                                        style: AppTypography.jersey(size: 20, color: AppColors.voltNeon, letterSpacing: 1),
-                                      ),
-                                    ),
-                    ),
-                    Expanded(child: _HeroTeam(team: match.teamB!, isWinner: hasScore && match.teamB!.score > match.teamA!.score)),
-                  ],
-                ),
-              ] else ...[
-                Column(
-                  children: [
-                    Text(
-                      match.title.toUpperCase(),
-                      textAlign: TextAlign.center,
-                      style: AppTypography.jersey(size: 32, height: 1.05),
-                    ),
-                    if (match.status == 'upcoming') ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardSurface.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
-                        ),
-                        child: Text(
-                          '${match.players.length} / ${match.matchSize} JUGADORES CONFIRMADOS',
-                          style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.voltNeon)
-                              .copyWith(letterSpacing: 1),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-
-              // Fila de telemetría y sede interactiva
-              Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textSecondary),
-                        const SizedBox(width: 5),
-                        Text(
-                          match.date.isNotEmpty ? _fmtDate(match.date) : 'Fecha a definir',
-                          style: AppTypography.condensed(size: 12.5, weight: FontWeight.w600, color: AppColors.textPrimary),
-                        ),
-                        if (match.time != null && match.time!.isNotEmpty) ...[
-                          Text(' · ', style: AppTypography.condensed(size: 12.5, color: AppColors.textMuted)),
-                          Text(
-                            '${match.time} hs',
-                            style: AppTypography.condensed(size: 12.5, weight: FontWeight.w600, color: AppColors.textPrimary),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: hasVenue ? onOpenMaps : null,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: hasVenue
-                                ? AppColors.voltNeon.withValues(alpha: 0.35)
-                                : Colors.white.withValues(alpha: 0.08),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 13,
-                              color: hasVenue ? AppColors.voltNeon : AppColors.textMuted,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              venueText,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.condensed(
-                                size: 12.5,
-                                weight: FontWeight.w600,
-                                color: hasVenue ? AppColors.textPrimary : AppColors.textMuted,
-                              ),
-                            ),
-                            if (hasVenue) ...[
-                              const SizedBox(width: 3),
-                              Icon(Icons.arrow_outward_rounded, size: 11, color: AppColors.voltNeon),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HeroTeam extends StatelessWidget {
-  final MatchTeam team;
-  final bool isWinner;
-
-  const _HeroTeam({required this.team, this.isWinner = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          alignment: Alignment.topCenter,
-          clipBehavior: Clip.none,
-          children: [
-            if (team.jersey != null)
-              JerseyWidget(jersey: team.jersey!, size: 64)
-            else
-              Icon(Icons.checkroom, size: 52, color: AppColors.textMuted),
-            if (isWinner)
-              Positioned(
-                top: -8,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.black,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.goldBorder),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          team.name.toUpperCase(),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.jersey(size: 17, letterSpacing: 0.6),
         ),
       ],
     );
@@ -1023,11 +777,29 @@ class _TeamBlock extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        team.name.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.jersey(size: 22, letterSpacing: 0.3),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              team.name.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.jersey(size: 22, letterSpacing: 0.3),
+                            ),
+                          ),
+                          if (match.hasFinalScore) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '${team.score}',
+                              style: AppTypography.jersey(
+                                size: 28,
+                                color: (team.score > (match.teamA == team ? (match.teamB?.score ?? 0) : (match.teamA?.score ?? 0)))
+                                    ? AppColors.voltNeon
+                                    : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Wrap(
