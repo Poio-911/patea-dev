@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -65,7 +68,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+        PateaSnack.error(context, '$e');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -92,7 +95,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
             child: playersAsync.when(
               data: (players) => _step == 1 ? _buildStep1() : _buildStep2(players),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              error: (e, _) => PateaError(error: e),
             ),
           ),
           Container(
@@ -191,11 +194,10 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         ),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: AppColors.cardSurface,
-                              backgroundImage: p.photoUrl != null && p.photoUrl!.isNotEmpty ? NetworkImage(p.photoUrl!) : null,
-                              child: p.photoUrl == null || p.photoUrl!.isEmpty ? Text(p.name.isNotEmpty ? p.name[0].toUpperCase() : '?') : null,
+                            PateaAvatar(
+                              photoUrl: p.photoUrl,
+                              seed: p.name,
+                              size: 32,
                             ),
                             const SizedBox(width: 10),
                             Expanded(child: Text(p.name, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700))),

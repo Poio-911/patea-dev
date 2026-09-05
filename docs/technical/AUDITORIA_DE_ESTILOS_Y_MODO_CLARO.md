@@ -117,17 +117,25 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 
 ### Fase 3 · Unificar lo duplicado
 
-- [ ] `PateaTabs` en Panel, Partidos y Competiciones
-- [ ] `PateaAvatar` en las 14 pantallas con `CircleAvatar` crudo
-- [ ] `core/utils/dates.dart` — 4 `_fmtDate` + 6 tablas de meses
-- [ ] `PateaEmpty` / `PateaLoading` / `PateaError`
+- [x] `PateaTabs` en Panel, Partidos y Competiciones — de cuatro barras a una
+- [x] `PateaAvatar` — los 15 `CircleAvatar` crudos, ahora con caché y maniquí
+- [x] `core/utils/dates.dart` — siete copias, seis tablas de meses, tres de días
+- [x] `PateaEmpty` / `PateaLoading` / `PateaError` — 16 `Text('Error: $e')` fuera
+- [x] `PateaSnack` — 37 de 45 `SnackBar`; 8 con contenido armado quedan a mano
+- [x] `Colors.transparent` en las 10 pantallas opacas
+- [x] Movimiento reducido — **1 caso real, no 9** (ver abajo)
 - [ ] `PateaCard` — 231 `BoxDecoration`, 18 radios → los 3 de `AppRadii`
-- [ ] `PateaSheet` y `PateaSnack`
+- [ ] `PateaSheet` — los 5 fondos de bottom sheet
 - [ ] `PlayerPositionBadge` en todas las pantallas
 - [ ] `AppSpacing`
-- [ ] `Colors.transparent` en las 11 pantallas opacas
 - [ ] `core/constants/sections.dart` (con `navLabel` y `title` separados a propósito)
-- [ ] `MediaQuery.disableAnimations` en los 9 archivos con animación
+
+> **Movimiento reducido: el hallazgo era más chico de lo que decía la
+> auditoría.** `AnimationController` ya acorta las animaciones cuando
+> `disableAnimations` está activo, así que 7 de los 9 archivos no necesitaban
+> nada. Lo que el framework deja afuera **a propósito** son las que se repiten
+> (`AnimationBehavior.preserve` es el default de `repeat`, para que no
+> titilen), y de esas hay una sola en la app: el latido de un partido en vivo.
 
 ### Fase 4 · El tema claro
 

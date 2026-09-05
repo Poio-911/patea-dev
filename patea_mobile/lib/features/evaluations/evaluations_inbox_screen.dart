@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -173,7 +176,7 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
+          error: (e, _) => PateaError(error: e),
         ),
       ),
     );
@@ -296,11 +299,10 @@ class _PendingList extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircleAvatar(
-                            radius: 9,
-                            backgroundColor: AppColors.voltNeon.withValues(alpha: 0.2),
-                            backgroundImage: (p.photoURL != null && p.photoURL!.isNotEmpty) ? NetworkImage(p.photoURL!) : null,
-                            child: (p.photoURL == null || p.photoURL!.isEmpty) ? Text(p.name.isNotEmpty ? p.name[0].toUpperCase() : '?', style: AppTypography.code(color: AppColors.textSecondary, size: 9)) : null,
+                          PateaAvatar(
+                            photoUrl: p.photoURL,
+                            seed: p.name,
+                            size: 18,
                           ),
                           const SizedBox(width: 6),
                           Text(p.name.split(' ').first, style: AppTypography.body(color: AppColors.textSecondary, size: 11, weight: FontWeight.w600)),
@@ -400,7 +402,7 @@ class _RequestsList extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
+      error: (e, _) => PateaError(error: e),
     );
   }
 }
@@ -431,7 +433,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+        PateaSnack.error(context, '$e');
         setState(() => _loading = null);
       }
     }
@@ -448,11 +450,10 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.voltNeon.withValues(alpha: 0.15),
-                backgroundImage: r.fromPlayerPhotoUrl.isNotEmpty ? NetworkImage(r.fromPlayerPhotoUrl) : null,
-                child: r.fromPlayerPhotoUrl.isEmpty ? Text(r.fromPlayerName.isNotEmpty ? r.fromPlayerName[0].toUpperCase() : '?', style: AppTypography.headline(size: 14)) : null,
+              PateaAvatar(
+                photoUrl: r.fromPlayerPhotoUrl,
+                seed: r.fromPlayerName,
+                size: 40,
               ),
               const SizedBox(width: 12),
               Expanded(

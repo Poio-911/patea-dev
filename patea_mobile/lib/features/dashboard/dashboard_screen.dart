@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -1035,13 +1036,7 @@ class _GrupoTabBody extends ConsumerWidget {
                         onTap: () {
                           Clipboard.setData(ClipboardData(text: group.inviteCode));
                           HapticFeedback.selectionClick();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Código copiado: ${group.inviteCode}'),
-                              backgroundColor: AppColors.cardSurface,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          PateaSnack.info(context, 'Código copiado: ${group.inviteCode}');
                         },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

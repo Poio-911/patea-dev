@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -63,7 +65,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+        PateaSnack.error(context, '$e');
         setState(() => _isDeleting = false);
       }
     }
@@ -111,7 +113,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                           } catch (e) {
                             setSheetState(() => submitting = false);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+                              PateaSnack.error(context, '$e');
                             }
                           }
                         },
@@ -147,19 +149,11 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
             members: members,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Plantel actualizado'),
-            backgroundColor: AppColors.cardSurface,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        PateaSnack.info(context, 'Plantel actualizado');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive),
-        );
+        PateaSnack.error(context, '$e');
       }
     }
   }
@@ -601,20 +595,10 @@ class _RosterTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFF1B2432),
-                backgroundImage: photo != null && photo.isNotEmpty
-                    ? NetworkImage(photo)
-                    : null,
-                child: photo == null || photo.isEmpty
-                    ? Text(
-                        (p?.name.isNotEmpty ?? false)
-                            ? p!.name[0].toUpperCase()
-                            : '?',
-                        style: AppTypography.headline(size: 13),
-                      )
-                    : null,
+              PateaAvatar(
+                photoUrl: photo,
+                seed: p?.name ?? '',
+                size: 32,
               ),
               const SizedBox(width: 11),
               Expanded(

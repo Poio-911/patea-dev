@@ -1,4 +1,7 @@
 import 'dart:async';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_states.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -286,16 +289,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           .timeout(const Duration(seconds: 20));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Partido creado!'), backgroundColor: AppColors.success),
-        );
+        PateaSnack.ok(context, '¡Partido creado!');
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear partido: $e'), backgroundColor: AppColors.destructive),
-        );
+        PateaSnack.error(context, 'Error al crear partido: $e');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -324,7 +323,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             child: playersAsync.when(
               data: (allPlayers) => _buildStepBody(allPlayers),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              error: (e, _) => PateaError(error: e),
             ),
           ),
           _buildFooter(playersAsync.value ?? const []),
@@ -869,9 +868,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       selected: isSelected,
                       onTap: () {
                         if (!isSelected && _selectedPlayerIds.length >= _matchSize) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('No podés seleccionar más de $_matchSize jugadores.')),
-                          );
+                          PateaSnack.info(context, 'No podés seleccionar más de $_matchSize jugadores.');
                           return;
                         }
                         setState(() {
@@ -986,13 +983,10 @@ class _PlayerSelectRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.cardSurface,
-              backgroundImage: player.photoUrl != null && player.photoUrl!.isNotEmpty ? NetworkImage(player.photoUrl!) : null,
-              child: player.photoUrl == null || player.photoUrl!.isEmpty
-                  ? Text(player.name.isNotEmpty ? player.name[0].toUpperCase() : '?', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700))
-                  : null,
+            PateaAvatar(
+              photoUrl: player.photoUrl,
+              seed: player.name,
+              size: 32,
             ),
             const SizedBox(width: 10),
             Expanded(

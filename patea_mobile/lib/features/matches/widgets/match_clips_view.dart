@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../core/widgets/patea_snack.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -539,10 +540,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$e'),
-          backgroundColor: AppColors.destructive,
-        ));
+        PateaSnack.error(context, '$e');
       }
     }
   }

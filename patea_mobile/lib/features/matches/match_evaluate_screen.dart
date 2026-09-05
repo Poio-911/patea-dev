@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -34,15 +36,12 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
     try {
       final updated = await ref.read(evaluationServiceProvider).finalizeMatchEvaluation(widget.matchId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('¡Evaluación finalizada! $updated jugador(es) actualizados.'),
-          backgroundColor: AppColors.success,
-        ));
+        PateaSnack.ok(context, '¡Evaluación finalizada! $updated jugador(es) actualizados.');
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+        PateaSnack.error(context, '$e');
       }
     } finally {
       if (mounted) setState(() => _isFinalizing = false);
@@ -184,11 +183,11 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
+            error: (e, _) => PateaError(error: e),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
+        error: (e, _) => PateaError(error: e),
       ),
     );
   }

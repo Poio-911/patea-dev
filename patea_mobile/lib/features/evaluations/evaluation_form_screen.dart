@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -107,10 +109,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
   Future<void> _submit() async {
     for (final d in _drafts) {
       if (d.evaluationType == 'tags' && d.performanceTags.length < 3) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Elegí al menos 3 etiquetas para ${d.displayName}.'),
-          backgroundColor: AppColors.warning,
-        ));
+        PateaSnack.info(context, 'Elegí al menos 3 etiquetas para ${d.displayName}.');
         return;
       }
     }
@@ -126,16 +125,13 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
             evaluations: _drafts,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('¡Evaluaciones enviadas! Se van a procesar en segundo plano.'),
-          backgroundColor: AppColors.success,
-        ));
+        PateaSnack.ok(context, '¡Evaluaciones enviadas! Se van a procesar en segundo plano.');
         ref.invalidate(evaluationInboxItemsProvider);
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+        PateaSnack.error(context, '$e');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -317,11 +313,10 @@ class _PlayerEvaluationCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.cardSurface,
-                backgroundImage: draft.photoURL.isNotEmpty ? NetworkImage(draft.photoURL) : null,
-                child: draft.photoURL.isEmpty ? Text(draft.displayName.isNotEmpty ? draft.displayName[0].toUpperCase() : '?', style: AppTypography.headline(size: 16)) : null,
+              PateaAvatar(
+                photoUrl: draft.photoURL,
+                seed: draft.displayName,
+                size: 48,
               ),
               const SizedBox(width: 12),
               Expanded(

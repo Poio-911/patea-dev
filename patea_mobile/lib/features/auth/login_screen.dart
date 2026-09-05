@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -30,12 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor completa todos los campos.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      PateaSnack.info(context, 'Por favor completa todos los campos.');
       return;
     }
 
@@ -78,12 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authServiceProvider).signInWithGoogle();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al iniciar con Google: $e'),
-            backgroundColor: AppColors.destructive,
-          ),
-        );
+        PateaSnack.error(context, 'Error al iniciar con Google: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

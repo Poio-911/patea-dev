@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -70,13 +71,13 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> with Si
           leaguesAsync.when(
             data: (leagues) => _CompetitionsList(competitions: leagues, isCup: false),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(child: Text('Error: $err')),
+            error: (err, _) => PateaError(error: err),
           ),
           // Copas
           cupsAsync.when(
             data: (cups) => _CompetitionsList(competitions: cups, isCup: true),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(child: Text('Error: $err')),
+            error: (err, _) => PateaError(error: err),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_avatar.dart';
 import 'dart:ui' show ImageFilter;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1095,14 +1096,10 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                           width: 62,
                           child: Column(
                             children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: AppColors.cardSurface,
-                                backgroundImage: (p.photoURL != null && p.photoURL!.isNotEmpty) ? NetworkImage(p.photoURL!) : null,
-                                child: (p.photoURL == null || p.photoURL!.isEmpty)
-                                    ? Text(p.displayName.isNotEmpty ? p.displayName[0].toUpperCase() : '?',
-                                        style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700))
-                                    : null,
+                              PateaAvatar(
+                                photoUrl: p.photoURL,
+                                seed: p.displayName,
+                                size: 48,
                               ),
                               const SizedBox(height: 5),
                               Text(

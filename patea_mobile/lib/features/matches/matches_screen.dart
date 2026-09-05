@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_states.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -463,7 +465,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, _) => PateaError(error: err),
       ),
     );
   }
@@ -1585,12 +1587,7 @@ class _OrganizerRow extends StatelessWidget {
 
         return Row(
           children: [
-            CircleAvatar(
-              radius: 10,
-              backgroundColor: AppColors.cardSurface,
-              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-              child: photoUrl == null ? Icon(Icons.person, size: 12, color: AppColors.textSecondary) : null,
-            ),
+            PateaAvatar(photoUrl: photoUrl, seed: name, size: 20),
             const SizedBox(width: 6),
             Text(name, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
           ],

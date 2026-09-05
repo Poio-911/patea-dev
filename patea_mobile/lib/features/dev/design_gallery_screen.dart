@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
 
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_theme.dart';
@@ -171,9 +172,7 @@ class _DesignGalleryScreenState extends State<DesignGalleryScreen> {
             Row(children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Así se ve un SnackBar')),
-                  ),
+                  onPressed: () => PateaSnack.info(context, 'Así se ve un SnackBar'),
                   child: const Text('SnackBar'),
                 ),
               ),

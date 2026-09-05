@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_states.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -85,7 +88,7 @@ class GroupsScreen extends ConsumerWidget {
                       } catch (e) {
                         setDialogState(() => submitting = false);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+                          PateaSnack.error(context, '$e');
                         }
                       }
                     },
@@ -127,7 +130,7 @@ class GroupsScreen extends ConsumerWidget {
                       } catch (e) {
                         setDialogState(() => submitting = false);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+                          PateaSnack.error(context, '$e');
                         }
                       }
                     },
@@ -158,7 +161,7 @@ class _GroupsBody extends ConsumerWidget {
         return _ActiveGroupView(groupId: groupId, uid: uid);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => PateaError(error: e),
     );
   }
 }
@@ -218,7 +221,7 @@ class _NoActiveGroupView extends ConsumerWidget {
                             await ref.read(groupServiceProvider).setActiveGroup(g.id);
                           } catch (e) {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+                              PateaSnack.error(context, '$e');
                             }
                           }
                         },
@@ -240,7 +243,7 @@ class _NoActiveGroupView extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Error: $e'),
+          error: (e, _) => PateaError(error: e, compact: true),
         ),
       ],
     );
@@ -317,21 +320,11 @@ class _ActiveGroupView extends ConsumerWidget {
                                           .read(groupServiceProvider)
                                           .setActiveGroup(g.id);
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Grupo activo: ${g.name}'),
-                                            backgroundColor: AppColors.cardSurface,
-                                          ),
-                                        );
+                                        PateaSnack.info(context, 'Grupo activo: ${g.name}');
                                       }
                                     } catch (e) {
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('$e'),
-                                            backgroundColor: AppColors.destructive,
-                                          ),
-                                        );
+                                        PateaSnack.error(context, '$e');
                                       }
                                     }
                                   },
@@ -410,7 +403,7 @@ class _ActiveGroupView extends ConsumerWidget {
                 loading: () => const Padding(
                     padding: EdgeInsets.all(16),
                     child: Center(child: CircularProgressIndicator())),
-                error: (e, _) => Text('Error: $e'),
+                error: (e, _) => PateaError(error: e, compact: true),
               ),
             ),
             const SizedBox(height: 20),
@@ -484,7 +477,7 @@ class _ActiveGroupView extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => PateaError(error: e),
     );
   }
 }
@@ -694,16 +687,10 @@ class _PlayedMatchRow extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 9,
-                    backgroundColor: AppColors.card,
-                    backgroundImage: mvpPhoto != null && mvpPhoto!.isNotEmpty
-                        ? NetworkImage(mvpPhoto!)
-                        : null,
-                    child: mvpPhoto == null || mvpPhoto!.isEmpty
-                        ? Text(mvpName![0].toUpperCase(),
-                            style: AppTypography.code(color: AppColors.textSecondary, size: 8))
-                        : null,
+                  PateaAvatar(
+                    photoUrl: mvpPhoto,
+                    seed: mvpName ?? '',
+                    size: 18,
                   ),
                   const SizedBox(width: 6),
                   Icon(Icons.emoji_events_rounded,
@@ -773,7 +760,7 @@ class _GroupHeroCard extends StatelessWidget {
                 child: InkWell(
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: group.inviteCode));
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Código copiado!'), backgroundColor: AppColors.success));
+                    PateaSnack.ok(context, '¡Código copiado!');
                   },
                   borderRadius: BorderRadius.circular(8),
                   child: Container(

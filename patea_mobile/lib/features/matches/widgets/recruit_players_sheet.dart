@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_snack.dart';
+import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/available_player_model.dart';
@@ -105,10 +107,7 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('$e'),
-        backgroundColor: AppColors.destructive,
-      ));
+      PateaSnack.error(context, '$e');
     }
   }
 
@@ -373,15 +372,7 @@ class _PlayerRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 9),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.card,
-              backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
-              child: photo.isEmpty
-                  ? Text(name.isEmpty ? '?' : name.substring(0, 1).toUpperCase(),
-                      style: AppTypography.headline(size: 14, weight: FontWeight.w800))
-                  : null,
-            ),
+            PateaAvatar(photoUrl: photo, seed: name, size: 40),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

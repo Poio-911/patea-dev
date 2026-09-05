@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -59,22 +60,12 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Jugador añadido al vestuario!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        PateaSnack.ok(context, '¡Jugador añadido al vestuario!');
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al crear jugador: $e'),
-            backgroundColor: AppColors.destructive,
-          ),
-        );
+        PateaSnack.error(context, 'Error al crear jugador: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

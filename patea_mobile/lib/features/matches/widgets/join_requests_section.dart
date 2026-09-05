@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/widgets/patea_snack.dart';
+import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,10 +45,7 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
       ));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('$e'),
-        backgroundColor: AppColors.destructive,
-      ));
+      PateaSnack.error(context, '$e');
     } finally {
       if (mounted) setState(() => _responding = null);
     }
@@ -121,19 +120,10 @@ class _RequestRow extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => context.push('/players/${request.uid}'),
-            child: CircleAvatar(
-              radius: 21,
-              backgroundColor: AppColors.card,
-              backgroundImage:
-                  request.photoURL.isNotEmpty ? NetworkImage(request.photoURL) : null,
-              child: request.photoURL.isEmpty
-                  ? Text(
-                      request.displayName.isEmpty
-                          ? '?'
-                          : request.displayName.substring(0, 1).toUpperCase(),
-                      style: AppTypography.headline(size: 15, weight: FontWeight.w800),
-                    )
-                  : null,
+            child: PateaAvatar(
+              photoUrl: request.photoURL,
+              seed: request.displayName,
+              size: 42,
             ),
           ),
           const SizedBox(width: 12),

@@ -1,4 +1,7 @@
 import 'dart:async';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_states.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -157,7 +160,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _players = []);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+        PateaSnack.error(context, '$e');
       }
     } finally {
       if (mounted) setState(() => _loadingPlayers = false);
@@ -331,7 +334,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => PateaError(error: e),
     );
   }
 }
@@ -410,11 +413,10 @@ class _FreeAgentCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: AppColors.cardSurface,
-              backgroundImage: player.photoUrl != null && player.photoUrl!.isNotEmpty ? NetworkImage(player.photoUrl!) : null,
-              child: player.photoUrl == null || player.photoUrl!.isEmpty ? Text(player.displayName.isNotEmpty ? player.displayName[0].toUpperCase() : '?', style: AppTypography.headline(size: 18)) : null,
+            PateaAvatar(
+              photoUrl: player.photoUrl,
+              seed: player.displayName,
+              size: 60,
             ),
             const SizedBox(height: 8),
             Text(player.displayName, style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -451,10 +453,10 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
       await ref.read(exploreServiceProvider).sendMatchInvitations(matchId: widget.matchId, playerIds: [widget.player.uid]);
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Invitación enviada!'), backgroundColor: AppColors.success));
+        PateaSnack.ok(context, '¡Invitación enviada!');
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+      if (mounted) PateaSnack.error(context, '$e');
     } finally {
       if (mounted) setState(() => _isInviting = false);
     }
@@ -471,11 +473,10 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: AppColors.cardSurface,
-                backgroundImage: player.photoUrl != null && player.photoUrl!.isNotEmpty ? NetworkImage(player.photoUrl!) : null,
-                child: player.photoUrl == null || player.photoUrl!.isEmpty ? Text(player.displayName.isNotEmpty ? player.displayName[0].toUpperCase() : '?', style: AppTypography.headline(size: 18)) : null,
+              PateaAvatar(
+                photoUrl: player.photoUrl,
+                seed: player.displayName,
+                size: 60,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -566,7 +567,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
         double? lat = _newLocation?.lat ?? (currentLocation?['lat'] as num?)?.toDouble();
         double? lng = _newLocation?.lng ?? (currentLocation?['lng'] as num?)?.toDouble();
         if (lat == null || lng == null) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buscá y elegí tu ubicación primero.'), backgroundColor: AppColors.destructive));
+          PateaSnack.error(context, 'Buscá y elegí tu ubicación primero.');
           return;
         }
         if (_newLocation != null) {
@@ -579,7 +580,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
         await ref.read(exploreServiceProvider).disableAvailability();
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.destructive));
+      if (mounted) PateaSnack.error(context, '$e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -826,7 +827,7 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => PateaError(error: e),
     );
   }
 }
@@ -862,10 +863,7 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
       ));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('$e'),
-        backgroundColor: AppColors.destructive,
-      ));
+      PateaSnack.error(context, '$e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_snack.dart';
+import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
@@ -79,10 +81,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('$e'),
-        backgroundColor: AppColors.destructive,
-      ));
+      PateaSnack.error(context, '$e');
     }
   }
 
@@ -224,18 +223,10 @@ class _TeamColumn extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              radius: 15,
-                              backgroundColor: AppColors.card,
-                              backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
-                              child: photo.isEmpty
-                                  ? Text(
-                                      p.displayName.isEmpty
-                                          ? '?'
-                                          : p.displayName.substring(0, 1).toUpperCase(),
-                                      style: AppTypography.headline(
-                                          size: 11, weight: FontWeight.w800))
-                                  : null,
+                            PateaAvatar(
+                              photoUrl: photo,
+                              seed: p.displayName,
+                              size: 30,
                             ),
                             const SizedBox(width: 8),
                             Expanded(

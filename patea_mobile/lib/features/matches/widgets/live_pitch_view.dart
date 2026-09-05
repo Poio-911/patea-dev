@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_avatar.dart';
 
 import '../../../core/models/match_model.dart';
 import '../../../core/theme/app_colors.dart';
@@ -163,11 +164,6 @@ class _PlayerDot extends StatelessWidget {
     return parts.first;
   }
 
-  Widget get _initial => Text(
-        _shortName.isEmpty ? '?' : _shortName.substring(0, 1).toUpperCase(),
-        style: AppTypography.headline(size: 13, weight: FontWeight.w800),
-      );
-
   @override
   Widget build(BuildContext context) {
     final photo = player.photoURL ?? '';
@@ -178,31 +174,16 @@ class _PlayerDot extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: color, width: 2),
-              ),
-              // Con `CircleAvatar(backgroundImage:)` una foto que no carga
-              // deja el círculo vacío y sin letra. Acá la inicial es el piso
-              // y la foto se dibuja encima sólo si carga de verdad.
-              child: ClipOval(
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  color: const Color(0xFF0C1017),
-                  alignment: Alignment.center,
-                  child: photo.isEmpty
-                      ? _initial
-                      : Image.network(
-                          photo,
-                          width: 34,
-                          height: 34,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stack) => _initial,
-                        ),
-                ),
-              ),
+            // La preocupacion que tenia el codigo de aca —que una foto que
+            // no carga deje el circulo vacio y sin letra— la resuelve
+            // PateaAvatar, y ademas cachea: en la cancha en vivo se redibuja
+            // seguido.
+            PateaAvatar(
+              photoUrl: photo,
+              seed: player.displayName,
+              size: 38,
+              borderColor: color,
+              borderWidth: 2,
             ),
             if (goals > 0)
               Positioned(

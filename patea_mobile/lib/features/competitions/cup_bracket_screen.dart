@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -13,12 +14,7 @@ class CupBracketScreen extends ConsumerWidget {
 
   Future<void> _showRecordResultDialog(BuildContext context, WidgetRef ref, BracketMatchModel match) async {
     if (match.team1Id == null || match.team2Id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Este partido aún no tiene ambos equipos definidos.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      PateaSnack.info(context, 'Este partido aún no tiene ambos equipos definidos.');
       return;
     }
 
