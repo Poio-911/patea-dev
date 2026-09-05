@@ -102,7 +102,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       builder: (sheetContext) => Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         decoration: const BoxDecoration(
-          color: Color(0xFF141B27),
+          color: AppColors.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SafeArea(
@@ -214,7 +214,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       builder: (sheetContext) => Container(
         height: 320,
         decoration: const BoxDecoration(
-          color: Color(0xFF141B27),
+          color: AppColors.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -499,7 +499,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF141A24),
+                          color: AppColors.card,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                         ),
@@ -656,7 +656,7 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF141A24),
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
@@ -700,7 +700,7 @@ class _ChoiceChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.16) : const Color(0xFF141A24),
+          color: selected ? color.withValues(alpha: 0.16) : AppColors.card,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? color : Colors.white.withValues(alpha: 0.12),

@@ -320,7 +320,7 @@ class _TeamBanner extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             accent.withValues(alpha: 0.28),
-            const Color(0xFF121822),
+            AppColors.background,
           ],
         ),
       ),
@@ -578,7 +578,7 @@ class _RosterTile extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 5),
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
           decoration: BoxDecoration(
-            color: const Color(0xFF121822),
+            color: AppColors.background,
             borderRadius: BorderRadius.circular(11),
             border: starter
                 ? const Border(
@@ -665,7 +665,7 @@ class _AgendaRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 5),
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF121822),
+          color: AppColors.background,
           borderRadius: BorderRadius.circular(11),
         ),
         child: Row(

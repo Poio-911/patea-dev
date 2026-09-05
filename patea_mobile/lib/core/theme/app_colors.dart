@@ -24,23 +24,23 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Fondos y Superficies
   @Deprecated('Usar context.c.background')
-  static const Color background = Color(0xFF0C1017);
+  static const Color background = Color(0xFF0B0E13);
   @Deprecated('Usar context.c.card')
-  static const Color card = Color(0xFF181F2B);
+  static const Color card = Color(0xFF181D25);
   @Deprecated('Usar context.c.cardSurface')
-  static const Color cardSurface = Color(0xFF20293A);
+  static const Color cardSurface = Color(0xFF29303D);
   @Deprecated('Usar context.c.popover')
-  static const Color popover = Color(0xFF131822);
+  static const Color popover = Color(0xFF14181F);
   @Deprecated('Usar context.c.border')
-  static const Color border = Color(0xFF45536D);
+  static const Color border = Color(0xFF47536B);
   @Deprecated('Usar context.c.input')
-  static const Color input = Color(0xFF384357);
+  static const Color input = Color(0xFF394356);
 
   // Acentos y Marca
   @Deprecated('Usar context.c.primary (o brandVolt si es decorativo)')
   static const Color voltNeon = Color(0xFFCCFF33);
   @Deprecated('Usar context.c.accent')
-  static const Color turquoise = Color(0xFF00E5CC);
+  static const Color turquoise = Color(0xFF00E6D2);
   @Deprecated('Usar context.c.accent')
   static const Color electricBlue = Color(0xFF1E90FF);
   @Deprecated('Usar context.c.destructive')
@@ -62,13 +62,13 @@ class AppColors {
 
   // Tiers de Cartas OVR
   @Deprecated('Usar context.c.eliteBorder')
-  static const Color eliteBorder = Color(0xFFF8FAFC);
+  static const Color eliteBorder = Color(0xFFF7F7F8);
   @Deprecated('Usar context.c.goldBorder')
   static const Color goldBorder = Color(0xFFFBC337);
   @Deprecated('Usar context.c.silverBorder')
-  static const Color silverBorder = Color(0xFFCBD5E1);
+  static const Color silverBorder = Color(0xFFC4C9D4);
   @Deprecated('Usar context.c.bronzeBorder')
-  static const Color bronzeBorder = Color(0xFFCD7F32);
+  static const Color bronzeBorder = Color(0xFFD18C47);
 
   // Posiciones
   @Deprecated('Usar context.c.posDel')

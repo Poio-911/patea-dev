@@ -28,21 +28,6 @@ import '../theme/app_typography.dart';
 class PateaUserMenuSheet extends ConsumerWidget {
   const PateaUserMenuSheet({super.key});
 
-  Color _getPositionColor(String pos) {
-    switch (pos.toUpperCase()) {
-      case 'DEL':
-        return AppColors.posDel;
-      case 'MED':
-        return AppColors.posMed;
-      case 'DEF':
-        return AppColors.posDef;
-      case 'POR':
-        return AppColors.posPor;
-      default:
-        return AppColors.voltNeon;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(authStateProvider).value;
@@ -121,7 +106,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                             style: AppTypography.headline(
                               size: 10,
                               weight: FontWeight.w800,
-                              color: _getPositionColor(position),
+                              color: AppColors.getPositionColor(position),
                             ),
                           ),
                         ],

@@ -87,7 +87,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               decoration: const BoxDecoration(
-                color: Color(0xFF141B27),
+                color: AppColors.popover,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: SafeArea(
@@ -129,7 +129,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     const SizedBox(height: 14),
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F141D),
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                       ),
@@ -220,7 +220,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
         decoration: BoxDecoration(
           color: selected
               ? AppColors.voltNeon.withValues(alpha: 0.16)
-              : const Color(0xFF0F141D),
+              : AppColors.background,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? AppColors.voltNeon : Colors.white.withValues(alpha: 0.12),

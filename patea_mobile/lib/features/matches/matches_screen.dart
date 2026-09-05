@@ -1139,7 +1139,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF141A24),
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isLive ? AppColors.destructive : theme.brandColor.withValues(alpha: 0.35),
@@ -1172,8 +1172,8 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        const Color(0xFF141A24).withValues(alpha: 0.95),
-                        const Color(0xFF141A24).withValues(alpha: 0.65),
+                        AppColors.card.withValues(alpha: 0.95),
+                        AppColors.card.withValues(alpha: 0.65),
                       ],
                     ),
                   ),
@@ -1378,7 +1378,7 @@ class _CompactMatchCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF141A24),
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
             boxShadow: [
@@ -1408,8 +1408,8 @@ class _CompactMatchCard extends StatelessWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        const Color(0xFF141A24).withValues(alpha: 0.95),
-                        const Color(0xFF141A24).withValues(alpha: 0.65),
+                        AppColors.card.withValues(alpha: 0.95),
+                        AppColors.card.withValues(alpha: 0.65),
                       ],
                     ),
                   ),

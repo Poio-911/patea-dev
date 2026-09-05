@@ -43,21 +43,6 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(60);
 
-  Color _getPositionColor(String pos) {
-    switch (pos.toUpperCase()) {
-      case 'DEL':
-        return AppColors.posDel;
-      case 'MED':
-        return AppColors.posMed;
-      case 'DEF':
-        return AppColors.posDef;
-      case 'POR':
-        return AppColors.posPor;
-      default:
-        return AppColors.voltNeon;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(authStateProvider).value;
@@ -231,7 +216,7 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                           style: AppTypography.headline(
                                             size: 10,
                                             weight: FontWeight.w800,
-                                            color: _getPositionColor(userPosition),
+                                            color: AppColors.getPositionColor(userPosition),
                                           ),
                                         ),
                                     ],

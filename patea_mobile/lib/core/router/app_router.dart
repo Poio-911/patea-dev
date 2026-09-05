@@ -306,7 +306,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
       builder: (sheetContext) => Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         decoration: const BoxDecoration(
-          color: Color(0xFF141B27),
+          color: AppColors.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(

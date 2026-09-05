@@ -49,7 +49,7 @@ class PushPermission {
         padding: EdgeInsets.fromLTRB(
             22, 18, 22, 18 + MediaQuery.of(ctx).padding.bottom),
         decoration: const BoxDecoration(
-          color: Color(0xFF141B27),
+          color: AppColors.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(

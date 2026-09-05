@@ -152,13 +152,13 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     fit: BoxFit.cover,
                     memCacheWidth: 780,
                     placeholder: (_, _) => Container(
-                      color: const Color(0xFF1E2636),
+                      color: AppColors.cardSurface,
                       child: const Center(
                         child: CircularProgressIndicator(color: AppColors.voltNeon),
                       ),
                     ),
                     errorWidget: (_, _, _) => Container(
-                      color: const Color(0xFF1E2636),
+                      color: AppColors.cardSurface,
                       child: Icon(Icons.broken_image_outlined,
                           color: AppColors.textMuted, size: 40),
                     ),

@@ -51,12 +51,12 @@ class PateaPageHeader extends StatelessWidget {
               margin: const EdgeInsets.only(top: 2, right: 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     AppColors.voltNeon,
-                    Color(0x4DCCFF00),
+                    AppColors.voltNeon.withValues(alpha: 0.30),
                   ],
                 ),
               ),

@@ -13,10 +13,9 @@ import 'package:flutter/material.dart';
 /// [PateaColors.game] y el bloque `:root` para [PateaColors.light]. Si hace
 /// falta un color nuevo, primero se lo busca ahí. No inventar colores acá.
 ///
-/// **[game] tiene hoy los valores que la app ya usaba, no los corregidos.** La
-/// Fase 0 no mueve un pixel a propósito; los que hay que ajustar contra
-/// `globals.css` están marcados `FASE 1 ->` en el comentario de cada campo, y
-/// se cambian juntos en un commit propio para que se pueda revertir solo.
+/// [game] ya está corregido contra `globals.css` (Fase 1). Diez valores
+/// habían derivado del original: `cardSurface` por 9, `silverBorder` por 13 y
+/// `bronzeBorder` por 21 puntos del canal más lejano, y el resto por menos.
 ///
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 @immutable
@@ -31,17 +30,17 @@ class PateaColors extends ThemeExtension<PateaColors> {
   final bool isDarkSurface;
 
   // Superficies
-  /// FASE 1 -> 0xFF0B0E13
+  /// Corregido contra globals.css en la Fase 1.
   final Color background;
-  /// FASE 1 -> 0xFF181D25
+  /// Corregido contra globals.css en la Fase 1.
   final Color card;
-  /// --secondary. FASE 1 -> 0xFF29303D
+  /// Corregido contra globals.css en la Fase 1.
   final Color cardSurface;
-  /// FASE 1 -> 0xFF14181F
+  /// Corregido contra globals.css en la Fase 1.
   final Color popover;
-  /// FASE 1 -> 0xFF47536B
+  /// Corregido contra globals.css en la Fase 1.
   final Color border;
-  /// FASE 1 -> 0xFF394356
+  /// Corregido contra globals.css en la Fase 1.
   final Color input;
 
   // Accion y marca
@@ -49,7 +48,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
   final Color primary;
   /// FASE 2 -> 0xFF141926 (--primary-foreground)
   final Color onPrimary;
-  /// turquesa / ambar. FASE 1 -> 0xFF00E6D2
+  /// Corregido contra globals.css en la Fase 1.
   final Color accent;
   /// la identidad, no el primario
   final Color brandVolt;
@@ -67,7 +66,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
   // Texto
   /// --foreground
   final Color textPrimary;
-  /// FASE 1 -> 0xFFB3BDCC
+  /// Corregido contra globals.css en la Fase 1.
   final Color textSecondary;
   /// FASE 1: se elimina, se funde en textSecondary
   final Color textMuted;
@@ -81,13 +80,13 @@ class PateaColors extends ThemeExtension<PateaColors> {
   final Color overlayStrong;
 
   // Tiers de OVR
-  /// FASE 1 -> 0xFFF7F7F8
+  /// Corregido contra globals.css en la Fase 1.
   final Color eliteBorder;
   /// --ovr-gold
   final Color goldBorder;
-  /// FASE 1 -> 0xFFC4C9D4
+  /// Corregido contra globals.css en la Fase 1.
   final Color silverBorder;
-  /// FASE 1 -> 0xFFD18C47
+  /// Corregido contra globals.css en la Fase 1.
   final Color bronzeBorder;
 
   // Posiciones
@@ -136,17 +135,17 @@ class PateaColors extends ThemeExtension<PateaColors> {
   static const game = PateaColors(
     isDarkSurface: true,
   // Superficies
-    background: Color(0xFF0C1017),
-    card: Color(0xFF181F2B),
-    cardSurface: Color(0xFF20293A),
-    popover: Color(0xFF131822),
-    border: Color(0xFF45536D),
-    input: Color(0xFF384357),
+    background: Color(0xFF0B0E13),
+    card: Color(0xFF181D25),
+    cardSurface: Color(0xFF29303D),
+    popover: Color(0xFF14181F),
+    border: Color(0xFF47536B),
+    input: Color(0xFF394356),
 
   // Accion y marca
     primary: Color(0xFFCCFF33),
     onPrimary: Color(0xFF000000),
-    accent: Color(0xFF00E5CC),
+    accent: Color(0xFF00E6D2),
     brandVolt: Color(0xFFCCFF33),
 
   // Semanticos
@@ -166,10 +165,10 @@ class PateaColors extends ThemeExtension<PateaColors> {
     overlayStrong: Color(0x33FFFFFF),
 
   // Tiers de OVR
-    eliteBorder: Color(0xFFF8FAFC),
+    eliteBorder: Color(0xFFF7F7F8),
     goldBorder: Color(0xFFFBC337),
-    silverBorder: Color(0xFFCBD5E1),
-    bronzeBorder: Color(0xFFCD7F32),
+    silverBorder: Color(0xFFC4C9D4),
+    bronzeBorder: Color(0xFFD18C47),
 
   // Posiciones
     posDel: Color(0xFFF47171),

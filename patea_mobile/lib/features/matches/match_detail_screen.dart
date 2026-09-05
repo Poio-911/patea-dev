@@ -1785,7 +1785,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
       height: MediaQuery.of(context).size.height * 0.82,
       padding: EdgeInsets.only(bottom: keyboardHeight),
       decoration: BoxDecoration(
-        color: const Color(0xFF10141C),
+        color: AppColors.background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
       ),

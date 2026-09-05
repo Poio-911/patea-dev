@@ -110,31 +110,11 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     return 'bronze';
   }
 
-  /// Colores por posición EXACTOS del tema `.game` (`--pos-del/med/def/por`
-  /// en globals.css: hues más pastel/claros que `AppColors.posDel` etc.,
-  /// que son del tema claro por defecto y se usan en otras pantallas — acá
-  /// se define aparte a propósito, para no tocar ese constante global.
-  Color _getPositionColor(String pos) {
-    switch (pos.toUpperCase()) {
-      case 'DEL':
-        return const Color(0xFFF47171); // hsl(0,85%,70%)
-      case 'MED':
-        return const Color(0xFFB87BF4); // hsl(270,85%,72%)
-      case 'DEF':
-        return const Color(0xFF7BB8F4); // hsl(210,85%,72%)
-      case 'POR':
-        return const Color(0xFFF7B36E); // hsl(30,90%,70%)
-      default:
-        return AppColors.voltNeon;
-    }
-  }
-
-
   @override
   Widget build(BuildContext context) {
     final player = widget.player;
     final tier = _getOvrTier(player.ovr);
-    final posColor = _getPositionColor(player.position);
+    final posColor = AppColors.getPositionColor(player.position);
 
     final statsList = [
       {'key': 'PAC', 'label': 'RIT', 'val': player.pac},
@@ -155,37 +135,37 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
 
     switch (tier) {
       case 'elite':
-        cardBorder = Border.all(color: const Color(0xFFC8D2F0).withValues(alpha: 0.65), width: 1.5);
+        cardBorder = Border.all(color: AppColors.eliteBorder.withValues(alpha: 0.65), width: 1.5);
         auraAlignment = Alignment.topCenter;
-        auraColors = [const Color(0xFFD2DEFF).withValues(alpha: 0.62), Colors.transparent];
-        avatarBorderColor = const Color(0xFFC8D2F0);
+        auraColors = [AppColors.eliteBorder.withValues(alpha: 0.62), Colors.transparent];
+        avatarBorderColor = AppColors.eliteBorder;
         avatarBorderAlpha = 0.88;
-        avatarGlow = BoxShadow(color: const Color(0xFFC8D2F0).withValues(alpha: 0.60), blurRadius: 8);
+        avatarGlow = BoxShadow(color: AppColors.eliteBorder.withValues(alpha: 0.60), blurRadius: 8);
         break;
 
       case 'gold':
-        cardBorder = Border.all(color: const Color(0xFFFBC437).withValues(alpha: 0.55), width: 1.2);
+        cardBorder = Border.all(color: AppColors.goldBorder.withValues(alpha: 0.55), width: 1.2);
         auraAlignment = Alignment.topRight;
-        auraColors = [const Color(0xFFFBC437).withValues(alpha: 0.32), Colors.transparent];
-        avatarBorderColor = const Color(0xFFFBC437);
+        auraColors = [AppColors.goldBorder.withValues(alpha: 0.32), Colors.transparent];
+        avatarBorderColor = AppColors.goldBorder;
         avatarBorderAlpha = 0.85;
-        avatarGlow = BoxShadow(color: const Color(0xFFFBBF24).withValues(alpha: 0.40), blurRadius: 8);
+        avatarGlow = BoxShadow(color: AppColors.goldBorder.withValues(alpha: 0.40), blurRadius: 8);
         break;
 
       case 'silver':
-        cardBorder = Border.all(color: const Color(0xFFCBD5E1).withValues(alpha: 0.45), width: 1.0);
+        cardBorder = Border.all(color: AppColors.silverBorder.withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.topCenter;
-        auraColors = [const Color(0xFFCBD5E1).withValues(alpha: 0.25), Colors.transparent];
-        avatarBorderColor = const Color(0xFFCBD5E1);
+        auraColors = [AppColors.silverBorder.withValues(alpha: 0.25), Colors.transparent];
+        avatarBorderColor = AppColors.silverBorder;
         avatarBorderAlpha = 0.75;
         avatarGlow = null; // el glow separa oro y elite del resto
         break;
 
       default: // bronze
-        cardBorder = Border.all(color: const Color(0xFFCD7F32).withValues(alpha: 0.45), width: 1.0);
+        cardBorder = Border.all(color: AppColors.bronzeBorder.withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.bottomLeft;
-        auraColors = [const Color(0xFFCD7F32).withValues(alpha: 0.28), Colors.transparent];
-        avatarBorderColor = const Color(0xFFCD7F32);
+        auraColors = [AppColors.bronzeBorder.withValues(alpha: 0.28), Colors.transparent];
+        avatarBorderColor = AppColors.bronzeBorder;
         avatarBorderAlpha = 0.70;
         avatarGlow = null; // idem bronce
         break;
@@ -248,7 +228,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               builder: (context, constraints) {
                 final cardH = constraints.maxHeight;
                 return ColoredBox(
-                  color: const Color(0xFF141923), // bg-card
+                  color: AppColors.card,
                   child: Stack(
                     children: [
                       // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`).
@@ -277,7 +257,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               gradient: RadialGradient(
                                 center: Alignment.center,
                                 radius: 1.4,
-                                colors: [const Color(0xFFD7E0FF).withValues(alpha: 0.22), Colors.transparent],
+                                colors: [AppColors.eliteBorder.withValues(alpha: 0.22), Colors.transparent],
                               ),
                             ),
                           ),
@@ -581,7 +561,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     // decide por luminancia y no por tier para que siga andando si algún día
     // cambian los colores.
     final onMetal =
-        tierColor.computeLuminance() > 0.45 ? const Color(0xFF10141C) : Colors.white;
+        tierColor.computeLuminance() > 0.45 ? AppColors.background : Colors.white;
 
     return Transform.translate(
       // Sale del padding del contenido (10) para tocar el borde de la carta.
@@ -731,7 +711,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                 weight: FontWeight.w800,
                 color: isSorted
                     ? AppColors.voltNeon
-                    : const Color(0xFF94A3B8),
+                    : AppColors.textSecondary,
               ),
             ),
           ),

@@ -114,7 +114,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       builder: (ctx) => Container(
         height: 300,
         decoration: const BoxDecoration(
-          color: Color(0xFF141B27),
+          color: AppColors.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -178,7 +178,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       expand: false,
       builder: (context, scrollController) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF141B27),
+          color: AppColors.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -310,7 +310,7 @@ class _RosterRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F141D),
+          color: AppColors.background,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(

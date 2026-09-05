@@ -2,58 +2,76 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// El trinquete de la migración de `AppColors` a `PateaColors`.
+/// El trinquete de la migración al tema.
 ///
 /// La idea original era medir el avance con el contador de `flutter analyze`,
-/// marcando `AppColors` como `@Deprecated`. **No funciona**: en esta versión
-/// del SDK (Dart 3.11) el analizador no reporta el uso de algo deprecado
-/// dentro del mismo paquete, ni con la clase ni con cada miembro anotados, ni
-/// habilitando `deprecated_member_use_from_same_package` — se verificó con un
-/// archivo de prueba que usaba `AppColors.background` y no salió ni un aviso.
+/// marcando `AppColors` como `@Deprecated`. **No funciona**: en Dart 3.11 el
+/// analizador no reporta el uso de algo deprecado dentro del mismo paquete, ni
+/// con la clase anotada, ni con cada miembro, ni habilitando
+/// `deprecated_member_use_from_same_package` — se verificó con un archivo que
+/// usaba `AppColors.background` y no salió ni un aviso.
 ///
 /// Así que el contador es este test, y de paso hace algo que el analizador no
-/// haría: **falla si el número sube**. Un archivo nuevo no puede volver a
-/// tomar colores de las constantes.
+/// haría: **falla si el número sube**.
 ///
-/// Cómo se usa: cada vez que se migra un archivo, baja [_presupuesto] al
-/// número que imprime el test. Cuando llegue a 0 se borra `app_colors.dart` y
-/// este archivo con él.
+/// **Qué cuenta, y por qué no sólo `AppColors`.** La primera versión contaba
+/// nada más los usos de `AppColors`, y falló apenas la Fase 1 reemplazó 36
+/// literales sueltos por tokens: cambiar `Color(0xFF141A24)` por
+/// `AppColors.card` es un avance, pero sumaba uno al contador. Lo que hay que
+/// medir no es "cuántas veces se nombra AppColors" sino **cuántos colores no
+/// salen del tema**, que es la suma de las tres formas de esquivarlo:
+///
+///   1. `AppColors.<token>`  — constantes, no cambian de tema
+///   2. `Color(0x...)`       — literales sueltos
+///   3. `Colors.white/black` — absolutos, no sobreviven al tema claro
+///
+/// Sólo la migración a `context.c` baja ese número. Cuando llegue a 0 se borra
+/// `app_colors.dart` y este archivo con él.
 void main() {
-  // Al cerrar la Fase 0.
-  const presupuesto = 1229;
+  // Al cerrar la Fase 1. Detalle: AppColors 1265 · literales 43 · absolutos 219.
+  const presupuesto = 1527;
 
-  test('los usos de AppColors sólo pueden bajar', () {
-    final lib = Directory('lib');
-    final usos = <String, int>{};
-    var total = 0;
+  test('los colores fuera del tema sólo pueden bajar', () {
+    final patrones = <String, RegExp>{
+      'AppColors': RegExp(r'AppColors\.[a-zA-Z]'),
+      'literales': RegExp(r'Color\(0x'),
+      'absolutos': RegExp(r'Colors\.(white|black)'),
+    };
+    final totales = {for (final k in patrones.keys) k: 0};
+    final porArchivo = <String, int>{};
 
-    for (final f in lib.listSync(recursive: true).whereType<File>()) {
-      if (!f.path.endsWith('.dart')) continue;
-      if (f.path.endsWith('app_colors.dart')) continue;
-      final n = RegExp(r'AppColors\.[a-zA-Z]')
-          .allMatches(f.readAsStringSync())
-          .length;
-      if (n > 0) {
-        usos[f.path] = n;
-        total += n;
-      }
+    for (final f in Directory('lib').listSync(recursive: true).whereType<File>()) {
+      final path = f.path.replaceAll(r'\', '/');
+      if (!path.endsWith('.dart')) continue;
+      // `core/theme/` es justamente donde los colores tienen que estar.
+      if (path.contains('lib/core/theme/')) continue;
+
+      final src = f.readAsStringSync();
+      var n = 0;
+      patrones.forEach((nombre, re) {
+        final c = re.allMatches(src).length;
+        totales[nombre] = totales[nombre]! + c;
+        n += c;
+      });
+      if (n > 0) porArchivo[path] = n;
     }
 
-    final top = usos.entries.toList()
+    final total = totales.values.reduce((a, b) => a + b);
+    final top = porArchivo.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    final detalle = top.take(10).map((e) => '  ${e.value}  ${e.key}').join('\n');
 
     // ignore: avoid_print
-    print('AppColors: $total usos en ${usos.length} archivos '
-        '(presupuesto $presupuesto)\n$detalle');
+    print('Colores fuera del tema: $total / $presupuesto\n'
+        '  ${totales.entries.map((e) => '${e.key} ${e.value}').join(' · ')}\n'
+        '${top.take(8).map((e) => '  ${e.value}  ${e.key}').join('\n')}');
 
     expect(
       total,
       lessThanOrEqualTo(presupuesto),
-      reason: 'Hay $total usos de AppColors y el presupuesto es $presupuesto.\n'
-          'Un archivo nuevo no debería tomar colores de las constantes: usá\n'
-          '`context.c`. Si el aumento es a propósito, subí el presupuesto y\n'
-          'dejá dicho por qué.',
+      reason: 'Hay $total colores fuera del tema y el presupuesto es '
+          '$presupuesto.\nUn archivo nuevo debería tomarlos de `context.c`. '
+          'Si el aumento es a propósito,\nsubí el presupuesto y dejá dicho por '
+          'qué.',
     );
   });
 }
