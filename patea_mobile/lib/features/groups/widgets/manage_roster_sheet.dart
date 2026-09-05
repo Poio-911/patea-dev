@@ -139,7 +139,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                         i == 0 ? 'sin número' : '$i',
                         style: AppTypography.sportNumber(
                           size: i == 0 ? 16 : 24,
-                          color: i == 0 ? AppColors.textMuted : AppColors.textPrimary,
+                          color: i == 0 ? AppColors.textSecondary : AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -188,7 +188,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
               width: 48,
               height: 5,
               decoration: BoxDecoration(
-                color: AppColors.textMuted.withValues(alpha: 0.3),
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -204,7 +204,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                             style: AppTypography.headline(size: 19, weight: FontWeight.w800)),
                         Text(
                           '$_starterCount ${_starterCount == 1 ? 'titular' : 'titulares'} · $_subCount ${_subCount == 1 ? 'suplente' : 'suplentes'}',
-                          style: AppTypography.body(size: 12, color: AppColors.textMuted),
+                          style: AppTypography.body(size: 12, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -321,7 +321,7 @@ class _RosterRow extends StatelessWidget {
               child: Icon(
                 inTeam ? Icons.check_circle : Icons.add_circle_outline,
                 size: 21,
-                color: inTeam ? AppColors.voltNeon : AppColors.textMuted,
+                color: inTeam ? AppColors.voltNeon : AppColors.textSecondary,
               ),
             ),
             const SizedBox(width: 11),
@@ -352,7 +352,7 @@ class _RosterRow extends StatelessWidget {
                     style: AppTypography.code(
                       size: 9,
                       weight: FontWeight.w700,
-                      color: entry.starter ? AppColors.voltNeon : AppColors.textMuted,
+                      color: entry.starter ? AppColors.voltNeon : AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -379,7 +379,7 @@ class _RosterRow extends StatelessWidget {
                     entry.number == 0 ? '—' : '${entry.number}',
                     style: AppTypography.sportNumber(
                       size: 14,
-                      color: entry.number == 0 ? AppColors.textMuted : AppColors.textPrimary,
+                      color: entry.number == 0 ? AppColors.textSecondary : AppColors.textPrimary,
                     ),
                   ),
                 ),

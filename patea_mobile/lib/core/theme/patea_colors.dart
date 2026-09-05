@@ -68,8 +68,6 @@ class PateaColors extends ThemeExtension<PateaColors> {
   final Color textPrimary;
   /// Corregido contra globals.css en la Fase 1.
   final Color textSecondary;
-  /// FASE 1: se elimina, se funde en textSecondary
-  final Color textMuted;
 
   // Veladuras (nuevas, sin uso hasta la Fase 2)
   /// relleno apenas perceptible
@@ -117,7 +115,6 @@ class PateaColors extends ThemeExtension<PateaColors> {
     required this.info,
     required this.textPrimary,
     required this.textSecondary,
-    required this.textMuted,
     required this.overlaySubtle,
     required this.overlayLine,
     required this.overlayStrong,
@@ -156,8 +153,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
 
   // Texto
     textPrimary: Color(0xFFF8FAFC),
-    textSecondary: Color(0xFF94A3B8),
-    textMuted: Color(0xFF64748B),
+    textSecondary: Color(0xFFB3BDCC),
 
   // Veladuras (nuevas, sin uso hasta la Fase 2)
     overlaySubtle: Color(0x0FFFFFFF),
@@ -203,7 +199,6 @@ class PateaColors extends ThemeExtension<PateaColors> {
   // Texto
     textPrimary: Color(0xFF020817),
     textSecondary: Color(0xFF64748B),
-    textMuted: Color(0xFF94A3B8),
 
   // Veladuras (nuevas, sin uso hasta la Fase 2)
     overlaySubtle: Color(0x0A000000),
@@ -264,7 +259,6 @@ class PateaColors extends ThemeExtension<PateaColors> {
     Color? info,
     Color? textPrimary,
     Color? textSecondary,
-    Color? textMuted,
     Color? overlaySubtle,
     Color? overlayLine,
     Color? overlayStrong,
@@ -295,7 +289,6 @@ class PateaColors extends ThemeExtension<PateaColors> {
       info: info ?? this.info,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
-      textMuted: textMuted ?? this.textMuted,
       overlaySubtle: overlaySubtle ?? this.overlaySubtle,
       overlayLine: overlayLine ?? this.overlayLine,
       overlayStrong: overlayStrong ?? this.overlayStrong,
@@ -333,7 +326,6 @@ class PateaColors extends ThemeExtension<PateaColors> {
       info: Color.lerp(info, other.info, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
-      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
       overlaySubtle: Color.lerp(overlaySubtle, other.overlaySubtle, t)!,
       overlayLine: Color.lerp(overlayLine, other.overlayLine, t)!,
       overlayStrong: Color.lerp(overlayStrong, other.overlayStrong, t)!,

@@ -41,7 +41,7 @@ class MatchClipsView extends ConsumerWidget {
                   style: AppTypography.headline(
                       size: 11,
                       weight: FontWeight.w800,
-                      color: AppColors.textMuted,
+                      color: AppColors.textSecondary,
                       letterSpacing: 1.2)),
             ),
             if (canUpload)
@@ -64,7 +64,7 @@ class MatchClipsView extends ConsumerWidget {
         if (clips.isEmpty)
           Text(
             'Cuando pase algo que valga la pena, grabá veinte segundos y quedan acá.',
-            style: AppTypography.body(size: 12, color: AppColors.textMuted),
+            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
           )
         else
           SizedBox(
@@ -123,7 +123,7 @@ class _ClipChip extends StatelessWidget {
             Text(clip.uploaderName.isEmpty ? 'Clip' : 'por ${clip.uploaderName}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(size: 10, color: AppColors.textMuted)),
+                style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -255,7 +255,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
               style: AppTypography.headline(
                   size: 12,
                   weight: FontWeight.w800,
-                  color: AppColors.textMuted,
+                  color: AppColors.textSecondary,
                   letterSpacing: 1.2)),
           const SizedBox(height: 14),
 
@@ -281,7 +281,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
             ),
             const SizedBox(height: 10),
             Text('Hasta 30 segundos.',
-                style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
           ] else ...[
             Row(
               children: [
@@ -297,7 +297,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
                   TextButton(
                     onPressed: () => setState(() => _file = null),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.textMuted,
+                      foregroundColor: AppColors.textSecondary,
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -317,7 +317,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
                 style: AppTypography.headline(
                     size: 10,
                     weight: FontWeight.w800,
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary,
                     letterSpacing: 1)),
             const SizedBox(height: 8),
             SizedBox(
@@ -361,7 +361,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
               const SizedBox(height: 8),
               Text('Subiendo… ${(_progress * 100).round()}%',
                   textAlign: TextAlign.center,
-                  style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                  style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
             ] else
               FilledButton(
                 onPressed: _upload,
@@ -400,7 +400,7 @@ class _MinuteRow extends StatelessWidget {
       children: [
         Text('MINUTO',
             style: AppTypography.headline(
-                size: 10, weight: FontWeight.w800, color: AppColors.textMuted, letterSpacing: 1)),
+                size: 10, weight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 1)),
         const Spacer(),
         IconButton(
           onPressed: enabled && minute > 0 ? () => onChanged(minute - 1) : null,
@@ -411,7 +411,7 @@ class _MinuteRow extends StatelessWidget {
           width: 44,
           child: Text("$minute'",
               textAlign: TextAlign.center,
-              style: AppTypography.code(color: AppColors.textMuted, size: 17, weight: FontWeight.w800)),
+              style: AppTypography.code(color: AppColors.textSecondary, size: 17, weight: FontWeight.w800)),
         ),
         IconButton(
           onPressed: enabled && minute < 130 ? () => onChanged(minute + 1) : null,
@@ -569,7 +569,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
                   IconButton(
                     onPressed: _delete,
                     icon: const Icon(Icons.delete_outline, size: 20),
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary,
                   ),
               ],
             ),
@@ -579,7 +579,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Text('No se pudo reproducir el clip.\n$_error',
                     textAlign: TextAlign.center,
-                    style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
               )
             else if (controller == null)
               const Padding(
@@ -610,7 +610,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
               const SizedBox(height: 12),
               Text('Grabado por ${widget.clip.uploaderName}',
                   textAlign: TextAlign.center,
-                  style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                  style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
             ],
           ],
         ),

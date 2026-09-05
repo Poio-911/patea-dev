@@ -33,7 +33,7 @@ class OvrProgressionChart extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
             'Aún no tenés partidos evaluados. ¡Jugá y evaluá tus partidos para ver tu progresión!',
-            style: AppTypography.body(size: 12, color: AppColors.textMuted),
+            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ),
@@ -101,7 +101,7 @@ class _MiniStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+        Text(label, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
         Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
       ],
     );

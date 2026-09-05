@@ -102,7 +102,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                         height: 5,
                         margin: const EdgeInsets.only(bottom: 18),
                         decoration: BoxDecoration(
-                          color: AppColors.textMuted.withValues(alpha: 0.3),
+                          color: AppColors.textSecondary.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
@@ -153,7 +153,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text('POSICIÓN',
-                        style: AppTypography.code(size: 10, color: AppColors.textMuted)),
+                        style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -171,7 +171,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text('ORDENAR POR',
-                        style: AppTypography.code(size: 10, color: AppColors.textMuted)),
+                        style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -331,7 +331,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       child: Center(
                         child: Text(
                           'No hay jugadores que coincidan con la búsqueda.',
-                          style: AppTypography.body(size: 13, color: AppColors.textMuted),
+                          style: AppTypography.body(size: 13, color: AppColors.textSecondary),
                         ),
                       ),
                     ),

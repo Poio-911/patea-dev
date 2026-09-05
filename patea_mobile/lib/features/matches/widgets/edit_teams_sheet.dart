@@ -117,7 +117,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
                     style: AppTypography.headline(
                         size: 12,
                         weight: FontWeight.w800,
-                        color: AppColors.textMuted,
+                        color: AppColors.textSecondary,
                         letterSpacing: 1.2)),
                 const SizedBox(height: 4),
                 Text('Tocá a un jugador para pasarlo al otro equipo.',
@@ -197,7 +197,7 @@ class _TeamColumn extends StatelessWidget {
                   style: AppTypography.headline(size: 13, weight: FontWeight.w800)),
               const SizedBox(height: 2),
               Text('${players.length} · media $avg',
-                  style: AppTypography.body(size: 10, color: AppColors.textMuted)),
+                  style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
             ],
           ),
         ),
@@ -208,7 +208,7 @@ class _TeamColumn extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     child: Text('Sin jugadores',
                         textAlign: TextAlign.center,
-                        style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                        style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                   ),
                 )
               : ListView.builder(
@@ -250,7 +250,7 @@ class _TeamColumn extends StatelessWidget {
                                   style: AppTypography.code(
                                       size: 11,
                                       weight: FontWeight.w800,
-                                      color: AppColors.textMuted)),
+                                      color: AppColors.textSecondary)),
                           ],
                         ),
                       ),

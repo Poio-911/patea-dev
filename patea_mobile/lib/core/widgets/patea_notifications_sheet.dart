@@ -205,7 +205,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                             'No tenés notificaciones pendientes',
                             style: AppTypography.body(
                               size: 13,
-                              color: AppColors.textMuted,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -317,7 +317,7 @@ class _NotificationRow extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       when,
-                      style: AppTypography.body(size: 10, color: AppColors.textMuted),
+                      style: AppTypography.body(size: 10, color: AppColors.textSecondary),
                     ),
                   ],
                 ],

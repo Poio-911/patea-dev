@@ -139,7 +139,7 @@ class _Unit extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 4, left: 1),
           child: Text(
             label,
-            style: AppTypography.code(size: (baseSize * 0.3).clamp(8.0, 12.0), color: AppColors.textMuted),
+            style: AppTypography.code(size: (baseSize * 0.3).clamp(8.0, 12.0), color: AppColors.textSecondary),
           ),
         ),
       ],
@@ -166,7 +166,7 @@ class _Sep extends StatelessWidget {
         ':',
         style: AppTypography.sportNumber(
           size: baseSize * 0.65,
-          color: color?.withValues(alpha: 0.6) ?? AppColors.textMuted,
+          color: color?.withValues(alpha: 0.6) ?? AppColors.textSecondary,
         ),
       ),
     );

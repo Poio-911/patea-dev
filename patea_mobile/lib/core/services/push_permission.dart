@@ -61,7 +61,7 @@ class PushPermission {
               height: 5,
               margin: const EdgeInsets.only(bottom: 18),
               decoration: BoxDecoration(
-                color: AppColors.textMuted.withValues(alpha: 0.3),
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -80,14 +80,14 @@ class PushPermission {
                   child: TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.textMuted,
+                      foregroundColor: AppColors.textSecondary,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                     ),
                     child: Text('Ahora no',
                         style: AppTypography.headline(
                             size: 13,
                             weight: FontWeight.w600,
-                            color: AppColors.textMuted)),
+                            color: AppColors.textSecondary)),
                   ),
                 ),
                 const SizedBox(width: 10),

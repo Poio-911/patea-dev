@@ -149,13 +149,13 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
         error: (e, _) => Center(
           child: Text('No se pudo cargar el partido.\n$e',
               textAlign: TextAlign.center,
-              style: AppTypography.body(color: AppColors.textMuted)),
+              style: AppTypography.body(color: AppColors.textSecondary)),
         ),
         data: (match) {
           if (match == null) {
             return Center(
               child: Text('Partido no encontrado',
-                  style: AppTypography.body(color: AppColors.textMuted)),
+                  style: AppTypography.body(color: AppColors.textSecondary)),
             );
           }
 
@@ -292,7 +292,7 @@ class _StatusLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final live = match.status == 'active';
-    final color = live ? AppColors.destructive : AppColors.textMuted;
+    final color = live ? AppColors.destructive : AppColors.textSecondary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -316,11 +316,11 @@ class _StatusLine extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             clock.display,
-            style: AppTypography.code(color: AppColors.textMuted, size: 13, weight: FontWeight.w800),
+            style: AppTypography.code(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800),
           ),
           if (match.timerPaused) ...[
             const SizedBox(width: 6),
-            Icon(Icons.pause_rounded, size: 13, color: AppColors.textMuted),
+            Icon(Icons.pause_rounded, size: 13, color: AppColors.textSecondary),
           ],
         ],
       ],
@@ -344,7 +344,7 @@ class _TeamColumn extends StatelessWidget {
           JerseyWidget(jersey: jersey, size: 54)
         else
           Icon(Icons.shield_outlined,
-              size: 40, color: AppColors.textMuted.withValues(alpha: 0.5)),
+              size: 40, color: AppColors.textSecondary.withValues(alpha: 0.5)),
         const SizedBox(height: 8),
         Text(
           team?.name ?? fallback,
@@ -516,7 +516,7 @@ class _QuickEvents extends StatelessWidget {
         Text('REGISTRAR',
             style: AppTypography.headline(
                 size: 11, weight: FontWeight.w800,
-                color: AppColors.textMuted, letterSpacing: 1.2)),
+                color: AppColors.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -578,7 +578,7 @@ class _WatchingLine extends ConsumerWidget {
           presence.watching == 1
               ? '1 siguiendo el partido'
               : '${presence.watching} siguiendo el partido',
-          style: AppTypography.body(size: 11.5, color: AppColors.textMuted),
+          style: AppTypography.body(size: 11.5, color: AppColors.textSecondary),
         ),
       ],
     );

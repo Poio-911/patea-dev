@@ -87,7 +87,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.input.withValues(alpha: 0.35),
-        hintStyle: AppTypography.body(color: c.textMuted),
+        hintStyle: AppTypography.body(color: c.textSecondary),
         labelStyle: AppTypography.body(color: c.textSecondary),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -223,7 +223,7 @@ class AppTheme {
 
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? c.primary : c.textMuted,
+          (s) => s.contains(WidgetState.selected) ? c.primary : c.textSecondary,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)

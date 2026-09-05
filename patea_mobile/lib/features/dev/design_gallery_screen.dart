@@ -17,7 +17,8 @@ import '../../core/theme/patea_colors.dart';
 ///
 /// El contraste se calcula en vivo con la fórmula de WCAG y se marca en rojo lo
 /// que no llega a 4,5:1. Un número acá vale más que una opinión: el defecto que
-/// originó todo este trabajo (`textMuted` a 3,48:1) habría saltado a la vista.
+/// originó todo este trabajo —`textMuted` a 3,48:1— habría saltado a la vista
+/// el primer día.
 ///
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 class DesignGalleryScreen extends StatefulWidget {
@@ -342,7 +343,6 @@ class _ContrastBlock extends StatelessWidget {
           const SizedBox(height: 6),
           row('textPrimary', c.textPrimary),
           row('textSecondary', c.textSecondary),
-          row('textMuted', c.textMuted),
           row('primary', c.primary),
         ],
       ),

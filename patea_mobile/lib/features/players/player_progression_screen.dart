@@ -30,14 +30,14 @@ class PlayerProgressionScreen extends ConsumerWidget {
       body: playerAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
         error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textMuted)),
+          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textSecondary)),
         ),
         data: (player) {
           if (player == null) {
             return Center(
               child: Text(
                 'Jugador no encontrado.',
-                style: AppTypography.body(color: AppColors.textMuted),
+                style: AppTypography.body(color: AppColors.textSecondary),
               ),
             );
           }
@@ -49,7 +49,7 @@ class PlayerProgressionScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 'Tu evolución a lo largo de los partidos evaluados.',
-                style: AppTypography.body(size: 13, color: AppColors.textMuted),
+                style: AppTypography.body(size: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 22),
               Container(
@@ -66,7 +66,7 @@ class PlayerProgressionScreen extends ConsumerWidget {
                   ),
                   error: (err, _) => Text(
                     'No se pudo cargar la progresión.',
-                    style: AppTypography.body(size: 12, color: AppColors.textMuted),
+                    style: AppTypography.body(size: 12, color: AppColors.textSecondary),
                   ),
                   data: (history) => OvrProgressionChart(
                     player: player,

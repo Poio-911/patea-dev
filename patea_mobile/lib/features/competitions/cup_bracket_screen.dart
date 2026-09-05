@@ -148,7 +148,7 @@ class CupBracketScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.emoji_events_outlined, size: 56, color: AppColors.textMuted),
+                  const Icon(Icons.emoji_events_outlined, size: 56, color: AppColors.textSecondary),
                   const SizedBox(height: 14),
                   Text(
                     'Bracket no generado aún',
@@ -156,7 +156,7 @@ class CupBracketScreen extends ConsumerWidget {
                   ),
                   Text(
                     'Iniciá la copa desde el panel para sortear las llaves',
-                    style: AppTypography.body(size: 13, color: AppColors.textMuted),
+                    style: AppTypography.body(size: 13, color: AppColors.textSecondary),
                   ),
                 ],
               ),

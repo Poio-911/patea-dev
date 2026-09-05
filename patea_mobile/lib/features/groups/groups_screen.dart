@@ -201,9 +201,9 @@ class _NoActiveGroupView extends ConsumerWidget {
                 decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   children: [
-                    Icon(Icons.groups_2_outlined, size: 40, color: AppColors.textMuted),
+                    Icon(Icons.groups_2_outlined, size: 40, color: AppColors.textSecondary),
                     const SizedBox(height: 10),
-                    Text('Todavía no formás parte de ningún grupo', style: AppTypography.body(size: 13, color: AppColors.textMuted), textAlign: TextAlign.center),
+                    Text('Todavía no formás parte de ningún grupo', style: AppTypography.body(size: 13, color: AppColors.textSecondary), textAlign: TextAlign.center),
                   ],
                 ),
               );
@@ -234,7 +234,7 @@ class _NoActiveGroupView extends ConsumerWidget {
                               Icon(Icons.shield_outlined, color: AppColors.voltNeon),
                               const SizedBox(width: 12),
                               Expanded(child: Text(g.name, style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700))),
-                              Icon(Icons.chevron_right, color: AppColors.textMuted),
+                              Icon(Icons.chevron_right, color: AppColors.textSecondary),
                             ],
                           ),
                         ),
@@ -368,7 +368,7 @@ class _ActiveGroupView extends ConsumerWidget {
                         canCreateTeam
                             ? 'Todavía no hay equipos. Creá el primero.'
                             : 'Todavía no hay equipos en este grupo.',
-                        style: AppTypography.body(size: 12, color: AppColors.textMuted),
+                        style: AppTypography.body(size: 12, color: AppColors.textSecondary),
                       ),
                     );
                   }
@@ -397,13 +397,13 @@ class _ActiveGroupView extends ConsumerWidget {
                                           Text(
                                             _rosterLine(team),
                                             style: AppTypography.body(
-                                                size: 11, color: AppColors.textMuted),
+                                                size: 11, color: AppColors.textSecondary),
                                           ),
                                         ],
                                       ),
                                     ),
                                     Icon(Icons.chevron_right,
-                                        size: 18, color: AppColors.textMuted),
+                                        size: 18, color: AppColors.textSecondary),
                                   ],
                                 ),
                               ),
@@ -424,7 +424,7 @@ class _ActiveGroupView extends ConsumerWidget {
               title: 'EN AGENDA',
               child: upcoming.isEmpty
                   ? Text('No hay partidos próximos.',
-                      style: AppTypography.body(size: 12, color: AppColors.textMuted))
+                      style: AppTypography.body(size: 12, color: AppColors.textSecondary))
                   : Column(
                       children: upcoming
                           .take(5)
@@ -451,7 +451,7 @@ class _ActiveGroupView extends ConsumerWidget {
                     ),
               child: recent.isEmpty
                   ? Text('Todavía no jugaron ningún partido.',
-                      style: AppTypography.body(size: 12, color: AppColors.textMuted))
+                      style: AppTypography.body(size: 12, color: AppColors.textSecondary))
                   : Column(
                       children: recent.take(5).map((m) {
                         final mvp = m.bestPlayerId == null
@@ -582,7 +582,7 @@ class _GroupSwitchRow extends StatelessWidget {
             Icon(
               active ? Icons.radio_button_checked : Icons.radio_button_off,
               size: 18,
-              color: active ? AppColors.voltNeon : AppColors.textMuted,
+              color: active ? AppColors.voltNeon : AppColors.textSecondary,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -637,7 +637,7 @@ class _MatchLine extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(trailing,
-                style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -691,7 +691,7 @@ class _PlayedMatchRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(_fmtDate(match.date),
-                    style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                    style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
               ],
             ),
             if (mvpName != null) ...[
@@ -706,7 +706,7 @@ class _PlayedMatchRow extends StatelessWidget {
                         : null,
                     child: mvpPhoto == null || mvpPhoto!.isEmpty
                         ? Text(mvpName![0].toUpperCase(),
-                            style: AppTypography.code(color: AppColors.textMuted, size: 8))
+                            style: AppTypography.code(color: AppColors.textSecondary, size: 8))
                         : null,
                   ),
                   const SizedBox(width: 6),
@@ -785,10 +785,10 @@ class _GroupHeroCard extends StatelessWidget {
                     decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
                     child: Row(
                       children: [
-                        Text('CÓDIGO', style: AppTypography.body(size: 10, color: AppColors.textMuted)),
+                        Text('CÓDIGO', style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(group.inviteCode, style: AppTypography.code(color: AppColors.textMuted, size: 14, weight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
-                        Icon(Icons.copy, size: 14, color: AppColors.textMuted),
+                        Expanded(child: Text(group.inviteCode, style: AppTypography.code(color: AppColors.textSecondary, size: 14, weight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
+                        Icon(Icons.copy, size: 14, color: AppColors.textSecondary),
                       ],
                     ),
                   ),

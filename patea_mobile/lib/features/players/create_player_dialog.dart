@@ -117,7 +117,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
             ),
             const SizedBox(height: 16),
 
-            Text('POSICIÓN', style: AppTypography.code(size: 11, color: AppColors.textMuted)),
+            Text('POSICIÓN', style: AppTypography.code(size: 11, color: AppColors.textSecondary)),
             const SizedBox(height: 6),
             Row(
               children: ['DEL', 'MED', 'DEF', 'POR'].map((pos) {
@@ -182,7 +182,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
       children: [
         SizedBox(
           width: 100,
-          child: Text(label, style: AppTypography.code(size: 10, color: AppColors.textMuted)),
+          child: Text(label, style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
         ),
         Expanded(
           child: Slider(

@@ -25,14 +25,14 @@ class MatchTimelineView extends StatelessWidget {
         Text('MINUTO A MINUTO',
             style: AppTypography.headline(
                 size: 11, weight: FontWeight.w800,
-                color: AppColors.textMuted, letterSpacing: 1.2)),
+                color: AppColors.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 14),
         if (events.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
               child: Text('Todavía no pasó nada.',
-                  style: AppTypography.body(size: 13, color: AppColors.textMuted)),
+                  style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
             ),
           )
         else
@@ -74,7 +74,7 @@ class _TimelineRow extends StatelessWidget {
       case 'foul':
         return (icon: Icons.report_gmailerrorred_rounded, color: AppColors.textSecondary);
       default:
-        return (icon: Icons.circle, color: AppColors.textMuted);
+        return (icon: Icons.circle, color: AppColors.textSecondary);
     }
   }
 
@@ -127,7 +127,7 @@ class _TimelineRow extends StatelessWidget {
           Text(
             _detail!,
             textAlign: left ? TextAlign.right : TextAlign.left,
-            style: AppTypography.body(size: 11, color: AppColors.textMuted),
+            style: AppTypography.body(size: 11, color: AppColors.textSecondary),
           ),
         ],
       ],
@@ -216,7 +216,7 @@ class OpposedBar extends StatelessWidget {
               SizedBox(
                 width: 28,
                 child: Text('$a',
-                    style: AppTypography.code(color: AppColors.textMuted, size: 13, weight: FontWeight.w800)),
+                    style: AppTypography.code(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800)),
               ),
               Expanded(
                 child: Text(label,
@@ -227,7 +227,7 @@ class OpposedBar extends StatelessWidget {
                 width: 28,
                 child: Text('$b',
                     textAlign: TextAlign.right,
-                    style: AppTypography.code(color: AppColors.textMuted, size: 13, weight: FontWeight.w800)),
+                    style: AppTypography.code(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800)),
               ),
             ],
           ),

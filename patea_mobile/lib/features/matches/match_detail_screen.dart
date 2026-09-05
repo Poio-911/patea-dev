@@ -337,7 +337,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           return Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(backgroundColor: Colors.transparent),
-            body: Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: AppColors.textMuted))),
+            body: Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: AppColors.textSecondary))),
           );
         }
 
@@ -644,7 +644,7 @@ class _HeroCard extends StatelessWidget {
                       Icon(
                         Icons.place_outlined,
                         size: 17,
-                        color: hasVenue ? AppColors.voltNeon : AppColors.textMuted,
+                        color: hasVenue ? AppColors.voltNeon : AppColors.textSecondary,
                       ),
                       const SizedBox(width: 7),
                       Flexible(
@@ -655,7 +655,7 @@ class _HeroCard extends StatelessWidget {
                           style: AppTypography.body(
                             size: 14.5,
                             weight: FontWeight.w600,
-                            color: hasVenue ? AppColors.textPrimary : AppColors.textMuted,
+                            color: hasVenue ? AppColors.textPrimary : AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -693,7 +693,7 @@ class _TeamsRoster extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '${match.players.length} JUGADORES',
-              style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.textMuted)
+              style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)
                   .copyWith(letterSpacing: 1.6),
             ),
           ],
@@ -771,7 +771,7 @@ class _TeamBlock extends ConsumerWidget {
                 if (team.jersey != null)
                   JerseyWidget(jersey: team.jersey!, size: 44)
                 else
-                  Icon(Icons.checkroom, size: 38, color: AppColors.textMuted),
+                  Icon(Icons.checkroom, size: 38, color: AppColors.textSecondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -809,7 +809,7 @@ class _TeamBlock extends ConsumerWidget {
                         children: [
                           Text(
                             '${team.players.length} JUGADORES',
-                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: AppColors.textMuted)
+                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: AppColors.textSecondary)
                                 .copyWith(letterSpacing: 1.4),
                           ),
                           if (avgOvr != null) ...[
@@ -938,7 +938,7 @@ class _MosaicPlayer extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             '${player.ovr}',
-                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: AppColors.textMuted),
+                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: AppColors.textSecondary),
                           ),
                         ],
                       ],
@@ -1070,14 +1070,14 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.groups_outlined, size: 18, color: AppColors.textMuted),
+              Icon(Icons.groups_outlined, size: 18, color: AppColors.textSecondary),
               const SizedBox(width: 8),
               Text('Jugadores Confirmados', style: AppTypography.headline(size: 15)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
-                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: AppColors.textMuted, size: 11, weight: FontWeight.w700)),
+                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w700)),
               ),
             ],
           ),
@@ -1086,7 +1086,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text('Todavía no hay jugadores confirmados', style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                child: Text('Todavía no hay jugadores confirmados', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
               ),
             )
           else
@@ -1479,8 +1479,8 @@ class _StickyActionBar extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: isJoining
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textMuted))
-                      : const Icon(Icons.logout_rounded, size: 16, color: AppColors.textMuted),
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textSecondary))
+                      : const Icon(Icons.logout_rounded, size: 16, color: AppColors.textSecondary),
                   label: Text(
                     'Darme de baja',
                     style: AppTypography.body(size: 13, weight: FontWeight.w600, color: AppColors.textSecondary),
@@ -1515,7 +1515,7 @@ class _StickyActionBar extends StatelessWidget {
               border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
             ),
             child: Center(
-              child: Text('PARTIDO COMPLETO', style: AppTypography.jersey(size: 15, color: AppColors.textMuted, letterSpacing: 1)),
+              child: Text('PARTIDO COMPLETO', style: AppTypography.jersey(size: 15, color: AppColors.textSecondary, letterSpacing: 1)),
             ),
           );
         } else {
@@ -1631,7 +1631,7 @@ class _ChatPreviewCard extends ConsumerWidget {
                 if (lastMsg == null)
                   Text(
                     'Sin mensajes aún. Tocá para iniciar la charla.',
-                    style: AppTypography.body(size: 12, color: AppColors.textMuted),
+                    style: AppTypography.body(size: 12, color: AppColors.textSecondary),
                   )
                 else
                   Text(
@@ -1811,7 +1811,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  color: AppColors.textMuted,
+                  color: AppColors.textSecondary,
                 ),
               ],
             ),
@@ -1829,7 +1829,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                 if (docs.isEmpty) {
                   return Center(
                     child: Text('¡Sé el primero en saludar al grupo!',
-                        style: AppTypography.body(size: 13, color: AppColors.textMuted)),
+                        style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
                   );
                 }
                 final uid = FirebaseAuth.instance.currentUser?.uid;

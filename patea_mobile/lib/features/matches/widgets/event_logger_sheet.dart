@@ -338,7 +338,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
                           style: AppTypography.headline(
                               size: 14,
                               weight: FontWeight.w800,
-                              color: _canSave ? AppColors.background : AppColors.textMuted)),
+                              color: _canSave ? AppColors.background : AppColors.textSecondary)),
                 ),
               ],
             ),
@@ -369,7 +369,7 @@ class _MinuteStepper extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text("$minute'",
-                style: AppTypography.code(color: AppColors.textMuted, size: 14, weight: FontWeight.w800)),
+                style: AppTypography.code(color: AppColors.textSecondary, size: 14, weight: FontWeight.w800)),
           ),
           _step(Icons.add_rounded, () => onChanged(minute + 1)),
         ],
@@ -459,11 +459,11 @@ class _PlayerPicker extends StatelessWidget {
         Text(label.toUpperCase(),
             style: AppTypography.headline(
                 size: 10, weight: FontWeight.w800,
-                color: AppColors.textMuted, letterSpacing: 1)),
+                color: AppColors.textSecondary, letterSpacing: 1)),
         const SizedBox(height: 8),
         if (players.isEmpty)
           Text('No hay jugadores cargados en este equipo.',
-              style: AppTypography.body(size: 12, color: AppColors.textMuted))
+              style: AppTypography.body(size: 12, color: AppColors.textSecondary))
         else
           Wrap(
             spacing: 8,
@@ -524,7 +524,7 @@ class _OptionRow extends StatelessWidget {
         Text(label.toUpperCase(),
             style: AppTypography.headline(
                 size: 10, weight: FontWeight.w800,
-                color: AppColors.textMuted, letterSpacing: 1)),
+                color: AppColors.textSecondary, letterSpacing: 1)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,

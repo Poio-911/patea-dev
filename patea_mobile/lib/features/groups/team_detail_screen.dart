@@ -181,13 +181,13 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
             child: CircularProgressIndicator(color: AppColors.voltNeon)),
         error: (e, _) => Center(
           child: Text('No se pudo cargar el equipo.',
-              style: AppTypography.body(color: AppColors.textMuted)),
+              style: AppTypography.body(color: AppColors.textSecondary)),
         ),
         data: (team) {
           if (team == null) {
             return Center(
               child: Text('Equipo no encontrado.',
-                  style: AppTypography.body(color: AppColors.textMuted)),
+                  style: AppTypography.body(color: AppColors.textSecondary)),
             );
           }
 
@@ -343,7 +343,7 @@ class _TeamBanner extends StatelessWidget {
                 Text(
                   '${team.members.length} ${team.members.length == 1 ? 'jugador' : 'jugadores'}',
                   style:
-                      AppTypography.body(size: 12, color: AppColors.textMuted),
+                      AppTypography.body(size: 12, color: AppColors.textSecondary),
                 ),
                 if (trophies.isNotEmpty) ...[
                   const SizedBox(height: 9),
@@ -531,7 +531,7 @@ class _SectionLabel extends StatelessWidget {
                 color: AppColors.textSecondary)),
         const SizedBox(width: 7),
         Text('$count',
-            style: AppTypography.code(size: 10, color: AppColors.textMuted)),
+            style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
       ],
     );
   }
@@ -547,7 +547,7 @@ class _EmptyLine extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
       child: Text(text,
-          style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+          style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
     );
   }
 }
@@ -595,7 +595,7 @@ class _RosterTile extends StatelessWidget {
                   style: AppTypography.sportNumber(
                     size: 17,
                     color: member.number == 0
-                        ? AppColors.textMuted
+                        ? AppColors.textSecondary
                         : AppColors.textPrimary,
                   ),
                 ),
@@ -628,7 +628,7 @@ class _RosterTile extends StatelessWidget {
               if (p != null) ...[
                 Text(p.position,
                     style: AppTypography.code(
-                        size: 9, color: AppColors.textMuted)),
+                        size: 9, color: AppColors.textSecondary)),
                 const SizedBox(width: 9),
                 Text('${p.ovr}', style: AppTypography.sportNumber(size: 16)),
               ],
@@ -699,14 +699,14 @@ class _AgendaRow extends StatelessWidget {
                             : '${match.date} · ${match.time}',
                     style: AppTypography.code(
                       size: 9,
-                      color: live ? AppColors.destructive : AppColors.textMuted,
+                      color: live ? AppColors.destructive : AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
             const Icon(Icons.chevron_right_rounded,
-                size: 18, color: AppColors.textMuted),
+                size: 18, color: AppColors.textSecondary),
           ],
         ),
       ),

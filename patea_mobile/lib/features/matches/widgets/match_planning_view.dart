@@ -125,7 +125,7 @@ class _DateVotingState extends ConsumerState<_DateVoting> {
             widget.isCaptain
                 ? 'Proponé uno o más días y que el grupo marque cuándo puede.'
                 : 'Todavía no hay días propuestos.',
-            style: AppTypography.body(size: 12, color: AppColors.textMuted),
+            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
           )
         else
           for (final p in proposals)
@@ -239,7 +239,7 @@ class _LocationVotingState extends ConsumerState<_LocationVoting> {
             widget.isCaptain
                 ? 'Proponé canchas para que el grupo elija una.'
                 : 'Todavía no hay canchas propuestas.',
-            style: AppTypography.body(size: 12, color: AppColors.textMuted),
+            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
           )
         else
           for (final p in proposals)
@@ -322,7 +322,7 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
               style: AppTypography.headline(
                   size: 12,
                   weight: FontWeight.w800,
-                  color: AppColors.textMuted,
+                  color: AppColors.textSecondary,
                   letterSpacing: 1.2)),
           const SizedBox(height: 14),
           TextField(
@@ -354,13 +354,13 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
                 for (final r in _results)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.place_outlined, size: 20, color: AppColors.textMuted),
+                    leading: const Icon(Icons.place_outlined, size: 20, color: AppColors.textSecondary),
                     title: Text(r.label.split(',').first.trim(),
                         style: AppTypography.headline(size: 14, weight: FontWeight.w700)),
                     subtitle: Text(r.label,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                        style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                     onTap: () => Navigator.pop(context, r),
                   ),
               ],
@@ -398,7 +398,7 @@ class _Header extends StatelessWidget {
               style: AppTypography.headline(
                   size: 11,
                   weight: FontWeight.w800,
-                  color: AppColors.textMuted,
+                  color: AppColors.textSecondary,
                   letterSpacing: 1.2)),
         ),
         if (actionLabel != null)
@@ -482,7 +482,7 @@ class _ProposalRow extends StatelessWidget {
                       : '$subtitle  ·  $votes ${votes == 1 ? 'voto' : 'votos'}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                 ),
               ],
             ),

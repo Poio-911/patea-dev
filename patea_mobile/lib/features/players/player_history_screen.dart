@@ -36,7 +36,7 @@ class PlayerHistoryScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             'Todos los partidos evaluados, con lo que dijeron tus compañeros.',
-            style: AppTypography.body(size: 13, color: AppColors.textMuted),
+            style: AppTypography.body(size: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 22),
           PlayerMatchDebrief(playerId: playerId, compact: false),

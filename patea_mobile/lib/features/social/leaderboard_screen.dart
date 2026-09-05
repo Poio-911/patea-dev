@@ -54,7 +54,7 @@ class LeaderboardScreen extends ConsumerWidget {
                         '#${index + 1}',
                         style: AppTypography.sportNumber(
                           size: 18,
-                          color: isPodium ? podiumColor : AppColors.textMuted,
+                          color: isPodium ? podiumColor : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -71,7 +71,7 @@ class LeaderboardScreen extends ConsumerWidget {
                           ),
                           Text(
                             '${player.stats.goals} Goles • ${player.stats.matchesPlayed} PJ',
-                            style: AppTypography.code(size: 11, color: AppColors.textMuted),
+                            style: AppTypography.code(size: 11, color: AppColors.textSecondary),
                           ),
                         ],
                       ),

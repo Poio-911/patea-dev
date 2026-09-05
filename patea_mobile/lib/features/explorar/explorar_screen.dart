@@ -216,14 +216,14 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                 decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   children: [
-                    Icon(Icons.groups_outlined, size: 44, color: AppColors.textMuted),
+                    Icon(Icons.groups_outlined, size: 44, color: AppColors.textSecondary),
                     const SizedBox(height: 10),
                     Text('Plantel Completo', style: AppTypography.headline(size: 15)),
                     const SizedBox(height: 6),
                     Text(
                       'El mercado se abre cuando organizás un partido al que le falten jugadores.',
                       textAlign: TextAlign.center,
-                      style: AppTypography.body(size: 12, color: AppColors.textMuted),
+                      style: AppTypography.body(size: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -255,16 +255,16 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                     if (match != null) ...[
                       const SizedBox(height: 8),
                       Row(children: [
-                        Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textMuted),
+                        Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textSecondary),
                         const SizedBox(width: 6),
-                        Text('${_fmtDate(match.date)} · ${match.time ?? ''} hs', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                        Text('${_fmtDate(match.date)} · ${match.time ?? ''} hs', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                       ]),
                       if (match.location != null) ...[
                         const SizedBox(height: 4),
                         Row(children: [
-                          Icon(Icons.location_on_outlined, size: 13, color: AppColors.textMuted),
+                          Icon(Icons.location_on_outlined, size: 13, color: AppColors.textSecondary),
                           const SizedBox(width: 6),
-                          Expanded(child: Text(match.location!, style: AppTypography.body(size: 11, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          Expanded(child: Text(match.location!, style: AppTypography.body(size: 11, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                         ]),
                       ],
                     ],
@@ -298,7 +298,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
-                    child: Text('${filteredPlayers.length}', style: AppTypography.code(color: AppColors.textMuted, size: 11, weight: FontWeight.w700)),
+                    child: Text('${filteredPlayers.length}', style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w700)),
                   ),
                 ],
               ]),
@@ -311,11 +311,11 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                   decoration: BoxDecoration(color: AppColors.card.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(14)),
                   child: Column(
                     children: [
-                      Icon(Icons.search_off, size: 36, color: AppColors.textMuted),
+                      Icon(Icons.search_off, size: 36, color: AppColors.textSecondary),
                       const SizedBox(height: 8),
                       Text('Nadie disponible en la zona', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text('No encontramos jugadores libres para esa fecha, horario y ubicación.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                      Text('No encontramos jugadores libres para esa fecha, horario y ubicación.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                     ],
                   ),
                 )
@@ -356,7 +356,7 @@ class _FreeAgentBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(shape: BoxShape.circle, color: isFreeAgent ? AppColors.voltNeon : AppColors.cardSurface),
-            child: Icon(Icons.campaign_outlined, size: 18, color: isFreeAgent ? Colors.black : AppColors.textMuted),
+            child: Icon(Icons.campaign_outlined, size: 18, color: isFreeAgent ? Colors.black : AppColors.textSecondary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -366,7 +366,7 @@ class _FreeAgentBanner extends StatelessWidget {
                 Text(isFreeAgent ? 'Estás activo en el Mercado' : '¿Te falta partido?', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
                 Text(
                   isFreeAgent ? 'Los organizadores pueden reclutarte.' : 'Ofrecete como agente libre para que te inviten.',
-                  style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -410,7 +410,7 @@ class _FreeAgentCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('${player.ovr}', style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: AppColors.voltNeon)),
-                Text(player.position, style: AppTypography.code(color: AppColors.textMuted, size: 11, weight: FontWeight.w800)),
+                Text(player.position, style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w800)),
               ],
             ),
             const SizedBox(height: 8),
@@ -422,7 +422,7 @@ class _FreeAgentCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(player.displayName, style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 10, color: AppColors.textMuted)),
+            if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -487,8 +487,8 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(player.displayName, style: AppTypography.headline(size: 17)),
-                    Text('${player.position} · OVR ${player.ovr}', style: AppTypography.body(size: 12, color: AppColors.textMuted)),
-                    if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                    Text('${player.position} · OVR ${player.ovr}', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                    if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -516,7 +516,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(border: Border.all(color: AppColors.border, style: BorderStyle.solid), borderRadius: BorderRadius.circular(10)),
-              child: Text('Tu perfil de Pase Libre', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+              child: Text('Tu perfil de Pase Libre', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
             )
           else
             SizedBox(
@@ -619,7 +619,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
               const SizedBox(width: 8),
               Text('Buscar Partido', style: AppTypography.headline(size: 16)),
             ]),
-            Text('Mostrá tu perfil a organizadores para que te inviten', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+            Text('Mostrá tu perfil a organizadores para que te inviten', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -633,7 +633,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             if (_days.isEmpty && isVisible)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text('Por defecto: sábado y domingo', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                child: Text('Por defecto: sábado y domingo', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
               ),
             _DayTimePicker(
               days: _days,
@@ -649,7 +649,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
               },
             ),
             const SizedBox(height: 16),
-            Text('UBICACIÓN', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.textMuted)),
+            Text('UBICACIÓN', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.textSecondary)),
             const SizedBox(height: 8),
             TextField(
               controller: _locationController,
@@ -689,7 +689,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             else if (locationAsync.value != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('Actual: ${locationAsync.value!['label'] ?? '${locationAsync.value!['lat']}, ${locationAsync.value!['lng']}'}', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                child: Text('Actual: ${locationAsync.value!['label'] ?? '${locationAsync.value!['lat']}, ${locationAsync.value!['lng']}'}', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
               ),
           ],
         ),
@@ -731,7 +731,7 @@ class _DayTimePicker extends StatelessWidget {
               }).toList(),
             ),
             const SizedBox(height: 12),
-            Text('HORARIOS PREFERIDOS', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.textMuted)),
+            Text('HORARIOS PREFERIDOS', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.textSecondary)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -805,11 +805,11 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
                 decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   children: [
-                    Icon(Icons.calendar_month_outlined, size: 40, color: AppColors.textMuted),
+                    Icon(Icons.calendar_month_outlined, size: 40, color: AppColors.textSecondary),
                     const SizedBox(height: 10),
                     Text('No hay partidos disponibles', style: AppTypography.headline(size: 15)),
                     const SizedBox(height: 4),
-                    Text('Probá quitando filtros, o creá un partido público para que otros se unan.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                    Text('Probá quitando filtros, o creá un partido público para que otros se unan.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
                   ],
                 ),
               )
@@ -817,7 +817,7 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${filtered.length} partido${filtered.length != 1 ? 's' : ''} disponible${filtered.length != 1 ? 's' : ''}', style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                  Text('${filtered.length} partido${filtered.length != 1 ? 's' : ''} disponible${filtered.length != 1 ? 's' : ''}', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 10),
                   for (final m in filtered)
                     Padding(
@@ -997,11 +997,11 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
   Widget _row(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 12, color: AppColors.textMuted),
+        Icon(icon, size: 12, color: AppColors.textSecondary),
         const SizedBox(width: 6),
         Expanded(
           child: Text(text,
-              style: AppTypography.body(size: 11, color: AppColors.textMuted),
+              style: AppTypography.body(size: 11, color: AppColors.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis),
         ),

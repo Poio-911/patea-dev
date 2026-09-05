@@ -216,7 +216,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                       const SizedBox(height: 3),
                                       Text(
                                         '${_formatMatchDate(match.date)} · ${match.time ?? ''} hs',
-                                        style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                                        style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                                       ),
                                     ],
                                   ),
@@ -447,7 +447,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   child: Center(
                     child: Text(
                       'No hay partidos en esta vista',
-                      style: AppTypography.body(color: AppColors.textMuted),
+                      style: AppTypography.body(color: AppColors.textSecondary),
                     ),
                   ),
                 )
@@ -538,7 +538,7 @@ class _QuickTimeFilterTabs extends StatelessWidget {
                         style: AppTypography.body(
                           size: 14,
                           weight: FontWeight.w700,
-                          color: isActive ? AppColors.voltNeon : AppColors.textMuted,
+                          color: isActive ? AppColors.voltNeon : AppColors.textSecondary,
                         ),
                       ),
                       if (count > 0) ...[
@@ -554,7 +554,7 @@ class _QuickTimeFilterTabs extends StatelessWidget {
                             style: AppTypography.body(
                               size: 10,
                               weight: FontWeight.w700,
-                              color: isActive ? Colors.black : AppColors.textMuted,
+                              color: isActive ? Colors.black : AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -592,7 +592,7 @@ class _ViewModeToggle extends StatelessWidget {
             color: selected ? AppColors.voltNeon : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(icon, size: 16, color: selected ? Colors.black : AppColors.textMuted),
+          child: Icon(icon, size: 16, color: selected ? Colors.black : AppColors.textSecondary),
         ),
       );
     }
@@ -660,7 +660,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Por tipo', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: AppColors.textMuted)),
+            Text('Por tipo', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: AppColors.textSecondary)),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -676,7 +676,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
               }).toList(),
             ),
             const SizedBox(height: 16),
-            Text('Por estado', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: AppColors.textMuted)),
+            Text('Por estado', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: AppColors.textSecondary)),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -787,14 +787,14 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.calendar_today_outlined, size: 40, color: AppColors.textMuted.withValues(alpha: 0.6)),
+            Icon(Icons.calendar_today_outlined, size: 40, color: AppColors.textSecondary.withValues(alpha: 0.6)),
             const SizedBox(height: 10),
             Text('No hay fútbol a la vista', style: AppTypography.headline(size: 15)),
             const SizedBox(height: 6),
             Text(
               'Armá un nuevo partido para que empiece a rodar la pelota.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 12, color: AppColors.textMuted),
+              style: AppTypography.body(size: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -1301,7 +1301,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                   _TeamJersey(team: match.teamA!),
                   Column(
                     children: [
-                      Text('VS', style: AppTypography.code(size: 12, weight: FontWeight.w700, color: AppColors.textMuted)),
+                      Text('VS', style: AppTypography.code(size: 12, weight: FontWeight.w700, color: AppColors.textSecondary)),
                       if (match.status == 'completed' || match.status == 'evaluated')
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -1318,7 +1318,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
             else
               Row(
                 children: [
-                  Icon(Icons.groups_outlined, size: 20, color: AppColors.textMuted),
+                  Icon(Icons.groups_outlined, size: 20, color: AppColors.textSecondary),
                   const SizedBox(width: 8),
                   Text(
                     match.matchSize > 0 ? '${match.playerUids.length} / ${match.matchSize}' : '${match.playerUids.length}',
@@ -1467,16 +1467,16 @@ class _CompactMatchCard extends StatelessWidget {
                       Expanded(
                         child: match.teamA!.jersey != null
                             ? JerseyWidget(jersey: match.teamA!.jersey!, size: 32)
-                            : Icon(Icons.checkroom, size: 28, color: AppColors.textMuted),
+                            : Icon(Icons.checkroom, size: 28, color: AppColors.textSecondary),
                       ),
                       Text(
                         hasScore ? '${match.teamA!.score}-${match.teamB!.score}' : 'vs',
-                        style: AppTypography.body(size: 11, weight: FontWeight.w700, color: AppColors.textMuted),
+                        style: AppTypography.body(size: 11, weight: FontWeight.w700, color: AppColors.textSecondary),
                       ),
                       Expanded(
                         child: match.teamB!.jersey != null
                             ? JerseyWidget(jersey: match.teamB!.jersey!, size: 32)
-                            : Icon(Icons.checkroom, size: 28, color: AppColors.textMuted),
+                            : Icon(Icons.checkroom, size: 28, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -1522,13 +1522,13 @@ class _CompactMatchCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.groups_outlined, size: 11, color: AppColors.textMuted),
+                  Icon(Icons.groups_outlined, size: 11, color: AppColors.textSecondary),
                   const SizedBox(width: 3),
                   Text(
                     match.matchSize > 0
                         ? '${match.playerUids.length}/${match.matchSize} jugadores'
                         : '${match.playerUids.length} jugadores',
-                    style: AppTypography.body(size: 9, color: AppColors.textMuted),
+                    style: AppTypography.body(size: 9, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -1549,7 +1549,7 @@ class _CompactMatchCard extends StatelessWidget {
             const SizedBox(height: 6),
             Align(
               alignment: Alignment.centerRight,
-              child: Icon(Icons.chevron_right, size: 14, color: AppColors.textMuted),
+              child: Icon(Icons.chevron_right, size: 14, color: AppColors.textSecondary),
             ),
             ],
           ),
@@ -1572,14 +1572,14 @@ class _CompactInfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 10, color: AppColors.textMuted),
+        Icon(icon, size: 10, color: AppColors.textSecondary),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.body(size: 9, color: AppColors.textMuted),
+            style: AppTypography.body(size: 9, color: AppColors.textSecondary),
           ),
         ),
       ],
@@ -1599,13 +1599,13 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.textMuted),
+        Icon(icon, size: 18, color: AppColors.textSecondary),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+              Text(label, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
               Text(
                 value,
                 style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary),
@@ -1631,7 +1631,7 @@ class _TeamJersey extends StatelessWidget {
         if (team.jersey != null)
           JerseyWidget(jersey: team.jersey!, size: 44)
         else
-          Icon(Icons.checkroom, size: 40, color: AppColors.textMuted),
+          Icon(Icons.checkroom, size: 40, color: AppColors.textSecondary),
         const SizedBox(height: 6),
         SizedBox(
           width: 88,
@@ -1672,10 +1672,10 @@ class _OrganizerRow extends StatelessWidget {
               radius: 10,
               backgroundColor: AppColors.cardSurface,
               backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-              child: photoUrl == null ? Icon(Icons.person, size: 12, color: AppColors.textMuted) : null,
+              child: photoUrl == null ? Icon(Icons.person, size: 12, color: AppColors.textSecondary) : null,
             ),
             const SizedBox(width: 6),
-            Text(name, style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+            Text(name, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
           ],
         );
       },

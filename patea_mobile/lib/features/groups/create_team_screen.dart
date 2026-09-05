@@ -152,8 +152,8 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('PLANTEL', style: AppTypography.headline(size: 13, color: AppColors.textMuted)),
-                  Text('${_selectedPlayerIds.length} seleccionados', style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                  Text('PLANTEL', style: AppTypography.headline(size: 13, color: AppColors.textSecondary)),
+                  Text('${_selectedPlayerIds.length} seleccionados', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
                 ],
               ),
               const SizedBox(height: 10),
@@ -167,7 +167,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         const Divider(height: 1),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text('No hay jugadores en este grupo.', style: AppTypography.body(color: AppColors.textMuted)))
+              ? Center(child: Text('No hay jugadores en este grupo.', style: AppTypography.body(color: AppColors.textSecondary)))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   itemCount: filtered.length,
@@ -195,7 +195,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(child: Text(p.name, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700))),
-                            Text('OVR ${p.ovr}', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                            Text('OVR ${p.ovr}', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                             const SizedBox(width: 10),
                             Container(
                               width: 22,
@@ -203,7 +203,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                               decoration: BoxDecoration(
                                 color: selected ? AppColors.voltNeon : Colors.transparent,
                                 borderRadius: BorderRadius.circular(5),
-                                border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textMuted),
+                                border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textSecondary),
                               ),
                               child: selected ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
                             ),

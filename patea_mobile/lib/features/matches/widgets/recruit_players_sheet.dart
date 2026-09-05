@@ -132,7 +132,7 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                       style: AppTypography.headline(
                           size: 12,
                           weight: FontWeight.w800,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           letterSpacing: 1.2)),
                   const SizedBox(height: 4),
                   Text(
@@ -396,7 +396,7 @@ class _PlayerRow extends StatelessWidget {
                     [position, if (ovr > 0) 'OVR $ovr', if (trailing != null) trailing!]
                         .where((s) => s.isNotEmpty)
                         .join('  ·  '),
-                    style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                    style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -404,7 +404,7 @@ class _PlayerRow extends StatelessWidget {
             Icon(
               selected ? Icons.check_circle_rounded : Icons.circle_outlined,
               size: 22,
-              color: selected ? AppColors.voltNeon : AppColors.textMuted.withValues(alpha: 0.5),
+              color: selected ? AppColors.voltNeon : AppColors.textSecondary.withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -426,7 +426,7 @@ class _Empty extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: AppTypography.body(size: 13, color: AppColors.textMuted),
+          style: AppTypography.body(size: 13, color: AppColors.textSecondary),
         ),
       ),
     );

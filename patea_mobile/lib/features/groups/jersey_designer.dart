@@ -49,7 +49,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('VISTA PREVIA', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textMuted)),
+        Text('VISTA PREVIA', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
         const SizedBox(height: 10),
         Center(
           child: Container(
@@ -59,7 +59,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
           ),
         ),
         const SizedBox(height: 24),
-        Text('DISEÑO', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textMuted)),
+        Text('DISEÑO', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
         const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
@@ -84,7 +84,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
           },
         ),
         const SizedBox(height: 24),
-        Text('COLORES', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textMuted)),
+        Text('COLORES', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
         const SizedBox(height: 10),
         Row(
           children: [

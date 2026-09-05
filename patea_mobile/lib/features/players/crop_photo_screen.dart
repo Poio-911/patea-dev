@@ -121,7 +121,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
             child: Text(
               'Arrastrá para mover y pellizcá para acercar. Así se va a ver en tu carta.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 13, color: AppColors.textMuted, height: 1.45),
+              style: AppTypography.body(size: 13, color: AppColors.textSecondary, height: 1.45),
             ),
           ),
           const Spacer(),
@@ -160,7 +160,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     errorWidget: (_, _, _) => Container(
                       color: AppColors.cardSurface,
                       child: Icon(Icons.broken_image_outlined,
-                          color: AppColors.textMuted, size: 40),
+                          color: AppColors.textSecondary, size: 40),
                     ),
                   ),
                 ),
@@ -175,7 +175,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Row(
               children: [
-                Icon(Icons.zoom_out, size: 18, color: AppColors.textMuted),
+                Icon(Icons.zoom_out, size: 18, color: AppColors.textSecondary),
                 Expanded(
                   child: Slider(
                     value: _zoom,
@@ -186,13 +186,13 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     onChanged: _saving ? null : (v) => setState(() => _zoom = v),
                   ),
                 ),
-                Icon(Icons.zoom_in, size: 18, color: AppColors.textMuted),
+                Icon(Icons.zoom_in, size: 18, color: AppColors.textSecondary),
               ],
             ),
           ),
           Text(
             '${_zoom.toStringAsFixed(1)}×',
-            style: AppTypography.code(size: 11, color: AppColors.textMuted),
+            style: AppTypography.code(size: 11, color: AppColors.textSecondary),
           ),
 
           const Spacer(),

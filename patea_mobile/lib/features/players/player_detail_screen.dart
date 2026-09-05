@@ -55,7 +55,7 @@ class PlayerDetailScreen extends ConsumerWidget {
       body: playerAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
         error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textMuted)),
+          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textSecondary)),
         ),
         data: (player) {
           if (player == null) return _NotFound(asOwnProfile: asOwnProfile);
@@ -77,7 +77,7 @@ class PlayerDetailScreen extends ConsumerWidget {
                 asOwnProfile
                     ? 'Tu información personal, estadísticas de jugador y actividad.'
                     : 'Perfil y estadísticas del jugador.',
-                style: AppTypography.body(size: 13, color: AppColors.textMuted),
+                style: AppTypography.body(size: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
 
@@ -195,7 +195,7 @@ class _NotFound extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off_outlined, size: 44, color: AppColors.textMuted.withValues(alpha: 0.4)),
+            Icon(Icons.person_off_outlined, size: 44, color: AppColors.textSecondary.withValues(alpha: 0.4)),
             const SizedBox(height: 14),
             Text(
               asOwnProfile
@@ -214,7 +214,7 @@ class _NotFound extends StatelessWidget {
                     'se repara sola.'
                   : 'Puede haber sido eliminado del plantel.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 12, color: AppColors.textMuted),
+              style: AppTypography.body(size: 12, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
@@ -272,7 +272,7 @@ class _ActionCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 description,
-                style: AppTypography.body(size: 10, color: AppColors.textMuted, height: 1.4),
+                style: AppTypography.body(size: 10, color: AppColors.textSecondary, height: 1.4),
               ),
             ],
           ),
@@ -325,7 +325,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               title,
-              style: AppTypography.code(size: 10, color: AppColors.textMuted),
+              style: AppTypography.code(size: 10, color: AppColors.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

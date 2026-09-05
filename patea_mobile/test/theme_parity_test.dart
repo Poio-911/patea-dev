@@ -43,7 +43,6 @@ void main() {
       'info': [AppColors.info, g.info],
       'textPrimary': [AppColors.textPrimary, g.textPrimary],
       'textSecondary': [AppColors.textSecondary, g.textSecondary],
-      'textMuted': [AppColors.textMuted, g.textMuted],
       'eliteBorder': [AppColors.eliteBorder, g.eliteBorder],
       'goldBorder': [AppColors.goldBorder, g.goldBorder],
       'silverBorder': [AppColors.silverBorder, g.silverBorder],

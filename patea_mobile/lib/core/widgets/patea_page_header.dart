@@ -120,7 +120,7 @@ class PateaPageHeader extends StatelessWidget {
                   child: const Icon(
                     Icons.help_outline_rounded,
                     size: 15,
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],

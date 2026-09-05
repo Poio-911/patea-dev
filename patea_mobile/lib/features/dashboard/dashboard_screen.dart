@@ -204,7 +204,7 @@ class _DashboardTabBar extends StatelessWidget {
                   style: AppTypography.headline(
                     size: 12,
                     weight: selected ? FontWeight.w900 : FontWeight.w600,
-                    color: selected ? AppColors.textPrimary : AppColors.textMuted,
+                    color: selected ? AppColors.textPrimary : AppColors.textSecondary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -294,7 +294,7 @@ class _ResumenTabBody extends ConsumerWidget {
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Text('No se pudo cargar tu panel.',
-            style: AppTypography.body(size: 13, color: AppColors.textMuted)),
+            style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
       ),
       data: (allMatches) {
         final now = DateTime.now();
@@ -366,7 +366,7 @@ class _ResumenTabBody extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Text('Cargando ficha del jugador...',
-                    style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
               ),
 
             const SizedBox(height: 16),
@@ -380,7 +380,7 @@ class _ResumenTabBody extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('Todavía no disputaste ningún partido evaluado.',
-                    style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
               ),
           ],
         );
@@ -510,7 +510,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                       style: AppTypography.code(
                         size: 9,
                         weight: FontWeight.w800,
-                        color: isLive ? AppColors.destructive : AppColors.textMuted,
+                        color: isLive ? AppColors.destructive : AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -602,7 +602,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.stadium_outlined, size: 14, color: AppColors.textMuted),
+                  const Icon(Icons.stadium_outlined, size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     _shortLocation(match.location),
@@ -617,7 +617,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.groups_outlined, size: 14, color: AppColors.textMuted),
+                  const Icon(Icons.groups_outlined, size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     '${match.playerUids.length}/${match.matchSize > 0 ? match.matchSize : 14} CONVOCADOS',
@@ -715,7 +715,7 @@ class _CleanTunnelSide extends StatelessWidget {
                     child: team.jersey != null
                         ? JerseyWidget(jersey: team.jersey!, size: 82)
                         : const Icon(Icons.checkroom,
-                            size: 64, color: AppColors.textMuted),
+                            size: 64, color: AppColors.textSecondary),
                   ),
                 ),
 
@@ -869,7 +869,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
             children: [
               Text(
                 'TU OVR ACTUAL',
-                style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+                style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 2),
               Row(
@@ -946,7 +946,7 @@ class _LastResultMural extends StatelessWidget {
     final b = match.teamB!;
     final diff = a.score - b.score;
     final stamp = diff > 0 ? 'W' : (diff < 0 ? 'L' : 'D');
-    final stampColor = diff > 0 ? AppColors.voltNeon : (diff < 0 ? AppColors.destructive : AppColors.textMuted);
+    final stampColor = diff > 0 ? AppColors.voltNeon : (diff < 0 ? AppColors.destructive : AppColors.textSecondary);
 
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
@@ -961,7 +961,7 @@ class _LastResultMural extends StatelessWidget {
               children: [
                 Text(
                   'ÚLTIMO JUGADO · ${_fmtDate(match.date).toUpperCase()}',
-                  style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+                  style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -1042,7 +1042,7 @@ class _GrupoTabBody extends ConsumerWidget {
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Text('No se pudo cargar el grupo.',
-            style: AppTypography.body(size: 13, color: AppColors.textMuted)),
+            style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
       ),
       data: (group) {
         if (group == null) {
@@ -1085,7 +1085,7 @@ class _GrupoTabBody extends ConsumerWidget {
                     children: [
                       Text(
                         'TU CUADRO',
-                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -1113,7 +1113,7 @@ class _GrupoTabBody extends ConsumerWidget {
                           children: [
                             Text(
                               'CÓDIGO: ',
-                              style: AppTypography.code(size: 11, color: AppColors.textMuted),
+                              style: AppTypography.code(size: 11, color: AppColors.textSecondary),
                             ),
                             Text(
                               group.inviteCode,
@@ -1142,7 +1142,7 @@ class _GrupoTabBody extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PLANTEL TOTAL', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+                    Text('PLANTEL TOTAL', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
                     Text('${players.length}', style: AppTypography.sportNumber(size: 38)),
                     Text('jugadores registrados', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                   ],
@@ -1150,7 +1150,7 @@ class _GrupoTabBody extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('PARTIDOS JUGADOS', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+                    Text('PARTIDOS JUGADOS', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
                     Text('${played.length}', style: AppTypography.sportNumber(size: 38, color: AppColors.voltNeon)),
                     Text('en el historial', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                   ],
@@ -1165,7 +1165,7 @@ class _GrupoTabBody extends ConsumerWidget {
             // ── 3. DESTACADOS DEL PLANTEL (MEJOR OVR Y GOLEADOR) ────────
             Text(
               'FIGURAS DEL PLANTEL',
-              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 12),
 
@@ -1198,7 +1198,7 @@ class _GrupoTabBody extends ConsumerWidget {
             // ── 4. EN AGENDA (LISTA ABIERTA) ─────────────────────────────
             Text(
               'EN AGENDA',
-              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted),
+              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
 
@@ -1206,7 +1206,7 @@ class _GrupoTabBody extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('Nada agendado todavía.',
-                    style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
               )
             else
               ...agenda.take(4).map(
@@ -1277,7 +1277,7 @@ class _TeamJerseyStack extends ConsumerWidget {
         height: 72,
         child: Center(
           child: Icon(Icons.checkroom_rounded,
-              size: 34, color: AppColors.textMuted.withValues(alpha: 0.4)),
+              size: 34, color: AppColors.textSecondary.withValues(alpha: 0.4)),
         ),
       );
     }
@@ -1354,7 +1354,7 @@ class _GroupFigureRow extends StatelessWidget {
                   ),
                   Text(
                     label,
-                    style: AppTypography.code(size: 9, color: AppColors.textMuted),
+                    style: AppTypography.code(size: 9, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -1391,7 +1391,7 @@ class _EmptyMural extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
           const SizedBox(height: 6),
           Text(message, style: AppTypography.headline(size: 16, weight: FontWeight.w800)),
           const SizedBox(height: 12),
@@ -1429,7 +1429,7 @@ class _WelcomeEmptyState extends StatelessWidget {
               style: AppTypography.headline(
                   size: 11,
                   weight: FontWeight.w800,
-                  color: AppColors.textMuted,
+                  color: AppColors.textSecondary,
                   letterSpacing: 1.2)),
           const SizedBox(height: 8),
           Text('Todavía no estás en ningún grupo',
@@ -1472,7 +1472,7 @@ class _WelcomeEmptyState extends StatelessWidget {
               ),
               icon: const Icon(Icons.help_outline, size: 16),
               label: const Text('Cómo funciona Pateá'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.textMuted),
+              style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
             ),
           ),
         ],

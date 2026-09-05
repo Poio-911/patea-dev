@@ -11,8 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// `ThemeData`— salvo que la llamada pida uno explícito con `context.c`.
 ///
 /// Las 64 llamadas que dependían de un default distinto de `textPrimary`
-/// —`body()` daba `textSecondary` y `code()` daba `textMuted`— quedaron con el
-/// color escrito, para que este cambio no moviera nada de aspecto.
+/// quedaron con el color escrito, para que ese cambio no moviera nada.
 ///
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 class AppTypography {

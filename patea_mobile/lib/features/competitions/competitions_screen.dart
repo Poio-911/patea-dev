@@ -37,7 +37,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> with Si
           controller: _tabController,
           indicatorColor: AppColors.voltNeon,
           labelColor: AppColors.voltNeon,
-          unselectedLabelColor: AppColors.textMuted,
+          unselectedLabelColor: AppColors.textSecondary,
           labelStyle: AppTypography.headline(size: 14, weight: FontWeight.w700),
           tabs: const [
             Tab(text: 'LIGAS'),
@@ -78,7 +78,7 @@ class _CompetitionsList extends StatelessWidget {
       return Center(
         child: Text(
           isCup ? 'No hay copas activas' : 'No hay ligas activas',
-          style: AppTypography.body(color: AppColors.textMuted),
+          style: AppTypography.body(color: AppColors.textSecondary),
         ),
       );
     }
@@ -134,7 +134,7 @@ class _CompetitionsList extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
               ],
             ),
           ),

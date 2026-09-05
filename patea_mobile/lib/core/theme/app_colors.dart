@@ -56,9 +56,7 @@ class AppColors {
   @Deprecated('Usar context.c.textPrimary')
   static const Color textPrimary = Color(0xFFF8FAFC);
   @Deprecated('Usar context.c.textSecondary')
-  static const Color textSecondary = Color(0xFF94A3B8);
-  @Deprecated('Usar context.c.textSecondary (textMuted se elimina en la Fase 1)')
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color textSecondary = Color(0xFFB3BDCC);
 
   // Tiers de Cartas OVR
   @Deprecated('Usar context.c.eliteBorder')

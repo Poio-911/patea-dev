@@ -182,7 +182,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
             children: [
               Text('TU RENDIMIENTO', style: AppTypography.headline(size: 13, color: AppColors.voltNeon)),
               const SizedBox(height: 4),
-              Text('Registrá tus estadísticas personales del partido.', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+              Text('Registrá tus estadísticas personales del partido.', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -255,11 +255,11 @@ class _MessageState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: AppColors.textMuted),
+            Icon(icon, size: 44, color: AppColors.textSecondary),
             const SizedBox(height: 12),
             Text(title, style: AppTypography.headline(size: 16)),
             const SizedBox(height: 6),
-            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -281,7 +281,7 @@ class _CounterDial extends StatelessWidget {
       decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(14)),
       child: Column(
         children: [
-          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -386,7 +386,7 @@ class _TypeToggle extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: selected ? AppColors.voltNeon : Colors.transparent),
         ),
-        child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? AppColors.voltNeon : AppColors.textMuted)),
+        child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? AppColors.voltNeon : AppColors.textSecondary)),
       ),
     );
   }
@@ -435,7 +435,7 @@ class _TagsEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Elegí al menos 3 (${draft.performanceTags.length} elegidas)', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+        Text('Elegí al menos 3 (${draft.performanceTags.length} elegidas)', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
         const SizedBox(height: 8),
         ...draft.tagPool.map((tag) {
           final isChecked = draft.performanceTags.any((t) => t.id == tag.id);
@@ -462,14 +462,14 @@ class _TagsEditor extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(isChecked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: isChecked ? (isPositive ? AppColors.success : AppColors.destructive) : AppColors.textMuted),
+                    Icon(isChecked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: isChecked ? (isPositive ? AppColors.success : AppColors.destructive) : AppColors.textSecondary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(tag.name, style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700)),
-                          Text(tag.description, style: AppTypography.body(size: 10, color: AppColors.textMuted)),
+                          Text(tag.description, style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
                           const SizedBox(height: 4),
                           Wrap(
                             spacing: 6,

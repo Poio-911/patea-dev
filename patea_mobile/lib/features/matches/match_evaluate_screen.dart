@@ -60,13 +60,13 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
       body: matchAsync.when(
         data: (match) {
           if (match == null) {
-            return Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: AppColors.textMuted)));
+            return Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: AppColors.textSecondary)));
           }
           if (uid != match.ownerUid) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Solo el organizador puede ver esta página.', style: AppTypography.body(color: AppColors.textMuted)),
+                child: Text('Solo el organizador puede ver esta página.', style: AppTypography.body(color: AppColors.textSecondary)),
               ),
             );
           }
@@ -81,7 +81,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                     const SizedBox(height: 12),
                     Text('Evaluación Completa', style: AppTypography.headline(size: 16)),
                     const SizedBox(height: 6),
-                    Text('Este partido ya fue evaluado y los OVRs se actualizaron.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+                    Text('Este partido ya fue evaluado y los OVRs se actualizaron.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -131,7 +131,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text('$completed/$total', style: AppTypography.headline(size: 28, weight: FontWeight.w900)),
-                                  Text('EVALUARON', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.textMuted)),
+                                  Text('EVALUARON', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.textSecondary)),
                                 ],
                               ),
                             ],
@@ -146,12 +146,12 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(children: [
-                              Icon(Icons.info_outline, size: 16, color: AppColors.textMuted),
+                              Icon(Icons.info_outline, size: 16, color: AppColors.textSecondary),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'Al finalizar, se calculan los cambios de OVR y atributos con las evaluaciones recibidas hasta ahora. Los jugadores que todavía no evaluaron reciben el promedio del partido.',
-                                  style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                                 ),
                               ),
                             ]),
@@ -173,7 +173,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                       if (completedAssignments.isEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Text('Necesitás al menos una evaluación completada para finalizar.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                          child: Text('Necesitás al menos una evaluación completada para finalizar.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                         ),
                     ],
                   );
@@ -181,11 +181,11 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textMuted))),
+            error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textMuted))),
+        error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
       ),
     );
   }

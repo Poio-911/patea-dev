@@ -26,14 +26,14 @@ String _fmtMonth(String raw) {
 
 ({String label, Color color, bool urgent}) _urgency(String matchDate) {
   final d = DateTime.tryParse(matchDate);
-  if (d == null) return (label: '', color: AppColors.textMuted, urgent: false);
+  if (d == null) return (label: '', color: AppColors.textSecondary, urgent: false);
   final deadline = d.toLocal().add(const Duration(hours: 72));
   final hoursLeft = deadline.difference(DateTime.now()).inHours;
-  if (hoursLeft <= 0) return (label: 'Cerrada', color: AppColors.textMuted, urgent: false);
+  if (hoursLeft <= 0) return (label: 'Cerrada', color: AppColors.textSecondary, urgent: false);
   if (hoursLeft <= 12) return (label: '${hoursLeft}h restantes', color: AppColors.destructive, urgent: true);
   if (hoursLeft <= 24) return (label: '${hoursLeft}h restantes', color: AppColors.warning, urgent: false);
   final days = (hoursLeft / 24).floor();
-  return (label: '${days}d restantes', color: AppColors.textMuted, urgent: false);
+  return (label: '${days}d restantes', color: AppColors.textSecondary, urgent: false);
 }
 
 /// Port de src/app/evaluations/page.tsx: 3 tabs — Pendientes, Historial,
@@ -81,7 +81,7 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
         backgroundColor: Colors.transparent,
         body: Center(
           child: Text('Debés iniciar sesión.',
-              style: AppTypography.body(color: AppColors.textMuted)),
+              style: AppTypography.body(color: AppColors.textSecondary)),
         ),
       );
     }
@@ -183,7 +183,7 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textMuted))),
+          error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
         ),
       ),
     );
@@ -205,7 +205,7 @@ class _StatBox extends StatelessWidget {
       child: Column(
         children: [
           Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: color ?? AppColors.textPrimary)),
-          Text(label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.textMuted)),
+          Text(label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -227,11 +227,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: AppColors.textMuted),
+            Icon(icon, size: 44, color: AppColors.textSecondary),
             const SizedBox(height: 12),
             Text(title, style: AppTypography.headline(size: 15)),
             const SizedBox(height: 6),
-            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textMuted)),
+            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -294,7 +294,7 @@ class _PendingList extends StatelessWidget {
               ),
               if (item.assignedPlayers.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text('EVALUÁS A', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textMuted)),
+                Text('EVALUÁS A', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -310,7 +310,7 @@ class _PendingList extends StatelessWidget {
                             radius: 9,
                             backgroundColor: AppColors.voltNeon.withValues(alpha: 0.2),
                             backgroundImage: (p.photoURL != null && p.photoURL!.isNotEmpty) ? NetworkImage(p.photoURL!) : null,
-                            child: (p.photoURL == null || p.photoURL!.isEmpty) ? Text(p.name.isNotEmpty ? p.name[0].toUpperCase() : '?', style: AppTypography.code(color: AppColors.textMuted, size: 9)) : null,
+                            child: (p.photoURL == null || p.photoURL!.isEmpty) ? Text(p.name.isNotEmpty ? p.name[0].toUpperCase() : '?', style: AppTypography.code(color: AppColors.textSecondary, size: 9)) : null,
                           ),
                           const SizedBox(width: 6),
                           Text(p.name.split(' ').first, style: AppTypography.body(color: AppColors.textSecondary, size: 11, weight: FontWeight.w600)),
@@ -369,7 +369,7 @@ class _HistoryList extends StatelessWidget {
                     Text(
                       'Evaluaste ${item.submittedEvaluationsCount ?? 0} jugador(es)'
                       '${item.submittedGoals != null ? ' · ${item.submittedGoals} goles · ${item.submittedAssists ?? 0} asis.' : ''}',
-                      style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                      style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -410,7 +410,7 @@ class _RequestsList extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textMuted))),
+      error: (e, _) => Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.textSecondary))),
     );
   }
 }
@@ -470,7 +470,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(r.fromPlayerName, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
-                    Text(r.matchTitle, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                    Text(r.matchTitle, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                   ],
                 ),
               ),

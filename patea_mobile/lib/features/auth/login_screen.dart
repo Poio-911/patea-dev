@@ -181,7 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         style: AppTypography.body(color: AppColors.textSecondary),
                         decoration: const InputDecoration(
                           hintText: 'Tu nombre en la cancha',
-                          prefixIcon: Icon(Icons.person_outline, size: 18, color: AppColors.textMuted),
+                          prefixIcon: Icon(Icons.person_outline, size: 18, color: AppColors.textSecondary),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -221,7 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: AppTypography.body(color: AppColors.textSecondary),
                       decoration: const InputDecoration(
                         hintText: 'tu@email.com',
-                        prefixIcon: Icon(Icons.mail_outline, size: 18, color: AppColors.textMuted),
+                        prefixIcon: Icon(Icons.mail_outline, size: 18, color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -238,12 +238,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: AppTypography.body(color: AppColors.textSecondary),
                       decoration: InputDecoration(
                         hintText: '••••••••',
-                        prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textMuted),
+                        prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textSecondary),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                             size: 18,
-                            color: AppColors.textMuted,
+                            color: AppColors.textSecondary,
                           ),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
@@ -308,7 +308,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10.0),
                             child: Text(
                               'o',
-                              style: AppTypography.code(size: 11, color: AppColors.textMuted),
+                              style: AppTypography.code(size: 11, color: AppColors.textSecondary),
                             ),
                           ),
                           const Expanded(child: Divider(color: AppColors.border)),

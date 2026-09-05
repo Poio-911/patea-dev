@@ -115,7 +115,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 height: 5,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: AppColors.textMuted.withValues(alpha: 0.3),
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -310,13 +310,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       body: playerAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
         error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textMuted)),
+          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textSecondary)),
         ),
         data: (player) {
           if (player == null) {
             return Center(
               child: Text('No se encontró tu perfil.',
-                  style: AppTypography.body(color: AppColors.textMuted)),
+                  style: AppTypography.body(color: AppColors.textSecondary)),
             );
           }
           _seed(player);
@@ -387,7 +387,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'La carta se actualiza mientras editás.',
-                            style: AppTypography.body(size: 11, color: AppColors.textMuted, height: 1.4),
+                            style: AppTypography.body(size: 11, color: AppColors.textSecondary, height: 1.4),
                           ),
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
@@ -505,7 +505,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.cake_outlined, size: 17, color: AppColors.textMuted),
+                            Icon(Icons.cake_outlined, size: 17, color: AppColors.textSecondary),
                             const SizedBox(width: 10),
                             Text(
                               _birthYear != null
@@ -515,17 +515,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 size: 14,
                                 color: _birthYear != null
                                     ? AppColors.textPrimary
-                                    : AppColors.textMuted,
+                                    : AppColors.textSecondary,
                               ),
                             ),
                             const Spacer(),
                             if (_birthYear != null)
                               GestureDetector(
                                 onTap: () => setState(() => _birthYear = null),
-                                child: Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                                child: Icon(Icons.close, size: 16, color: AppColors.textSecondary),
                               )
                             else
-                              Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                              Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
                           ],
                         ),
                       ),
@@ -552,7 +552,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           size: 10,
                           color: _bioController.text.characters.length > _maxBio
                               ? AppColors.destructive
-                              : AppColors.textMuted,
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -631,7 +631,7 @@ class _Label extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text.toUpperCase(),
-        style: AppTypography.code(size: 10, color: AppColors.textMuted),
+        style: AppTypography.code(size: 10, color: AppColors.textSecondary),
       ),
     );
   }
@@ -762,7 +762,7 @@ class _SheetAction extends StatelessWidget {
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(subtitle!,
-                        style: AppTypography.body(size: 11, color: AppColors.textMuted)),
+                        style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                   ],
                 ],
               ),

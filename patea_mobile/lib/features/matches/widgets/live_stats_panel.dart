@@ -70,7 +70,7 @@ class LiveStatsPanel extends StatelessWidget {
         Text('ESTADÍSTICAS',
             style: AppTypography.headline(
                 size: 11, weight: FontWeight.w800,
-                color: AppColors.textMuted, letterSpacing: 1.2)),
+                color: AppColors.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 14),
         ...rows,
       ],

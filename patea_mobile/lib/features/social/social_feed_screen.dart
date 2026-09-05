@@ -33,7 +33,7 @@ class SocialFeedScreen extends StatelessWidget {
             return Center(
               child: Text(
                 'No hay publicaciones en el feed todavía.',
-                style: AppTypography.body(color: AppColors.textMuted),
+                style: AppTypography.body(color: AppColors.textSecondary),
               ),
             );
           }
@@ -76,7 +76,7 @@ class SocialFeedScreen extends StatelessWidget {
                               ),
                               Text(
                                 type == 'ovr_updated' ? 'Actualización de OVR' : 'Actividad deportiva',
-                                style: AppTypography.code(size: 11, color: AppColors.textMuted),
+                                style: AppTypography.code(size: 11, color: AppColors.textSecondary),
                               ),
                             ],
                           ),
@@ -153,7 +153,7 @@ class _ReactionButtonState extends State<_ReactionButton> {
               count > 0 ? '$count' : widget.label,
               style: AppTypography.code(
                 size: 11,
-                color: count > 0 ? AppColors.voltNeon : AppColors.textMuted,
+                color: count > 0 ? AppColors.voltNeon : AppColors.textSecondary,
               ),
             ),
           ],

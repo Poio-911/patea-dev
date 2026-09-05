@@ -86,7 +86,7 @@ class _Tab extends StatelessWidget {
               style: AppTypography.body(
                 size: 14,
                 weight: FontWeight.w700,
-                color: active ? AppColors.voltNeon : AppColors.textMuted,
+                color: active ? AppColors.voltNeon : AppColors.textSecondary,
               ),
             ),
             if (tab.count > 0) ...[
@@ -102,7 +102,7 @@ class _Tab extends StatelessWidget {
                   style: AppTypography.body(
                     size: 10,
                     weight: FontWeight.w700,
-                    color: active ? Colors.black : AppColors.textMuted,
+                    color: active ? Colors.black : AppColors.textSecondary,
                   ),
                 ),
               ),

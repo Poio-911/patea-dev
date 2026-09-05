@@ -100,7 +100,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'El DT está escribiendo...',
-                  style: AppTypography.code(size: 11, color: AppColors.textMuted),
+                  style: AppTypography.code(size: 11, color: AppColors.textSecondary),
                 ),
               ),
             ),

@@ -267,7 +267,7 @@ class _MvpMedallion extends StatelessWidget {
                         const Spacer(),
                         Text(
                           '$votes voto${votes > 1 ? "s" : ""}',
-                          style: AppTypography.code(size: 9, color: AppColors.textMuted),
+                          style: AppTypography.code(size: 9, color: AppColors.textSecondary),
                         ),
                       ],
                     ],
@@ -431,7 +431,7 @@ class _Boxscore extends StatelessWidget {
           Text(
             'LA PLANILLA',
             style: AppTypography.code(
-                size: 9, weight: FontWeight.w700, color: AppColors.textMuted)
+                size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)
                 .copyWith(letterSpacing: 3),
           ),
           // Dos listas separadas y no una sola: quien marcó y asistió aparece
@@ -568,12 +568,12 @@ class _Voices extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Icon(Icons.format_quote_rounded, size: 14, color: AppColors.textMuted),
+                Icon(Icons.format_quote_rounded, size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 6),
                 Text(
                   'VOCES DEL VESTUARIO',
                   style: AppTypography.code(
-                      size: 9, weight: FontWeight.w700, color: AppColors.textMuted)
+                      size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)
                       .copyWith(letterSpacing: 3),
                 ),
               ],
@@ -735,7 +735,7 @@ class _CoverPending extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       'Relato oficial con IA a partir de goles, asistencias y votos.',
-                      style: AppTypography.body(size: 12, color: AppColors.textMuted),
+                      style: AppTypography.body(size: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),

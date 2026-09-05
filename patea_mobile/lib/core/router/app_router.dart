@@ -317,7 +317,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
               height: 5,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: AppColors.textMuted.withValues(alpha: 0.3),
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -462,7 +462,7 @@ class _NavItem extends StatelessWidget {
             Icon(
               isSelected ? activeIcon : icon,
               size: 22,
-              color: isSelected ? AppColors.voltNeon : AppColors.textMuted,
+              color: isSelected ? AppColors.voltNeon : AppColors.textSecondary,
             ),
             const SizedBox(height: 3),
             Text(
@@ -470,7 +470,7 @@ class _NavItem extends StatelessWidget {
               style: AppTypography.headline(
                 size: 10,
                 weight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected ? AppColors.voltNeon : AppColors.textMuted,
+                color: isSelected ? AppColors.voltNeon : AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 2),
@@ -522,7 +522,7 @@ class _PartidosSheetItem extends StatelessWidget {
                 color: isActive ? AppColors.voltNeon : AppColors.cardSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, size: 20, color: isActive ? Colors.black : AppColors.textMuted),
+              child: Icon(icon, size: 20, color: isActive ? Colors.black : AppColors.textSecondary),
             ),
             const SizedBox(width: 14),
             Text(

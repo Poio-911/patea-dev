@@ -66,7 +66,7 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
                 style: AppTypography.headline(
                     size: 11,
                     weight: FontWeight.w800,
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary,
                     letterSpacing: 1.2)),
             const SizedBox(width: 8),
             Container(
@@ -148,7 +148,7 @@ class _RequestRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${request.position}  ·  OVR ${request.ovr}',
-                  style: AppTypography.body(size: 11, color: AppColors.textMuted),
+                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -165,7 +165,7 @@ class _RequestRow extends StatelessWidget {
           else ...[
             _RespondButton(
               icon: Icons.close_rounded,
-              color: AppColors.textMuted,
+              color: AppColors.textSecondary,
               onTap: enabled ? onReject : null,
             ),
             const SizedBox(width: 8),
@@ -200,7 +200,7 @@ class _RespondButton extends StatelessWidget {
           borderRadius: AppRadii.chipAll,
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
-        child: Icon(icon, size: 18, color: onTap == null ? AppColors.textMuted : color),
+        child: Icon(icon, size: 18, color: onTap == null ? AppColors.textSecondary : color),
       ),
     );
   }
