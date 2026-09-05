@@ -6,6 +6,7 @@ import '../../../core/models/player_activity_models.dart';
 import '../../../core/services/player_profile_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/dates.dart';
 
 /// Port de `PlayerMatchDebriefView` (src/components/player-match-debrief-view.tsx).
 ///
@@ -165,21 +166,7 @@ class _MatchCard extends StatelessWidget {
 
   const _MatchCard({required this.feedback});
 
-  /// Meses a mano, igual que `matches_screen.dart`. La app no inicializa los
-  /// datos de locale de `intl`, así que `DateFormat(..., 'es')` tiraría
-  /// LocaleDataException en runtime.
-  static const _months = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-  ];
-
-  String get _dateLabel {
-    final raw = feedback.date;
-    if (raw == null || raw.isEmpty) return '';
-    final parsed = DateTime.tryParse(raw);
-    if (parsed == null) return raw;
-    return '${parsed.day} de ${_months[parsed.month - 1]}';
-  }
+  String get _dateLabel => fmtDayAndMonth(feedback.date);
 
   @override
   Widget build(BuildContext context) {

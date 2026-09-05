@@ -13,7 +13,11 @@ class LeaderboardScreen extends ConsumerWidget {
     final playersAsync = ref.watch(activeGroupPlayersProvider);
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(
           'RANKINGS & TABLAS',
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),

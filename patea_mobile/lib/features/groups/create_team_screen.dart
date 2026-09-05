@@ -77,7 +77,11 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     final playersAsync = ref.watch(playersStreamProvider(widget.groupId));
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text('CREAR EQUIPO', style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
         leading: _step > 1 ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() => _step -= 1)) : null,
       ),

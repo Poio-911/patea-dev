@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -14,6 +15,14 @@ import '../theme/app_typography.dart';
 ///
 /// El contador aparece sólo si hay algo que contar: un "0" al lado de una
 /// pestaña no informa, decora.
+///
+/// **Una sola forma, sin perillas.** Había cuatro barras de pestañas en la
+/// app: esta, una copia literal en Partidos, una propia en el Panel —mayúsculas,
+/// otra fuente, activa en blanco en vez de volt, subrayado con glow y ancho
+/// completo— y el `TabBar` de Material sin tocar en Competiciones. La forma de
+/// no volver ahí no es agregarle un parámetro por cada caso: es que haya una.
+/// El único detalle que se rescató del Panel es la háptica, porque no cambia
+/// cómo se ve y sí cómo se siente.
 class PateaTab {
   final String label;
   final int count;
@@ -67,7 +76,10 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(

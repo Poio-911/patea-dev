@@ -19,6 +19,7 @@ import '../../core/services/push_permission.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/dates.dart';
 import '../../core/theme/match_theme.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/player_avatar_fallback.dart';
@@ -32,23 +33,8 @@ import 'widgets/match_timeline.dart';
 import 'widgets/recruit_players_sheet.dart';
 import 'widgets/weather_alert.dart';
 
-const _spanishWeekdays = [
-  'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo',
-];
 
-const _spanishFullMonths = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
 
-String _fmtHeroDate(String raw) {
-  final d = DateTime.tryParse(raw);
-  if (d == null) return raw;
-  final local = d.toLocal();
-  final wd = _spanishWeekdays[local.weekday - 1];
-  final mo = _spanishFullMonths[local.month - 1];
-  return '$wd ${local.day} de $mo';
-}
 
 /// Pantalla de Detalle de Partido: experiencia deportiva estilo broadcast de TV
 /// y fútbol callejero.
@@ -548,7 +534,7 @@ class _HeroCard extends StatelessWidget {
       venueName = match.location!.trim().split(',').first.trim();
     }
 
-    final dateStr = match.date.isNotEmpty ? _fmtHeroDate(match.date) : 'Fecha a definir';
+    final dateStr = match.date.isNotEmpty ? fmtLongDate(match.date) : 'Fecha a definir';
     final timeStr = (match.time != null && match.time!.trim().isNotEmpty) ? '${match.time!.trim()} hs' : '';
     final dateTimeStr = timeStr.isNotEmpty ? '$dateStr • $timeStr' : dateStr;
 

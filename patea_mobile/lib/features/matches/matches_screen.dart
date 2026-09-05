@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/dates.dart';
 import '../../core/theme/match_theme.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/match_service.dart';
@@ -15,40 +16,8 @@ import '../../core/models/match_model.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/parallax_background.dart';
 import '../../core/widgets/patea_page_header.dart';
+import '../../core/widgets/patea_tabs.dart';
 import '../../core/theme/app_insets.dart';
-
-const _spanishMonths = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-];
-
-const _spanishWeekdays = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-
-/// [includeTime]: la web solo muestra la hora dentro de la fecha cuando NO
-/// hay un campo 'time' separado (algunos partidos viejos guardan todo en un
-/// único datetime ISO). Si ya mostramos "Hora" aparte, no la repetimos acá.
-String _formatMatchDate(String raw, {bool includeTime = false}) {
-  final parsed = DateTime.tryParse(raw);
-  if (parsed == null) return raw; // ya viene formateado (ej. "19 de Abril")
-  final local = parsed.toLocal();
-  final day = local.day.toString().padLeft(2, '0');
-  final month = _spanishMonths[local.month - 1];
-  if (!includeTime) return '$day $month';
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '$day $month, $hour:$minute';
-}
-
-String _formatLongDate(DateTime d) {
-  final weekday = _spanishWeekdays[d.weekday - 1];
-  return '$weekday, ${d.day} de ${_fullMonth(d.month)}';
-}
-
-const _spanishFullMonths = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
-String _fullMonth(int month) => _spanishFullMonths[month - 1];
 
 // Port de matchStatusConfig (src/lib/match-status-config.ts).
 const Map<String, String> _statusLabels = {
@@ -215,7 +184,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                       Text(match.title, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       const SizedBox(height: 3),
                                       Text(
-                                        '${_formatMatchDate(match.date)} · ${match.time ?? ''} hs',
+                                        '${fmtDate(match.date)} · ${match.time ?? ''} hs',
                                         style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                                       ),
                                     ],
@@ -410,10 +379,14 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: _QuickTimeFilterTabs(
-                    active: _timeFilter,
-                    counts: counts,
-                    onChanged: (f) => setState(() => _timeFilter = f),
+                  child: PateaTabs(
+                    tabs: [
+                      for (final f in TimeFilter.values)
+                        PateaTab(_timeFilterLabels[f]!, count: counts[f] ?? 0),
+                    ],
+                    active: TimeFilter.values.indexOf(_timeFilter),
+                    onChanged: (i) =>
+                        setState(() => _timeFilter = TimeFilter.values[i]),
                   ),
                 ),
               ),
@@ -497,80 +470,11 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 }
 
 /// Port de QuickTimeFilter (src/components/matches/quick-time-filter.tsx).
-class _QuickTimeFilterTabs extends StatelessWidget {
-  final TimeFilter active;
-  final Map<TimeFilter, int> counts;
-  final ValueChanged<TimeFilter> onChanged;
-
-  const _QuickTimeFilterTabs({required this.active, required this.counts, required this.onChanged});
-
-  static const _labels = {
-    TimeFilter.upcoming: 'Próximos',
-    TimeFilter.thisWeek: 'Semana',
-    TimeFilter.history: 'Historial',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: _labels.entries.map((entry) {
-            final isActive = entry.key == active;
-            final count = counts[entry.key] ?? 0;
-            return Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: InkWell(
-                onTap: () => onChanged(entry.key),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: isActive ? AppColors.voltNeon : Colors.transparent, width: 2),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        entry.value,
-                        style: AppTypography.body(
-                          size: 14,
-                          weight: FontWeight.w700,
-                          color: isActive ? AppColors.voltNeon : AppColors.textSecondary,
-                        ),
-                      ),
-                      if (count > 0) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: isActive ? AppColors.voltNeon : AppColors.cardSurface,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$count',
-                            style: AppTypography.body(
-                              size: 10,
-                              weight: FontWeight.w700,
-                              color: isActive ? AppColors.onPrimary : AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        Container(height: 1, color: AppColors.border.withValues(alpha: 0.3)),
-      ],
-    );
-  }
-}
+const _timeFilterLabels = {
+  TimeFilter.upcoming: 'Próximos',
+  TimeFilter.thisWeek: 'Semana',
+  TimeFilter.history: 'Historial',
+};
 
 /// Port de ViewModeToggle (src/components/matches/view-mode-toggle.tsx).
 class _ViewModeToggle extends StatelessWidget {
@@ -916,7 +820,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                       spacing: 16,
                       runSpacing: 4,
                       children: [
-                        if (dateObj != null) _BannerInfoRow(icon: Icons.calendar_today, text: _formatLongDate(dateObj)),
+                        if (dateObj != null) _BannerInfoRow(icon: Icons.calendar_today, text: fmtLongDateOf(dateObj)),
                         if (match.time != null) _BannerInfoRow(icon: Icons.access_time, text: '${match.time} hs'),
                         if (match.location != null) _BannerInfoRow(icon: Icons.navigation_outlined, text: match.location!),
                       ],
@@ -1071,21 +975,34 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
     duration: const Duration(milliseconds: 1400),
   );
 
+  /// El latido corre sólo si el sistema no pidió menos movimiento.
+  ///
+  /// `AnimationController` ya acorta las animaciones cuando
+  /// `disableAnimations` está activo, pero las que se repiten quedan afuera a
+  /// propósito (`AnimationBehavior.preserve` es el default de `repeat`, para
+  /// que no titilen). O sea: un bucle infinito es el único caso que hay que
+  /// atender a mano, y este es el único bucle infinito de la app.
+  void _syncPulse() {
+    final live = widget.match.status == 'active' &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (live && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!live && _pulse.isAnimating) {
+      _pulse.stop();
+      _pulse.value = 0;
+    }
+  }
+
   @override
-  void initState() {
-    super.initState();
-    if (widget.match.status == 'active') _pulse.repeat(reverse: true);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncPulse();
   }
 
   @override
   void didUpdateWidget(_MatchCard old) {
     super.didUpdateWidget(old);
-    final live = widget.match.status == 'active';
-    if (live && !_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    } else if (!live && _pulse.isAnimating) {
-      _pulse.stop();
-    }
+    _syncPulse();
   }
 
   @override
@@ -1271,7 +1188,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                     label: 'Fecha',
                     value: (match.status == 'planning' || match.date.isEmpty)
                         ? 'Por confirmar'
-                        : _formatMatchDate(match.date, includeTime: match.time == null),
+                        : match.time == null ? fmtDateTime(match.date) : fmtDate(match.date),
                   ),
                 ),
                 Expanded(
@@ -1537,7 +1454,7 @@ class _CompactMatchCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _CompactInfoRow(icon: Icons.calendar_today_outlined, text: isPlanning ? 'Fecha por confirmar' : _formatMatchDate(match.date)),
+                _CompactInfoRow(icon: Icons.calendar_today_outlined, text: isPlanning ? 'Fecha por confirmar' : fmtDate(match.date)),
                 const SizedBox(height: 3),
                 _CompactInfoRow(icon: Icons.access_time, text: isPlanning ? 'Por votar' : '${match.time ?? ''} hs'),
                 if (match.location != null) ...[

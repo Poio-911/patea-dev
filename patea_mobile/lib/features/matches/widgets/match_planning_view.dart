@@ -9,6 +9,7 @@ import '../../../core/services/match_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/dates.dart';
 
 /// Cuándo y dónde se juega, cuando todavía no está decidido.
 ///
@@ -130,7 +131,7 @@ class _DateVotingState extends ConsumerState<_DateVoting> {
         else
           for (final p in proposals)
             _ProposalRow(
-              title: _formatDay(p.dateTime),
+              title: fmtLongDateOf(p.dateTime),
               subtitle: '${p.time} hs',
               votes: p.votes.length,
               voted: widget.uid != null && p.votes.contains(widget.uid),
@@ -153,18 +154,8 @@ class _DateVotingState extends ConsumerState<_DateVoting> {
 /// `player_match_debrief.dart`. La app no inicializa los datos de locale de
 /// `intl`, así que `DateFormat(..., 'es')` tira LocaleDataException en runtime
 /// — cosa que el analizador no ve.
-const _weekdays = [
-  'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo',
-];
-const _months = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
 
-String _formatDay(DateTime? d) {
-  if (d == null) return 'Sin fecha';
-  return '${_weekdays[d.weekday - 1]} ${d.day} de ${_months[d.month - 1]}';
-}
+
 
 // ---------------------------------------------------------------------------
 // Cancha

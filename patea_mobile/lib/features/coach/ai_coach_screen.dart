@@ -46,7 +46,11 @@ class _AICoachScreenState extends State<AICoachScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Row(
           children: [
             const Icon(Icons.smart_toy_outlined, color: AppColors.voltNeon),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/patea_tabs.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/competition_model.dart';
 
@@ -15,11 +16,18 @@ class CompetitionsScreen extends ConsumerStatefulWidget {
 
 class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _tab = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // El swipe del TabBarView tambien tiene que mover la barra.
+    _tabController.addListener(() {
+      if (_tabController.index != _tab) {
+        setState(() => _tab = _tabController.index);
+      }
+    });
   }
 
   @override
@@ -28,21 +36,31 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> with Si
     final cupsAsync = ref.watch(cupsStreamProvider);
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(
           'TORNEOS Y COPAS',
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.voltNeon,
-          labelColor: AppColors.voltNeon,
-          unselectedLabelColor: AppColors.textSecondary,
-          labelStyle: AppTypography.headline(size: 14, weight: FontWeight.w700),
-          tabs: const [
-            Tab(text: 'LIGAS'),
-            Tab(text: 'COPAS (ELIMINATORIAS)'),
-          ],
+        // Antes era el `TabBar` de Material sin tocar, que en medio de la app
+        // cambiaba de idioma visual. "COPAS (ELIMINATORIAS)" tampoco entraba:
+        // en la barra compartida el rótulo va corto.
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(41),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PateaTabs(
+              tabs: const [PateaTab('Ligas'), PateaTab('Copas')],
+              active: _tab,
+              onChanged: (i) {
+                setState(() => _tab = i);
+                _tabController.animateTo(i);
+              },
+            ),
+          ),
         ),
       ),
       body: TabBarView(

@@ -56,6 +56,9 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
     final assignmentsAsync = ref.watch(matchAssignmentsStreamProvider(widget.matchId));
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text('EVALUACIÓN DEL PARTIDO', style: AppTypography.headline(size: 16, weight: FontWeight.w800))),
       body: matchAsync.when(
         data: (match) {

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/dates.dart';
 import '../../core/theme/match_theme.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
@@ -20,13 +21,8 @@ import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
 
-const _spanishMonths = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-String _fmtDate(String raw) {
-  final d = DateTime.tryParse(raw);
-  if (d == null) return raw;
-  final local = d.toLocal();
-  return '${local.day.toString().padLeft(2, '0')} ${_spanishMonths[local.month - 1]}';
-}
+
+
 
 const _days = [
   {'id': 'lunes', 'short': 'Lun'},
@@ -257,7 +253,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                       Row(children: [
                         Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textSecondary),
                         const SizedBox(width: 6),
-                        Text('${_fmtDate(match.date)} · ${match.time ?? ''} hs', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                        Text('${fmtDate(match.date)} · ${match.time ?? ''} hs', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
                       ]),
                       if (match.location != null) ...[
                         const SizedBox(height: 4),
@@ -933,7 +929,7 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
           ),
           const SizedBox(height: 10),
           _row(Icons.calendar_today_outlined,
-              '${_fmtDate(match.date)}  -  ${match.time ?? ''} hs'),
+              '${fmtDate(match.date)}  -  ${match.time ?? ''} hs'),
           if (match.location != null) ...[
             const SizedBox(height: 4),
             _row(Icons.location_on_outlined, match.location!),

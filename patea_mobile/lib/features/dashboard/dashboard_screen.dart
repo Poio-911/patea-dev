@@ -12,6 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/patea_tabs.dart';
+import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/match_model.dart';
@@ -20,17 +22,9 @@ import '../../core/models/player_model.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/patea_help_dialog.dart';
 
-const _spanishMonths = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-];
 
-String _fmtDate(String raw) {
-  final d = DateTime.tryParse(raw);
-  if (d == null) return raw;
-  final local = d.toLocal();
-  return '${local.day.toString().padLeft(2, '0')} de ${_spanishMonths[local.month - 1]}';
-}
+
+
 
 DateTime? _matchDateTime(MatchModel m) {
   final d = DateTime.tryParse(m.date);
@@ -156,7 +150,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               sliver: SliverToBoxAdapter(
-                child: _DashboardTabBar(active: _tab, onChanged: _saveTab),
+                child: PateaTabs(
+                  tabs: const [PateaTab('Mi Resumen'), PateaTab('Mi Grupo')],
+                  active: _tab,
+                  onChanged: _saveTab,
+                ),
               ),
             ),
 
@@ -174,69 +172,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _DashboardTabBar extends StatelessWidget {
-  final int active;
-  final ValueChanged<int> onChanged;
-
-  const _DashboardTabBar({required this.active, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget tab(String label, int index) {
-      final selected = active == index;
-      return Expanded(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onChanged(index);
-          },
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 9),
-                child: Text(
-                  label.toUpperCase(),
-                  style: AppTypography.headline(
-                    size: 12,
-                    weight: selected ? FontWeight.w900 : FontWeight.w600,
-                    color: selected ? AppColors.textPrimary : AppColors.textSecondary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                height: 2.5,
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.voltNeon : Colors.transparent,
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: selected
-                      ? [BoxShadow(color: AppColors.voltNeon.withValues(alpha: 0.4), blurRadius: 8)]
-                      : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            tab('Mi Resumen', 0),
-            tab('Mi Grupo', 1),
-          ],
-        ),
-        Container(height: 1, color: AppColors.overlaySubtle),
-      ],
     );
   }
 }
@@ -545,8 +480,8 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                 children: [
                   Text(
                     match.time == null
-                        ? _fmtDate(match.date).toUpperCase()
-                        : '${_fmtDate(match.date).toUpperCase()} · ${match.time}',
+                        ? fmtDate(match.date).toUpperCase()
+                        : '${fmtDate(match.date).toUpperCase()} · ${match.time}',
                     style: AppTypography.code(
                         size: 10, weight: FontWeight.w800, color: AppColors.voltNeon),
                   ),
@@ -960,7 +895,7 @@ class _LastResultMural extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'ÚLTIMO JUGADO · ${_fmtDate(match.date).toUpperCase()}',
+                  'ÚLTIMO JUGADO · ${fmtDate(match.date).toUpperCase()}',
                   style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 3),
@@ -1226,7 +1161,7 @@ class _GrupoTabBody extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              m.time == null ? _fmtDate(m.date) : '${_fmtDate(m.date)} · ${m.time}',
+                              m.time == null ? fmtDate(m.date) : '${fmtDate(m.date)} · ${m.time}',
                               style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.voltNeon),
                             ),
                           ],

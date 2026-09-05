@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/group_service.dart';
@@ -15,17 +16,8 @@ import '../../core/models/player_model.dart';
 import '../../core/models/group_permissions.dart';
 import '../../core/widgets/jersey_painter.dart';
 
-const _spanishMonths = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-];
 
-String _fmtDate(String raw) {
-  final d = DateTime.tryParse(raw);
-  if (d == null) return raw;
-  final local = d.toLocal();
-  return '${local.day.toString().padLeft(2, '0')} de ${_spanishMonths[local.month - 1]}';
-}
+
 
 /// Port de src/app/groups/page.tsx: selector de grupo activo, código de
 /// invitación, y (a diferencia del "Mi Grupo" del dashboard, que solo lee)
@@ -43,7 +35,11 @@ class GroupsScreen extends ConsumerWidget {
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text('MIS GRUPOS', style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
         actions: [
           IconButton(
@@ -431,8 +427,8 @@ class _ActiveGroupView extends ConsumerWidget {
                           .map((m) => _MatchLine(
                                 title: m.title,
                                 trailing: m.time == null
-                                    ? _fmtDate(m.date)
-                                    : '${_fmtDate(m.date)} · ${m.time}',
+                                    ? fmtDate(m.date)
+                                    : '${fmtDate(m.date)} · ${m.time}',
                                 onTap: () => context.push('/matches/${m.id}'),
                               ))
                           .toList(),
@@ -477,7 +473,7 @@ class _ActiveGroupView extends ConsumerWidget {
                       .take(5)
                       .map((m) => _MatchLine(
                             title: m.title,
-                            trailing: _fmtDate(m.date),
+                            trailing: fmtDate(m.date),
                             onTap: () => context.push('/matches/${m.id}'),
                           ))
                       .toList(),
@@ -690,7 +686,7 @@ class _PlayedMatchRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(_fmtDate(match.date),
+                Text(fmtDate(match.date),
                     style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
               ],
             ),

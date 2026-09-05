@@ -129,7 +129,11 @@ class CupBracketScreen extends ConsumerWidget {
     );
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(
           'LLAVES ELIMINATORIAS',
           style: AppTypography.headline(size: 16, weight: FontWeight.w700),

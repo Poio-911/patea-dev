@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/evaluation_service.dart';
 import '../../core/models/evaluation_models.dart';
@@ -10,19 +11,8 @@ import '../../core/theme/app_insets.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
 
-const _months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-String _fmtDay(String raw) {
-  final d = DateTime.tryParse(raw);
-  if (d == null) return '';
-  final local = d.toLocal();
-  return local.day.toString().padLeft(2, '0');
-}
 
-String _fmtMonth(String raw) {
-  final d = DateTime.tryParse(raw);
-  if (d == null) return '';
-  return _months[d.toLocal().month - 1].toUpperCase();
-}
+
 
 ({String label, Color color, bool urgent}) _urgency(String matchDate) {
   final d = DateTime.tryParse(matchDate);
@@ -269,8 +259,8 @@ class _PendingList extends StatelessWidget {
                     decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(8)),
                     child: Column(
                       children: [
-                        Text(_fmtMonth(item.matchDate), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.voltNeon)),
-                        Text(_fmtDay(item.matchDate), style: AppTypography.headline(size: 16, weight: FontWeight.w900)),
+                        Text(fmtMonthShort(item.matchDate), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.voltNeon)),
+                        Text(fmtDayNumber(item.matchDate), style: AppTypography.headline(size: 16, weight: FontWeight.w900)),
                       ],
                     ),
                   ),

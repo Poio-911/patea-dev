@@ -307,7 +307,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final playersAsync = ref.watch(activeGroupPlayersProvider);
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text('ARMAR PARTIDO', style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
         leading: _step > 1
             ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() => _step -= 1))

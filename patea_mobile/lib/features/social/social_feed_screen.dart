@@ -15,7 +15,11 @@ class SocialFeedScreen extends StatelessWidget {
         .snapshots();
 
     return Scaffold(
+      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(
           'COMUNIDAD PATEÁ',
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),
