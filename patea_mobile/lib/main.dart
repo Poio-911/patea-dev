@@ -23,17 +23,11 @@ void main() {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
-      // Modo nativo Edge-to-Edge: toda la pantalla inmersiva (detrás de status y nav bar)
+      // Modo nativo Edge-to-Edge: toda la pantalla inmersiva (detras de
+      // status y nav bar). El COLOR de los iconos ya no se fija aca: lo pone
+      // el tema via `appBarTheme.systemOverlayStyle`, porque iconos claros
+      // sobre un fondo claro no se ven.
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarIconBrightness: Brightness.light,
-          systemNavigationBarDividerColor: Colors.transparent,
-        ),
-      );
 
       // En Android, desde que existe `google-services.json` + el plugin de
       // Gradle, el SDK nativo inicializa la app por defecto ANTES de que
@@ -116,7 +110,15 @@ class PateaApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Pateá',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      // Los dos esquemas quedan declarados desde ahora, aunque todavia no haya
+      // forma de elegir el claro: eso es la Fase 5. Lo importante de esta fase
+      // es que exista el lugar donde enchufarlo.
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      // `game` no es "el modo oscuro": es una identidad de marca con volt,
+      // foto de cancha y scanlines. Por eso no sigue al ajuste del sistema —
+      // le pondria una estetica de videojuego a alguien que no la pidio.
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

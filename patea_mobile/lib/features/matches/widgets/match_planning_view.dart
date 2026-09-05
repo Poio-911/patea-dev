@@ -329,7 +329,7 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
             controller: _controller,
             autofocus: true,
             onChanged: _onChanged,
-            style: AppTypography.body(size: 14),
+            style: AppTypography.body(color: AppColors.textSecondary, size: 14),
             decoration: InputDecoration(
               hintText: 'Nombre de la cancha o dirección',
               prefixIcon: const Icon(Icons.search_rounded, size: 20),

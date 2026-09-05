@@ -44,7 +44,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.card,
         title: Text('¿Eliminar "${team.name}"?', style: AppTypography.headline(size: 16)),
-        content: Text('Esta acción es permanente.', style: AppTypography.body(size: 13)),
+        content: Text('Esta acción es permanente.', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           ElevatedButton(
@@ -622,7 +622,7 @@ class _RosterTile extends StatelessWidget {
                   p?.name ?? 'Jugador sin datos',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(size: 13, weight: FontWeight.w600),
+                  style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600),
                 ),
               ),
               if (p != null) ...[
@@ -688,7 +688,7 @@ class _AgendaRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style:
-                        AppTypography.body(size: 13, weight: FontWeight.w700),
+                        AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
                   Text(

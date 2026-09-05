@@ -187,7 +187,7 @@ class _NoActiveGroupView extends ConsumerWidget {
               Icon(Icons.groups_2_outlined, color: AppColors.voltNeon),
               const SizedBox(width: 12),
               Expanded(
-                child: Text('No tenés un grupo seleccionado. Elegí uno debajo, o creá/unite a uno.', style: AppTypography.body(size: 12)),
+                child: Text('No tenés un grupo seleccionado. Elegí uno debajo, o creá/unite a uno.', style: AppTypography.body(color: AppColors.textSecondary, size: 12)),
               ),
             ],
           ),
@@ -233,7 +233,7 @@ class _NoActiveGroupView extends ConsumerWidget {
                             children: [
                               Icon(Icons.shield_outlined, color: AppColors.voltNeon),
                               const SizedBox(width: 12),
-                              Expanded(child: Text(g.name, style: AppTypography.body(size: 14, weight: FontWeight.w700))),
+                              Expanded(child: Text(g.name, style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700))),
                               Icon(Icons.chevron_right, color: AppColors.textMuted),
                             ],
                           ),
@@ -393,8 +393,7 @@ class _ActiveGroupView extends ConsumerWidget {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(team.name,
-                                              style: AppTypography.body(
-                                                  size: 14, weight: FontWeight.w700)),
+                                              style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700)),
                                           Text(
                                             _rosterLine(team),
                                             style: AppTypography.body(
@@ -634,7 +633,7 @@ class _MatchLine extends StatelessWidget {
               child: Text(title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(size: 13, weight: FontWeight.w600)),
+                  style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600)),
             ),
             const SizedBox(width: 8),
             Text(trailing,
@@ -687,7 +686,7 @@ class _PlayedMatchRow extends StatelessWidget {
                     hasScore ? '${a.name}  ${a.score} — ${b.score}  ${b.name}' : match.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 13, weight: FontWeight.w700),
+                    style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -707,7 +706,7 @@ class _PlayedMatchRow extends StatelessWidget {
                         : null,
                     child: mvpPhoto == null || mvpPhoto!.isEmpty
                         ? Text(mvpName![0].toUpperCase(),
-                            style: AppTypography.code(size: 8))
+                            style: AppTypography.code(color: AppColors.textMuted, size: 8))
                         : null,
                   ),
                   const SizedBox(width: 6),
@@ -788,7 +787,7 @@ class _GroupHeroCard extends StatelessWidget {
                       children: [
                         Text('CÓDIGO', style: AppTypography.body(size: 10, color: AppColors.textMuted)),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(group.inviteCode, style: AppTypography.code(size: 14, weight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
+                        Expanded(child: Text(group.inviteCode, style: AppTypography.code(color: AppColors.textMuted, size: 14, weight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
                         Icon(Icons.copy, size: 14, color: AppColors.textMuted),
                       ],
                     ),

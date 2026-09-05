@@ -263,7 +263,7 @@ class _ActionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: AppTypography.body(size: 12, weight: FontWeight.w700),
+                      style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700),
                     ),
                   ),
                   Icon(icon, size: 18, color: AppColors.voltNeon),

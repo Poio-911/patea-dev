@@ -178,7 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 6),
                       TextField(
                         controller: _nameController,
-                        style: AppTypography.body(),
+                        style: AppTypography.body(color: AppColors.textSecondary),
                         decoration: const InputDecoration(
                           hintText: 'Tu nombre en la cancha',
                           prefixIcon: Icon(Icons.person_outline, size: 18, color: AppColors.textMuted),
@@ -218,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: AppTypography.body(),
+                      style: AppTypography.body(color: AppColors.textSecondary),
                       decoration: const InputDecoration(
                         hintText: 'tu@email.com',
                         prefixIcon: Icon(Icons.mail_outline, size: 18, color: AppColors.textMuted),
@@ -235,7 +235,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: AppTypography.body(),
+                      style: AppTypography.body(color: AppColors.textSecondary),
                       decoration: InputDecoration(
                         hintText: '••••••••',
                         prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textMuted),

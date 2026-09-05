@@ -116,7 +116,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
-                      style: AppTypography.body(),
+                      style: AppTypography.body(color: AppColors.textSecondary),
                       decoration: const InputDecoration(
                         hintText: 'Consultale algo a tu DT...',
                         contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),

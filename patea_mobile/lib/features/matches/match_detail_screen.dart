@@ -128,7 +128,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         title: Text('¿Borrar este partido?', style: AppTypography.headline(size: 16)),
         content: Text(
           'Esta acción es permanente y no se puede deshacer. Los jugadores inscriptos recibirán una notificación de cancelación.',
-          style: AppTypography.body(size: 13),
+          style: AppTypography.body(color: AppColors.textSecondary, size: 13),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
@@ -263,7 +263,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       children: suggestions
                           .map((s) => ListTile(
                                 dense: true,
-                                title: Text(s.label, style: AppTypography.body(size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                title: Text(s.label, style: AppTypography.body(color: AppColors.textSecondary, size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                                 onTap: () => setDialogState(() {
                                   selected = s;
                                   controller.text = s.label;
@@ -398,7 +398,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             children: [
                               const Icon(Icons.calendar_month_outlined, size: 18),
                               const SizedBox(width: 10),
-                              Text('Reprogramar partido', style: AppTypography.body(size: 13)),
+                              Text('Reprogramar partido', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
                             ],
                           ),
                         ),
@@ -408,7 +408,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             children: [
                               const Icon(Icons.map_outlined, size: 18),
                               const SizedBox(width: 10),
-                              Text('Cambiar cancha', style: AppTypography.body(size: 13)),
+                              Text('Cambiar cancha', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
                             ],
                           ),
                         ),
@@ -1077,7 +1077,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
-                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(size: 11, weight: FontWeight.w700)),
+                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: AppColors.textMuted, size: 11, weight: FontWeight.w700)),
               ),
             ],
           ),
@@ -1115,7 +1115,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                                 backgroundImage: (p.photoURL != null && p.photoURL!.isNotEmpty) ? NetworkImage(p.photoURL!) : null,
                                 child: (p.photoURL == null || p.photoURL!.isEmpty)
                                     ? Text(p.displayName.isNotEmpty ? p.displayName[0].toUpperCase() : '?',
-                                        style: AppTypography.body(size: 14, weight: FontWeight.w700))
+                                        style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700))
                                     : null,
                               ),
                               const SizedBox(height: 5),
@@ -1862,7 +1862,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                                 data['senderName'] as String? ?? 'Usuario',
                                 style: AppTypography.body(size: 10.5, weight: FontWeight.w700, color: AppColors.voltNeon),
                               ),
-                            Text(data['text'] as String? ?? '', style: AppTypography.body(size: 13)),
+                            Text(data['text'] as String? ?? '', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
                           ],
                         ),
                       ),

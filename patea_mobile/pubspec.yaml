@@ -88,6 +88,15 @@ flutter:
     - shaders/card_foil.frag
 
   assets:
+    # Las 31 caras de las 7 familias, empaquetadas en vez de bajadas por red.
+    # `google_fonts` usa estos archivos si estan en esta carpeta con el nombre
+    # `Familia-Peso.ttf`, sin tocar una sola llamada de AppTypography.
+    #
+    # No es una optimizacion de peso (son 1,3 MB): es que sin esto el primer
+    # arranque sin red muestra la app entera en Roboto, y sobre todo los golden
+    # tests renderizan en Roboto y validan una tipografia que no es la de la
+    # app. Ver docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md, Fase 0.6.
+    - google_fonts/
     - assets/jerseys/
     - assets/backgrounds/
     - assets/images/backgrounds/

@@ -216,7 +216,7 @@ class OpposedBar extends StatelessWidget {
               SizedBox(
                 width: 28,
                 child: Text('$a',
-                    style: AppTypography.code(size: 13, weight: FontWeight.w800)),
+                    style: AppTypography.code(color: AppColors.textMuted, size: 13, weight: FontWeight.w800)),
               ),
               Expanded(
                 child: Text(label,
@@ -227,7 +227,7 @@ class OpposedBar extends StatelessWidget {
                 width: 28,
                 child: Text('$b',
                     textAlign: TextAlign.right,
-                    style: AppTypography.code(size: 13, weight: FontWeight.w800)),
+                    style: AppTypography.code(color: AppColors.textMuted, size: 13, weight: FontWeight.w800)),
               ),
             ],
           ),

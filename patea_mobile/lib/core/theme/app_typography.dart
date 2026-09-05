@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
 
+/// Las voces tipográficas de la app.
+///
+/// **Los estilos ya no traen color.** Hasta la Fase 0 cada método tenía un
+/// `Color color = AppColors.textPrimary` como parámetro por defecto, y eso
+/// horneaba el tema oscuro adentro de la tipografía: no había forma de que un
+/// texto cambiara de color al cambiar de tema sin tocar la llamada. Ahora el
+/// color sale de `DefaultTextStyle` —o sea del [textTheme], o sea del
+/// `ThemeData`— salvo que la llamada pida uno explícito con `context.c`.
+///
+/// Las 64 llamadas que dependían de un default distinto de `textPrimary`
+/// —`body()` daba `textSecondary` y `code()` daba `textMuted`— quedaron con el
+/// color escrito, para que este cambio no moviera nada de aspecto.
+///
+/// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 class AppTypography {
+  /// Space Grotesk: títulos, botones, cualquier cosa que mande.
   static TextStyle headline({
     double size = 20,
     FontWeight weight = FontWeight.w700,
-    Color color = AppColors.textPrimary,
+    Color? color,
     double? letterSpacing,
   }) {
     return GoogleFonts.spaceGrotesk(
@@ -17,10 +31,11 @@ class AppTypography {
     );
   }
 
+  /// Outfit: el texto corriente de la interfaz.
   static TextStyle body({
     double size = 14,
     FontWeight weight = FontWeight.w400,
-    Color color = AppColors.textSecondary,
+    Color? color,
     double? height,
   }) {
     return GoogleFonts.outfit(
@@ -31,10 +46,11 @@ class AppTypography {
     );
   }
 
+  /// Números con el tracking cerrado: marcadores, OVR, contadores.
   static TextStyle sportNumber({
     double size = 28,
     FontWeight weight = FontWeight.w800,
-    Color color = AppColors.textPrimary,
+    Color? color,
   }) {
     return GoogleFonts.spaceGrotesk(
       fontSize: size,
@@ -44,10 +60,11 @@ class AppTypography {
     );
   }
 
+  /// Monoespaciada: siglas, etiquetas cortas, datos que se alinean.
   static TextStyle code({
     double size = 12,
     FontWeight weight = FontWeight.w500,
-    Color color = AppColors.textMuted,
+    Color? color,
   }) {
     return GoogleFonts.sourceCodePro(
       fontSize: size,
@@ -67,7 +84,7 @@ class AppTypography {
   /// inclinada, hay que aplicar un `Matrix4.skewX` sobre el widget.
   static TextStyle jersey({
     double size = 20,
-    Color color = AppColors.textPrimary,
+    Color? color,
     double letterSpacing = 0,
     double? height,
   }) {
@@ -90,7 +107,7 @@ class AppTypography {
   static TextStyle condensed({
     double size = 13,
     FontWeight weight = FontWeight.w600,
-    Color color = AppColors.textPrimary,
+    Color? color,
     double letterSpacing = 0,
     double? height,
   }) {
@@ -113,7 +130,7 @@ class AppTypography {
   static TextStyle editorial({
     double size = 14,
     FontWeight weight = FontWeight.w400,
-    Color color = AppColors.textPrimary,
+    Color? color,
     bool italic = false,
     double? height,
   }) {
@@ -123,6 +140,42 @@ class AppTypography {
       color: color,
       height: height,
       fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+    );
+  }
+
+  /// El `textTheme` de la app.
+  ///
+  /// Antes no existía: el `ThemeData` no declaraba ni `textTheme` ni
+  /// `fontFamily`, así que los 131 `Text` sin `style:` —incluidos casi todos
+  /// los mensajes de error, que son el caso más visible— se dibujaban en
+  /// Roboto, que no es una fuente de esta app. Esto los arregla sin tocar
+  /// ninguno de los 131.
+  ///
+  /// También es de acá de donde sacan el color los estilos de arriba cuando la
+  /// llamada no pide uno.
+  static TextTheme textTheme({
+    required Color primary,
+    required Color secondary,
+  }) {
+    return TextTheme(
+      displayLarge: headline(size: 40, weight: FontWeight.w800, color: primary),
+      displayMedium: headline(size: 34, weight: FontWeight.w800, color: primary),
+      displaySmall: headline(size: 28, weight: FontWeight.w700, color: primary),
+      headlineLarge: headline(size: 26, weight: FontWeight.w700, color: primary),
+      headlineMedium: headline(size: 22, weight: FontWeight.w700, color: primary),
+      headlineSmall: headline(size: 20, weight: FontWeight.w700, color: primary),
+      titleLarge: headline(size: 18, weight: FontWeight.w700, color: primary),
+      titleMedium: headline(size: 16, weight: FontWeight.w600, color: primary),
+      titleSmall: headline(size: 14, weight: FontWeight.w600, color: primary),
+      bodyLarge: body(size: 16, color: primary),
+      // `bodyMedium` es el que hereda un `Text` suelto. Va en textPrimary y no
+      // en textSecondary: un texto sin estilo declarado es contenido, no una
+      // aclaración al pie.
+      bodyMedium: body(size: 14, color: primary),
+      bodySmall: body(size: 12, color: secondary),
+      labelLarge: headline(size: 15, weight: FontWeight.w700, color: primary),
+      labelMedium: body(size: 12, weight: FontWeight.w600, color: secondary),
+      labelSmall: code(size: 11, color: secondary),
     );
   }
 }

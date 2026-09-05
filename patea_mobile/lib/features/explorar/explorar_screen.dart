@@ -298,7 +298,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
-                    child: Text('${filteredPlayers.length}', style: AppTypography.code(size: 11, weight: FontWeight.w700)),
+                    child: Text('${filteredPlayers.length}', style: AppTypography.code(color: AppColors.textMuted, size: 11, weight: FontWeight.w700)),
                   ),
                 ],
               ]),
@@ -313,7 +313,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                     children: [
                       Icon(Icons.search_off, size: 36, color: AppColors.textMuted),
                       const SizedBox(height: 8),
-                      Text('Nadie disponible en la zona', style: AppTypography.body(size: 13, weight: FontWeight.w700)),
+                      Text('Nadie disponible en la zona', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
                       const SizedBox(height: 4),
                       Text('No encontramos jugadores libres para esa fecha, horario y ubicación.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
                     ],
@@ -363,7 +363,7 @@ class _FreeAgentBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isFreeAgent ? 'Estás activo en el Mercado' : '¿Te falta partido?', style: AppTypography.body(size: 13, weight: FontWeight.w700)),
+                Text(isFreeAgent ? 'Estás activo en el Mercado' : '¿Te falta partido?', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
                 Text(
                   isFreeAgent ? 'Los organizadores pueden reclutarte.' : 'Ofrecete como agente libre para que te inviten.',
                   style: AppTypography.body(size: 11, color: AppColors.textMuted),
@@ -410,7 +410,7 @@ class _FreeAgentCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('${player.ovr}', style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: AppColors.voltNeon)),
-                Text(player.position, style: AppTypography.code(size: 11, weight: FontWeight.w800)),
+                Text(player.position, style: AppTypography.code(color: AppColors.textMuted, size: 11, weight: FontWeight.w800)),
               ],
             ),
             const SizedBox(height: 8),
@@ -421,7 +421,7 @@ class _FreeAgentCard extends StatelessWidget {
               child: player.photoUrl == null || player.photoUrl!.isEmpty ? Text(player.displayName.isNotEmpty ? player.displayName[0].toUpperCase() : '?', style: AppTypography.headline(size: 18)) : null,
             ),
             const SizedBox(height: 8),
-            Text(player.displayName, style: AppTypography.body(size: 12, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(player.displayName, style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
             if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 10, color: AppColors.textMuted)),
             const SizedBox(height: 6),
             Container(
@@ -505,7 +505,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(10)),
-                  child: Text('${e.key}: ${e.value.join(', ')}', style: AppTypography.body(size: 11)),
+                  child: Text('${e.key}: ${e.value.join(', ')}', style: AppTypography.body(color: AppColors.textSecondary, size: 11)),
                 );
               }).toList(),
             ),
@@ -623,7 +623,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Text('Visible para otros', style: AppTypography.body(size: 13, weight: FontWeight.w700)),
+                Text('Visible para otros', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
                 const Spacer(),
                 if (_isSaving) const Padding(padding: EdgeInsets.only(right: 8), child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))),
                 Switch(value: isVisible, activeThumbColor: AppColors.voltNeon, onChanged: _isSaving ? null : (v) => _toggle(v, locationAsync.value)),
@@ -676,7 +676,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                   children: _suggestions
                       .map((s) => ListTile(
                             dense: true,
-                            title: Text(s.label, style: AppTypography.body(size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            title: Text(s.label, style: AppTypography.body(color: AppColors.textSecondary, size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                             onTap: () => setState(() {
                               _newLocation = s;
                               _locationController.text = s.label;

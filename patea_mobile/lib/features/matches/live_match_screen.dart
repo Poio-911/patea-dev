@@ -107,7 +107,7 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
         content: Text(
           'Queda $a a $b. Después de esto se abren las evaluaciones y ya no se '
           'pueden cargar más eventos.',
-          style: AppTypography.body(size: 13),
+          style: AppTypography.body(color: AppColors.textSecondary, size: 13),
         ),
         actions: [
           TextButton(
@@ -316,7 +316,7 @@ class _StatusLine extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             clock.display,
-            style: AppTypography.code(size: 13, weight: FontWeight.w800),
+            style: AppTypography.code(color: AppColors.textMuted, size: 13, weight: FontWeight.w800),
           ),
           if (match.timerPaused) ...[
             const SizedBox(width: 6),

@@ -194,7 +194,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                               child: p.photoUrl == null || p.photoUrl!.isEmpty ? Text(p.name.isNotEmpty ? p.name[0].toUpperCase() : '?') : null,
                             ),
                             const SizedBox(width: 10),
-                            Expanded(child: Text(p.name, style: AppTypography.body(size: 13, weight: FontWeight.w700))),
+                            Expanded(child: Text(p.name, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700))),
                             Text('OVR ${p.ovr}', style: AppTypography.body(size: 11, color: AppColors.textMuted)),
                             const SizedBox(width: 10),
                             Container(

@@ -279,7 +279,7 @@ class _PendingList extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.matchTitle, style: AppTypography.body(size: 14, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(item.matchTitle, style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                         if (urgency.label.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
@@ -310,10 +310,10 @@ class _PendingList extends StatelessWidget {
                             radius: 9,
                             backgroundColor: AppColors.voltNeon.withValues(alpha: 0.2),
                             backgroundImage: (p.photoURL != null && p.photoURL!.isNotEmpty) ? NetworkImage(p.photoURL!) : null,
-                            child: (p.photoURL == null || p.photoURL!.isEmpty) ? Text(p.name.isNotEmpty ? p.name[0].toUpperCase() : '?', style: AppTypography.code(size: 9)) : null,
+                            child: (p.photoURL == null || p.photoURL!.isEmpty) ? Text(p.name.isNotEmpty ? p.name[0].toUpperCase() : '?', style: AppTypography.code(color: AppColors.textMuted, size: 9)) : null,
                           ),
                           const SizedBox(width: 6),
-                          Text(p.name.split(' ').first, style: AppTypography.body(size: 11, weight: FontWeight.w600)),
+                          Text(p.name.split(' ').first, style: AppTypography.body(color: AppColors.textSecondary, size: 11, weight: FontWeight.w600)),
                         ],
                       ),
                     );
@@ -365,7 +365,7 @@ class _HistoryList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.matchTitle, style: AppTypography.body(size: 14, weight: FontWeight.w700)),
+                    Text(item.matchTitle, style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700)),
                     Text(
                       'Evaluaste ${item.submittedEvaluationsCount ?? 0} jugador(es)'
                       '${item.submittedGoals != null ? ' · ${item.submittedGoals} goles · ${item.submittedAssists ?? 0} asis.' : ''}',
@@ -469,7 +469,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.fromPlayerName, style: AppTypography.body(size: 13, weight: FontWeight.w700)),
+                    Text(r.fromPlayerName, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
                     Text(r.matchTitle, style: AppTypography.body(size: 11, color: AppColors.textMuted)),
                   ],
                 ),

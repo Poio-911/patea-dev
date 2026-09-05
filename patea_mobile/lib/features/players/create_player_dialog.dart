@@ -109,7 +109,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
 
             TextField(
               controller: _nameController,
-              style: AppTypography.body(),
+              style: AppTypography.body(color: AppColors.textSecondary),
               decoration: const InputDecoration(
                 labelText: 'Nombre o Apodo',
                 prefixIcon: Icon(Icons.person, color: AppColors.voltNeon),

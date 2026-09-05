@@ -411,7 +411,7 @@ class _MinuteRow extends StatelessWidget {
           width: 44,
           child: Text("$minute'",
               textAlign: TextAlign.center,
-              style: AppTypography.code(size: 17, weight: FontWeight.w800)),
+              style: AppTypography.code(color: AppColors.textMuted, size: 17, weight: FontWeight.w800)),
         ),
         IconButton(
           onPressed: enabled && minute < 130 ? () => onChanged(minute + 1) : null,

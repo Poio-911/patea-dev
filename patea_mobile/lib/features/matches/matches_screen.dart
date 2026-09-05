@@ -212,7 +212,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(match.title, style: AppTypography.body(size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      Text(match.title, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       const SizedBox(height: 3),
                                       Text(
                                         '${_formatMatchDate(match.date)} · ${match.time ?? ''} hs',
@@ -696,7 +696,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Text('Solo mis partidos', style: AppTypography.body(size: 13, weight: FontWeight.w600)),
+                Text('Solo mis partidos', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600)),
                 const Spacer(),
                 Switch(
                   value: _onlyMine,
@@ -1325,7 +1325,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                     style: AppTypography.sportNumber(size: 18),
                   ),
                   const SizedBox(width: 4),
-                  Text('Jugadores', style: AppTypography.body(size: 13)),
+                  Text('Jugadores', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
                 ],
               ),
 
@@ -1489,7 +1489,7 @@ class _CompactMatchCard extends StatelessWidget {
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(size: 9, weight: FontWeight.w700),
+                          style: AppTypography.body(color: AppColors.textSecondary, size: 9, weight: FontWeight.w700),
                         ),
                       ),
                       Expanded(
@@ -1498,7 +1498,7 @@ class _CompactMatchCard extends StatelessWidget {
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(size: 9, weight: FontWeight.w700),
+                          style: AppTypography.body(color: AppColors.textSecondary, size: 9, weight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -1514,7 +1514,7 @@ class _CompactMatchCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 12, weight: FontWeight.w700),
+                    style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700),
                   ),
                 ),
               ),

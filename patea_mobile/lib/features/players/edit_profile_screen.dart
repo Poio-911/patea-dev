@@ -402,7 +402,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 : const Icon(Icons.photo_camera_outlined, size: 16),
                             label: Text(
                               _generating ? 'Generando…' : 'Cambiar foto',
-                              style: AppTypography.body(size: 12, weight: FontWeight.w600),
+                              style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w600),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -411,7 +411,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             icon: const Icon(Icons.crop_free, size: 16),
                             label: Text(
                               'Ajustar encuadre',
-                              style: AppTypography.body(size: 12, weight: FontWeight.w600),
+                              style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w600),
                             ),
                           ),
                           if (_pickedPhoto != null)

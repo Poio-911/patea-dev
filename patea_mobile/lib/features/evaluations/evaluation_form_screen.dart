@@ -468,7 +468,7 @@ class _TagsEditor extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(tag.name, style: AppTypography.body(size: 12, weight: FontWeight.w700)),
+                          Text(tag.name, style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700)),
                           Text(tag.description, style: AppTypography.body(size: 10, color: AppColors.textMuted)),
                           const SizedBox(height: 4),
                           Wrap(

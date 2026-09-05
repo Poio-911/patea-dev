@@ -390,7 +390,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           TextField(
             controller: _titleController,
             onChanged: (_) => setState(() {}),
-            style: AppTypography.body(),
+            style: AppTypography.body(color: AppColors.textSecondary),
             decoration: const InputDecoration(
               labelText: 'Título del Partido',
               prefixIcon: Icon(Icons.sports_soccer, color: AppColors.voltNeon),
@@ -408,7 +408,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               }
               _onLocationChanged(v);
             },
-            style: AppTypography.body(),
+            style: AppTypography.body(color: AppColors.textSecondary),
             decoration: InputDecoration(
               hintText: 'Buscá la dirección de la cancha...',
               prefixIcon: const Icon(Icons.location_on, color: AppColors.voltNeon),
@@ -433,7 +433,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     .map((s) => ListTile(
                           dense: true,
                           leading: const Icon(Icons.place_outlined, size: 18, color: AppColors.textMuted),
-                          title: Text(s.label, style: AppTypography.body(size: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          title: Text(s.label, style: AppTypography.body(color: AppColors.textSecondary, size: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
                           onTap: () => _selectLocation(s),
                         ))
                     .toList(),
@@ -524,7 +524,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                               const SizedBox(width: 10),
                               Text('${_weather!.temperature}°C', style: AppTypography.sportNumber(size: 18)),
                               const SizedBox(width: 10),
-                              Flexible(child: Text(_weather!.description, style: AppTypography.body(size: 12))),
+                              Flexible(child: Text(_weather!.description, style: AppTypography.body(color: AppColors.textSecondary, size: 12))),
                             ],
                           )
                         : Text(
@@ -796,7 +796,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               const SizedBox(height: 12),
               TextField(
                 onChanged: (v) => setState(() => _playerSearch = v),
-                style: AppTypography.body(size: 13),
+                style: AppTypography.body(color: AppColors.textSecondary, size: 13),
                 decoration: const InputDecoration(
                   hintText: 'Buscar jugador...',
                   prefixIcon: Icon(Icons.search, size: 20),
@@ -816,7 +816,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         selected: isSelected,
                         onSelected: (_) => setState(() => _positionFilter = pos),
                         selectedColor: AppColors.voltNeon.withValues(alpha: 0.25),
-                        labelStyle: AppTypography.body(size: 12),
+                        labelStyle: AppTypography.body(color: AppColors.textSecondary, size: 12),
                       ),
                     );
                   }).toList(),
@@ -987,7 +987,7 @@ class _PlayerSelectRow extends StatelessWidget {
               backgroundColor: AppColors.cardSurface,
               backgroundImage: player.photoUrl != null && player.photoUrl!.isNotEmpty ? NetworkImage(player.photoUrl!) : null,
               child: player.photoUrl == null || player.photoUrl!.isEmpty
-                  ? Text(player.name.isNotEmpty ? player.name[0].toUpperCase() : '?', style: AppTypography.body(size: 13, weight: FontWeight.w700))
+                  ? Text(player.name.isNotEmpty ? player.name[0].toUpperCase() : '?', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700))
                   : null,
             ),
             const SizedBox(width: 10),

@@ -369,7 +369,7 @@ class _MinuteStepper extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text("$minute'",
-                style: AppTypography.code(size: 14, weight: FontWeight.w800)),
+                style: AppTypography.code(color: AppColors.textMuted, size: 14, weight: FontWeight.w800)),
           ),
           _step(Icons.add_rounded, () => onChanged(minute + 1)),
         ],

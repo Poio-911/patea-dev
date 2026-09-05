@@ -1,52 +1,86 @@
 import 'package:flutter/material.dart';
 
-/// Paleta del tema `.game` de la webapp.
+/// Paleta del tema `.game`, en constantes. **En vías de desaparecer.**
 ///
-/// Todos los valores salen de `src/app/globals.css`, bloque `.game` (línea 266
-/// en adelante), convertidos de HSL a RGB. El HSL original queda al lado de
-/// cada uno para poder verificarlos.
+/// Un `static const` no cambia en tiempo de ejecución: mientras un color se
+/// lea de acá, ese widget no puede cambiar de tema. Por eso existe ahora
+/// [PateaColors], que viaja en el `ThemeData` y se lee con `context.c`.
 ///
-/// Ojo si hay que agregar un color: los semánticos y los de posición estuvieron
-/// mucho tiempo tomados de la paleta de sistema de iOS (systemRed, systemBlue,
-/// etc.) mientras las superficies sí estaban bien portadas. Se notaba: la web
-/// pinta las posiciones al 70-72% de luminosidad — pasteles que conviven con el
-/// volt — y los de iOS están al 50-55%, saturados, y le pelean el
-/// protagonismo. No inventar colores acá: si no está en globals.css, no va.
+/// Esta clase queda sólo para que la migración se pueda hacer archivo por
+/// archivo en vez de en un commit de 1185 líneas. Cada uso pendiente es un
+/// aviso de `flutter analyze`, así que **el contador de avisos es la barra de
+/// progreso**: arrancó en ~1185 y termina en 0.
+///
+/// Los valores son idénticos a `PateaColors.game` y hay un test que lo
+/// verifica (`test/theme_parity_test.dart`), para que no puedan separarse
+/// mientras las dos convivan.
+///
+/// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
+@Deprecated(
+  'Usar context.c (PateaColors) en vez de AppColors. '
+  'Un static const no puede cambiar de tema. '
+  'Ver docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md',
+)
 class AppColors {
-  // Fondos y Superficies (Dark / Game Theme)
-  static const Color background = Color(0xFF0C1017); // hsl(220 25% 6%)
-  static const Color card = Color(0xFF181F2B);       // hsl(220 20% 12%)
+  // Fondos y Superficies
+  @Deprecated('Usar context.c.background')
+  static const Color background = Color(0xFF0C1017);
+  @Deprecated('Usar context.c.card')
+  static const Color card = Color(0xFF181F2B);
+  @Deprecated('Usar context.c.cardSurface')
   static const Color cardSurface = Color(0xFF20293A);
+  @Deprecated('Usar context.c.popover')
   static const Color popover = Color(0xFF131822);
-  static const Color border = Color(0xFF45536D);      // hsl(220 20% 35%)
+  @Deprecated('Usar context.c.border')
+  static const Color border = Color(0xFF45536D);
+  @Deprecated('Usar context.c.input')
   static const Color input = Color(0xFF384357);
 
   // Acentos y Marca
-  static const Color voltNeon = Color(0xFFCCFF33);   // hsl(75 100% 60%) - Primario Game
-  static const Color turquoise = Color(0xFF00E5CC);  // hsl(175 100% 45%) - Acento secundario
+  @Deprecated('Usar context.c.primary (o brandVolt si es decorativo)')
+  static const Color voltNeon = Color(0xFFCCFF33);
+  @Deprecated('Usar context.c.accent')
+  static const Color turquoise = Color(0xFF00E5CC);
+  @Deprecated('Usar context.c.accent')
   static const Color electricBlue = Color(0xFF1E90FF);
-  static const Color destructive = Color(0xFFF04242); // hsl(0 85% 60%)
-  static const Color success = Color(0xFF35E375);     // hsl(142 76% 55%)
-  static const Color warning = Color(0xFFF8BC54);     // hsl(38 92% 65%)
-  static const Color info = Color(0xFF25C0F4);        // hsl(195 90% 55%)
+  @Deprecated('Usar context.c.destructive')
+  static const Color destructive = Color(0xFFF04242);
+  @Deprecated('Usar context.c.success')
+  static const Color success = Color(0xFF35E375);
+  @Deprecated('Usar context.c.warning')
+  static const Color warning = Color(0xFFF8BC54);
+  @Deprecated('Usar context.c.info')
+  static const Color info = Color(0xFF25C0F4);
 
   // Textos
+  @Deprecated('Usar context.c.textPrimary')
   static const Color textPrimary = Color(0xFFF8FAFC);
+  @Deprecated('Usar context.c.textSecondary')
   static const Color textSecondary = Color(0xFF94A3B8);
+  @Deprecated('Usar context.c.textSecondary (textMuted se elimina en la Fase 1)')
   static const Color textMuted = Color(0xFF64748B);
 
   // Tiers de Cartas OVR
-  static const Color eliteBorder = Color(0xFFF8FAFC);  // Platino brillante / Near pure white
-  static const Color goldBorder = Color(0xFFFBC337);   // Oro  hsl(43 96% 60%)
-  static const Color silverBorder = Color(0xFFCBD5E1); // Plata
-  static const Color bronzeBorder = Color(0xFFCD7F32); // Bronce
+  @Deprecated('Usar context.c.eliteBorder')
+  static const Color eliteBorder = Color(0xFFF8FAFC);
+  @Deprecated('Usar context.c.goldBorder')
+  static const Color goldBorder = Color(0xFFFBC337);
+  @Deprecated('Usar context.c.silverBorder')
+  static const Color silverBorder = Color(0xFFCBD5E1);
+  @Deprecated('Usar context.c.bronzeBorder')
+  static const Color bronzeBorder = Color(0xFFCD7F32);
 
   // Posiciones
-  static const Color posDel = Color(0xFFF47171); // Delantero  hsl(0 85% 70%)
-  static const Color posMed = Color(0xFFB87BF4); // Medio      hsl(270 85% 72%)
-  static const Color posDef = Color(0xFF7BB8F4); // Defensa    hsl(210 85% 72%)
-  static const Color posPor = Color(0xFFF7B26E); // Portero    hsl(30 90% 70%)
+  @Deprecated('Usar context.c.posDel')
+  static const Color posDel = Color(0xFFF47171);
+  @Deprecated('Usar context.c.posMed')
+  static const Color posMed = Color(0xFFB87BF4);
+  @Deprecated('Usar context.c.posDef')
+  static const Color posDef = Color(0xFF7BB8F4);
+  @Deprecated('Usar context.c.posPor')
+  static const Color posPor = Color(0xFFF7B26E);
 
+  @Deprecated('Usar context.c.positionColor(...)')
   static Color getPositionColor(String position) {
     switch (position.toUpperCase()) {
       case 'DEL':
@@ -62,6 +96,7 @@ class AppColors {
     }
   }
 
+  @Deprecated('Usar context.c.ovrBorderColor(...)')
   static Color getOvrBorderColor(int ovr) {
     if (ovr >= 86) return eliteBorder;
     if (ovr >= 76) return goldBorder;

@@ -213,7 +213,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                     onPressed: _autoNumber,
                     icon: const Icon(Icons.auto_fix_high, size: 15),
                     label: Text('Autonumerar',
-                        style: AppTypography.body(size: 12, weight: FontWeight.w600)),
+                        style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w600)),
                     style: TextButton.styleFrom(foregroundColor: AppColors.voltNeon),
                   ),
                 ],
@@ -331,7 +331,7 @@ class _RosterRow extends StatelessWidget {
                 entry.player.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(size: 13, weight: FontWeight.w600),
+                style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600),
               ),
             ),
 

@@ -968,7 +968,7 @@ class _LastResultMural extends StatelessWidget {
                   '${a.name} ${a.score} — ${b.score} ${b.name}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(size: 14, weight: FontWeight.w800),
+                  style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w800),
                 ),
                 Text(
                   'Toque para ver crónica y calificaciones',
@@ -1222,7 +1222,7 @@ class _GrupoTabBody extends ConsumerWidget {
                                 m.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.body(size: 13, weight: FontWeight.w800),
+                                style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800),
                               ),
                             ),
                             Text(
