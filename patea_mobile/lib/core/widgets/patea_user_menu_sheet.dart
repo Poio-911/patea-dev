@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -181,6 +182,18 @@ class PateaUserMenuSheet extends ConsumerWidget {
             const SizedBox(height: 8),
             Divider(color: Colors.white.withValues(alpha: 0.10), height: 1),
             const SizedBox(height: 8),
+
+            // La galeria del sistema de diseno. Solo en debug: es la vista con
+            // la que se aprueba un cambio de paleta sin recorrer la app.
+            if (kDebugMode)
+              _MenuItem(
+                icon: Icons.palette_outlined,
+                label: 'Sistema de diseno',
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/dev/gallery');
+                },
+              ),
 
             _MenuItem(
               icon: Icons.logout_rounded,

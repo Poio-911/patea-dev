@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +29,7 @@ import '../../features/evaluations/evaluation_form_screen.dart';
 import '../../features/social/social_feed_screen.dart';
 import '../../features/social/leaderboard_screen.dart';
 import '../../features/coach/ai_coach_screen.dart';
+import '../../features/dev/design_gallery_screen.dart';
 import '../../features/explorar/explorar_screen.dart';
 import '../../features/evaluations/evaluations_inbox_screen.dart';
 import '../../features/groups/groups_screen.dart';
@@ -246,6 +248,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/coach',
         builder: (context, state) => _withBackground(const AICoachScreen()),
       ),
+      // La galeria del sistema de diseno. Sin `_withBackground` a proposito:
+      // es para mirar los tokens contra el fondo real de cada tema, no contra
+      // la foto de cancha. Solo en debug; en release la ruta no existe.
+      if (kDebugMode)
+        GoRoute(
+          path: '/dev/gallery',
+          builder: (context, state) => const DesignGalleryScreen(),
+        ),
     ],
   );
 });
