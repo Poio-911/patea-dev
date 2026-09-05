@@ -128,11 +128,7 @@ class _MatchStoryViewState extends ConsumerState<MatchStoryView> {
   }
 }
 
-/// La hoja de la revista: fondo propio y textura de puntos.
-///
-/// La textura es lo que la separa de una tarjeta cualquiera. En la web es un
-/// SVG repetido al 3-5% de opacidad; acá se pinta con un CustomPainter, que
-/// sale más barato que un asset.
+/// Tarjeta contenedora de la crónica con estética dark moderna.
 class _Paper extends StatelessWidget {
   final Widget child;
 
@@ -143,41 +139,16 @@ class _Paper extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF10141C).withValues(alpha: 0.92),
-        borderRadius: AppRadii.surfaceAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.30)),
+        color: AppColors.card.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
       ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(painter: _NewsprintPainter()),
-            ),
-          ),
-          child,
-        ],
-      ),
+      child: child,
     );
   }
 }
 
-class _NewsprintPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withValues(alpha: 0.035);
-    const step = 9.0;
-    for (double y = 3; y < size.height; y += step) {
-      for (double x = 3; x < size.width; x += step) {
-        canvas.drawCircle(Offset(x, y), 0.9, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Cabecera: volanta, titular entre comillas, filete ornamental y marcador.
+/// Cabecera moderna de la crónica: badge oficial, titular y marcador si disponible.
 class _Masthead extends StatelessWidget {
   final String headline;
   final MatchModel match;
@@ -189,112 +160,66 @@ class _Masthead extends StatelessWidget {
     final hasScore = match.hasFinalScore && match.teamA != null && match.teamB != null;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 26, 20, 18),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'LA CRÓNICA',
-            style: AppTypography.code(
-                size: 9, weight: FontWeight.w700, color: AppColors.textMuted)
-                .copyWith(letterSpacing: 3),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            '«$headline»',
-            textAlign: TextAlign.center,
-            style: AppTypography.editorial(
-              size: 26,
-              weight: FontWeight.w700,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 18),
-          const _Ornament(),
-          if (hasScore) ...[
-            const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    match.teamA!.name.toUpperCase(),
-                    textAlign: TextAlign.right,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.editorial(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: AppColors.textSecondary)
-                        .copyWith(letterSpacing: 1.4),
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.voltNeon.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                // Marcador en negativo: el único bloque claro de la pantalla.
-                // Es el remate de la cabecera y tiene que ganarle al titular.
+                child: const Icon(Icons.auto_stories_rounded, size: 15, color: AppColors.voltNeon),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'CRÓNICA DEL PARTIDO',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.code(
+                    size: 9.5,
+                    weight: FontWeight.w800,
+                    color: AppColors.voltNeon,
+                  ).copyWith(letterSpacing: 1.4),
+                ),
+              ),
+              if (hasScore) ...[
+                const SizedBox(width: 8),
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 14),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                   decoration: BoxDecoration(
-                    color: AppColors.textPrimary,
-                    borderRadius: AppRadii.cardAll,
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
                   ),
                   child: Text(
                     '${match.teamA!.score} - ${match.teamB!.score}',
-                    style: AppTypography.editorial(
-                        size: 28,
-                        weight: FontWeight.w700,
-                        color: const Color(0xFF10141C)),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    match.teamB!.name.toUpperCase(),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.editorial(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: AppColors.textSecondary)
-                        .copyWith(letterSpacing: 1.4),
+                    style: AppTypography.jersey(size: 15, color: AppColors.textPrimary),
                   ),
                 ),
               ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '«$headline»',
+            style: AppTypography.headline(
+              size: 18,
+              weight: FontWeight.w800,
             ),
-          ],
+          ),
+          const SizedBox(height: 12),
+          Container(height: 1, color: AppColors.border.withValues(alpha: 0.25)),
         ],
       ),
     );
   }
 }
-
-/// Filete: raya, rombo, raya. El separador de la web.
-class _Ornament extends StatelessWidget {
-  const _Ornament();
-
-  @override
-  Widget build(BuildContext context) {
-    final color = AppColors.textMuted.withValues(alpha: 0.55);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(width: 46, height: 1, color: color),
-        Container(
-          width: 6,
-          height: 6,
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          transform: Matrix4.rotationZ(math.pi / 4),
-          transformAlignment: Alignment.center,
-          color: color,
-        ),
-        Container(width: 46, height: 1, color: color),
-      ],
-    );
-  }
-}
-
-/// La figura, como medalla colgada del borde entre la cabecera y el cuerpo.
-///
-/// En la web es una píldora suspendida con margen negativo: pisa las dos
-/// secciones y por eso se lee como un sello y no como una fila más.
+/// La figura del partido en tarjeta dorada moderna.
 class _MvpMedallion extends StatelessWidget {
   final MatchPlayerEntry player;
   final int votes;
@@ -304,120 +229,168 @@ class _MvpMedallion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(5, 5, 16, 5),
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.55)),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.goldBorder, width: 2),
               ),
-              child: Row(
+              child: ClipOval(child: _Avatar(player: player)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.goldBorder, width: 2),
-                    ),
-                    child: ClipOval(child: _Avatar(player: player)),
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.emoji_events_rounded,
-                                size: 11, color: AppColors.goldBorder),
-                            const SizedBox(width: 4),
-                            Text(
-                              'FIGURA DEL PARTIDO',
-                              style: AppTypography.code(
-                                  size: 8,
-                                  weight: FontWeight.w700,
-                                  color: AppColors.goldBorder)
-                                  .copyWith(letterSpacing: 1.4),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.emoji_events_rounded, size: 13, color: AppColors.goldBorder),
+                      const SizedBox(width: 5),
+                      Text(
+                        'FIGURA DEL PARTIDO',
+                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.goldBorder)
+                            .copyWith(letterSpacing: 1.3),
+                      ),
+                      if (votes > 0) ...[
+                        const Spacer(),
                         Text(
-                          player.displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.editorial(
-                              size: 14, weight: FontWeight.w700),
+                          '$votes voto${votes > 1 ? "s" : ""}',
+                          style: AppTypography.code(size: 9, color: AppColors.textMuted),
                         ),
-                        if (votes > 0)
-                          Text(
-                            votes == 1 ? '1 voto' : '$votes votos',
-                            style: AppTypography.body(
-                                size: 10, color: AppColors.textMuted),
-                          ),
                       ],
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    player.displayName.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.condensed(size: 15, weight: FontWeight.w700),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-/// El cuerpo del relato, con capitular.
+/// El cuerpo del relato, con capitular y colapso inteligente.
 ///
 /// Flutter no sabe hacer que el texto rodee una letra flotada, así que la
 /// capitular va como versal alta: ocupa su propia línea de altura y el resto
 /// del párrafo arranca al lado. Es un recurso editorial real, no un parche.
-class _Story extends StatelessWidget {
+class _Story extends StatefulWidget {
   final String text;
 
   const _Story({required this.text});
 
   @override
+  State<_Story> createState() => _StoryState();
+}
+
+class _StoryState extends State<_Story> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final clean = text.trimLeft();
-    final initial = clean.isEmpty ? '' : clean.substring(0, 1);
-    final rest = clean.isEmpty ? '' : clean.substring(1);
+    final clean = widget.text.trimLeft();
+    final isLong = clean.length > 320;
+
+    final textWidget = Text(
+      clean,
+      style: AppTypography.body(
+        size: 13.5,
+        height: 1.6,
+        color: AppColors.textPrimary.withValues(alpha: 0.9),
+      ),
+    );
+
+    if (!isLong) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+        child: textWidget,
+      );
+    }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            WidgetSpan(
-              alignment: PlaceholderAlignment.baseline,
-              baseline: TextBaseline.alphabetic,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Text(
-                  initial,
-                  style: AppTypography.editorial(
-                      size: 44, weight: FontWeight.w700, height: 0.82),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 250),
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: Stack(
+              children: [
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 160),
+                  child: ClipRect(child: textWidget),
                 ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 65,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.card.withValues(alpha: 0.0),
+                          AppColors.card.withValues(alpha: 0.95),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            secondChild: textWidget,
+          ),
+          const SizedBox(height: 6),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              icon: Icon(
+                _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                size: 18,
+                color: AppColors.voltNeon,
+              ),
+              label: Text(
+                _expanded ? 'MOSTRAR MENOS' : 'LEER CRÓNICA COMPLETA',
+                style: AppTypography.code(
+                  size: 10,
+                  weight: FontWeight.w800,
+                  color: AppColors.voltNeon,
+                ).copyWith(letterSpacing: 1.4),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.voltNeon,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
-            TextSpan(text: rest),
-          ],
-        ),
-        style: AppTypography.editorial(
-          size: 15,
-          color: AppColors.textPrimary.withValues(alpha: 0.88),
-          height: 1.72,
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -740,64 +713,65 @@ class _CoverPending extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 26),
+      padding: const EdgeInsets.all(18),
       child: Column(
         children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.voltNeon.withValues(alpha: 0.12),
-              border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
-            ),
-            child: Icon(Icons.auto_stories_rounded,
-                size: 24, color: AppColors.voltNeon),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'La historia del partido',
-            textAlign: TextAlign.center,
-            style: AppTypography.editorial(size: 21, weight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          const _Ornament(),
-          const SizedBox(height: 14),
-          Text(
-            'Un cronista escribe la historia con los goles, las etiquetas de '
-            'rendimiento y lo que contó cada uno.',
-            textAlign: TextAlign.center,
-            style: AppTypography.body(
-                size: 12.5, color: AppColors.textSecondary, height: 1.5),
-          ),
-          const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: generating ? null : onTap,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.voltNeon,
-                foregroundColor: AppColors.background,
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
-                shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.voltNeon.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.auto_stories_rounded, size: 20, color: AppColors.voltNeon),
               ),
-              icon: generating
-                  ? const SizedBox(
-                      width: 15,
-                      height: 15,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.background))
-                  : const Icon(Icons.auto_stories_rounded, size: 17),
-              label: Text(
-                generating ? 'Escribiendo…' : 'Publicar la crónica',
-                style: AppTypography.editorial(
-                    size: 14, weight: FontWeight.w700, color: AppColors.background),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Crónica del Partido', style: AppTypography.headline(size: 15, weight: FontWeight.w800)),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Relato oficial con IA a partir de goles, asistencias y votos.',
+                      style: AppTypography.body(size: 12, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
+          ),
           if (error != null) ...[
             const SizedBox(height: 12),
             Text(error!,
                 textAlign: TextAlign.center,
                 style: AppTypography.body(size: 11, color: AppColors.destructive)),
           ],
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: generating ? null : onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.voltNeon,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: generating
+                  ? const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                    )
+                  : const Icon(Icons.auto_awesome, size: 16, color: Colors.black),
+              label: Text(
+                generating ? 'ESCRIBIENDO RELATO...' : 'GENERAR CRÓNICA CON IA',
+                style: AppTypography.jersey(size: 14, color: Colors.black, letterSpacing: 1),
+              ),
+            ),
+          ),
         ],
       ),
     );
