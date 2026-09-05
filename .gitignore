@@ -59,3 +59,9 @@ nul
 
 # Caché de Gradle que se cuela desde docs/
 **/.gradle/
+
+# Claves privadas de firma. El .p8 de App Store Connect se descarga UNA sola
+# vez y sirve para publicar en nombre de la cuenta: no va al repo ni por
+# accidente. Guardalo en un gestor de contraseñas y borralo de acá.
+*.p8
+AuthKey_*.p8

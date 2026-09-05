@@ -199,6 +199,14 @@ trampas de esta máquina que **no** aplican en CI:
 Para iOS no hay camino manual desde acá: hace falta una Mac, y para eso está
 Codemagic.
 
+## La clave privada de App Store Connect
+
+El `.p8` de la clave de API se descarga **una sola vez** y sirve para publicar
+en nombre de la cuenta. No va al repositorio: `.gitignore` bloquea `*.p8` y
+`AuthKey_*.p8` justamente para que no se escape en un commit distraído. Si
+aparece uno en el árbol de trabajo, moverlo a un gestor de contraseñas y
+borrarlo de ahí.
+
 ## Estado al 2026-09-04
 
 - iOS: primera build en TestFlight, **1.0.2 (1)**. Le falta contestar el

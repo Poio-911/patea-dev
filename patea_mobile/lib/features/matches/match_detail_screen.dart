@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_insets.dart';
 import '../../core/theme/match_theme.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
@@ -23,7 +24,6 @@ import 'widgets/recruit_players_sheet.dart';
 import 'widgets/weather_alert.dart';
 import 'widgets/match_story_view.dart';
 import '../../core/widgets/jersey_painter.dart';
-import '../../core/widgets/parallax_background.dart';
 import '../../core/widgets/player_avatar_fallback.dart';
 
 const _spanishMonths = [
@@ -38,24 +38,6 @@ String _fmtDate(String raw) {
   return '${local.day.toString().padLeft(2, '0')} ${_spanishMonths[local.month - 1]}';
 }
 
-IconData _weatherIcon(String? icon) {
-  switch (icon) {
-    case 'Sun':
-      return Icons.wb_sunny_rounded;
-    case 'Cloud':
-      return Icons.cloud_queue_rounded;
-    case 'CloudRain':
-      return Icons.grain_rounded;
-    case 'CloudSnow':
-      return Icons.ac_unit_rounded;
-    case 'Wind':
-      return Icons.air_rounded;
-    case 'Zap':
-      return Icons.bolt_rounded;
-    default:
-      return Icons.cloud_rounded;
-  }
-}
 
 /// Port de MatchDetailView (src/components/match-detail-view.tsx) — versión
 /// mobile de primera pasada. Cubre: hero (MatchInfoCard), roster
@@ -377,7 +359,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           final isCompetition = ['league', 'cup', 'league_final'].contains(match.type);
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            // Sin padding lateral: el banner de arriba va de borde a borde.
+            padding: EdgeInsets.only(bottom: bottomInset(context)),
             children: [
               _HeroCard(
                 match: match,
@@ -390,90 +373,98 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 onJoinLeave: (uid == null || isCompetition) ? null : () => _handleJoinLeave(match, uid, isUserInMatch),
                 onOpenMaps: () => _openMaps(match),
               ),
-              MatchWeatherAlert(match: match),
-              if (isOwner && hasTeams) ...[
-                const SizedBox(height: 16),
-                DuplicatePlayersAlert(match: match),
-              ],
-              if (match.status == 'planning' || match.isVotingOpen) ...[
-                const SizedBox(height: 20),
-                MatchPlanningView(match: match, uid: uid),
-              ],
-              // El relato sólo cuando el partido está cerrado de verdad. Con
-              // `completed` la tarjeta salía siempre, vacía, avisando que
-              // había que esperar: ocupaba el mejor lugar de la pantalla para
-              // no decir nada.
-              if (match.status == 'evaluated' || match.chronicle != null) ...[
-                const SizedBox(height: 20),
-                // La revista trae su propia hoja: fondo, textura de papel y
-                // tipografía serif. No va dentro de una tarjeta de la app.
-                MatchStoryView(match: match),
-              ],
-              if (isOwner && match.type == 'manual' && match.status == 'upcoming') ...[
-                const SizedBox(height: 20),
-                JoinRequestsSection(matchId: match.id),
-              ],
-              const SizedBox(height: 16),
-              hasTeams ? _TeamsRoster(match: match) : _PlayersConfirmedRoster(match: match),
-              if (isOwner && !isCompetition && match.status == 'upcoming') ...[
-                const SizedBox(height: 16),
-                Row(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (match.players.length < match.matchSize)
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => RecruitPlayersSheet.show(context, match),
-                          icon: const Icon(Icons.person_search_outlined, size: 16),
-                          label: const Text('Nos falta uno'),
-                        ),
-                      ),
-                    if (match.players.length < match.matchSize && hasTeams)
-                      const SizedBox(width: 8),
-                    if (hasTeams)
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => EditTeamsSheet.show(context, match),
-                          icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                          label: const Text('Armar equipos'),
-                        ),
-                      ),
+                  MatchWeatherAlert(match: match),
+                  if (isOwner && hasTeams) ...[
+                    const SizedBox(height: 16),
+                    DuplicatePlayersAlert(match: match),
+                  ],
+                  if (match.status == 'planning' || match.isVotingOpen) ...[
+                    const SizedBox(height: 20),
+                    MatchPlanningView(match: match, uid: uid),
+                  ],
+                  // El relato sólo cuando el partido está cerrado de verdad. Con
+                  // `completed` la tarjeta salía siempre, vacía, avisando que
+                  // había que esperar: ocupaba el mejor lugar de la pantalla para
+                  // no decir nada.
+                  if (match.status == 'evaluated' || match.chronicle != null) ...[
+                    const SizedBox(height: 20),
+                    // La revista trae su propia hoja: fondo, textura de papel y
+                    // tipografía serif. No va dentro de una tarjeta de la app.
+                    MatchStoryView(match: match),
+                  ],
+                  if (isOwner && match.type == 'manual' && match.status == 'upcoming') ...[
+                    const SizedBox(height: 20),
+                    JoinRequestsSection(matchId: match.id),
+                  ],
+                  const SizedBox(height: 16),
+                  hasTeams ? _TeamsRoster(match: match) : _PlayersConfirmedRoster(match: match),
+                  if (isOwner && !isCompetition && match.status == 'upcoming') ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        if (match.players.length < match.matchSize)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => RecruitPlayersSheet.show(context, match),
+                              icon: const Icon(Icons.person_search_outlined, size: 16),
+                              label: const Text('Nos falta uno'),
+                            ),
+                          ),
+                        if (match.players.length < match.matchSize && hasTeams)
+                          const SizedBox(width: 8),
+                        if (hasTeams)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => EditTeamsSheet.show(context, match),
+                              icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                              label: const Text('Armar equipos'),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  if (isOwner)
+                    _ManagementActions(
+                      match: match,
+                      canFinalize: canFinalize,
+                      isFinishing: _isFinishing,
+                      isDeleting: _isDeleting,
+                      isShuffling: _isShuffling,
+                      isCompetition: isCompetition,
+                      onFinish: () => _handleFinish(match),
+                      onDelete: () => _handleDelete(match),
+                      onShuffle: () => _handleShuffle(match),
+                      onReschedule: () => _showRescheduleDialog(match),
+                      onChangeVenue: () => _showChangeVenueDialog(match),
+                    ),
+                  if (!isCompetition && match.status != 'upcoming') ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push('/matches/${match.id}/live'),
+                      icon: const Icon(Icons.timer_outlined, size: 16),
+                      label: Text(isOwner && match.status == 'active'
+                          ? 'Dirigir el partido'
+                          : 'Minuto a minuto'),
+                    ),
+                  ] else if (isOwner && !isCompetition) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push('/matches/${match.id}/live'),
+                      icon: const Icon(Icons.timer_outlined, size: 16),
+                      label: const Text('Dirigir el partido'),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  _ChatSection(matchId: match.id),
                   ],
                 ),
-              ],
-              const SizedBox(height: 16),
-              if (isOwner)
-                _ManagementActions(
-                  match: match,
-                  canFinalize: canFinalize,
-                  isFinishing: _isFinishing,
-                  isDeleting: _isDeleting,
-                  isShuffling: _isShuffling,
-                  isCompetition: isCompetition,
-                  onFinish: () => _handleFinish(match),
-                  onDelete: () => _handleDelete(match),
-                  onShuffle: () => _handleShuffle(match),
-                  onReschedule: () => _showRescheduleDialog(match),
-                  onChangeVenue: () => _showChangeVenueDialog(match),
-                ),
-              if (!isCompetition && match.status != 'upcoming') ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => context.push('/matches/${match.id}/live'),
-                  icon: const Icon(Icons.timer_outlined, size: 16),
-                  label: Text(isOwner && match.status == 'active'
-                      ? 'Dirigir el partido'
-                      : 'Minuto a minuto'),
-                ),
-              ] else if (isOwner && !isCompetition) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => context.push('/matches/${match.id}/live'),
-                  icon: const Icon(Icons.timer_outlined, size: 16),
-                  label: const Text('Dirigir el partido'),
-                ),
-              ],
-              const SizedBox(height: 16),
-              _ChatSection(matchId: match.id),
+              ),
             ],
           );
         },
@@ -484,6 +475,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 }
 
+/// El banner del partido: una foto de cancha de borde a borde con el marcador
+/// encima, no una tarjeta.
+///
+/// Antes era una tarjeta con OTRA caja adentro —la tira gris de fecha y hora—,
+/// que es justo lo que hacía que se leyera igual que el resto de la pantalla.
+/// Acá no hay ninguna caja: la foto ocupa todo el ancho, se funde con el fondo
+/// abajo mediante un degradado, y los datos van como una sola línea fina. El
+/// color del tipo de partido entra como una barra al ras del borde de arriba
+/// en vez de como una píldora más.
 class _HeroCard extends StatelessWidget {
   final MatchModel match;
   final bool isOwner;
@@ -522,233 +522,241 @@ class _HeroCard extends StatelessWidget {
     // escribe recién la finalización de evaluaciones. Mostrar "0 - 0" ahí es
     // inventar un empate.
     final hasScore = isFinished && match.hasFinalScore;
-    // La misma foto de cancha que usa la tarjeta en la lista de partidos, para
-    // que al entrar al detalle la pantalla no cambie de idioma visual.
-    final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
     final spotsLeft = match.matchSize - match.players.length;
     final needsApproval = match.needsApprovalFrom(uid);
     final showJoinButton = onJoinLeave != null &&
         (match.type == 'manual' || match.type == 'collaborative') &&
         match.status == 'upcoming' &&
         !isOwner;
+    // La misma foto de cancha que usa la tarjeta en la lista de partidos, para
+    // que al entrar al detalle la pantalla no cambie de idioma visual.
+    final photoIndex =
+        (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.brandColor.withValues(alpha: 0.45), width: isLive ? 1.5 : 1),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ParallaxBackground(
-              asset: 'assets/backgrounds/fondo_$photoIndex.jpg',
-              // Un partido en vivo se muestra más fuerte y uno ya jugado más
-              // apagado: el estado se lee antes que el texto.
-              opacity: isLive ? 0.34 : (isFinished ? 0.14 : 0.24),
-            ),
+    final meta = <String>[
+      if (match.status == 'planning' || match.date.isEmpty)
+        'Fecha a definir'
+      else
+        _fmtDate(match.date),
+      if (match.status != 'planning' && match.time != null) '${match.time} hs',
+      if (match.weather != null && !isFinished) '${match.weather!.temperature}°',
+      if (match.location != null && match.location!.isNotEmpty) match.location!,
+    ];
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset(
+            'assets/backgrounds/fondo_$photoIndex.jpg',
+            fit: BoxFit.cover,
+            // Ahora sí se ve. Antes estaba al 14% y el banner terminaba
+            // leyéndose gris igual.
+            opacity: AlwaysStoppedAnimation(
+                isLive ? 0.9 : (isFinished ? 0.62 : 0.78)),
           ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    const Color(0xFF141A24).withValues(alpha: 0.96),
-                    const Color(0xFF141A24).withValues(alpha: 0.72),
-                  ],
-                ),
+        ),
+        // El degradado llega hasta el color de la pantalla, así el banner no
+        // termina en un borde recto: se funde con el fondo de cancha.
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                stops: const [0.0, 0.55, 1.0],
+                colors: [
+                  AppColors.background,
+                  AppColors.background.withValues(alpha: 0.78),
+                  AppColors.background.withValues(alpha: 0.35),
+                ],
               ),
             ),
           ),
-          Positioned.fill(child: ColoredBox(color: theme.brandColor.withValues(alpha: 0.10))),
-          // Scanlines: la textura que la web le pone al hero en el tema
-          // `game`. Casi no se ve y es justamente lo que hace que la foto no
-          // parezca un wallpaper pegado.
-          Positioned.fill(
-            child: IgnorePointer(child: CustomPaint(painter: _ScanlinesPainter())),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+        ),
+        // Scanlines: la textura que la web le pone al hero en el tema `game`.
+        Positioned.fill(
+          child: IgnorePointer(child: CustomPaint(painter: _ScanlinesPainter())),
+        ),
+        // El tipo de partido, arriba a la izquierda y en voz baja. Sin punto
+        // de color, sin píldora: es un dato, no una alarma.
+        Positioned(
+          top: 16,
+          left: 16,
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(width: 7, height: 7, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
-                    const SizedBox(width: 6),
-                    Text(theme.label.toUpperCase(), style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.textPrimary)),
-                  ],
-                ),
+              Text(
+                theme.label.toUpperCase(),
+                style: AppTypography.condensed(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 2),
               ),
-              const Spacer(),
-              if (isLive)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: AppColors.destructive.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(width: 6, height: 6, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.green)),
-                    const SizedBox(width: 5),
-                    Text('EN VIVO', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.destructive)),
-                  ]),
-                )
-              // El chip de la izquierda dice el TIPO de partido; sin este, nada
-              // en la pantalla decía que el partido ya se jugó.
-              else if (match.status == 'evaluated')
-                _StatusChip(text: 'EVALUADO', color: AppColors.voltNeon)
-              else if (match.status == 'completed')
-                _StatusChip(text: 'TERMINADO', color: AppColors.textSecondary),
+              if (isLive) ...[
+                Text('  ·  ',
+                    style: AppTypography.condensed(
+                        size: 12, color: AppColors.textMuted)),
+                Text(
+                  'EN VIVO',
+                  style: AppTypography.condensed(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: AppColors.destructive,
+                      letterSpacing: 2),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 18),
-          if (hasTeams)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(child: _HeroTeam(team: match.teamA!)),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
+        ),
+        // Alto fijo mínimo y contenido pegado abajo: así la foto tiene lugar
+        // para leerse como una foto y el marcador se apoya sobre ella, en vez
+        // de flotar en el medio de una franja corta.
+        Container(
+          constraints: const BoxConstraints(minHeight: 320),
+          padding: const EdgeInsets.fromLTRB(16, 46, 16, 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (hasTeams)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    if (hasScore)
-                      Text('${match.teamA!.score} - ${match.teamB!.score}',
-                          style: AppTypography.jersey(size: 36, letterSpacing: 1))
-                    else if (isFinished) ...[
-                      Text('—', style: AppTypography.sportNumber(size: 30, color: AppColors.textMuted)),
-                      const SizedBox(height: 2),
-                      Text('SIN RESULTADO',
-                          textAlign: TextAlign.center,
-                          style: AppTypography.code(size: 8, weight: FontWeight.w700, color: AppColors.textMuted)),
-                    ] else
-                      Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: AppColors.textMuted)),
+                    Expanded(child: _HeroTeam(team: match.teamA!)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: hasScore
+                          ? Text('${match.teamA!.score} - ${match.teamB!.score}',
+                              style:
+                                  AppTypography.jersey(size: 46, letterSpacing: 1))
+                          : isFinished
+                              ? Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                        width: 26,
+                                        height: 3,
+                                        color: AppColors.textMuted),
+                                    const SizedBox(height: 6),
+                                    Text('SIN RESULTADO',
+                                        textAlign: TextAlign.center,
+                                        style: AppTypography.condensed(
+                                            size: 11,
+                                            weight: FontWeight.w600,
+                                            color: AppColors.textMuted,
+                                            letterSpacing: 1)),
+                                  ],
+                                )
+                              : Text('VS',
+                                  style: AppTypography.jersey(
+                                      size: 26, color: AppColors.textMuted)),
+                    ),
+                    Expanded(child: _HeroTeam(team: match.teamB!)),
+                  ],
+                )
+              else
+                Column(
+                  children: [
+                    Text(match.title.toUpperCase(),
+                        textAlign: TextAlign.center,
+                        style: AppTypography.jersey(size: 30, height: 1.05)),
+                    if (spotsLeft > 0 && match.status == 'upcoming') ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '${match.players.length} / ${match.matchSize} jugadores · $spotsLeft lugar${spotsLeft != 1 ? 'es' : ''} disponible${spotsLeft != 1 ? 's' : ''}',
+                        style: AppTypography.body(
+                            size: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
                   ],
                 ),
-                Expanded(child: _HeroTeam(team: match.teamB!)),
-              ],
-            )
-          else
-            Column(
-              children: [
-                Text(match.title, textAlign: TextAlign.center, style: AppTypography.headline(size: 24, weight: FontWeight.w900)),
-                if (spotsLeft > 0 && match.status == 'upcoming') ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${match.players.length} / ${match.matchSize} jugadores · $spotsLeft lugar${spotsLeft != 1 ? 'es' : ''} disponible${spotsLeft != 1 ? 's' : ''}',
-                    style: AppTypography.body(size: 12, color: AppColors.textMuted),
-                  ),
-                ],
-              ],
-            ),
-          const SizedBox(height: 18),
-          Container(
-            decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(14)),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _InfoStripItem(
-                    icon: Icons.calendar_today_outlined,
-                    text: (match.status == 'planning' || match.date.isEmpty) ? 'A definir' : _fmtDate(match.date),
-                  ),
-                ),
-                Expanded(
-                  child: _InfoStripItem(
-                    icon: Icons.access_time,
-                    text: (match.status == 'planning' || match.time == null) ? 'A definir' : '${match.time} hs',
-                  ),
-                ),
-                if (match.weather != null && !isFinished)
-                  Expanded(
-                    child: _InfoStripItem(icon: _weatherIcon(match.weather!.icon), text: '${match.weather!.temperature}°'),
-                  ),
-              ],
-            ),
-          ),
-          if (match.location != null) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(Icons.location_on_outlined, size: 16, color: AppColors.textMuted),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(match.location!, style: AppTypography.body(size: 12, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ),
-              ],
-            ),
-          ],
-          // "Cómo llegar" a un partido que ya se jugó no lleva a ningún
-          // lado, y sin botón de unirse la fila entera sobra.
-          if (!isFinished) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onOpenMaps,
-                    icon: const Icon(Icons.navigation_outlined, size: 16),
-                    label: const Text('Cómo llegar'),
-                  ),
-                ),
-                if (showJoinButton) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: isPending
-                        ? OutlinedButton.icon(
-                            onPressed: null,
-                            icon: const Icon(Icons.hourglass_top_rounded, size: 16),
-                            label: const Text('Pedido enviado'),
-                          )
-                        : isMatchFull && !isUserInMatch
-                            ? ElevatedButton(
+              const SizedBox(height: 22),
+              // Una sola línea de datos separada por puntos. Antes esto era una
+              // caja gris redondeada adentro de la tarjeta: una caja dentro de
+              // otra caja, que es de donde salía la sensación de "todo igual".
+              Text(
+                meta.join('  ·  '),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.condensed(
+                    size: 14,
+                    weight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0.4),
+              ),
+              // "Cómo llegar" a un partido que ya se jugó no lleva a ningún
+              // lado, y sin botón de unirse la fila entera sobra.
+              if (!isFinished) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onOpenMaps,
+                        icon: const Icon(Icons.navigation_outlined, size: 16),
+                        label: const Text('Cómo llegar'),
+                      ),
+                    ),
+                    if (showJoinButton) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: isPending
+                            ? OutlinedButton.icon(
                                 onPressed: null,
-                                child: const Text('Lleno'),
+                                icon: const Icon(Icons.hourglass_top_rounded,
+                                    size: 16),
+                                label: const Text('Pedido enviado'),
                               )
-                            : ElevatedButton.icon(
-                                onPressed: isJoining ? null : onJoinLeave,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isUserInMatch ? AppColors.cardSurface : AppColors.voltNeon,
-                                  foregroundColor: isUserInMatch ? AppColors.textPrimary : Colors.black,
-                                ),
-                                icon: isJoining
-                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                                    : Icon(isUserInMatch
-                                        ? Icons.logout
+                            : isMatchFull && !isUserInMatch
+                                ? ElevatedButton(
+                                    onPressed: null,
+                                    child: const Text('Lleno'),
+                                  )
+                                : ElevatedButton.icon(
+                                    onPressed: isJoining ? null : onJoinLeave,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isUserInMatch
+                                          ? AppColors.cardSurface
+                                          : AppColors.voltNeon,
+                                      foregroundColor: isUserInMatch
+                                          ? AppColors.textPrimary
+                                          : Colors.black,
+                                    ),
+                                    icon: isJoining
+                                        ? const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2))
+                                        : Icon(
+                                            isUserInMatch
+                                                ? Icons.logout
+                                                : needsApproval
+                                                    ? Icons.how_to_reg_rounded
+                                                    : Icons.person_add_alt_1,
+                                            size: 16),
+                                    label: Text(isUserInMatch
+                                        ? 'Baja'
                                         : needsApproval
-                                            ? Icons.how_to_reg_rounded
-                                            : Icons.person_add_alt_1, size: 16),
-                                label: Text(isUserInMatch
-                                    ? 'Baja'
-                                    : needsApproval
-                                        ? 'Pedir entrar'
-                                        : 'Apuntarse'),
-                              ),
-                  ),
-                ],
+                                            ? 'Pedir entrar'
+                                            : 'Apuntarse'),
+                                  ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
-            ),
-          ],
             ],
-            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-/// Líneas horizontales finísimas sobre el hero, como una pantalla vieja.
+
 class _ScanlinesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -764,30 +772,6 @@ class _ScanlinesPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Chip de estado del partido, arriba a la derecha del hero.
-///
-/// El chip de la izquierda dice el TIPO (Amistoso, Por Equipos...). Sin este,
-/// nada en la pantalla decía si el partido ya se jugó.
-class _StatusChip extends StatelessWidget {
-  final String text;
-  final Color color;
-
-  const _StatusChip({required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(text,
-          style: AppTypography.code(size: 10, weight: FontWeight.w700, color: color)),
-    );
-  }
-}
 
 class _HeroTeam extends StatelessWidget {
   final MatchTeam team;
@@ -812,24 +796,6 @@ class _HeroTeam extends StatelessWidget {
   }
 }
 
-class _InfoStripItem extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _InfoStripItem({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textMuted),
-        const SizedBox(height: 4),
-        Text(text, style: AppTypography.body(size: 11, weight: FontWeight.w700, color: AppColors.textPrimary)),
-      ],
-    );
-  }
-}
 
 /// Port simplificado de PlayersConfirmed: fila horizontal de avatares.
 class _PlayersConfirmedRoster extends StatelessWidget {
