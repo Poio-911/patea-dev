@@ -97,12 +97,14 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 
 ### Fase 1 · Corregir la paleta oscura
 
-- [ ] Pantalla de galería en debug — **va primero**, es con lo que se aprueba el resto
-- [ ] Alinear valores contra `globals.css` (`card`, `background`, `popover`, `border`, `input`, `turquoise`, `cardSurface`, `silverBorder`, `bronzeBorder`)
-- [ ] Borrar los 3 `_getPositionColor` duplicados
-- [ ] Unificar tiers de `player_card_widget` y borrar el comentario falso
-- [ ] Reemplazar los 6 grises paralelos y el volt `#CCFF00` de `PateaBackground`
-- [ ] **Eliminar `textMuted`** → `textSecondary` = `#B3BDCC` · *commit propio, revertible solo*
+- [x] Pantalla de galería en debug, con contraste WCAG en vivo y los dos esquemas
+- [x] Diez valores alineados contra `globals.css`
+- [x] Borrados los 3 `_getPositionColor` duplicados
+- [x] Tiers de `player_card_widget` unificados; borrado el comentario falso
+- [x] **Siete** grises paralelos reemplazados (apareció un `#141923` rotulado “bg-card”), más el volt `#CCFF00` y el `#070B11`
+- [x] **`textMuted` eliminado** — 316 usos → `textSecondary` = `#B3BDCC`, en su propio commit
+- [x] Contraste verificado en la galería: 3,48 → **8,92** sobre tarjeta; ningún par en rojo
+- [x] 19 `info` en analyze, 31 tests, APK compilado, Plantel revisado en el emulador
 
 ### Fase 2 · Los 211 colores absolutos
 
