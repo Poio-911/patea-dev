@@ -7,7 +7,7 @@ import '../../../core/models/available_player_model.dart';
 import '../../../core/models/match_model.dart';
 import '../../../core/services/explore_service.dart';
 import '../../../core/services/firestore_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -130,14 +130,14 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                       style: AppTypography.headline(
                           size: 12,
                           weight: FontWeight.w800,
-                          color: AppColors.textSecondary,
+                          color: context.c.textSecondary,
                           letterSpacing: 1.2)),
                   const SizedBox(height: 4),
                   Text(
                     spotsLeft == 1
                         ? 'Falta 1 jugador para completar el partido.'
                         : 'Faltan $spotsLeft jugadores para completar el partido.',
-                    style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 13, color: context.c.textSecondary),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -167,17 +167,17 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                 child: FilledButton(
                   onPressed: _selected.isEmpty || _sending ? null : _invite,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.voltNeon,
-                    foregroundColor: AppColors.background,
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.background,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   child: _sending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppColors.background))
+                              strokeWidth: 2, color: context.c.background))
                       : Text(
                           _selected.isEmpty
                               ? 'Elegí a quién invitar'
@@ -187,7 +187,7 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                           style: AppTypography.headline(
                               size: 14,
                               weight: FontWeight.w800,
-                              color: AppColors.background)),
+                              color: context.c.background)),
                 ),
               ),
             ),
@@ -201,7 +201,7 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
     final playersAsync = ref.watch(activeGroupPlayersProvider);
 
     return playersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+      loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
       error: (e, _) => _Empty(text: 'No se pudieron cargar los jugadores del grupo.\n$e'),
       data: (players) {
         // Los que ya están en el partido no se invitan de nuevo. Y sólo tiene
@@ -244,14 +244,14 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
             children: [
               Text('${_radiusKm.round()} km',
                   style: AppTypography.code(
-                      size: 13, weight: FontWeight.w800, color: AppColors.voltNeon)),
+                      size: 13, weight: FontWeight.w800, color: context.c.primary)),
               Expanded(
                 child: Slider(
                   value: _radiusKm,
                   min: 1,
                   max: 50,
                   divisions: 49,
-                  activeColor: AppColors.voltNeon,
+                  activeColor: context.c.primary,
                   onChanged: (v) => setState(() => _radiusKm = v),
                   // Se busca al soltar, no en cada pixel del slider.
                   onChangeEnd: (_) => _search(),
@@ -268,7 +268,7 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
   Widget _buildNearbyList() {
     if (_searchError != null) return _Empty(text: _searchError!);
     if (_searching && _nearby == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.voltNeon));
+      return Center(child: CircularProgressIndicator(color: context.c.primary));
     }
 
     final players = _nearby ?? const <AvailablePlayerModel>[];
@@ -299,13 +299,13 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
           },
         ),
         if (_searching)
-          const Positioned(
+          Positioned(
             top: 8,
             right: 24,
             child: SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.voltNeon)),
+                child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary)),
           ),
       ],
     );
@@ -327,17 +327,17 @@ class _Tab extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.voltNeon : Colors.transparent,
+          color: selected ? context.c.primary : Colors.transparent,
           borderRadius: AppRadii.chipAll,
           border: Border.all(
-            color: selected ? AppColors.voltNeon : AppColors.overlayStrong,
+            color: selected ? context.c.primary : context.c.overlayStrong,
           ),
         ),
         child: Text(label,
             style: AppTypography.headline(
                 size: 12,
                 weight: FontWeight.w700,
-                color: selected ? AppColors.background : AppColors.textSecondary)),
+                color: selected ? context.c.background : context.c.textSecondary)),
       ),
     );
   }
@@ -386,7 +386,7 @@ class _PlayerRow extends StatelessWidget {
                     [position, if (ovr > 0) 'OVR $ovr', if (trailing != null) trailing!]
                         .where((s) => s.isNotEmpty)
                         .join('  ·  '),
-                    style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 11, color: context.c.textSecondary),
                   ),
                 ],
               ),
@@ -394,7 +394,7 @@ class _PlayerRow extends StatelessWidget {
             Icon(
               selected ? Icons.check_circle_rounded : Icons.circle_outlined,
               size: 22,
-              color: selected ? AppColors.voltNeon : AppColors.textSecondary.withValues(alpha: 0.5),
+              color: selected ? context.c.primary : context.c.textSecondary.withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -416,7 +416,7 @@ class _Empty extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+          style: AppTypography.body(size: 13, color: context.c.textSecondary),
         ),
       ),
     );

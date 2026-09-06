@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/soccer_runner_icon.dart';
 
@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.background,
       body: Center(
         child: SizedBox(
           height: _logoSize,
@@ -131,8 +131,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    AppColors.voltNeon.withValues(alpha: 0.16 + 0.16 * p),
-                                    AppColors.voltNeon.withValues(alpha: 0.05 + 0.05 * p),
+                                    context.c.brandVolt.withValues(alpha: 0.16 + 0.16 * p),
+                                    context.c.brandVolt.withValues(alpha: 0.05 + 0.05 * p),
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.45, 1.0],
@@ -186,7 +186,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             style: AppTypography.headline(
                               size: 10,
                               weight: FontWeight.w700,
-                              color: AppColors.voltNeon,
+                              color: context.c.primary,
                               // El landing usa `tracking-[0.5em]`: medio em de
                               // separación, o sea 5px a 10px de cuerpo. Entra
                               // abriéndose.

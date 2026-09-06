@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/tournament_service.dart';
@@ -28,7 +28,7 @@ class CupBracketScreen extends ConsumerWidget {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              backgroundColor: AppColors.card,
+              backgroundColor: context.c.card,
               title: Text('CARGAR RESULTADO', style: AppTypography.headline(size: 16)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -57,7 +57,7 @@ class CupBracketScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const Divider(color: AppColors.border),
+                  Divider(color: context.c.border),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -149,7 +149,7 @@ class CupBracketScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.emoji_events_outlined, size: 56, color: AppColors.textSecondary),
+                  Icon(Icons.emoji_events_outlined, size: 56, color: context.c.textSecondary),
                   const SizedBox(height: 14),
                   Text(
                     'Bracket no generado aún',
@@ -157,7 +157,7 @@ class CupBracketScreen extends ConsumerWidget {
                   ),
                   Text(
                     'Iniciá la copa desde el panel para sortear las llaves',
-                    style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 13, color: context.c.textSecondary),
                   ),
                 ],
               ),
@@ -203,7 +203,7 @@ class CupBracketScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
                 _getRoundLabel(round).toUpperCase(),
-                style: AppTypography.headline(size: 13, color: AppColors.voltNeon),
+                style: AppTypography.headline(size: 13, color: context.c.primary),
               ),
             ),
             ...roundMatches.map(
@@ -250,16 +250,16 @@ class _BracketMatchCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.c.card,
         borderRadius: AppRadii.cardAll,
         border: Border.all(
-          color: hasWinner ? AppColors.goldBorder.withValues(alpha: 0.8) : AppColors.border,
+          color: hasWinner ? context.c.goldBorder.withValues(alpha: 0.8) : context.c.border,
           width: hasWinner ? 1.5 : 1.0,
         ),
         boxShadow: hasWinner
             ? [
                 BoxShadow(
-                  color: AppColors.goldBorder.withValues(alpha: 0.2),
+                  color: context.c.goldBorder.withValues(alpha: 0.2),
                   blurRadius: 10,
                 )
               ]
@@ -272,7 +272,7 @@ class _BracketMatchCard extends StatelessWidget {
             score: match.scoreTeam1,
             isWinner: match.winnerId != null && match.winnerId == match.team1Id,
           ),
-          const Divider(height: 12, color: AppColors.border),
+          Divider(height: 12, color: context.c.border),
           _TeamRow(
             name: match.team2Name ?? 'Por definir',
             score: match.scoreTeam2,
@@ -306,7 +306,7 @@ class _TeamRow extends StatelessWidget {
             style: AppTypography.headline(
               size: 13,
               weight: isWinner ? FontWeight.w800 : FontWeight.w500,
-              color: isWinner ? AppColors.goldBorder : AppColors.textPrimary,
+              color: isWinner ? context.c.goldBorder : context.c.textPrimary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -317,7 +317,7 @@ class _TeamRow extends StatelessWidget {
             '$score',
             style: AppTypography.sportNumber(
               size: 14,
-              color: isWinner ? AppColors.goldBorder : AppColors.textPrimary,
+              color: isWinner ? context.c.goldBorder : context.c.textPrimary,
             ),
           ),
       ],

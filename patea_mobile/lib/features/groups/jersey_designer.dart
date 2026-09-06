@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/jersey_templates.dart';
 import '../../core/models/group_model.dart';
@@ -50,17 +50,17 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('VISTA PREVIA', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
+        Text('VISTA PREVIA', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
         const SizedBox(height: 10),
         Center(
           child: Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
+            decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
             child: JerseyWidget(jersey: value, size: 90),
           ),
         ),
         const SizedBox(height: 24),
-        Text('DISEÑO', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
+        Text('DISEÑO', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
         const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
@@ -77,7 +77,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border, width: selected ? 2 : 1),
+                  border: Border.all(color: selected ? context.c.primary : context.c.border, width: selected ? 2 : 1),
                 ),
                 child: JerseyWidget(jersey: JerseyModel(pattern: type, primaryColor: '#9CA3AF', secondaryColor: '#E5E7EB'), size: 40),
               ),
@@ -85,13 +85,13 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
           },
         ),
         const SizedBox(height: 24),
-        Text('COLORES', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
+        Text('COLORES', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
-                style: OutlinedButton.styleFrom(backgroundColor: _activeColorSelection == 'primary' ? AppColors.voltNeon.withValues(alpha: 0.15) : null),
+                style: OutlinedButton.styleFrom(backgroundColor: _activeColorSelection == 'primary' ? context.c.brandVolt.withValues(alpha: 0.15) : null),
                 onPressed: () => setState(() => _activeColorSelection = 'primary'),
                 child: const Text('Color Primario'),
               ),
@@ -99,7 +99,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton(
-                style: OutlinedButton.styleFrom(backgroundColor: _activeColorSelection == 'secondary' ? AppColors.voltNeon.withValues(alpha: 0.15) : null),
+                style: OutlinedButton.styleFrom(backgroundColor: _activeColorSelection == 'secondary' ? context.c.brandVolt.withValues(alpha: 0.15) : null),
                 onPressed: () => setState(() => _activeColorSelection = 'secondary'),
                 child: const Text('Color Secundario'),
               ),
@@ -125,7 +125,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: hexToColor(hex),
-                  border: Border.all(color: isSelected ? AppColors.voltNeon : AppColors.border, width: isSelected ? 3 : 1),
+                  border: Border.all(color: isSelected ? context.c.primary : context.c.border, width: isSelected ? 3 : 1),
                 ),
               ),
             );

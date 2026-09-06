@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/widgets/player_position_badge.dart';
@@ -37,18 +37,18 @@ class LeaderboardScreen extends ConsumerWidget {
               final player = sorted[index];
               final isPodium = index < 3;
               final podiumColor = index == 0
-                  ? AppColors.goldBorder
+                  ? context.c.goldBorder
                   : index == 1
-                      ? AppColors.silverBorder
-                      : AppColors.bronzeBorder;
+                      ? context.c.silverBorder
+                      : context.c.bronzeBorder;
 
               return Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: context.c.card,
                   borderRadius: AppRadii.cardAll,
                   border: Border.all(
-                    color: isPodium ? podiumColor.withValues(alpha: 0.6) : AppColors.border,
+                    color: isPodium ? podiumColor.withValues(alpha: 0.6) : context.c.border,
                     width: isPodium ? 1.5 : 1.0,
                   ),
                 ),
@@ -60,7 +60,7 @@ class LeaderboardScreen extends ConsumerWidget {
                         '#${index + 1}',
                         style: AppTypography.sportNumber(
                           size: 18,
-                          color: isPodium ? podiumColor : AppColors.textSecondary,
+                          color: isPodium ? podiumColor : context.c.textSecondary,
                         ),
                       ),
                     ),
@@ -77,7 +77,7 @@ class LeaderboardScreen extends ConsumerWidget {
                           ),
                           Text(
                             '${player.stats.goals} Goles • ${player.stats.matchesPlayed} PJ',
-                            style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+                            style: AppTypography.code(size: 11, color: context.c.textSecondary),
                           ),
                         ],
                       ),
@@ -86,7 +86,7 @@ class LeaderboardScreen extends ConsumerWidget {
                       '${player.ovr}',
                       style: AppTypography.sportNumber(
                         size: 24,
-                        color: AppColors.getOvrBorderColor(player.ovr),
+                        color: context.c.ovrBorderColor(player.ovr),
                       ),
                     ),
                   ],

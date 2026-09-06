@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 
 /// Cuenta regresiva al próximo partido, corriendo de verdad.
@@ -69,7 +69,7 @@ class _MatchCountdownState extends State<MatchCountdown> {
         style: AppTypography.headline(
           size: 15,
           weight: FontWeight.w900,
-          color: AppColors.voltNeon,
+          color: context.c.primary,
         ),
       );
     }
@@ -121,7 +121,7 @@ class _Unit extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseSize = size ?? 30;
     final displaySize = dim ? baseSize * 0.75 : baseSize;
-    final displayColor = color ?? (dim ? AppColors.textSecondary : AppColors.textPrimary);
+    final displayColor = color ?? (dim ? context.c.textSecondary : context.c.textPrimary);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -139,7 +139,7 @@ class _Unit extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 4, left: 1),
           child: Text(
             label,
-            style: AppTypography.code(size: (baseSize * 0.3).clamp(8.0, 12.0), color: AppColors.textSecondary),
+            style: AppTypography.code(size: (baseSize * 0.3).clamp(8.0, 12.0), color: context.c.textSecondary),
           ),
         ),
       ],
@@ -166,7 +166,7 @@ class _Sep extends StatelessWidget {
         ':',
         style: AppTypography.sportNumber(
           size: baseSize * 0.65,
-          color: color?.withValues(alpha: 0.6) ?? AppColors.textSecondary,
+          color: color?.withValues(alpha: 0.6) ?? context.c.textSecondary,
         ),
       ),
     );

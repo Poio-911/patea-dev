@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 
 /// El puesto de un jugador.
@@ -45,7 +45,7 @@ class PlayerPositionBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = AppColors.getPositionColor(position);
+    final color = context.c.positionColor(position);
     final texto = showFullName
         ? _fullName.toUpperCase()
         : position.toUpperCase();

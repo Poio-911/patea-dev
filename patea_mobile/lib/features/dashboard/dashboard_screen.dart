@@ -11,7 +11,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_tabs.dart';
@@ -119,7 +119,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       'assets/icons/mate.svg',
                       width: 34,
                       height: 34,
-                      colorFilter: const ColorFilter.mode(AppColors.voltNeon, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.c.primary, BlendMode.srcIn),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -136,7 +136,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           Text(
                             spec(Section.panel).description!,
-                            style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                            style: AppTypography.body(size: 11, color: context.c.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -200,12 +200,12 @@ class _ResumenTab extends ConsumerWidget {
         if (groupId == null) return const _WelcomeEmptyState();
         return _ResumenTabBody(uid: uid, groupId: groupId, player: player);
       },
-      loading: () => const Padding(
+      loading: () => Padding(
         padding: EdgeInsets.all(40),
-        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
       ),
       error: (e, _) => Center(
-        child: Text('Error: $e', style: AppTypography.body(color: AppColors.destructive)),
+        child: Text('Error: $e', style: AppTypography.body(color: context.c.destructive)),
       ),
     );
   }
@@ -224,14 +224,14 @@ class _ResumenTabBody extends ConsumerWidget {
     final ovrHistoryAsync = ref.watch(ovrHistoryStreamProvider(uid));
 
     return matchesAsync.when(
-      loading: () => const Padding(
+      loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Text('No se pudo cargar tu panel.',
-            style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
+            style: AppTypography.body(size: 13, color: context.c.textSecondary)),
       ),
       data: (allMatches) {
         final now = DateTime.now();
@@ -293,7 +293,7 @@ class _ResumenTabBody extends ConsumerWidget {
               ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
+            Divider(height: 1, thickness: 1.5, color: context.c.overlayLine),
             const SizedBox(height: 16),
 
             // ── 2. TUS NÚMEROS (OVR MONUMENTAL + EFECTIVIDAD) ───────────
@@ -303,11 +303,11 @@ class _ResumenTabBody extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Text('Cargando ficha del jugador...',
-                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
+            Divider(height: 1, thickness: 1.5, color: context.c.overlayLine),
             const SizedBox(height: 16),
 
             // ── 3. ÚLTIMO PARTIDO JUGADO EN LÍNEA ABIERTA ────────────────
@@ -317,7 +317,7 @@ class _ResumenTabBody extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('Todavía no disputaste ningún partido evaluado.',
-                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               ),
           ],
         );
@@ -447,7 +447,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                       style: AppTypography.code(
                         size: 9,
                         weight: FontWeight.w800,
-                        color: isLive ? AppColors.destructive : AppColors.textSecondary,
+                        color: isLive ? context.c.destructive : context.c.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -457,7 +457,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                         child: Text(
                           '${a.score} — ${b.score}',
                           style: AppTypography.sportNumber(
-                                  size: 42, color: AppColors.voltNeon)
+                                  size: 42, color: context.c.primary)
                               .copyWith(fontStyle: FontStyle.italic),
                         ),
                       )
@@ -465,7 +465,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                       MatchCountdown(
                         kickoff: kickoff,
                         size: 42,
-                        color: AppColors.voltNeon,
+                        color: context.c.primary,
                         isItalic: true,
                       )
                     else
@@ -485,12 +485,12 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                         ? fmtDate(match.date).toUpperCase()
                         : '${fmtDate(match.date).toUpperCase()} · ${match.time}',
                     style: AppTypography.code(
-                        size: 10, weight: FontWeight.w800, color: AppColors.voltNeon),
+                        size: 10, weight: FontWeight.w800, color: context.c.primary),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'DÍA DE PARTIDO',
-                    style: AppTypography.code(size: 9, color: AppColors.textSecondary),
+                    style: AppTypography.code(size: 9, color: context.c.textSecondary),
                   ),
                 ],
               ),
@@ -539,14 +539,14 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.stadium_outlined, size: 14, color: AppColors.textSecondary),
+                  Icon(Icons.stadium_outlined, size: 14, color: context.c.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     _shortLocation(match.location),
                     style: AppTypography.code(
                       size: 10,
                       weight: FontWeight.w700,
-                      color: AppColors.textSecondary,
+                      color: context.c.textSecondary,
                     ),
                   ),
                 ],
@@ -554,14 +554,14 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.groups_outlined, size: 14, color: AppColors.textSecondary),
+                  Icon(Icons.groups_outlined, size: 14, color: context.c.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     '${match.playerUids.length}/${match.matchSize > 0 ? match.matchSize : 14} CONVOCADOS',
                     style: AppTypography.code(
                       size: 10,
                       weight: FontWeight.w800,
-                      color: AppColors.voltNeon,
+                      color: context.c.primary,
                     ),
                   ),
                 ],
@@ -651,8 +651,8 @@ class _CleanTunnelSide extends StatelessWidget {
                     scale: scale,
                     child: team.jersey != null
                         ? JerseyWidget(jersey: team.jersey!, size: 82)
-                        : const Icon(Icons.checkroom,
-                            size: 64, color: AppColors.textSecondary),
+                        : Icon(Icons.checkroom,
+                            size: 64, color: context.c.textSecondary),
                   ),
                 ),
 
@@ -663,7 +663,7 @@ class _CleanTunnelSide extends StatelessWidget {
                   width: 50,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: AppColors.onPrimary.withValues(alpha: 0.35),
+                    color: context.c.onPrimary.withValues(alpha: 0.35),
                     borderRadius: AppRadii.cardAll,
                   ),
                 ),
@@ -686,7 +686,7 @@ class _CleanTunnelSide extends StatelessWidget {
                           style: GoogleFonts.bebasNeue(
                             fontSize: 22,
                             letterSpacing: 1.5,
-                            color: AppColors.textPrimary,
+                            color: context.c.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -746,7 +746,7 @@ class _CleanVsDivider extends StatelessWidget {
                 style: GoogleFonts.bebasNeue(
                   fontSize: 26,
                   letterSpacing: 2.0,
-                  color: live ? AppColors.destructive : AppColors.textPrimary,
+                  color: live ? context.c.destructive : context.c.textPrimary,
                 ),
               ),
             ),
@@ -806,7 +806,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
             children: [
               Text(
                 'TU OVR ACTUAL',
-                style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
+                style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
               ),
               const SizedBox(height: 2),
               Row(
@@ -815,7 +815,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
                 children: [
                   Text(
                     '${player.ovr}',
-                    style: AppTypography.sportNumber(size: 68, color: AppColors.textPrimary)
+                    style: AppTypography.sportNumber(size: 68, color: context.c.textPrimary)
                         .copyWith(fontStyle: FontStyle.italic, letterSpacing: -2),
                   ),
                   if (trend != 0) ...[
@@ -824,7 +824,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
                       '${up ? '+' : ''}$trend',
                       style: AppTypography.sportNumber(
                         size: 18,
-                        color: up ? AppColors.voltNeon : AppColors.destructive,
+                        color: up ? context.c.primary : context.c.destructive,
                       ),
                     ),
                   ],
@@ -835,7 +835,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
                 style: AppTypography.code(
                   size: 9,
                   weight: FontWeight.w800,
-                  color: AppColors.getOvrBorderColor(player.ovr),
+                  color: context.c.ovrBorderColor(player.ovr),
                 ),
               ),
             ],
@@ -850,18 +850,18 @@ class _PlayerPerformanceMural extends StatelessWidget {
             children: [
               Text(
                 '$goals GOLES',
-                style: AppTypography.sportNumber(size: 30, color: AppColors.voltNeon)
+                style: AppTypography.sportNumber(size: 30, color: context.c.primary)
                     .copyWith(fontStyle: FontStyle.italic),
               ),
               const SizedBox(height: 2),
               Text(
                 '$matches PARTIDOS JUGADOS',
-                style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textSecondary),
+                style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textSecondary),
               ),
               const SizedBox(height: 4),
               Text(
                 'PROMEDIO: $avg G/PJ',
-                style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.textPrimary),
+                style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textPrimary),
               ),
             ],
           ),
@@ -883,7 +883,7 @@ class _LastResultMural extends StatelessWidget {
     final b = match.teamB!;
     final diff = a.score - b.score;
     final stamp = diff > 0 ? 'W' : (diff < 0 ? 'L' : 'D');
-    final stampColor = diff > 0 ? AppColors.voltNeon : (diff < 0 ? AppColors.destructive : AppColors.textSecondary);
+    final stampColor = diff > 0 ? context.c.primary : (diff < 0 ? context.c.destructive : context.c.textSecondary);
 
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
@@ -898,18 +898,18 @@ class _LastResultMural extends StatelessWidget {
               children: [
                 Text(
                   'ÚLTIMO JUGADO · ${fmtDate(match.date).toUpperCase()}',
-                  style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
+                  style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${a.name} ${a.score} — ${b.score} ${b.name}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w800),
+                  style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w800),
                 ),
                 Text(
                   'Toque para ver crónica y calificaciones',
-                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
                 ),
               ],
             ),
@@ -949,12 +949,12 @@ class _GrupoTab extends ConsumerWidget {
         }
         return _GrupoTabBody(groupId: groupId);
       },
-      loading: () => const Padding(
+      loading: () => Padding(
         padding: EdgeInsets.all(40),
-        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
       ),
       error: (e, _) => Center(
-        child: Text('Error: $e', style: AppTypography.body(color: AppColors.destructive)),
+        child: Text('Error: $e', style: AppTypography.body(color: context.c.destructive)),
       ),
     );
   }
@@ -972,14 +972,14 @@ class _GrupoTabBody extends ConsumerWidget {
     final matchesAsync = ref.watch(matchesStreamProvider(groupId));
 
     return groupAsync.when(
-      loading: () => const Padding(
+      loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Text('No se pudo cargar el grupo.',
-            style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
+            style: AppTypography.body(size: 13, color: context.c.textSecondary)),
       ),
       data: (group) {
         if (group == null) {
@@ -1022,7 +1022,7 @@ class _GrupoTabBody extends ConsumerWidget {
                     children: [
                       Text(
                         'TU CUADRO',
-                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
+                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -1044,14 +1044,14 @@ class _GrupoTabBody extends ConsumerWidget {
                           children: [
                             Text(
                               'CÓDIGO: ',
-                              style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+                              style: AppTypography.code(size: 11, color: context.c.textSecondary),
                             ),
                             Text(
                               group.inviteCode,
-                              style: AppTypography.code(size: 12, weight: FontWeight.w800, color: AppColors.voltNeon),
+                              style: AppTypography.code(size: 12, weight: FontWeight.w800, color: context.c.primary),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(Icons.copy_rounded, size: 12, color: AppColors.voltNeon),
+                            Icon(Icons.copy_rounded, size: 12, color: context.c.primary),
                           ],
                         ),
                       ),
@@ -1063,7 +1063,7 @@ class _GrupoTabBody extends ConsumerWidget {
             ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
+            Divider(height: 1, thickness: 1.5, color: context.c.overlayLine),
             const SizedBox(height: 16),
 
             // ── 2. TOTALES DEL PLANTEL (EN LÍNEA ABIERTA) ────────────────
@@ -1073,30 +1073,30 @@ class _GrupoTabBody extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PLANTEL TOTAL', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
+                    Text('PLANTEL TOTAL', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
                     Text('${players.length}', style: AppTypography.sportNumber(size: 38)),
-                    Text('jugadores registrados', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                    Text('jugadores registrados', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('PARTIDOS JUGADOS', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
-                    Text('${played.length}', style: AppTypography.sportNumber(size: 38, color: AppColors.voltNeon)),
-                    Text('en el historial', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                    Text('PARTIDOS JUGADOS', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
+                    Text('${played.length}', style: AppTypography.sportNumber(size: 38, color: context.c.primary)),
+                    Text('en el historial', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                   ],
                 ),
               ],
             ),
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
+            Divider(height: 1, thickness: 1.5, color: context.c.overlayLine),
             const SizedBox(height: 16),
 
             // ── 3. DESTACADOS DEL PLANTEL (MEJOR OVR Y GOLEADOR) ────────
             Text(
               'FIGURAS DEL PLANTEL',
-              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
+              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
             ),
             const SizedBox(height: 12),
 
@@ -1105,8 +1105,8 @@ class _GrupoTabBody extends ConsumerWidget {
                 label: 'MEJOR OVR · ${topOvr.tier.toUpperCase()}',
                 name: topOvr.name,
                 value: '${topOvr.ovr}',
-                valueColor: AppColors.textPrimary,
-                tierColor: AppColors.getOvrBorderColor(topOvr.ovr),
+                valueColor: context.c.textPrimary,
+                tierColor: context.c.ovrBorderColor(topOvr.ovr),
                 onTap: () => context.push('/players/${topOvr.id}'),
               ),
 
@@ -1116,20 +1116,20 @@ class _GrupoTabBody extends ConsumerWidget {
                 label: 'MÁXIMO GOLEADOR',
                 name: topScorer.name,
                 value: '${topScorer.stats.goals} G',
-                valueColor: AppColors.voltNeon,
-                tierColor: AppColors.getOvrBorderColor(topScorer.ovr),
+                valueColor: context.c.primary,
+                tierColor: context.c.ovrBorderColor(topScorer.ovr),
                 onTap: () => context.push('/players/${topScorer.id}'),
               ),
             ],
 
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1.5, color: AppColors.overlayLine),
+            Divider(height: 1, thickness: 1.5, color: context.c.overlayLine),
             const SizedBox(height: 16),
 
             // ── 4. EN AGENDA (LISTA ABIERTA) ─────────────────────────────
             Text(
               'EN AGENDA',
-              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary),
+              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
             ),
             const SizedBox(height: 8),
 
@@ -1137,7 +1137,7 @@ class _GrupoTabBody extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('Nada agendado todavía.',
-                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               )
             else
               ...agenda.take(4).map(
@@ -1153,12 +1153,12 @@ class _GrupoTabBody extends ConsumerWidget {
                                 m.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800),
+                                style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w800),
                               ),
                             ),
                             Text(
                               m.time == null ? fmtDate(m.date) : '${fmtDate(m.date)} · ${m.time}',
-                              style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.voltNeon),
+                              style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.primary),
                             ),
                           ],
                         ),
@@ -1172,8 +1172,8 @@ class _GrupoTabBody extends ConsumerWidget {
                 ShareParams(text: '¡Sumate a "${group.name}" en Pateá! Código: ${group.inviteCode}'),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.voltNeon,
-                side: const BorderSide(color: AppColors.voltNeon, width: 1.2),
+                foregroundColor: context.c.primary,
+                side: BorderSide(color: context.c.primary, width: 1.2),
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
               ),
@@ -1208,7 +1208,7 @@ class _TeamJerseyStack extends ConsumerWidget {
         height: 72,
         child: Center(
           child: Icon(Icons.checkroom_rounded,
-              size: 34, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+              size: 34, color: context.c.textSecondary.withValues(alpha: 0.4)),
         ),
       );
     }
@@ -1285,7 +1285,7 @@ class _GroupFigureRow extends StatelessWidget {
                   ),
                   Text(
                     label,
-                    style: AppTypography.code(size: 9, color: AppColors.textSecondary),
+                    style: AppTypography.code(size: 9, color: context.c.textSecondary),
                   ),
                 ],
               ),
@@ -1322,15 +1322,15 @@ class _EmptyMural extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
+          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
           const SizedBox(height: 6),
           Text(message, style: AppTypography.headline(size: 16, weight: FontWeight.w800)),
           const SizedBox(height: 12),
           ElevatedButton(
             onPressed: onAction,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.voltNeon,
-              foregroundColor: AppColors.onPrimary,
+              backgroundColor: context.c.primary,
+              foregroundColor: context.c.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
             ),
             child: Text(actionLabel, style: AppTypography.headline(size: 12, weight: FontWeight.w800)),
@@ -1360,7 +1360,7 @@ class _WelcomeEmptyState extends StatelessWidget {
               style: AppTypography.headline(
                   size: 11,
                   weight: FontWeight.w800,
-                  color: AppColors.textSecondary,
+                  color: context.c.textSecondary,
                   letterSpacing: 1.2)),
           const SizedBox(height: 8),
           Text('Todavía no estás en ningún grupo',
@@ -1369,21 +1369,21 @@ class _WelcomeEmptyState extends StatelessWidget {
           Text(
             'Un grupo es tu cuadro: ahí viven los jugadores, los partidos y las '
             'evaluaciones. Armá el tuyo o entrá al de un amigo con su código.',
-            style: AppTypography.body(size: 13, color: AppColors.textSecondary, height: 1.5),
+            style: AppTypography.body(size: 13, color: context.c.textSecondary, height: 1.5),
           ),
           const SizedBox(height: 22),
           FilledButton.icon(
             onPressed: () => context.push('/groups'),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.voltNeon,
-              foregroundColor: AppColors.background,
+              backgroundColor: context.c.primary,
+              foregroundColor: context.c.background,
               padding: const EdgeInsets.symmetric(vertical: 15),
               shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
             ),
             icon: const Icon(Icons.group_add_rounded, size: 18),
             label: Text('Crear mi grupo',
                 style: AppTypography.headline(
-                    size: 14, weight: FontWeight.w800, color: AppColors.background)),
+                    size: 14, weight: FontWeight.w800, color: context.c.background)),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
@@ -1403,7 +1403,7 @@ class _WelcomeEmptyState extends StatelessWidget {
               ),
               icon: const Icon(Icons.help_outline, size: 16),
               label: const Text('Cómo funciona Pateá'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+              style: TextButton.styleFrom(foregroundColor: context.c.textSecondary),
             ),
           ),
         ],

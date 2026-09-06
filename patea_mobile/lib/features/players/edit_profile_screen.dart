@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/models/player_model.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/profile_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'crop_photo_screen.dart';
@@ -102,8 +102,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        decoration: const BoxDecoration(
-          color: AppColors.popover,
+        decoration: BoxDecoration(
+          color: context.c.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: SafeArea(
@@ -116,7 +116,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 height: 5,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  color: context.c.textSecondary.withValues(alpha: 0.3),
                   borderRadius: AppRadii.hairAll,
                 ),
               ),
@@ -214,8 +214,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => Container(
         height: 320,
-        decoration: const BoxDecoration(
-          color: AppColors.popover,
+        decoration: BoxDecoration(
+          color: context.c.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
@@ -309,15 +309,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             style: AppTypography.headline(size: 16, weight: FontWeight.w700)),
       ),
       body: playerAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
         error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textSecondary)),
+          child: Text('Error: $err', style: AppTypography.body(color: context.c.textSecondary)),
         ),
         data: (player) {
           if (player == null) {
             return Center(
               child: Text('No se encontró tu perfil.',
-                  style: AppTypography.body(color: AppColors.textSecondary)),
+                  style: AppTypography.body(color: context.c.textSecondary)),
             );
           }
           _seed(player);
@@ -388,22 +388,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'La carta se actualiza mientras editás.',
-                            style: AppTypography.body(size: 11, color: AppColors.textSecondary, height: 1.4),
+                            style: AppTypography.body(size: 11, color: context.c.textSecondary, height: 1.4),
                           ),
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
                             onPressed: (_saving || _generating) ? null : _openPhotoSheet,
                             icon: _generating
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 14,
                                     height: 14,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: AppColors.voltNeon),
+                                        strokeWidth: 2, color: context.c.primary),
                                   )
                                 : const Icon(Icons.photo_camera_outlined, size: 16),
                             label: Text(
                               _generating ? 'Generando…' : 'Cambiar foto',
-                              style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w600),
+                              style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w600),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -412,7 +412,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             icon: const Icon(Icons.crop_free, size: 16),
                             label: Text(
                               'Ajustar encuadre',
-                              style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w600),
+                              style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w600),
                             ),
                           ),
                           if (_pickedPhoto != null)
@@ -420,7 +420,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
                                 'Foto nueva sin guardar',
-                                style: AppTypography.code(size: 9, color: AppColors.voltNeon),
+                                style: AppTypography.code(size: 9, color: context.c.primary),
                               ),
                             ),
                           if (_notice != null)
@@ -428,7 +428,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
                                 _notice!,
-                                style: AppTypography.code(size: 9, color: AppColors.success),
+                                style: AppTypography.code(size: 9, color: context.c.success),
                               ),
                             ),
                         ],
@@ -459,7 +459,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             child: _ChoiceChip(
                               label: p,
                               selected: _position == p,
-                              color: AppColors.getPositionColor(p),
+                              color: context.c.positionColor(p),
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 setState(() => _position = p);
@@ -480,7 +480,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             child: _ChoiceChip(
                               label: entry.value,
                               selected: _foot == entry.key,
-                              color: AppColors.voltNeon,
+                              color: context.c.primary,
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 setState(() => _foot = _foot == entry.key ? null : entry.key);
@@ -500,13 +500,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
                         decoration: BoxDecoration(
-                          color: AppColors.card,
+                          color: context.c.card,
                           borderRadius: AppRadii.cardAll,
-                          border: Border.all(color: AppColors.overlayLine),
+                          border: Border.all(color: context.c.overlayLine),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.cake_outlined, size: 17, color: AppColors.textSecondary),
+                            Icon(Icons.cake_outlined, size: 17, color: context.c.textSecondary),
                             const SizedBox(width: 10),
                             Text(
                               _birthYear != null
@@ -515,18 +515,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               style: AppTypography.body(
                                 size: 14,
                                 color: _birthYear != null
-                                    ? AppColors.textPrimary
-                                    : AppColors.textSecondary,
+                                    ? context.c.textPrimary
+                                    : context.c.textSecondary,
                               ),
                             ),
                             const Spacer(),
                             if (_birthYear != null)
                               GestureDetector(
                                 onTap: () => setState(() => _birthYear = null),
-                                child: Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                                child: Icon(Icons.close, size: 16, color: context.c.textSecondary),
                               )
                             else
-                              Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+                              Icon(Icons.chevron_right, size: 18, color: context.c.textSecondary),
                           ],
                         ),
                       ),
@@ -552,8 +552,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         style: AppTypography.code(
                           size: 10,
                           color: _bioController.text.characters.length > _maxBio
-                              ? AppColors.destructive
-                              : AppColors.textSecondary,
+                              ? context.c.destructive
+                              : context.c.textSecondary,
                         ),
                       ),
                     ),
@@ -563,17 +563,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.destructive.withValues(alpha: 0.1),
+                          color: context.c.destructive.withValues(alpha: 0.1),
                           borderRadius: AppRadii.cardAll,
-                          border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+                          border: Border.all(color: context.c.destructive.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline, size: 16, color: AppColors.destructive),
+                            Icon(Icons.error_outline, size: 16, color: context.c.destructive),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(_error!,
-                                  style: AppTypography.body(size: 12, color: AppColors.destructive)),
+                                  style: AppTypography.body(size: 12, color: context.c.destructive)),
                             ),
                           ],
                         ),
@@ -586,18 +586,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: ElevatedButton.icon(
                         onPressed: _saving ? null : _save,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.voltNeon,
-                          foregroundColor: AppColors.onPrimary,
+                          backgroundColor: context.c.primary,
+                          foregroundColor: context.c.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: AppRadii.cardAll,
                           ),
                         ),
                         icon: _saving
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary),
                               )
                             : const Icon(Icons.check, size: 18),
                         label: Text(
@@ -605,7 +605,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           style: AppTypography.headline(
                             size: 14,
                             weight: FontWeight.w700,
-                            color: AppColors.onPrimary,
+                            color: context.c.onPrimary,
                           ),
                         ),
                       ),
@@ -632,7 +632,7 @@ class _Label extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text.toUpperCase(),
-        style: AppTypography.code(size: 10, color: AppColors.textSecondary),
+        style: AppTypography.code(size: 10, color: context.c.textSecondary),
       ),
     );
   }
@@ -657,20 +657,20 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.c.card,
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.overlayLine),
+        border: Border.all(color: context.c.overlayLine),
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
         maxLength: maxLength,
         onChanged: onChanged,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        style: TextStyle(color: context.c.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           hintText: hint,
           counterText: '',
-          hintStyle: TextStyle(color: AppColors.overlayStrong, fontSize: 13),
+          hintStyle: TextStyle(color: context.c.overlayStrong, fontSize: 13),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
@@ -701,10 +701,10 @@ class _ChoiceChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.16) : AppColors.card,
+          color: selected ? color.withValues(alpha: 0.16) : context.c.card,
           borderRadius: AppRadii.cardAll,
           border: Border.all(
-            color: selected ? color : AppColors.overlayLine,
+            color: selected ? color : context.c.overlayLine,
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -715,7 +715,7 @@ class _ChoiceChip extends StatelessWidget {
           style: AppTypography.headline(
             size: 11,
             weight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? color : AppColors.textSecondary,
+            color: selected ? color : context.c.textSecondary,
           ),
         ),
       ),
@@ -749,10 +749,10 @@ class _SheetAction extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.cardSurface,
+                color: context.c.cardSurface,
                 borderRadius: AppRadii.cardAll,
               ),
-              child: Icon(icon, size: 20, color: AppColors.voltNeon),
+              child: Icon(icon, size: 20, color: context.c.primary),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -763,7 +763,7 @@ class _SheetAction extends StatelessWidget {
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(subtitle!,
-                        style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                        style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                   ],
                 ],
               ),

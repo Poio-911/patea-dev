@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/match_model.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../live_match_screen.dart' show kTeamAId;
 import 'match_timeline.dart' show OpposedBar;
@@ -56,9 +56,9 @@ class LiveStatsPanel extends StatelessWidget {
     final rows = <Widget>[
       OpposedBar(label: 'Goles', a: goals.a, b: goals.b),
       if (yellow.a + yellow.b > 0)
-        OpposedBar(label: 'Amarillas', a: yellow.a, b: yellow.b, color: AppColors.warning),
+        OpposedBar(label: 'Amarillas', a: yellow.a, b: yellow.b, color: context.c.warning),
       if (red.a + red.b > 0)
-        OpposedBar(label: 'Rojas', a: red.a, b: red.b, color: AppColors.destructive),
+        OpposedBar(label: 'Rojas', a: red.a, b: red.b, color: context.c.destructive),
       if (fouls.a + fouls.b > 0) OpposedBar(label: 'Faltas', a: fouls.a, b: fouls.b),
       if (corners.a + corners.b > 0) OpposedBar(label: 'Córners', a: corners.a, b: corners.b),
       if (subs.a + subs.b > 0) OpposedBar(label: 'Cambios', a: subs.a, b: subs.b),
@@ -70,7 +70,7 @@ class LiveStatsPanel extends StatelessWidget {
         Text('ESTADÍSTICAS',
             style: AppTypography.headline(
                 size: 11, weight: FontWeight.w800,
-                color: AppColors.textSecondary, letterSpacing: 1.2)),
+                color: context.c.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 14),
         ...rows,
       ],

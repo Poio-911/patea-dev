@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models/group_permissions.dart';
 import '../../core/models/match_model.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import 'widgets/manage_roster_sheet.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/firestore_service.dart';
@@ -47,12 +47,12 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
           title: Text('¿Eliminar "${team.name}"?', style: AppTypography.headline(size: 16)),
-        content: Text('Esta acción es permanente.', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
+        content: Text('Esta acción es permanente.', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive),
+            style: ElevatedButton.styleFrom(backgroundColor: context.c.destructive),
             child: const Text('Eliminar'),
           ),
         ],
@@ -79,7 +79,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.c.card,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
       builder: (context) => StatefulBuilder(
@@ -118,9 +118,9 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                             }
                           }
                         },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                   child: submitting
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                       : const Text('Guardar'),
                 ),
               ],
@@ -172,17 +172,17 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
             style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
       ),
       body: teamAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        loading: () => Center(
+            child: CircularProgressIndicator(color: context.c.primary)),
         error: (e, _) => Center(
           child: Text('No se pudo cargar el equipo.',
-              style: AppTypography.body(color: AppColors.textSecondary)),
+              style: AppTypography.body(color: context.c.textSecondary)),
         ),
         data: (team) {
           if (team == null) {
             return Center(
               child: Text('Equipo no encontrado.',
-                  style: AppTypography.body(color: AppColors.textSecondary)),
+                  style: AppTypography.body(color: context.c.textSecondary)),
             );
           }
 
@@ -304,7 +304,7 @@ class _TeamBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = _parseColor(team.jersey.primaryColor);
+    final accent = _parseColor(team.jersey.primaryColor, context.c.primary);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
@@ -315,7 +315,7 @@ class _TeamBanner extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             accent.withValues(alpha: 0.28),
-            AppColors.background,
+            context.c.background,
           ],
         ),
       ),
@@ -338,7 +338,7 @@ class _TeamBanner extends StatelessWidget {
                 Text(
                   '${team.members.length} ${team.members.length == 1 ? 'jugador' : 'jugadores'}',
                   style:
-                      AppTypography.body(size: 12, color: AppColors.textSecondary),
+                      AppTypography.body(size: 12, color: context.c.textSecondary),
                 ),
                 if (trophies.isNotEmpty) ...[
                   const SizedBox(height: 9),
@@ -463,15 +463,15 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = danger
-        ? AppColors.destructive
+        ? context.c.destructive
         : primary
-            ? AppColors.onPrimary
-            : AppColors.textPrimary;
+            ? context.c.onPrimary
+            : context.c.textPrimary;
     final bg = danger
-        ? AppColors.destructive.withValues(alpha: 0.12)
+        ? context.c.destructive.withValues(alpha: 0.12)
         : primary
-            ? AppColors.voltNeon
-            : AppColors.overlaySubtle;
+            ? context.c.primary
+            : context.c.overlaySubtle;
 
     return InkWell(
       onTap: onTap,
@@ -517,16 +517,16 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(width: 3, height: 13, color: AppColors.voltNeon),
+        Container(width: 3, height: 13, color: context.c.primary),
         const SizedBox(width: 8),
         Text(text,
             style: AppTypography.code(
                 size: 10,
                 weight: FontWeight.w800,
-                color: AppColors.textSecondary)),
+                color: context.c.textSecondary)),
         const SizedBox(width: 7),
         Text('$count',
-            style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
+            style: AppTypography.code(size: 10, color: context.c.textSecondary)),
       ],
     );
   }
@@ -542,7 +542,7 @@ class _EmptyLine extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
       child: Text(text,
-          style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+          style: AppTypography.body(size: 12, color: context.c.textSecondary)),
     );
   }
 }
@@ -573,11 +573,11 @@ class _RosterTile extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 5),
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: context.c.background,
             borderRadius: AppRadii.cardAll,
             border: starter
-                ? const Border(
-                    left: BorderSide(color: AppColors.voltNeon, width: 2.5))
+                ? Border(
+                    left: BorderSide(color: context.c.primary, width: 2.5))
                 : null,
           ),
           child: Row(
@@ -590,8 +590,8 @@ class _RosterTile extends StatelessWidget {
                   style: AppTypography.sportNumber(
                     size: 17,
                     color: member.number == 0
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
+                        ? context.c.textSecondary
+                        : context.c.textPrimary,
                   ),
                 ),
               ),
@@ -607,7 +607,7 @@ class _RosterTile extends StatelessWidget {
                   p?.name ?? 'Jugador sin datos',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600),
+                  style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w600),
                 ),
               ),
               if (p != null) ...[
@@ -648,7 +648,7 @@ class _AgendaRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 5),
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: context.c.background,
           borderRadius: AppRadii.cardAll,
         ),
         child: Row(
@@ -657,8 +657,8 @@ class _AgendaRow extends StatelessWidget {
               Container(
                 width: 7,
                 height: 7,
-                decoration: const BoxDecoration(
-                    color: AppColors.destructive, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                    color: context.c.destructive, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
             ],
@@ -671,7 +671,7 @@ class _AgendaRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style:
-                        AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700),
+                        AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -682,14 +682,14 @@ class _AgendaRow extends StatelessWidget {
                             : '${match.date} · ${match.time}',
                     style: AppTypography.code(
                       size: 9,
-                      color: live ? AppColors.destructive : AppColors.textSecondary,
+                      color: live ? context.c.destructive : context.c.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 18, color: AppColors.textSecondary),
+            Icon(Icons.chevron_right_rounded,
+                size: 18, color: context.c.textSecondary),
           ],
         ),
       ),
@@ -697,9 +697,11 @@ class _AgendaRow extends StatelessWidget {
   }
 }
 
-Color _parseColor(String hex) {
+/// El color de una camiseta guardado como hex. [fallback] es lo que se usa
+/// cuando el dato viene roto: lo pasa quien llama, porque depende del tema.
+Color _parseColor(String hex, Color fallback) {
   final clean = hex.replaceAll('#', '').trim();
-  if (clean.length != 6) return AppColors.voltNeon;
+  if (clean.length != 6) return fallback;
   final value = int.tryParse(clean, radix: 16);
-  return value == null ? AppColors.voltNeon : Color(0xFF000000 | value);
+  return value == null ? fallback : Color(0xFF000000 | value);
 }

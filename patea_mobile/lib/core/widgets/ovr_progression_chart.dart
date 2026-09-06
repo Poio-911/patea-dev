@@ -2,7 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../models/player_model.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 
 /// Gráfico de progresión de OVR más la fila de cambio/máximo/mínimo.
@@ -33,7 +33,7 @@ class OvrProgressionChart extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
             'Aún no tenés partidos evaluados. ¡Jugá y evaluá tus partidos para ver tu progresión!',
-            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
             textAlign: TextAlign.center,
           ),
         ),
@@ -74,12 +74,12 @@ class OvrProgressionChart extends StatelessWidget {
                     for (var i = 0; i < ovrs.length; i++) FlSpot(i.toDouble(), ovrs[i].toDouble()),
                   ],
                   isCurved: true,
-                  color: AppColors.voltNeon,
+                  color: context.c.primary,
                   barWidth: 3,
                   dotData: const FlDotData(show: false),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: AppColors.voltNeon.withValues(alpha: 0.15),
+                    color: context.c.brandVolt.withValues(alpha: 0.15),
                   ),
                 ),
               ],
@@ -101,7 +101,7 @@ class _MiniStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+        Text(label, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
         Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w800)),
       ],
     );

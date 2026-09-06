@@ -6,7 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/push_permission.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 
@@ -42,10 +42,10 @@ class PateaUserMenuSheet extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.popover,
+        color: context.c.popover,
         borderRadius: AppRadii.surfaceTop,
         border: Border(
-          top: BorderSide(color: AppColors.overlayLine, width: 1),
+          top: BorderSide(color: context.c.overlayLine, width: 1),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
@@ -61,7 +61,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: AppColors.overlayStrong,
+                  color: context.c.overlayStrong,
                   borderRadius: AppRadii.hairAll,
                 ),
               ),
@@ -83,7 +83,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                           style: AppTypography.headline(
                             size: 16,
                             weight: FontWeight.w900,
-                            color: AppColors.textPrimary,
+                            color: context.c.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -91,7 +91,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                         if (email.isNotEmpty)
                           Text(
                             email,
-                            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                            style: AppTypography.body(size: 12, color: context.c.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -106,7 +106,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                             style: AppTypography.headline(
                               size: 10,
                               weight: FontWeight.w800,
-                              color: AppColors.getPositionColor(position),
+                              color: context.c.positionColor(position),
                             ),
                           ),
                         ],
@@ -148,6 +148,8 @@ class PateaUserMenuSheet extends ConsumerWidget {
               icon: Icons.notifications_active_outlined,
               label: 'Activar Notificaciones',
               onTap: () async {
+                final verde = context.c.card;
+                final rojo = context.c.destructive;
                 final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
                 final granted = await PushPermission.requestNow();
@@ -157,7 +159,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                         ? 'Listo, te vamos a avisar.'
                         : 'Android tiene las notificaciones bloqueadas para Pateá. '
                             'Se habilitan desde Ajustes › Apps › Pateá › Notificaciones.'),
-                    backgroundColor: granted ? AppColors.card : AppColors.destructive,
+                    backgroundColor: granted ? verde : rojo,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -165,7 +167,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
             ),
 
             const SizedBox(height: 8),
-            Divider(color: AppColors.overlayLine, height: 1),
+            Divider(color: context.c.overlayLine, height: 1),
             const SizedBox(height: 8),
 
             // La galeria del sistema de diseno. Solo en debug: es la vista con
@@ -183,7 +185,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
             _MenuItem(
               icon: Icons.logout_rounded,
               label: 'Cerrar sesión',
-              color: AppColors.destructive,
+              color: context.c.destructive,
               onTap: () async {
                 Navigator.pop(context);
                 await ref.read(authServiceProvider).signOut();
@@ -205,14 +207,14 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = Container(
-      color: AppColors.card,
+      color: context.c.card,
       child: Center(
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : 'P',
           style: AppTypography.headline(
             size: 18,
             weight: FontWeight.w900,
-            color: AppColors.voltNeon,
+            color: context.c.primary,
           ),
         ),
       ),
@@ -246,7 +248,7 @@ class _OvrPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tier = AppColors.getOvrBorderColor(ovr);
+    final tier = context.c.ovrBorderColor(ovr);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -280,7 +282,7 @@ class _MenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // El ícono va suelto, del color del texto, como en la web. El cuadradito
     // teñido de 38x38 que tenía antes convertía cada fila en otra caja.
-    final tint = color ?? AppColors.textPrimary;
+    final tint = color ?? context.c.textPrimary;
 
     return InkWell(
       onTap: onTap,
@@ -289,7 +291,7 @@ class _MenuItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: color ?? AppColors.textSecondary),
+            Icon(icon, size: 20, color: color ?? context.c.textSecondary),
             const SizedBox(width: 14),
             Text(
               label,

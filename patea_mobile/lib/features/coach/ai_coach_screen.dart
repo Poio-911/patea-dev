@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 
 class AICoachScreen extends StatefulWidget {
@@ -54,7 +54,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
         backgroundColor: Colors.transparent,
         title: Row(
           children: [
-            const Icon(Icons.smart_toy_outlined, color: AppColors.voltNeon),
+            Icon(Icons.smart_toy_outlined, color: context.c.primary),
             const SizedBox(width: 8),
             Text(
               'DT VIRTUAL IA',
@@ -80,16 +80,16 @@ class _AICoachScreenState extends State<AICoachScreen> {
                     constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isUser ? AppColors.voltNeon : AppColors.card,
+                      color: isUser ? context.c.primary : context.c.card,
                       borderRadius: AppRadii.cardAll,
                       border: Border.all(
-                        color: isUser ? AppColors.voltNeon : AppColors.border,
+                        color: isUser ? context.c.primary : context.c.border,
                       ),
                     ),
                     child: Text(
                       msg['text'] ?? '',
                       style: AppTypography.body(
-                        color: isUser ? AppColors.onPrimary : AppColors.textPrimary,
+                        color: isUser ? context.c.onPrimary : context.c.textPrimary,
                         size: 14,
                       ),
                     ),
@@ -105,15 +105,15 @@ class _AICoachScreenState extends State<AICoachScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'El DT está escribiendo...',
-                  style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+                  style: AppTypography.code(size: 11, color: context.c.textSecondary),
                 ),
               ),
             ),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.card,
-              border: Border(top: BorderSide(color: AppColors.border)),
+            decoration: BoxDecoration(
+              color: context.c.card,
+              border: Border(top: BorderSide(color: context.c.border)),
             ),
             child: SafeArea(
               child: Row(
@@ -121,7 +121,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
-                      style: AppTypography.body(color: AppColors.textSecondary),
+                      style: AppTypography.body(color: context.c.textSecondary),
                       decoration: const InputDecoration(
                         hintText: 'Consultale algo a tu DT...',
                         contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -131,7 +131,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: const Icon(Icons.send_rounded, color: AppColors.voltNeon),
+                    icon: Icon(Icons.send_rounded, color: context.c.primary),
                     onPressed: _handleSend,
                   ),
                 ],

@@ -4,7 +4,7 @@ import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/match_service.dart';
 import '../../core/services/auth_service.dart';
@@ -351,7 +351,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.3)))),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.border.withValues(alpha: 0.3)))),
       child: Row(
         children: [
           if (_step > 1)
@@ -370,7 +370,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       ? (_step == 1 ? (_canGoToStep2 ? _goNext : null) : _goNext)
                       : (canSubmitStep3 ? () => _handleCreate(allPlayers) : null),
               child: _isSubmitting
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2))
+                  ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: context.c.onPrimary, strokeWidth: 2))
                   : Text(_step < 3 && !(_step == 2 && _selectedType == 'collaborative')
                       ? 'Siguiente'
                       : 'CREAR PARTIDO'),
@@ -393,15 +393,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           TextField(
             controller: _titleController,
             onChanged: (_) => setState(() {}),
-            style: AppTypography.body(color: AppColors.textSecondary),
-            decoration: const InputDecoration(
+            style: AppTypography.body(color: context.c.textSecondary),
+            decoration: InputDecoration(
               labelText: 'Título del Partido',
-              prefixIcon: Icon(Icons.sports_soccer, color: AppColors.voltNeon),
+              prefixIcon: Icon(Icons.sports_soccer, color: context.c.primary),
             ),
           ),
           const SizedBox(height: 16),
 
-          Text('UBICACIÓN', style: AppTypography.headline(size: 13, color: AppColors.textSecondary)),
+          Text('UBICACIÓN', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
           const SizedBox(height: 8),
           TextField(
             controller: _locationController,
@@ -411,32 +411,32 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               }
               _onLocationChanged(v);
             },
-            style: AppTypography.body(color: AppColors.textSecondary),
+            style: AppTypography.body(color: context.c.textSecondary),
             decoration: InputDecoration(
               hintText: 'Buscá la dirección de la cancha...',
-              prefixIcon: const Icon(Icons.location_on, color: AppColors.voltNeon),
+              prefixIcon: Icon(Icons.location_on, color: context.c.primary),
               suffixIcon: _searchingLocation
                   ? const Padding(
                       padding: EdgeInsets.all(14),
                       child: SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                     )
-                  : (_selectedLocation != null ? const Icon(Icons.check_circle, color: AppColors.success) : null),
+                  : (_selectedLocation != null ? Icon(Icons.check_circle, color: context.c.success) : null),
             ),
           ),
           if (_locationSuggestions.isNotEmpty)
             Container(
               margin: const EdgeInsets.only(top: 4),
               decoration: BoxDecoration(
-                color: AppColors.cardSurface,
+                color: context.c.cardSurface,
                 borderRadius: AppRadii.cardAll,
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.c.border),
               ),
               child: Column(
                 children: _locationSuggestions
                     .map((s) => ListTile(
                           dense: true,
-                          leading: const Icon(Icons.place_outlined, size: 18, color: AppColors.textSecondary),
-                          title: Text(s.label, style: AppTypography.body(color: AppColors.textSecondary, size: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          leading: Icon(Icons.place_outlined, size: 18, color: context.c.textSecondary),
+                          title: Text(s.label, style: AppTypography.body(color: context.c.textSecondary, size: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
                           onTap: () => _selectLocation(s),
                         ))
                     .toList(),
@@ -447,9 +447,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.voltNeon.withValues(alpha: 0.08),
+              color: context.c.brandVolt.withValues(alpha: 0.08),
               borderRadius: AppRadii.cardAll,
-              border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
+              border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -457,14 +457,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Definir horario por votación', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary)),
-                      Text('Elegí esta opción si todavía no saben la fecha u hora.', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                      Text('Definir horario por votación', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary)),
+                      Text('Elegí esta opción si todavía no saben la fecha u hora.', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                     ],
                   ),
                 ),
                 Switch(
                   value: _isPlanning,
-                  activeTrackColor: AppColors.voltNeon,
+                  activeTrackColor: context.c.primary,
                   onChanged: (v) {
                     setState(() => _isPlanning = v);
                     _scheduleWeatherFetch();
@@ -508,7 +508,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               constraints: const BoxConstraints(minHeight: 60),
-              decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
+              decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
               child: Center(
                 child: _loadingWeather
                     ? Row(
@@ -516,23 +516,23 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         children: [
                           const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2)),
                           const SizedBox(width: 10),
-                          Text('Viendo el pronóstico...', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                          Text('Viendo el pronóstico...', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                         ],
                       )
                     : _weather != null
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(_weatherIcon(_weather!.icon), color: AppColors.voltNeon, size: 26),
+                              Icon(_weatherIcon(_weather!.icon), color: context.c.primary, size: 26),
                               const SizedBox(width: 10),
                               Text('${_weather!.temperature}°C', style: AppTypography.sportNumber(size: 18)),
                               const SizedBox(width: 10),
-                              Flexible(child: Text(_weather!.description, style: AppTypography.body(color: AppColors.textSecondary, size: 12))),
+                              Flexible(child: Text(_weather!.description, style: AppTypography.body(color: context.c.textSecondary, size: 12))),
                             ],
                           )
                         : Text(
                             'Poné fecha y lugar para ver el pronóstico.',
-                            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                            style: AppTypography.body(size: 12, color: context.c.textSecondary),
                             textAlign: TextAlign.center,
                           ),
               ),
@@ -552,7 +552,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('TAMAÑO DEL PARTIDO', style: AppTypography.headline(size: 13, color: AppColors.textSecondary)),
+          Text('TAMAÑO DEL PARTIDO', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
           const SizedBox(height: 8),
           Row(
             children: _matchSizes.map((size) {
@@ -567,7 +567,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       _matchSize = size;
                       _selectedPlayerIds.clear();
                     }),
-                    selectedColor: AppColors.voltNeon.withValues(alpha: 0.25),
+                    selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
                   ),
                 ),
               );
@@ -575,12 +575,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           ),
           const SizedBox(height: 24),
 
-          Text('TIPO DE PARTIDO', style: AppTypography.headline(size: 13, color: AppColors.textSecondary)),
+          Text('TIPO DE PARTIDO', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
           const SizedBox(height: 4),
           Text(
             'Manual: elegís vos, la IA arma los equipos. Colaborativo: los jugadores se apuntan solos. '
             'Por Equipos: se enfrentan dos equipos del grupo, con su plantel y su camiseta.',
-            style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+            style: AppTypography.body(size: 11, color: context.c.textSecondary),
           ),
           const SizedBox(height: 8),
           _TypeOption(
@@ -608,24 +608,24 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.cardSurface,
+              color: context.c.cardSurface,
               borderRadius: AppRadii.cardAll,
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.c.border),
             ),
             child: Row(
               children: [
-                const Icon(Icons.public, color: AppColors.textSecondary),
+                Icon(Icons.public, color: context.c.textSecondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Hacer Partido Público', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary)),
-                      Text('Permite que jugadores de afuera se sumen.', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                      Text('Hacer Partido Público', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary)),
+                      Text('Permite que jugadores de afuera se sumen.', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                     ],
                   ),
                 ),
-                Switch(value: _isPublic, activeTrackColor: AppColors.voltNeon, onChanged: (v) => setState(() => _isPublic = v)),
+                Switch(value: _isPublic, activeTrackColor: context.c.primary, onChanged: (v) => setState(() => _isPublic = v)),
               ],
             ),
           ),
@@ -651,7 +651,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final teamsAsync = ref.watch(groupTeamsStreamProvider(groupId));
 
     return teamsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+      loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
       error: (e, _) => _EmptyHint(icon: Icons.error_outline, text: 'No se pudieron cargar los equipos.\n$e'),
       data: (teams) {
         if (teams.length < 2) {
@@ -667,11 +667,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             Text('QUIÉN JUEGA CONTRA QUIÉN',
-                style: AppTypography.headline(size: 13, color: AppColors.textSecondary)),
+                style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
             const SizedBox(height: 4),
             Text(
               'Elegí dos equipos. El primero que toques es el local.',
-              style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+              style: AppTypography.body(size: 11, color: context.c.textSecondary),
             ),
             const SizedBox(height: 16),
             for (final team in teams)
@@ -699,7 +699,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       decoration: BoxDecoration(
                         borderRadius: AppRadii.cardAll,
                         border: Border.all(
-                          color: selected ? AppColors.voltNeon : AppColors.overlayLine,
+                          color: selected ? context.c.primary : context.c.overlayLine,
                         ),
                       ),
                       child: Row(
@@ -717,7 +717,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                                   team.members.isEmpty
                                       ? 'Sin jugadores'
                                       : '${team.members.length} jugadores',
-                                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
                                 ),
                               ],
                             ),
@@ -727,7 +727,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                                 style: AppTypography.headline(
                                     size: 10,
                                     weight: FontWeight.w800,
-                                    color: AppColors.voltNeon,
+                                    color: context.c.primary,
                                     letterSpacing: 1)),
                         ],
                       ),
@@ -760,12 +760,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('JUGADORES', style: AppTypography.headline(size: 13, color: AppColors.textSecondary)),
+                  Text('JUGADORES', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
                   Text(
                     '${_selectedPlayerIds.length} / $_matchSize',
                     style: AppTypography.headline(
                       size: 13,
-                      color: _selectedPlayerIds.length == _matchSize ? AppColors.voltNeon : AppColors.textSecondary,
+                      color: _selectedPlayerIds.length == _matchSize ? context.c.primary : context.c.textSecondary,
                     ),
                   ),
                 ],
@@ -776,8 +776,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 child: LinearProgressIndicator(
                   value: (_selectedPlayerIds.length / _matchSize).clamp(0, 1),
                   minHeight: 6,
-                  backgroundColor: AppColors.cardSurface,
-                  color: AppColors.voltNeon,
+                  backgroundColor: context.c.cardSurface,
+                  color: context.c.primary,
                 ),
               ),
               if (_selectedPlayerIds.isNotEmpty && missingPositions.isNotEmpty) ...[
@@ -786,20 +786,20 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.1),
+                    color: context.c.warning.withValues(alpha: 0.1),
                     borderRadius: AppRadii.chipAll,
-                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                    border: Border.all(color: context.c.warning.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '⚠️ Sin ${missingPositions.map((p) => p == 'POR' ? 'arqueros' : p == 'DEF' ? 'defensores' : p == 'MED' ? 'mediocampistas' : 'delanteros').join(', ')} seleccionados.',
-                    style: AppTypography.body(size: 11, color: AppColors.warning),
+                    style: AppTypography.body(size: 11, color: context.c.warning),
                   ),
                 ),
               ],
               const SizedBox(height: 12),
               TextField(
                 onChanged: (v) => setState(() => _playerSearch = v),
-                style: AppTypography.body(color: AppColors.textSecondary, size: 13),
+                style: AppTypography.body(color: context.c.textSecondary, size: 13),
                 decoration: const InputDecoration(
                   hintText: 'Buscar jugador...',
                   prefixIcon: Icon(Icons.search, size: 20),
@@ -818,8 +818,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         label: Text(pos == 'all' ? 'Todos' : pos),
                         selected: isSelected,
                         onSelected: (_) => setState(() => _positionFilter = pos),
-                        selectedColor: AppColors.voltNeon.withValues(alpha: 0.25),
-                        labelStyle: AppTypography.body(color: AppColors.textSecondary, size: 12),
+                        selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                        labelStyle: AppTypography.body(color: context.c.textSecondary, size: 12),
                       ),
                     );
                   }).toList(),
@@ -828,7 +828,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Selección rápida: ', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                  Text('Selección rápida: ', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                   TextButton(
                     onPressed: _selectedPlayerIds.length >= _matchSize
                         ? null
@@ -856,7 +856,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         const Divider(height: 1),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text('No se encontraron jugadores.', style: AppTypography.body(color: AppColors.textSecondary)))
+              ? Center(child: Text('No se encontraron jugadores.', style: AppTypography.body(color: context.c.textSecondary)))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   itemCount: filtered.length,
@@ -886,7 +886,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         if (_aiStatus != null)
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Text(_aiStatus!, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.voltNeon)),
+            child: Text(_aiStatus!, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.primary)),
           ),
       ],
     );
@@ -911,7 +911,7 @@ class _StepIndicator extends StatelessWidget {
               margin: EdgeInsets.only(right: i < totalSteps - 1 ? 6 : 0),
               height: 4,
               decoration: BoxDecoration(
-                color: isActive ? AppColors.voltNeon : AppColors.cardSurface,
+                color: isActive ? context.c.primary : context.c.cardSurface,
                 borderRadius: AppRadii.hairAll,
               ),
             ),
@@ -943,16 +943,16 @@ class _TypeOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.voltNeon.withValues(alpha: 0.12) : AppColors.cardSurface,
+          color: selected ? context.c.brandVolt.withValues(alpha: 0.12) : context.c.cardSurface,
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border),
+          border: Border.all(color: selected ? context.c.primary : context.c.border),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: selected ? AppColors.voltNeon : AppColors.textSecondary),
+            Icon(icon, size: 20, color: selected ? context.c.primary : context.c.textSecondary),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary)),
+              child: Text(label, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary)),
             ),
           ],
         ),
@@ -977,9 +977,9 @@ class _PlayerSelectRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.voltNeon.withValues(alpha: 0.1) : Colors.transparent,
+          color: selected ? context.c.brandVolt.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border.withValues(alpha: 0.4)),
+          border: Border.all(color: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
@@ -993,15 +993,15 @@ class _PlayerSelectRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(player.name, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary), overflow: TextOverflow.ellipsis),
+                  Text(player.name, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary), overflow: TextOverflow.ellipsis),
                   Row(
                     children: [
                       Text(
                         player.position,
-                        style: AppTypography.code(size: 11, weight: FontWeight.w700, color: AppColors.getPositionColor(player.position)),
+                        style: AppTypography.code(size: 11, weight: FontWeight.w700, color: context.c.positionColor(player.position)),
                       ),
                       const SizedBox(width: 8),
-                      Text('OVR ${player.ovr}', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                      Text('OVR ${player.ovr}', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                     ],
                   ),
                 ],
@@ -1011,11 +1011,11 @@ class _PlayerSelectRow extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: selected ? AppColors.voltNeon : Colors.transparent,
+                color: selected ? context.c.primary : Colors.transparent,
                 borderRadius: AppRadii.hairAll,
-                border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textSecondary),
+                border: Border.all(color: selected ? context.c.primary : context.c.textSecondary),
               ),
-              child: selected ? const Icon(Icons.check, size: 16, color: AppColors.onPrimary) : null,
+              child: selected ? Icon(Icons.check, size: 16, color: context.c.onPrimary) : null,
             ),
           ],
         ),
@@ -1038,12 +1038,12 @@ class _EmptyHint extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+            Icon(icon, size: 40, color: context.c.textSecondary.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+              style: AppTypography.body(size: 13, color: context.c.textSecondary),
             ),
           ],
         ),

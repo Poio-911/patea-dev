@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/match_model.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -32,22 +32,22 @@ class MatchWeatherAlert extends StatelessWidget {
     final ({IconData icon, Color color, String text})? warning = switch (w) {
       _ when w.precipitation > 40 => (
           icon: Icons.water_drop_outlined,
-          color: AppColors.info,
+          color: context.c.info,
           text: 'Lluvia probable (${w.precipitation}%). Llevá algo para taparte.',
         ),
       _ when w.temperature > 28 => (
           icon: Icons.wb_sunny_outlined,
-          color: AppColors.warning,
+          color: context.c.warning,
           text: 'Calor fuerte (${w.temperature}°). Hidratate bien.',
         ),
       _ when w.uvIndex > 6 => (
           icon: Icons.wb_sunny_outlined,
-          color: AppColors.warning,
+          color: context.c.warning,
           text: 'UV muy alto (${w.uvIndex}). Usá protector.',
         ),
       _ when w.windSpeed > 20 => (
           icon: Icons.air_rounded,
-          color: AppColors.textSecondary,
+          color: context.c.textSecondary,
           text: 'Viento fuerte (${w.windSpeed} km/h). Ojo con las pelotas altas.',
         ),
       _ => null,
@@ -62,9 +62,9 @@ class MatchWeatherAlert extends StatelessWidget {
         borderRadius: AppRadii.cardAll,
         border: Border(
           left: BorderSide(color: warning.color, width: 3),
-          top: BorderSide(color: AppColors.overlaySubtle),
-          right: BorderSide(color: AppColors.overlaySubtle),
-          bottom: BorderSide(color: AppColors.overlaySubtle),
+          top: BorderSide(color: context.c.overlaySubtle),
+          right: BorderSide(color: context.c.overlaySubtle),
+          bottom: BorderSide(color: context.c.overlaySubtle),
         ),
       ),
       child: Row(
@@ -74,7 +74,7 @@ class MatchWeatherAlert extends StatelessWidget {
           Expanded(
             child: Text(
               warning.text,
-              style: AppTypography.body(size: 12.5, color: AppColors.textPrimary),
+              style: AppTypography.body(size: 12.5, color: context.c.textPrimary),
             ),
           ),
         ],

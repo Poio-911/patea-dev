@@ -8,7 +8,7 @@ import '../../core/models/match_model.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/match_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/jersey_painter.dart';
@@ -66,13 +66,14 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
 
   Future<void> _guard(Future<void> Function() action) async {
     final messenger = ScaffoldMessenger.of(context);
+    final rojo = context.c.destructive;
     try {
       await action();
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
           content: Text('$e'),
-          backgroundColor: AppColors.destructive,
+          backgroundColor: rojo,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -100,26 +101,26 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.popover,
+        backgroundColor: context.c.popover,
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         title: Text('¿Finalizar el partido?',
             style: AppTypography.headline(size: 17, weight: FontWeight.w800)),
         content: Text(
           'Queda $a a $b. Después de esto se abren las evaluaciones y ya no se '
           'pueden cargar más eventos.',
-          style: AppTypography.body(color: AppColors.textSecondary, size: 13),
+          style: AppTypography.body(color: context.c.textSecondary, size: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text('Cancelar',
-                style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
+                style: AppTypography.body(size: 13, color: context.c.textSecondary)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.destructive,
-              foregroundColor: AppColors.textPrimary,
+              backgroundColor: context.c.destructive,
+              foregroundColor: context.c.textPrimary,
             ),
             child: const Text('Finalizar'),
           ),
@@ -145,17 +146,17 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
             style: AppTypography.headline(size: 15, weight: FontWeight.w800, letterSpacing: 0.5)),
       ),
       body: matchAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
         error: (e, _) => Center(
           child: Text('No se pudo cargar el partido.\n$e',
               textAlign: TextAlign.center,
-              style: AppTypography.body(color: AppColors.textSecondary)),
+              style: AppTypography.body(color: context.c.textSecondary)),
         ),
         data: (match) {
           if (match == null) {
             return Center(
               child: Text('Partido no encontrado',
-                  style: AppTypography.body(color: AppColors.textSecondary)),
+                  style: AppTypography.body(color: context.c.textSecondary)),
             );
           }
 
@@ -203,15 +204,15 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
                 FilledButton.icon(
                   onPressed: () => context.push('/evaluations/${match.id}'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.voltNeon,
-                    foregroundColor: AppColors.background,
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.background,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   icon: const Icon(Icons.star_rate_rounded, size: 20),
                   label: Text('Evaluar a tus compañeros',
                       style: AppTypography.headline(
-                          size: 14, weight: FontWeight.w800, color: AppColors.background)),
+                          size: 14, weight: FontWeight.w800, color: context.c.background)),
                 ),
                 const SizedBox(height: 18),
               ],
@@ -250,12 +251,12 @@ class _Scoreboard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.c.card,
         borderRadius: AppRadii.surfaceAll,
         border: Border.all(
           color: live
-              ? AppColors.destructive.withValues(alpha: 0.55)
-              : AppColors.overlaySubtle,
+              ? context.c.destructive.withValues(alpha: 0.55)
+              : context.c.overlaySubtle,
           width: live ? 1.5 : 1,
         ),
       ),
@@ -271,7 +272,7 @@ class _Scoreboard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
                   '${match.teamA?.score ?? 0} : ${match.teamB?.score ?? 0}',
-                  style: AppTypography.sportNumber(size: 40, color: AppColors.textPrimary),
+                  style: AppTypography.sportNumber(size: 40, color: context.c.textPrimary),
                 ),
               ),
               Expanded(child: _TeamColumn(team: match.teamB, fallback: 'Equipo B')),
@@ -292,7 +293,7 @@ class _StatusLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final live = match.status == 'active';
-    final color = live ? AppColors.destructive : AppColors.textSecondary;
+    final color = live ? context.c.destructive : context.c.textSecondary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -312,15 +313,15 @@ class _StatusLine extends StatelessWidget {
         ),
         if (live) ...[
           const SizedBox(width: 10),
-          Container(width: 1, height: 12, color: AppColors.overlayLine),
+          Container(width: 1, height: 12, color: context.c.overlayLine),
           const SizedBox(width: 10),
           Text(
             clock.display,
-            style: AppTypography.code(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800),
+            style: AppTypography.code(color: context.c.textSecondary, size: 13, weight: FontWeight.w800),
           ),
           if (match.timerPaused) ...[
             const SizedBox(width: 6),
-            Icon(Icons.pause_rounded, size: 13, color: AppColors.textSecondary),
+            Icon(Icons.pause_rounded, size: 13, color: context.c.textSecondary),
           ],
         ],
       ],
@@ -344,7 +345,7 @@ class _TeamColumn extends StatelessWidget {
           JerseyWidget(jersey: jersey, size: 54)
         else
           Icon(Icons.shield_outlined,
-              size: 40, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+              size: 40, color: context.c.textSecondary.withValues(alpha: 0.5)),
         const SizedBox(height: 8),
         Text(
           team?.name ?? fallback,
@@ -452,16 +453,16 @@ class _ControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = danger
-        ? AppColors.destructive
+        ? context.c.destructive
         : primary
-            ? AppColors.background
-            : AppColors.textPrimary;
-    final bg = primary ? AppColors.voltNeon : Colors.transparent;
+            ? context.c.background
+            : context.c.textPrimary;
+    final bg = primary ? context.c.primary : Colors.transparent;
     final border = primary
-        ? AppColors.voltNeon
+        ? context.c.primary
         : danger
-            ? AppColors.destructive.withValues(alpha: 0.5)
-            : AppColors.overlayLine;
+            ? context.c.destructive.withValues(alpha: 0.5)
+            : context.c.overlayLine;
 
     return InkWell(
       onTap: onTap,
@@ -516,7 +517,7 @@ class _QuickEvents extends StatelessWidget {
         Text('REGISTRAR',
             style: AppTypography.headline(
                 size: 11, weight: FontWeight.w800,
-                color: AppColors.textSecondary, letterSpacing: 1.2)),
+                color: context.c.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -530,14 +531,14 @@ class _QuickEvents extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
                       borderRadius: AppRadii.cardAll,
-                      border: Border.all(color: AppColors.overlayLine),
+                      border: Border.all(color: context.c.overlayLine),
                     ),
                     child: Column(
                       children: [
-                        Icon(_items[i].$2, size: 20, color: AppColors.textPrimary),
+                        Icon(_items[i].$2, size: 20, color: context.c.textPrimary),
                         const SizedBox(height: 6),
                         Text(_items[i].$3,
-                            style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
+                            style: AppTypography.body(size: 10, color: context.c.textSecondary)),
                       ],
                     ),
                   ),
@@ -571,14 +572,14 @@ class _WatchingLine extends ConsumerWidget {
         Container(
           width: 6,
           height: 6,
-          decoration: const BoxDecoration(color: AppColors.voltNeon, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: context.c.primary, shape: BoxShape.circle),
         ),
         const SizedBox(width: 7),
         Text(
           presence.watching == 1
               ? '1 siguiendo el partido'
               : '${presence.watching} siguiendo el partido',
-          style: AppTypography.body(size: 11.5, color: AppColors.textSecondary),
+          style: AppTypography.body(size: 11.5, color: context.c.textSecondary),
         ),
       ],
     );

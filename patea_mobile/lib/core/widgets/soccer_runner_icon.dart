@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 
 /// Logo de Pateá.
 ///
@@ -13,12 +13,15 @@ import '../theme/app_colors.dart';
 /// volver a traducirlo a Dart, y las curvas no daban exactamente iguales.
 class SoccerRunnerIcon extends StatelessWidget {
   final double size;
-  final Color color;
+
+  /// Null = el primario del tema. Un parametro por defecto tiene que ser
+  /// constante, asi que el color no puede resolverse en la firma.
+  final Color? color;
 
   const SoccerRunnerIcon({
     super.key,
     this.size = 24.0,
-    this.color = AppColors.voltNeon,
+    this.color,
   });
 
   @override
@@ -27,7 +30,7 @@ class SoccerRunnerIcon extends StatelessWidget {
       'assets/icons/logo_patea.svg',
       width: size,
       height: size,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(color ?? context.c.primary, BlendMode.srcIn),
     );
   }
 }

@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
@@ -69,7 +69,7 @@ class GroupsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.card,
+          backgroundColor: context.c.card,
           title: Text('Crear Grupo', style: AppTypography.headline(size: 16)),
           content: TextField(
             controller: controller,
@@ -93,9 +93,9 @@ class GroupsScreen extends ConsumerWidget {
                         }
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+              style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
               child: submitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                   : const Text('Crear'),
             ),
           ],
@@ -111,7 +111,7 @@ class GroupsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.card,
+          backgroundColor: context.c.card,
           title: Text('Unirse a Grupo', style: AppTypography.headline(size: 16)),
           content: TextField(
             controller: controller,
@@ -135,9 +135,9 @@ class GroupsScreen extends ConsumerWidget {
                         }
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+              style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
               child: submitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                   : const Text('Unirme'),
             ),
           ],
@@ -181,13 +181,13 @@ class _NoActiveGroupView extends ConsumerWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3))),
+          decoration: BoxDecoration(color: context.c.brandVolt.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3))),
           child: Row(
             children: [
-              Icon(Icons.groups_2_outlined, color: AppColors.voltNeon),
+              Icon(Icons.groups_2_outlined, color: context.c.primary),
               const SizedBox(width: 12),
               Expanded(
-                child: Text('No tenés un grupo seleccionado. Elegí uno debajo, o creá/unite a uno.', style: AppTypography.body(color: AppColors.textSecondary, size: 12)),
+                child: Text('No tenés un grupo seleccionado. Elegí uno debajo, o creá/unite a uno.', style: AppTypography.body(color: context.c.textSecondary, size: 12)),
               ),
             ],
           ),
@@ -198,12 +198,12 @@ class _NoActiveGroupView extends ConsumerWidget {
             if (groups.isEmpty) {
               return Container(
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll),
+                decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
-                    Icon(Icons.groups_2_outlined, size: 40, color: AppColors.textSecondary),
+                    Icon(Icons.groups_2_outlined, size: 40, color: context.c.textSecondary),
                     const SizedBox(height: 10),
-                    Text('Todavía no formás parte de ningún grupo', style: AppTypography.body(size: 13, color: AppColors.textSecondary), textAlign: TextAlign.center),
+                    Text('Todavía no formás parte de ningún grupo', style: AppTypography.body(size: 13, color: context.c.textSecondary), textAlign: TextAlign.center),
                   ],
                 ),
               );
@@ -211,7 +211,7 @@ class _NoActiveGroupView extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('TUS GRUPOS', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
+                Text('TUS GRUPOS', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
                 const SizedBox(height: 10),
                 ...groups.map((g) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -228,13 +228,13 @@ class _NoActiveGroupView extends ConsumerWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.5))),
+                          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.5))),
                           child: Row(
                             children: [
-                              Icon(Icons.shield_outlined, color: AppColors.voltNeon),
+                              Icon(Icons.shield_outlined, color: context.c.primary),
                               const SizedBox(width: 12),
-                              Expanded(child: Text(g.name, style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700))),
-                              Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                              Expanded(child: Text(g.name, style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w700))),
+                              Icon(Icons.chevron_right, color: context.c.textSecondary),
                             ],
                           ),
                         ),
@@ -358,7 +358,7 @@ class _ActiveGroupView extends ConsumerWidget {
                         canCreateTeam
                             ? 'Todavía no hay equipos. Creá el primero.'
                             : 'Todavía no hay equipos en este grupo.',
-                        style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                        style: AppTypography.body(size: 12, color: context.c.textSecondary),
                       ),
                     );
                   }
@@ -371,7 +371,7 @@ class _ActiveGroupView extends ConsumerWidget {
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardSurface.withValues(alpha: 0.5),
+                                  color: context.c.cardSurface.withValues(alpha: 0.5),
                                   borderRadius: AppRadii.cardAll,
                                 ),
                                 child: Row(
@@ -383,17 +383,17 @@ class _ActiveGroupView extends ConsumerWidget {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(team.name,
-                                              style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700)),
+                                              style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w700)),
                                           Text(
                                             _rosterLine(team),
                                             style: AppTypography.body(
-                                                size: 11, color: AppColors.textSecondary),
+                                                size: 11, color: context.c.textSecondary),
                                           ),
                                         ],
                                       ),
                                     ),
                                     Icon(Icons.chevron_right,
-                                        size: 18, color: AppColors.textSecondary),
+                                        size: 18, color: context.c.textSecondary),
                                   ],
                                 ),
                               ),
@@ -414,7 +414,7 @@ class _ActiveGroupView extends ConsumerWidget {
               title: 'EN AGENDA',
               child: upcoming.isEmpty
                   ? Text('No hay partidos próximos.',
-                      style: AppTypography.body(size: 12, color: AppColors.textSecondary))
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary))
                   : Column(
                       children: upcoming
                           .take(5)
@@ -441,7 +441,7 @@ class _ActiveGroupView extends ConsumerWidget {
                     ),
               child: recent.isEmpty
                   ? Text('Todavía no jugaron ningún partido.',
-                      style: AppTypography.body(size: 12, color: AppColors.textSecondary))
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary))
                   : Column(
                       children: recent.take(5).map((m) {
                         final mvp = m.bestPlayerId == null
@@ -513,23 +513,23 @@ class _Section extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.4),
+        color: context.c.card.withValues(alpha: 0.4),
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: AppColors.voltNeon),
+              Icon(icon, size: 18, color: context.c.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(title,
                     style: AppTypography.headline(
                         size: 13,
                         weight: FontWeight.w800,
-                        color: AppColors.voltNeon)),
+                        color: context.c.primary)),
               ),
               ?action,
             ],
@@ -563,8 +563,8 @@ class _GroupSwitchRow extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: active
-              ? AppColors.voltNeon.withValues(alpha: 0.1)
-              : AppColors.cardSurface.withValues(alpha: 0.5),
+              ? context.c.brandVolt.withValues(alpha: 0.1)
+              : context.c.cardSurface.withValues(alpha: 0.5),
           borderRadius: AppRadii.cardAll,
         ),
         child: Row(
@@ -572,7 +572,7 @@ class _GroupSwitchRow extends StatelessWidget {
             Icon(
               active ? Icons.radio_button_checked : Icons.radio_button_off,
               size: 18,
-              color: active ? AppColors.voltNeon : AppColors.textSecondary,
+              color: active ? context.c.primary : context.c.textSecondary,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -583,7 +583,7 @@ class _GroupSwitchRow extends StatelessWidget {
                 style: AppTypography.body(
                   size: 13,
                   weight: active ? FontWeight.w800 : FontWeight.w600,
-                  color: active ? AppColors.voltNeon : AppColors.textPrimary,
+                  color: active ? context.c.primary : context.c.textPrimary,
                 ),
               ),
             ),
@@ -592,7 +592,7 @@ class _GroupSwitchRow extends StatelessWidget {
                   style: AppTypography.code(
                       size: 9,
                       weight: FontWeight.w800,
-                      color: AppColors.voltNeon)),
+                      color: context.c.primary)),
           ],
         ),
       ),
@@ -623,11 +623,11 @@ class _MatchLine extends StatelessWidget {
               child: Text(title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600)),
+                  style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w600)),
             ),
             const SizedBox(width: 8),
             Text(trailing,
-                style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                style: AppTypography.body(size: 11, color: context.c.textSecondary)),
           ],
         ),
       ),
@@ -663,7 +663,7 @@ class _PlayedMatchRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface.withValues(alpha: 0.5),
+          color: context.c.cardSurface.withValues(alpha: 0.5),
           borderRadius: AppRadii.cardAll,
         ),
         child: Column(
@@ -676,12 +676,12 @@ class _PlayedMatchRow extends StatelessWidget {
                     hasScore ? '${a.name}  ${a.score} — ${b.score}  ${b.name}' : match.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700),
+                    style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(fmtDate(match.date),
-                    style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                    style: AppTypography.body(size: 11, color: context.c.textSecondary)),
               ],
             ),
             if (mvpName != null) ...[
@@ -727,28 +727,28 @@ class _GroupHeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.card, AppColors.cardSurface]),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [context.c.card, context.c.cardSurface]),
         borderRadius: AppRadii.surfaceAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.groups_2_outlined, size: 14, color: AppColors.voltNeon),
+            Icon(Icons.groups_2_outlined, size: 14, color: context.c.primary),
             const SizedBox(width: 6),
-            Text('GRUPO ACTIVO', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.voltNeon)),
+            Text('GRUPO ACTIVO', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.primary)),
             if (role != null) ...[
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.overlaySubtle,
+                  color: context.c.overlaySubtle,
                   borderRadius: AppRadii.surfaceAll,
                 ),
                 child: Text(roleLabel(role!).toUpperCase(),
                     style: AppTypography.code(
-                        size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
+                        size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
               ),
             ],
           ]),
@@ -766,13 +766,13 @@ class _GroupHeroCard extends StatelessWidget {
                   borderRadius: AppRadii.chipAll,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(color: AppColors.background, borderRadius: AppRadii.chipAll, border: Border.all(color: AppColors.border)),
+                    decoration: BoxDecoration(color: context.c.background, borderRadius: AppRadii.chipAll, border: Border.all(color: context.c.border)),
                     child: Row(
                       children: [
-                        Text('CÓDIGO', style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
+                        Text('CÓDIGO', style: AppTypography.body(size: 10, color: context.c.textSecondary)),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(group.inviteCode, style: AppTypography.code(color: AppColors.textSecondary, size: 14, weight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
-                        Icon(Icons.copy, size: 14, color: AppColors.textSecondary),
+                        Expanded(child: Text(group.inviteCode, style: AppTypography.code(color: context.c.textSecondary, size: 14, weight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
+                        Icon(Icons.copy, size: 14, color: context.c.textSecondary),
                       ],
                     ),
                   ),
@@ -781,7 +781,7 @@ class _GroupHeroCard extends StatelessWidget {
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: () => _shareInvite(context),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: AppColors.textPrimary),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: context.c.textPrimary),
                 icon: const Icon(Icons.share, size: 16),
                 label: const Text('Invitar'),
               ),

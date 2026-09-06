@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:flutter/services.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 
 /// Las pestañas de una sección.
@@ -61,7 +61,7 @@ class PateaTabs extends StatelessWidget {
               ),
           ],
         ),
-        Container(height: 1, color: AppColors.border.withValues(alpha: 0.3)),
+        Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
       ],
     );
   }
@@ -86,7 +86,7 @@ class _Tab extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: active ? AppColors.voltNeon : Colors.transparent,
+              color: active ? context.c.primary : Colors.transparent,
               width: 2,
             ),
           ),
@@ -99,7 +99,7 @@ class _Tab extends StatelessWidget {
               style: AppTypography.body(
                 size: 14,
                 weight: FontWeight.w700,
-                color: active ? AppColors.voltNeon : AppColors.textSecondary,
+                color: active ? context.c.primary : context.c.textSecondary,
               ),
             ),
             if (tab.count > 0) ...[
@@ -107,7 +107,7 @@ class _Tab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: active ? AppColors.voltNeon : AppColors.cardSurface,
+                  color: active ? context.c.primary : context.c.cardSurface,
                   borderRadius: AppRadii.surfaceAll,
                 ),
                 child: Text(
@@ -115,7 +115,7 @@ class _Tab extends StatelessWidget {
                   style: AppTypography.body(
                     size: 10,
                     weight: FontWeight.w700,
-                    color: active ? AppColors.onPrimary : AppColors.textSecondary,
+                    color: active ? context.c.onPrimary : context.c.textSecondary,
                   ),
                 ),
               ),

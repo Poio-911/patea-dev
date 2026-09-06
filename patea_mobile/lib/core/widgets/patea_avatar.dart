@@ -12,7 +12,7 @@ library;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import 'player_avatar_fallback.dart';
 
 class PateaAvatar extends StatelessWidget {
@@ -49,7 +49,7 @@ class PateaAvatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.cardSurface,
+        color: context.c.cardSurface,
         border: borderColor == null
             ? null
             : Border.all(color: borderColor!, width: borderWidth),

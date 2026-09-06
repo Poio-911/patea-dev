@@ -4,7 +4,7 @@ import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_tabs.dart';
 import '../../core/services/firestore_service.dart';
@@ -99,7 +99,7 @@ class _CompetitionsList extends StatelessWidget {
       return Center(
         child: Text(
           isCup ? 'No hay copas activas' : 'No hay ligas activas',
-          style: AppTypography.body(color: AppColors.textSecondary),
+          style: AppTypography.body(color: context.c.textSecondary),
         ),
       );
     }
@@ -120,21 +120,21 @@ class _CompetitionsList extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: context.c.card,
               borderRadius: AppRadii.cardAll,
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.c.border),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.voltNeon.withValues(alpha: 0.12),
+                    color: context.c.brandVolt.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     isCup ? Icons.emoji_events : Icons.table_chart_outlined,
-                    color: AppColors.voltNeon,
+                    color: context.c.primary,
                     size: 24,
                   ),
                 ),
@@ -150,12 +150,12 @@ class _CompetitionsList extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         comp.status.toUpperCase(),
-                        style: AppTypography.code(size: 11, color: AppColors.voltNeon),
+                        style: AppTypography.code(size: 11, color: context.c.primary),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                Icon(Icons.chevron_right, color: context.c.textSecondary),
               ],
             ),
           ),

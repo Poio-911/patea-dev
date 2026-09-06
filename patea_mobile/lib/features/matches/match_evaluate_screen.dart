@@ -4,7 +4,7 @@ import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
@@ -63,13 +63,13 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
       body: matchAsync.when(
         data: (match) {
           if (match == null) {
-            return Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: AppColors.textSecondary)));
+            return Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: context.c.textSecondary)));
           }
           if (uid != match.ownerUid) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Solo el organizador puede ver esta página.', style: AppTypography.body(color: AppColors.textSecondary)),
+                child: Text('Solo el organizador puede ver esta página.', style: AppTypography.body(color: context.c.textSecondary)),
               ),
             );
           }
@@ -80,11 +80,11 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle, color: AppColors.success, size: 44),
+                    Icon(Icons.check_circle, color: context.c.success, size: 44),
                     const SizedBox(height: 12),
                     Text('Evaluación Completa', style: AppTypography.headline(size: 16)),
                     const SizedBox(height: 6),
-                    Text('Este partido ya fue evaluado y los OVRs se actualizaron.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                    Text('Este partido ya fue evaluado y los OVRs se actualizaron.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                   ],
                 ),
               ),
@@ -126,15 +126,15 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                                 child: CircularProgressIndicator(
                                   value: progress,
                                   strokeWidth: 10,
-                                  backgroundColor: AppColors.cardSurface,
-                                  color: progress >= 1 ? AppColors.success : AppColors.voltNeon,
+                                  backgroundColor: context.c.cardSurface,
+                                  color: progress >= 1 ? context.c.success : context.c.primary,
                                 ),
                               ),
                               Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text('$completed/$total', style: AppTypography.headline(size: 28, weight: FontWeight.w900)),
-                                  Text('EVALUARON', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.textSecondary)),
+                                  Text('EVALUARON', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textSecondary)),
                                 ],
                               ),
                             ],
@@ -144,17 +144,17 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                       const SizedBox(height: 28),
                       Container(
                         padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll),
+                        decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(children: [
-                              Icon(Icons.info_outline, size: 16, color: AppColors.textSecondary),
+                              Icon(Icons.info_outline, size: 16, color: context.c.textSecondary),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'Al finalizar, se calculan los cambios de OVR y atributos con las evaluaciones recibidas hasta ahora. Los jugadores que todavía no evaluaron reciben el promedio del partido.',
-                                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
                                 ),
                               ),
                             ]),
@@ -166,9 +166,9 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: (completedAssignments.isEmpty || _isFinalizing) ? null : _finalize,
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
+                          style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
                           icon: _isFinalizing
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                               : const Icon(Icons.emoji_events_outlined),
                           label: Text(_isFinalizing ? 'Finalizando...' : 'FINALIZAR EVALUACIÓN'),
                         ),
@@ -176,7 +176,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                       if (completedAssignments.isEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Text('Necesitás al menos una evaluación completada para finalizar.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                          child: Text('Necesitás al menos una evaluación completada para finalizar.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                         ),
                     ],
                   );

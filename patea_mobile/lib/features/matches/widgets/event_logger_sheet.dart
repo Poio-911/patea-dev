@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/match_model.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/match_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../live_match_screen.dart' show kTeamAId, kTeamBId;
@@ -124,6 +124,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
   Future<void> _save() async {
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.of(context);
+    final rojo = context.c.destructive;
     final navigator = Navigator.of(context);
     final match = widget.match;
     final uid = ref.read(authStateProvider).value?.uid;
@@ -173,7 +174,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
       messenger.showSnackBar(
         SnackBar(
           content: Text('$e'),
-          backgroundColor: AppColors.destructive,
+          backgroundColor: rojo,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -189,8 +190,8 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.popover,
+        decoration: BoxDecoration(
+          color: context.c.popover,
           borderRadius: AppRadii.surfaceTop,
         ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -207,7 +208,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 18),
                     decoration: BoxDecoration(
-                      color: AppColors.overlayStrong,
+                      color: context.c.overlayStrong,
                       borderRadius: AppRadii.hairAll,
                     ),
                   ),
@@ -321,24 +322,24 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
                 FilledButton(
                   onPressed: _canSave ? _save : null,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.voltNeon,
-                    foregroundColor: AppColors.background,
-                    disabledBackgroundColor: AppColors.overlaySubtle,
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.background,
+                    disabledBackgroundColor: context.c.overlaySubtle,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   child: _saving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppColors.background),
+                              strokeWidth: 2, color: context.c.background),
                         )
                       : Text('Guardar',
                           style: AppTypography.headline(
                               size: 14,
                               weight: FontWeight.w800,
-                              color: _canSave ? AppColors.background : AppColors.textSecondary)),
+                              color: _canSave ? context.c.background : context.c.textSecondary)),
                 ),
               ],
             ),
@@ -360,29 +361,30 @@ class _MinuteStepper extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: AppRadii.chipAll,
-        border: Border.all(color: AppColors.overlayLine),
+        border: Border.all(color: context.c.overlayLine),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _step(Icons.remove_rounded, () => onChanged(minute > 0 ? minute - 1 : 0)),
+          _step(context, Icons.remove_rounded, () => onChanged(minute > 0 ? minute - 1 : 0)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text("$minute'",
-                style: AppTypography.code(color: AppColors.textSecondary, size: 14, weight: FontWeight.w800)),
+                style: AppTypography.code(color: context.c.textSecondary, size: 14, weight: FontWeight.w800)),
           ),
-          _step(Icons.add_rounded, () => onChanged(minute + 1)),
+          _step(context, Icons.add_rounded, () => onChanged(minute + 1)),
         ],
       ),
     );
   }
 
-  Widget _step(IconData icon, VoidCallback onTap) => InkWell(
+  Widget _step(BuildContext context, IconData icon, VoidCallback onTap) =>
+      InkWell(
         onTap: onTap,
         borderRadius: AppRadii.chipAll,
         child: Padding(
           padding: const EdgeInsets.all(7),
-          child: Icon(icon, size: 16, color: AppColors.textSecondary),
+          child: Icon(icon, size: 16, color: context.c.textSecondary),
         ),
       );
 }
@@ -399,26 +401,28 @@ class _TeamToggle extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _side(match.teamA?.name ?? 'Equipo A', teamA, () => onChanged(true)),
+          child: _side(context, match.teamA?.name ?? 'Equipo A', teamA, () => onChanged(true)),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _side(match.teamB?.name ?? 'Equipo B', !teamA, () => onChanged(false)),
+          child: _side(context, match.teamB?.name ?? 'Equipo B', !teamA, () => onChanged(false)),
         ),
       ],
     );
   }
 
-  Widget _side(String name, bool selected, VoidCallback onTap) => InkWell(
+  Widget _side(BuildContext context, String name, bool selected,
+          VoidCallback onTap) =>
+      InkWell(
         onTap: onTap,
         borderRadius: AppRadii.cardAll,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
           decoration: BoxDecoration(
-            color: selected ? AppColors.voltNeon.withValues(alpha: 0.12) : Colors.transparent,
+            color: selected ? context.c.brandVolt.withValues(alpha: 0.12) : Colors.transparent,
             borderRadius: AppRadii.cardAll,
             border: Border.all(
-              color: selected ? AppColors.voltNeon : AppColors.overlayLine,
+              color: selected ? context.c.primary : context.c.overlayLine,
             ),
           ),
           child: Text(
@@ -429,7 +433,7 @@ class _TeamToggle extends StatelessWidget {
             style: AppTypography.headline(
               size: 13,
               weight: FontWeight.w800,
-              color: selected ? AppColors.voltNeon : AppColors.textSecondary,
+              color: selected ? context.c.primary : context.c.textSecondary,
             ),
           ),
         ),
@@ -459,36 +463,38 @@ class _PlayerPicker extends StatelessWidget {
         Text(label.toUpperCase(),
             style: AppTypography.headline(
                 size: 10, weight: FontWeight.w800,
-                color: AppColors.textSecondary, letterSpacing: 1)),
+                color: context.c.textSecondary, letterSpacing: 1)),
         const SizedBox(height: 8),
         if (players.isEmpty)
           Text('No hay jugadores cargados en este equipo.',
-              style: AppTypography.body(size: 12, color: AppColors.textSecondary))
+              style: AppTypography.body(size: 12, color: context.c.textSecondary))
         else
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               if (allowClear)
-                _chip('Ninguna', selectedId == null, () => onPick(null)),
+                _chip(context, 'Ninguna', selectedId == null, () => onPick(null)),
               for (final p in players)
-                _chip(p.displayName, p.uid == selectedId, () => onPick(p)),
+                _chip(context, p.displayName, p.uid == selectedId, () => onPick(p)),
             ],
           ),
       ],
     );
   }
 
-  Widget _chip(String text, bool selected, VoidCallback onTap) => InkWell(
+  Widget _chip(BuildContext context, String text, bool selected,
+          VoidCallback onTap) =>
+      InkWell(
         onTap: onTap,
         borderRadius: AppRadii.chipAll,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? AppColors.voltNeon.withValues(alpha: 0.14) : Colors.transparent,
+            color: selected ? context.c.brandVolt.withValues(alpha: 0.14) : Colors.transparent,
             borderRadius: AppRadii.chipAll,
             border: Border.all(
-              color: selected ? AppColors.voltNeon : AppColors.overlayLine,
+              color: selected ? context.c.primary : context.c.overlayLine,
             ),
           ),
           child: Text(
@@ -496,7 +502,7 @@ class _PlayerPicker extends StatelessWidget {
             style: AppTypography.body(
               size: 12,
               weight: selected ? FontWeight.w700 : FontWeight.w400,
-              color: selected ? AppColors.voltNeon : AppColors.textSecondary,
+              color: selected ? context.c.primary : context.c.textSecondary,
             ),
           ),
         ),
@@ -524,7 +530,7 @@ class _OptionRow extends StatelessWidget {
         Text(label.toUpperCase(),
             style: AppTypography.headline(
                 size: 10, weight: FontWeight.w800,
-                color: AppColors.textSecondary, letterSpacing: 1)),
+                color: context.c.textSecondary, letterSpacing: 1)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -538,20 +544,20 @@ class _OptionRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: entry.key == value
-                        ? AppColors.voltNeon.withValues(alpha: 0.14)
+                        ? context.c.brandVolt.withValues(alpha: 0.14)
                         : Colors.transparent,
                     borderRadius: AppRadii.chipAll,
                     border: Border.all(
                       color: entry.key == value
-                          ? AppColors.voltNeon
-                          : AppColors.overlayLine,
+                          ? context.c.primary
+                          : context.c.overlayLine,
                     ),
                   ),
                   child: Text(
                     entry.value,
                     style: AppTypography.body(
                       size: 12,
-                      color: entry.key == value ? AppColors.voltNeon : AppColors.textSecondary,
+                      color: entry.key == value ? context.c.primary : context.c.textSecondary,
                     ),
                   ),
                 ),
@@ -573,14 +579,14 @@ class _CardColorPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _card('yellow', 'Amarilla', AppColors.warning)),
+        Expanded(child: _card(context, 'yellow', 'Amarilla', context.c.warning)),
         const SizedBox(width: 10),
-        Expanded(child: _card('red', 'Roja', AppColors.destructive)),
+        Expanded(child: _card(context, 'red', 'Roja', context.c.destructive)),
       ],
     );
   }
 
-  Widget _card(String key, String label, Color color) {
+  Widget _card(BuildContext context, String key, String label, Color color) {
     final selected = value == key;
     return InkWell(
       onTap: () => onChanged(key),
@@ -590,7 +596,7 @@ class _CardColorPicker extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? color.withValues(alpha: 0.14) : Colors.transparent,
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? color : AppColors.overlayLine),
+          border: Border.all(color: selected ? color : context.c.overlayLine),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -605,7 +611,7 @@ class _CardColorPicker extends StatelessWidget {
                 style: AppTypography.headline(
                     size: 13,
                     weight: FontWeight.w800,
-                    color: selected ? color : AppColors.textSecondary)),
+                    color: selected ? color : context.c.textSecondary)),
           ],
         ),
       ),

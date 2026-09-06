@@ -5,7 +5,7 @@ import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/group_service.dart';
@@ -101,7 +101,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.3)))),
+            decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.border.withValues(alpha: 0.3)))),
             child: Row(
               children: [
                 if (_step > 1)
@@ -116,9 +116,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         : _step == 1
                             ? (_canGoToStep2 ? () => setState(() => _step = 2) : null)
                             : (_selectedPlayerIds.isNotEmpty ? _handleCreate : null),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+                    style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                     child: _isSubmitting
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                         : Text(_step == 1 ? 'Siguiente' : 'CREAR EQUIPO'),
                   ),
                 ),
@@ -160,8 +160,8 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('PLANTEL', style: AppTypography.headline(size: 13, color: AppColors.textSecondary)),
-                  Text('${_selectedPlayerIds.length} seleccionados', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                  Text('PLANTEL', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
+                  Text('${_selectedPlayerIds.length} seleccionados', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                 ],
               ),
               const SizedBox(height: 10),
@@ -175,7 +175,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         const Divider(height: 1),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text('No hay jugadores en este grupo.', style: AppTypography.body(color: AppColors.textSecondary)))
+              ? Center(child: Text('No hay jugadores en este grupo.', style: AppTypography.body(color: context.c.textSecondary)))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   itemCount: filtered.length,
@@ -189,9 +189,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
-                          color: selected ? AppColors.voltNeon.withValues(alpha: 0.1) : Colors.transparent,
+                          color: selected ? context.c.brandVolt.withValues(alpha: 0.1) : Colors.transparent,
                           borderRadius: AppRadii.cardAll,
-                          border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border.withValues(alpha: 0.4)),
+                          border: Border.all(color: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4)),
                         ),
                         child: Row(
                           children: [
@@ -201,18 +201,18 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                               size: 32,
                             ),
                             const SizedBox(width: 10),
-                            Expanded(child: Text(p.name, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700))),
-                            Text('OVR ${p.ovr}', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                            Expanded(child: Text(p.name, style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700))),
+                            Text('OVR ${p.ovr}', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                             const SizedBox(width: 10),
                             Container(
                               width: 22,
                               height: 22,
                               decoration: BoxDecoration(
-                                color: selected ? AppColors.voltNeon : Colors.transparent,
+                                color: selected ? context.c.primary : Colors.transparent,
                                 borderRadius: AppRadii.hairAll,
-                                border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textSecondary),
+                                border: Border.all(color: selected ? context.c.primary : context.c.textSecondary),
                               ),
-                              child: selected ? const Icon(Icons.check, size: 16, color: AppColors.onPrimary) : null,
+                              child: selected ? Icon(Icons.check, size: 16, color: context.c.onPrimary) : null,
                             ),
                           ],
                         ),
@@ -242,7 +242,7 @@ class _StepIndicator extends StatelessWidget {
             child: Container(
               margin: EdgeInsets.only(right: i < 1 ? 6 : 0),
               height: 4,
-              decoration: BoxDecoration(color: isActive ? AppColors.voltNeon : AppColors.cardSurface, borderRadius: AppRadii.hairAll),
+              decoration: BoxDecoration(color: isActive ? context.c.primary : context.c.cardSurface, borderRadius: AppRadii.hairAll),
             ),
           );
         }),

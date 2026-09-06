@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/models/player_activity_models.dart';
 import '../../../core/services/player_profile_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/dates.dart';
 
@@ -25,15 +25,15 @@ class PlayerMatchDebrief extends ConsumerWidget {
     final activityAsync = ref.watch(playerActivityProvider(playerId));
 
     return activityAsync.when(
-      loading: () => const Padding(
+      loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 28),
-        child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
       ),
       error: (err, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Text(
           'No se pudo cargar el historial.',
-          style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+          style: AppTypography.body(size: 13, color: context.c.textSecondary),
         ),
       ),
       data: (matches) {
@@ -44,11 +44,11 @@ class PlayerMatchDebrief extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 48),
             child: Column(
               children: [
-                Icon(Icons.calendar_today, size: 38, color: AppColors.textSecondary.withValues(alpha: 0.35)),
+                Icon(Icons.calendar_today, size: 38, color: context.c.textSecondary.withValues(alpha: 0.35)),
                 const SizedBox(height: 12),
                 Text(
                   'Aún no hay partidos evaluados.',
-                  style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                  style: AppTypography.body(size: 13, color: context.c.textSecondary),
                 ),
               ],
             ),
@@ -76,10 +76,10 @@ class PlayerMatchDebrief extends ConsumerWidget {
                     style: AppTypography.body(
                       size: 13,
                       weight: FontWeight.w600,
-                      color: AppColors.voltNeon,
+                      color: context.c.primary,
                     ),
                   ),
-                  label: const Icon(Icons.chevron_right, size: 16, color: AppColors.voltNeon),
+                  label: Icon(Icons.chevron_right, size: 16, color: context.c.primary),
                 ),
               ),
           ],
@@ -113,7 +113,7 @@ class _SummaryRow extends StatelessWidget {
             label: 'Tend. OVR',
             value: '${trendUp ? '+' : ''}${summary.totalOvrChange.toStringAsFixed(1)}',
             icon: trendUp ? Icons.trending_up : Icons.trending_down,
-            valueColor: trendUp ? AppColors.success : AppColors.destructive,
+            valueColor: trendUp ? context.c.success : context.c.destructive,
           ),
       ],
     );
@@ -136,14 +136,14 @@ class _Stat extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 11, color: AppColors.textSecondary),
+              Icon(icon, size: 11, color: context.c.textSecondary),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   label.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.code(size: 9, color: AppColors.textSecondary),
+                  style: AppTypography.code(size: 9, color: context.c.textSecondary),
                 ),
               ),
             ],
@@ -153,7 +153,7 @@ class _Stat extends StatelessWidget {
             value,
             style: AppTypography.sportNumber(
               size: 22,
-              color: valueColor ?? AppColors.textPrimary,
+              color: valueColor ?? context.c.textPrimary,
             ),
           ),
         ],
@@ -177,9 +177,9 @@ class _MatchCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.c.card,
         borderRadius: AppRadii.surfaceAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +199,7 @@ class _MatchCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         [_dateLabel, feedback.locationName].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
-                        style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                        style: AppTypography.body(size: 11, color: context.c.textSecondary),
                       ),
                     ],
                   ],
@@ -228,11 +228,11 @@ class _MatchCard extends StatelessWidget {
 
           if (feedback.peerEvaluations.isNotEmpty) ...[
             const SizedBox(height: 14),
-            Divider(color: AppColors.border.withValues(alpha: 0.4), height: 1),
+            Divider(color: context.c.border.withValues(alpha: 0.4), height: 1),
             const SizedBox(height: 12),
             Text(
               'QUÉ DIJERON TUS COMPAÑEROS',
-              style: AppTypography.code(size: 9, color: AppColors.textSecondary),
+              style: AppTypography.code(size: 9, color: context.c.textSecondary),
             ),
             const SizedBox(height: 10),
             for (final ev in feedback.peerEvaluations) _PeerEvalTile(evaluation: ev),
@@ -251,7 +251,7 @@ class _OvrBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final up = ovr.change > 0;
-    final color = up ? AppColors.success : AppColors.destructive;
+    final color = up ? context.c.success : context.c.destructive;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -284,9 +284,9 @@ class _MiniStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: AppTypography.sportNumber(size: 17, color: AppColors.voltNeon)),
+          Text(value, style: AppTypography.sportNumber(size: 17, color: context.c.primary)),
           const SizedBox(height: 2),
-          Text(label.toUpperCase(), style: AppTypography.code(size: 9, color: AppColors.textSecondary)),
+          Text(label.toUpperCase(), style: AppTypography.code(size: 9, color: context.c.textSecondary)),
         ],
       ),
     );
@@ -320,7 +320,7 @@ class _AttributeDeltas extends StatelessWidget {
       runSpacing: 8,
       children: entries.map((e) {
         final up = e.value > 0;
-        final color = up ? AppColors.success : AppColors.destructive;
+        final color = up ? context.c.success : context.c.destructive;
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
@@ -372,19 +372,19 @@ class _PeerEvalTile extends StatelessWidget {
               height: 28,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppColors.cardSurface,
+                color: context.c.cardSurface,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+                border: Border.all(color: context.c.border.withValues(alpha: 0.6)),
               ),
               child: anon
-                  ? Icon(Icons.visibility_off_outlined, size: 13, color: AppColors.textSecondary)
+                  ? Icon(Icons.visibility_off_outlined, size: 13, color: context.c.textSecondary)
                   : Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+                      style: AppTypography.code(size: 11, color: context.c.textSecondary),
                     ),
             )
           else
-            Icon(Icons.smart_toy_outlined, size: 20, color: AppColors.textSecondary),
+            Icon(Icons.smart_toy_outlined, size: 20, color: context.c.textSecondary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -400,14 +400,14 @@ class _PeerEvalTile extends StatelessWidget {
                         style: AppTypography.body(
                           size: 12,
                           weight: FontWeight.w600,
-                          color: AppColors.textSecondary,
+                          color: context.c.textSecondary,
                         ),
                       ),
                     ),
                     if (evaluation.rating != null)
                       Text(
                         evaluation.rating!.toStringAsFixed(evaluation.rating! % 1 == 0 ? 0 : 1),
-                        style: AppTypography.sportNumber(size: 15, color: AppColors.voltNeon),
+                        style: AppTypography.sportNumber(size: 15, color: context.c.primary),
                       ),
                   ],
                 ),
@@ -418,7 +418,7 @@ class _PeerEvalTile extends StatelessWidget {
                     runSpacing: 6,
                     children: evaluation.performanceTags.map((t) {
                       final positive = t.impact == 'positive';
-                      final color = positive ? AppColors.success : AppColors.destructive;
+                      final color = positive ? context.c.success : context.c.destructive;
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -438,7 +438,7 @@ class _PeerEvalTile extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     (evaluation.aiSummary ?? evaluation.textDescription)!,
-                    style: AppTypography.body(size: 11, color: AppColors.textSecondary, height: 1.45),
+                    style: AppTypography.body(size: 11, color: context.c.textSecondary, height: 1.45),
                   ),
                 ],
               ],

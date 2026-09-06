@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/firestore_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import 'widgets/player_match_debrief.dart';
 
@@ -36,7 +36,7 @@ class PlayerHistoryScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             'Todos los partidos evaluados, con lo que dijeron tus compañeros.',
-            style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+            style: AppTypography.body(size: 13, color: context.c.textSecondary),
           ),
           const SizedBox(height: 22),
           PlayerMatchDebrief(playerId: playerId, compact: false),

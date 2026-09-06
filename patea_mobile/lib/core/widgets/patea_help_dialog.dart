@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import 'soccer_runner_icon.dart';
@@ -69,12 +69,12 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
       child: Container(
         constraints: const BoxConstraints(maxWidth: 420),
         decoration: BoxDecoration(
-          color: AppColors.popover,
+          color: context.c.popover,
           borderRadius: AppRadii.surfaceAll,
-          border: Border.all(color: AppColors.overlayLine, width: 1),
+          border: Border.all(color: context.c.overlayLine, width: 1),
           boxShadow: [
             BoxShadow(
-              color: AppColors.onPrimary.withValues(alpha: 0.6),
+              color: context.c.onPrimary.withValues(alpha: 0.6),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -88,14 +88,14 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SoccerRunnerIcon(size: 24, color: AppColors.voltNeon),
+                SoccerRunnerIcon(size: 24, color: context.c.primary),
                 const SizedBox(width: 8),
                 Text(
                   '¡Bienvenid@ a Pateá!',
                   style: AppTypography.headline(
                     size: 20,
                     weight: FontWeight.w900,
-                    color: AppColors.textPrimary,
+                    color: context.c.textPrimary,
                   ),
                 ),
               ],
@@ -105,7 +105,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
               'Guía rápida para sacarle todo el jugo a la app.',
               style: AppTypography.body(
                 size: 13,
-                color: AppColors.textSecondary,
+                color: context.c.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -123,10 +123,10 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.card,
+                      color: context.c.card,
                       borderRadius: AppRadii.cardAll,
                       border: Border.all(
-                        color: AppColors.voltNeon.withValues(alpha: 0.25),
+                        color: context.c.brandVolt.withValues(alpha: 0.25),
                         width: 1,
                       ),
                     ),
@@ -134,14 +134,14 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(step.icon, color: AppColors.voltNeon, size: 30),
+                        Icon(step.icon, color: context.c.primary, size: 30),
                         const SizedBox(height: 8),
                         Text(
                           step.title,
                           style: AppTypography.headline(
                             size: 15,
                             weight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: context.c.textPrimary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -150,7 +150,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                           step.content,
                           style: AppTypography.body(
                             size: 12,
-                            color: AppColors.textSecondary,
+                            color: context.c.textSecondary,
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 4,
@@ -175,7 +175,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   width: isCurrent ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: isCurrent ? AppColors.voltNeon : AppColors.overlayStrong,
+                    color: isCurrent ? context.c.primary : context.c.overlayStrong,
                     borderRadius: AppRadii.hairAll,
                   ),
                 );
@@ -199,8 +199,8 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.voltNeon,
-                  foregroundColor: AppColors.background,
+                  backgroundColor: context.c.primary,
+                  foregroundColor: context.c.background,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppRadii.cardAll,
                   ),
@@ -211,7 +211,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   style: AppTypography.headline(
                     size: 14,
                     weight: FontWeight.w900,
-                    color: AppColors.background,
+                    color: context.c.background,
                   ),
                 ),
               ),

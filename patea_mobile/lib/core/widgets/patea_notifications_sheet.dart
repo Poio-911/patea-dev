@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 
@@ -121,10 +121,10 @@ class PateaNotificationsSheet extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.popover,
+        color: context.c.popover,
         borderRadius: AppRadii.surfaceTop,
         border: Border(
-          top: BorderSide(color: AppColors.overlayLine, width: 1),
+          top: BorderSide(color: context.c.overlayLine, width: 1),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -140,7 +140,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.overlayStrong,
+                  color: context.c.overlayStrong,
                   borderRadius: AppRadii.hairAll,
                 ),
               ),
@@ -154,7 +154,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                   style: AppTypography.headline(
                     size: 17,
                     weight: FontWeight.w900,
-                    color: AppColors.textPrimary,
+                    color: context.c.textPrimary,
                   ),
                 ),
                 if (unread > 0)
@@ -165,7 +165,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                       style: AppTypography.body(
                         size: 12,
                         weight: FontWeight.w700,
-                        color: AppColors.voltNeon,
+                        color: context.c.primary,
                       ),
                     ),
                   ),
@@ -184,8 +184,8 @@ class PateaNotificationsSheet extends ConsumerWidget {
                     : const Stream.empty(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: AppColors.voltNeon),
+                    return Center(
+                      child: CircularProgressIndicator(color: context.c.primary),
                     );
                   }
 
@@ -198,14 +198,14 @@ class PateaNotificationsSheet extends ConsumerWidget {
                           Icon(
                             Icons.notifications_off_outlined,
                             size: 40,
-                            color: AppColors.overlayStrong,
+                            color: context.c.overlayStrong,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'No tenés notificaciones pendientes',
                             style: AppTypography.body(
                               size: 13,
-                              color: AppColors.textSecondary,
+                              color: context.c.textSecondary,
                             ),
                           ),
                         ],
@@ -216,7 +216,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                   return ListView.separated(
                     itemCount: docs.length,
                     separatorBuilder: (context, index) => Divider(
-                      color: AppColors.overlaySubtle,
+                      color: context.c.overlaySubtle,
                       height: 1,
                     ),
                     itemBuilder: (context, index) => _NotificationRow(doc: docs[index]),
@@ -267,7 +267,7 @@ class _NotificationRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: isRead ? Colors.transparent : AppColors.voltNeon.withValues(alpha: 0.10),
+          color: isRead ? Colors.transparent : context.c.brandVolt.withValues(alpha: 0.10),
           borderRadius: AppRadii.cardAll,
         ),
         child: Row(
@@ -281,13 +281,13 @@ class _NotificationRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: context.c.card,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.overlayLine),
+                border: Border.all(color: context.c.overlayLine),
               ),
               child: Icon(
                 _iconForType(data['type'] as String?),
-                color: AppColors.textPrimary,
+                color: context.c.textPrimary,
                 size: 16,
               ),
             ),
@@ -301,14 +301,14 @@ class _NotificationRow extends StatelessWidget {
                     style: AppTypography.headline(
                       size: 13,
                       weight: isRead ? FontWeight.w600 : FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: context.c.textPrimary,
                     ),
                   ),
                   if (message.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       message,
-                      style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                      style: AppTypography.body(size: 11, color: context.c.textSecondary),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -317,7 +317,7 @@ class _NotificationRow extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       when,
-                      style: AppTypography.body(size: 10, color: AppColors.textSecondary),
+                      style: AppTypography.body(size: 10, color: context.c.textSecondary),
                     ),
                   ],
                 ],
@@ -328,8 +328,8 @@ class _NotificationRow extends StatelessWidget {
                 width: 8,
                 height: 8,
                 margin: const EdgeInsets.only(top: 4, left: 6),
-                decoration: const BoxDecoration(
-                  color: AppColors.voltNeon,
+                decoration: BoxDecoration(
+                  color: context.c.primary,
                   shape: BoxShape.circle,
                 ),
               ),

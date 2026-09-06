@@ -6,7 +6,7 @@ import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
@@ -19,16 +19,17 @@ import '../../core/widgets/patea_tabs.dart';
 
 
 
-({String label, Color color, bool urgent}) _urgency(String matchDate) {
+({String label, Color color, bool urgent}) _urgency(
+    BuildContext context, String matchDate) {
   final d = DateTime.tryParse(matchDate);
-  if (d == null) return (label: '', color: AppColors.textSecondary, urgent: false);
+  if (d == null) return (label: '', color: context.c.textSecondary, urgent: false);
   final deadline = d.toLocal().add(const Duration(hours: 72));
   final hoursLeft = deadline.difference(DateTime.now()).inHours;
-  if (hoursLeft <= 0) return (label: 'Cerrada', color: AppColors.textSecondary, urgent: false);
-  if (hoursLeft <= 12) return (label: '${hoursLeft}h restantes', color: AppColors.destructive, urgent: true);
-  if (hoursLeft <= 24) return (label: '${hoursLeft}h restantes', color: AppColors.warning, urgent: false);
+  if (hoursLeft <= 0) return (label: 'Cerrada', color: context.c.textSecondary, urgent: false);
+  if (hoursLeft <= 12) return (label: '${hoursLeft}h restantes', color: context.c.destructive, urgent: true);
+  if (hoursLeft <= 24) return (label: '${hoursLeft}h restantes', color: context.c.warning, urgent: false);
   final days = (hoursLeft / 24).floor();
-  return (label: '${days}d restantes', color: AppColors.textSecondary, urgent: false);
+  return (label: '${days}d restantes', color: context.c.textSecondary, urgent: false);
 }
 
 /// Port de src/app/evaluations/page.tsx: 3 tabs — Pendientes, Historial,
@@ -76,7 +77,7 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
         backgroundColor: Colors.transparent,
         body: Center(
           child: Text('Debés iniciar sesión.',
-              style: AppTypography.body(color: AppColors.textSecondary)),
+              style: AppTypography.body(color: context.c.textSecondary)),
         ),
       );
     }
@@ -101,7 +102,7 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
             final pending = items.where((i) => !i.isSubmitted).toList();
             final history = items.where((i) => i.isSubmitted).toList();
             final requestsCount = requestsAsync.value?.length ?? 0;
-            final urgentCount = pending.where((i) => _urgency(i.matchDate).urgent).length;
+            final urgentCount = pending.where((i) => _urgency(context, i.matchDate).urgent).length;
 
             return Column(
               children: [
@@ -137,14 +138,14 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
                             child: _StatBox(
                                 value: '${history.length}',
                                 label: 'Completadas',
-                                color: AppColors.success)),
+                                color: context.c.success)),
                         if (urgentCount > 0) ...[
                           const SizedBox(width: 10),
                           Expanded(
                             child: _StatBox(
                               value: '$urgentCount',
                               label: 'Urgentes',
-                              color: AppColors.destructive,
+                              color: context.c.destructive,
                             ),
                           ),
                         ],
@@ -196,11 +197,11 @@ class _StatBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+      decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
       child: Column(
         children: [
-          Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: color ?? AppColors.textPrimary)),
-          Text(label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)),
+          Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: color ?? context.c.textPrimary)),
+          Text(label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w700, color: context.c.textSecondary)),
         ],
       ),
     );
@@ -222,11 +223,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: AppColors.textSecondary),
+            Icon(icon, size: 44, color: context.c.textSecondary),
             const SizedBox(height: 12),
             Text(title, style: AppTypography.headline(size: 15)),
             const SizedBox(height: 6),
-            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
           ],
         ),
       ),
@@ -250,10 +251,10 @@ class _PendingList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = items[index];
-        final urgency = _urgency(item.matchDate);
+        final urgency = _urgency(context, item.matchDate);
         return Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -261,10 +262,10 @@ class _PendingList extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.chipAll),
+                    decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.chipAll),
                     child: Column(
                       children: [
-                        Text(fmtMonthShort(item.matchDate), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.voltNeon)),
+                        Text(fmtMonthShort(item.matchDate), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.primary)),
                         Text(fmtDayNumber(item.matchDate), style: AppTypography.headline(size: 16, weight: FontWeight.w900)),
                       ],
                     ),
@@ -274,7 +275,7 @@ class _PendingList extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.matchTitle, style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(item.matchTitle, style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                         if (urgency.label.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
@@ -289,7 +290,7 @@ class _PendingList extends StatelessWidget {
               ),
               if (item.assignedPlayers.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text('EVALUÁS A', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
+                Text('EVALUÁS A', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -297,7 +298,7 @@ class _PendingList extends StatelessWidget {
                   children: item.assignedPlayers.map((p) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.surfaceAll),
+                      decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.surfaceAll),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -307,7 +308,7 @@ class _PendingList extends StatelessWidget {
                             size: 18,
                           ),
                           const SizedBox(width: 6),
-                          Text(p.name.split(' ').first, style: AppTypography.body(color: AppColors.textSecondary, size: 11, weight: FontWeight.w600)),
+                          Text(p.name.split(' ').first, style: AppTypography.body(color: context.c.textSecondary, size: 11, weight: FontWeight.w600)),
                         ],
                       ),
                     );
@@ -319,7 +320,7 @@ class _PendingList extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/evaluations/${item.matchId}'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                   icon: const Icon(Icons.edit_outlined, size: 16),
                   label: const Text('EVALUAR AHORA'),
                 ),
@@ -350,20 +351,20 @@ class _HistoryList extends StatelessWidget {
         final item = items[index];
         return Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.success.withValues(alpha: 0.2))),
+          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.success.withValues(alpha: 0.2))),
           child: Row(
             children: [
-              Icon(Icons.check_circle, color: AppColors.success, size: 20),
+              Icon(Icons.check_circle, color: context.c.success, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.matchTitle, style: AppTypography.body(color: AppColors.textSecondary, size: 14, weight: FontWeight.w700)),
+                    Text(item.matchTitle, style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w700)),
                     Text(
                       'Evaluaste ${item.submittedEvaluationsCount ?? 0} jugador(es)'
                       '${item.submittedGoals != null ? ' · ${item.submittedGoals} goles · ${item.submittedAssists ?? 0} asis.' : ''}',
-                      style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                      style: AppTypography.body(size: 11, color: context.c.textSecondary),
                     ),
                   ],
                 ),
@@ -430,7 +431,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
         widget.onResponded();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(response == 'accepted' ? 'Identidad revelada.' : 'Anonimato mantenido.'),
-          backgroundColor: AppColors.success,
+          backgroundColor: context.c.success,
         ));
       }
     } catch (e) {
@@ -446,7 +447,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
     final r = widget.request;
     return Container(
       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+      decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -462,15 +463,15 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.fromPlayerName, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
-                    Text(r.matchTitle, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                    Text(r.fromPlayerName, style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700)),
+                    Text(r.matchTitle, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text('${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó.', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+          Text('${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó.', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -485,8 +486,8 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _loading != null ? null : () => _respond('accepted'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
-                  icon: _loading == 'accepted' ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary)) : const Icon(Icons.visibility_outlined, size: 14),
+                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+                  icon: _loading == 'accepted' ? SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary)) : const Icon(Icons.visibility_outlined, size: 14),
                   label: const Text('Revelar identidad', style: TextStyle(fontSize: 11)),
                 ),
               ),

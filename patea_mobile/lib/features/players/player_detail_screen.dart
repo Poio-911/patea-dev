@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/models/player_model.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'widgets/player_match_debrief.dart';
@@ -54,9 +54,9 @@ class PlayerDetailScreen extends ConsumerWidget {
         ),
       ),
       body: playerAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
         error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textSecondary)),
+          child: Text('Error: $err', style: AppTypography.body(color: context.c.textSecondary)),
         ),
         data: (player) {
           if (player == null) return _NotFound(asOwnProfile: asOwnProfile);
@@ -78,7 +78,7 @@ class PlayerDetailScreen extends ConsumerWidget {
                 asOwnProfile
                     ? 'Tu información personal, estadísticas de jugador y actividad.'
                     : 'Perfil y estadísticas del jugador.',
-                style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                style: AppTypography.body(size: 13, color: context.c.textSecondary),
               ),
               const SizedBox(height: 20),
 
@@ -196,7 +196,7 @@ class _NotFound extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off_outlined, size: 44, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+            Icon(Icons.person_off_outlined, size: 44, color: context.c.textSecondary.withValues(alpha: 0.4)),
             const SizedBox(height: 14),
             Text(
               asOwnProfile
@@ -215,7 +215,7 @@ class _NotFound extends StatelessWidget {
                     'se repara sola.'
                   : 'Puede haber sido eliminado del plantel.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+              style: AppTypography.body(size: 12, color: context.c.textSecondary),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
@@ -252,9 +252,9 @@ class _ActionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: context.c.card,
             borderRadius: AppRadii.cardAll,
-            border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+            border: Border.all(color: context.c.border.withValues(alpha: 0.6)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,16 +264,16 @@ class _ActionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700),
+                      style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w700),
                     ),
                   ),
-                  Icon(icon, size: 18, color: AppColors.voltNeon),
+                  Icon(icon, size: 18, color: context.c.primary),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
                 description,
-                style: AppTypography.body(size: 10, color: AppColors.textSecondary, height: 1.4),
+                style: AppTypography.body(size: 10, color: context.c.textSecondary, height: 1.4),
               ),
             ],
           ),
@@ -316,17 +316,17 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.c.card,
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.c.border),
         ),
         child: Column(
           children: [
-            Text(value, style: AppTypography.sportNumber(size: 18, color: AppColors.voltNeon)),
+            Text(value, style: AppTypography.sportNumber(size: 18, color: context.c.primary)),
             const SizedBox(height: 4),
             Text(
               title,
-              style: AppTypography.code(size: 10, color: AppColors.textSecondary),
+              style: AppTypography.code(size: 10, color: context.c.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 
 class PateaPageHeader extends StatelessWidget {
@@ -56,8 +56,8 @@ class PateaPageHeader extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.voltNeon,
-                    AppColors.voltNeon.withValues(alpha: 0.30),
+                    context.c.primary,
+                    context.c.brandVolt.withValues(alpha: 0.30),
                   ],
                 ),
               ),
@@ -72,7 +72,7 @@ class PateaPageHeader extends StatelessWidget {
                     style: AppTypography.headline(
                       size: 26,
                       weight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+                      color: context.c.textPrimary,
                     ),
                   ),
                   if (description != null) ...[
@@ -81,7 +81,7 @@ class PateaPageHeader extends StatelessWidget {
                       description!,
                       style: AppTypography.body(
                         size: 13,
-                        color: AppColors.textSecondary,
+                        color: context.c.textSecondary,
                       ),
                     ),
                   ],
@@ -112,16 +112,16 @@ class PateaPageHeader extends StatelessWidget {
                   style: AppTypography.body(
                     size: 12,
                     weight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    color: context.c.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 4),
                 GestureDetector(
                   onTap: onHelpTap,
-                  child: const Icon(
+                  child: Icon(
                     Icons.help_outline_rounded,
                     size: 15,
-                    color: AppColors.textSecondary,
+                    color: context.c.textSecondary,
                   ),
                 ),
               ],
@@ -138,8 +138,8 @@ class PateaPageHeader extends StatelessWidget {
                   borderRadius: AppRadii.cardAll,
                   border: Border.all(
                     color: activeFilterCount > 0
-                        ? AppColors.voltNeon.withValues(alpha: 0.7)
-                        : AppColors.border.withValues(alpha: 0.6),
+                        ? context.c.brandVolt.withValues(alpha: 0.7)
+                        : context.c.border.withValues(alpha: 0.6),
                     width: 1,
                   ),
                 ),
@@ -148,7 +148,7 @@ class PateaPageHeader extends StatelessWidget {
                     Icon(
                       Icons.filter_list_rounded,
                       size: 15,
-                      color: activeFilterCount > 0 ? AppColors.voltNeon : AppColors.textPrimary,
+                      color: activeFilterCount > 0 ? context.c.primary : context.c.textPrimary,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -156,7 +156,7 @@ class PateaPageHeader extends StatelessWidget {
                       style: AppTypography.headline(
                         size: 12,
                         weight: FontWeight.w700,
-                        color: activeFilterCount > 0 ? AppColors.voltNeon : AppColors.textPrimary,
+                        color: activeFilterCount > 0 ? context.c.primary : context.c.textPrimary,
                       ),
                     ),
                     if (activeFilterCount > 0) ...[
@@ -165,18 +165,18 @@ class PateaPageHeader extends StatelessWidget {
                         width: 17,
                         height: 17,
                         alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: AppColors.voltNeon,
+                        decoration: BoxDecoration(
+                          color: context.c.primary,
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           '$activeFilterCount',
-                          style: AppTypography.code(size: 9, color: AppColors.onPrimary),
+                          style: AppTypography.code(size: 9, color: context.c.onPrimary),
                         ),
                       ),
                     ],
                     const SizedBox(width: 2),
-                    const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.textSecondary),
+                    Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: context.c.textSecondary),
                   ],
                 ),
               ),

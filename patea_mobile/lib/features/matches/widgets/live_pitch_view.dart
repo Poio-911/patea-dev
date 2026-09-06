@@ -3,7 +3,7 @@ import '../../../core/theme/app_radii.dart';
 import '../../../core/widgets/patea_avatar.dart';
 
 import '../../../core/models/match_model.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// Los dos equipos parados en la cancha.
@@ -55,7 +55,7 @@ class LivePitchView extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: CustomPaint(
-          painter: _PitchPainter(),
+          painter: _PitchPainter(linea: context.c.overlayLine, punto: context.c.overlayStrong),
           child: Column(
             children: [
               // Visitante arriba, atacando hacia abajo: sus delanteros quedan
@@ -128,7 +128,7 @@ class _Half extends StatelessWidget {
                     child: _PlayerDot(
                       player: p,
                       goals: goals[p.uid] ?? 0,
-                      color: _teamColor,
+                      color: _teamColor(context.c.primary),
                     ),
                   ),
               ],
@@ -138,12 +138,14 @@ class _Half extends StatelessWidget {
     );
   }
 
-  Color get _teamColor {
+  /// El color de la camiseta del equipo. [fallback] lo pasa quien llama
+  /// porque depende del tema, y un getter no ve el `BuildContext`.
+  Color _teamColor(Color fallback) {
     final raw = team.jersey?.primaryColor ?? team.color;
-    if (raw == null || raw.isEmpty) return AppColors.voltNeon;
+    if (raw == null || raw.isEmpty) return fallback;
     final hex = raw.replaceFirst('#', '');
     final value = int.tryParse(hex.length == 6 ? 'FF$hex' : hex, radix: 16);
-    return value == null ? AppColors.voltNeon : Color(value);
+    return value == null ? fallback : Color(value);
   }
 }
 
@@ -193,7 +195,7 @@ class _PlayerDot extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
-                    color: AppColors.voltNeon,
+                    color: context.c.primary,
                     borderRadius: AppRadii.pillAll,
                   ),
                   child: Text(
@@ -211,7 +213,7 @@ class _PlayerDot extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: AppTypography.headline(
-              size: 9.5, weight: FontWeight.w700, color: AppColors.textSecondary),
+              size: 9.5, weight: FontWeight.w700, color: context.c.textSecondary),
         ),
       ],
     );
@@ -221,10 +223,18 @@ class _PlayerDot extends StatelessWidget {
 /// Las líneas de la cancha. Sin césped rayado ni sombras: es el fondo de una
 /// lista de jugadores, no una foto.
 class _PitchPainter extends CustomPainter {
+  /// Un `CustomPainter` no ve el `BuildContext`: los colores se le pasan al
+  /// construirlo. Es el patrón que van a necesitar los cuatro painters de la
+  /// app cuando exista el tema claro.
+  final Color linea;
+  final Color punto;
+
+  const _PitchPainter({required this.linea, required this.punto});
+
   @override
   void paint(Canvas canvas, Size size) {
     final line = Paint()
-      ..color = AppColors.overlayLine
+      ..color = linea
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4;
 
@@ -243,7 +253,7 @@ class _PitchPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(w / 2, h / 2),
       2.5,
-      Paint()..color = AppColors.overlayStrong,
+      Paint()..color = punto,
     );
 
     // Áreas grandes, arriba y abajo.

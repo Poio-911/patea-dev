@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/player_service.dart';
 import '../../core/services/auth_service.dart';
@@ -76,7 +76,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: context.c.card,
       shape: RoundedRectangleBorder(borderRadius: AppRadii.surfaceAll),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -93,7 +93,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                 ),
                 Text(
                   'OVR $_ovr',
-                  style: AppTypography.sportNumber(size: 22, color: AppColors.voltNeon),
+                  style: AppTypography.sportNumber(size: 22, color: context.c.primary),
                 ),
               ],
             ),
@@ -101,15 +101,15 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
 
             TextField(
               controller: _nameController,
-              style: AppTypography.body(color: AppColors.textSecondary),
-              decoration: const InputDecoration(
+              style: AppTypography.body(color: context.c.textSecondary),
+              decoration: InputDecoration(
                 labelText: 'Nombre o Apodo',
-                prefixIcon: Icon(Icons.person, color: AppColors.voltNeon),
+                prefixIcon: Icon(Icons.person, color: context.c.primary),
               ),
             ),
             const SizedBox(height: 16),
 
-            Text('POSICIÓN', style: AppTypography.code(size: 11, color: AppColors.textSecondary)),
+            Text('POSICIÓN', style: AppTypography.code(size: 11, color: context.c.textSecondary)),
             const SizedBox(height: 6),
             Row(
               children: ['DEL', 'MED', 'DEF', 'POR'].map((pos) {
@@ -121,10 +121,10 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                       label: Text(pos),
                       selected: isSelected,
                       onSelected: (_) => setState(() => _position = pos),
-                      selectedColor: AppColors.getPositionColor(pos).withValues(alpha: 0.25),
+                      selectedColor: context.c.positionColor(pos).withValues(alpha: 0.25),
                       labelStyle: AppTypography.headline(
                         size: 11,
-                        color: isSelected ? AppColors.getPositionColor(pos) : AppColors.textSecondary,
+                        color: isSelected ? context.c.positionColor(pos) : context.c.textSecondary,
                       ),
                     ),
                   ),
@@ -174,14 +174,14 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
       children: [
         SizedBox(
           width: 100,
-          child: Text(label, style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
+          child: Text(label, style: AppTypography.code(size: 10, color: context.c.textSecondary)),
         ),
         Expanded(
           child: Slider(
             value: value.toDouble(),
             min: 40,
             max: 99,
-            activeColor: AppColors.voltNeon,
+            activeColor: context.c.primary,
             onChanged: (val) => onChanged(val.round()),
           ),
         ),

@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/match_model.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/services/match_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/dates.dart';
@@ -126,7 +126,7 @@ class _DateVotingState extends ConsumerState<_DateVoting> {
             widget.isCaptain
                 ? 'Proponé uno o más días y que el grupo marque cuándo puede.'
                 : 'Todavía no hay días propuestos.',
-            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           )
         else
           for (final p in proposals)
@@ -229,7 +229,7 @@ class _LocationVotingState extends ConsumerState<_LocationVoting> {
             widget.isCaptain
                 ? 'Proponé canchas para que el grupo elija una.'
                 : 'Todavía no hay canchas propuestas.',
-            style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           )
         else
           for (final p in proposals)
@@ -312,25 +312,25 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
               style: AppTypography.headline(
                   size: 12,
                   weight: FontWeight.w800,
-                  color: AppColors.textSecondary,
+                  color: context.c.textSecondary,
                   letterSpacing: 1.2)),
           const SizedBox(height: 14),
           TextField(
             controller: _controller,
             autofocus: true,
             onChanged: _onChanged,
-            style: AppTypography.body(color: AppColors.textSecondary, size: 14),
+            style: AppTypography.body(color: context.c.textSecondary, size: 14),
             decoration: InputDecoration(
               hintText: 'Nombre de la cancha o dirección',
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searching
-                  ? const Padding(
+                  ? Padding(
                       padding: EdgeInsets.all(14),
                       child: SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppColors.voltNeon)),
+                              strokeWidth: 2, color: context.c.primary)),
                     )
                   : null,
             ),
@@ -344,13 +344,13 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
                 for (final r in _results)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.place_outlined, size: 20, color: AppColors.textSecondary),
+                    leading: Icon(Icons.place_outlined, size: 20, color: context.c.textSecondary),
                     title: Text(r.label.split(',').first.trim(),
                         style: AppTypography.headline(size: 14, weight: FontWeight.w700)),
                     subtitle: Text(r.label,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                        style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                     onTap: () => Navigator.pop(context, r),
                   ),
               ],
@@ -388,23 +388,23 @@ class _Header extends StatelessWidget {
               style: AppTypography.headline(
                   size: 11,
                   weight: FontWeight.w800,
-                  color: AppColors.textSecondary,
+                  color: context.c.textSecondary,
                   letterSpacing: 1.2)),
         ),
         if (actionLabel != null)
           TextButton.icon(
             onPressed: busy ? null : onAction,
             icon: busy
-                ? const SizedBox(
+                ? SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.voltNeon))
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary))
                 : const Icon(Icons.add_rounded, size: 16),
             label: Text(actionLabel!,
                 style: AppTypography.headline(
-                    size: 12, weight: FontWeight.w700, color: AppColors.voltNeon)),
+                    size: 12, weight: FontWeight.w700, color: context.c.primary)),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.voltNeon,
+              foregroundColor: context.c.primary,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -453,7 +453,7 @@ class _ProposalRow extends StatelessWidget {
             height: 38,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
-              color: leading ? AppColors.voltNeon : AppColors.overlayLine,
+              color: leading ? context.c.primary : context.c.overlayLine,
               borderRadius: AppRadii.hairAll,
             ),
           ),
@@ -472,24 +472,24 @@ class _ProposalRow extends StatelessWidget {
                       : '$subtitle  ·  $votes ${votes == 1 ? 'voto' : 'votos'}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
                 ),
               ],
             ),
           ),
           if (busy)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.voltNeon)),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary)),
             )
           else ...[
             if (canConfirm) ...[
               _IconAction(
                 icon: Icons.check_rounded,
-                color: AppColors.success,
+                color: context.c.success,
                 tooltip: 'Elegir esta',
                 onTap: onConfirm,
               ),
@@ -517,16 +517,16 @@ class _VoteButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: voted ? AppColors.voltNeon : Colors.transparent,
+          color: voted ? context.c.primary : Colors.transparent,
           borderRadius: AppRadii.chipAll,
           border: Border.all(
-            color: voted ? AppColors.voltNeon : AppColors.overlayStrong,
+            color: voted ? context.c.primary : context.c.overlayStrong,
           ),
         ),
         child: Icon(
           voted ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
           size: 16,
-          color: voted ? AppColors.background : AppColors.textSecondary,
+          color: voted ? context.c.background : context.c.textSecondary,
         ),
       ),
     );
@@ -569,6 +569,6 @@ class _IconAction extends StatelessWidget {
 void _snack(BuildContext context, String message, {bool error = false}) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
     content: Text(message),
-    backgroundColor: error ? AppColors.destructive : null,
+    backgroundColor: error ? context.c.destructive : null,
   ));
 }

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/player_model.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 import 'card_foil.dart';
 import 'player_avatar_fallback.dart';
@@ -115,7 +115,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
   Widget build(BuildContext context) {
     final player = widget.player;
     final tier = _getOvrTier(player.ovr);
-    final posColor = AppColors.getPositionColor(player.position);
+    final posColor = context.c.positionColor(player.position);
 
     final statsList = [
       {'key': 'PAC', 'label': 'RIT', 'val': player.pac},
@@ -136,37 +136,37 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
 
     switch (tier) {
       case 'elite':
-        cardBorder = Border.all(color: AppColors.eliteBorder.withValues(alpha: 0.65), width: 1.5);
+        cardBorder = Border.all(color: context.c.eliteBorder.withValues(alpha: 0.65), width: 1.5);
         auraAlignment = Alignment.topCenter;
-        auraColors = [AppColors.eliteBorder.withValues(alpha: 0.62), Colors.transparent];
-        avatarBorderColor = AppColors.eliteBorder;
+        auraColors = [context.c.eliteBorder.withValues(alpha: 0.62), Colors.transparent];
+        avatarBorderColor = context.c.eliteBorder;
         avatarBorderAlpha = 0.88;
-        avatarGlow = BoxShadow(color: AppColors.eliteBorder.withValues(alpha: 0.60), blurRadius: 8);
+        avatarGlow = BoxShadow(color: context.c.eliteBorder.withValues(alpha: 0.60), blurRadius: 8);
         break;
 
       case 'gold':
-        cardBorder = Border.all(color: AppColors.goldBorder.withValues(alpha: 0.55), width: 1.2);
+        cardBorder = Border.all(color: context.c.goldBorder.withValues(alpha: 0.55), width: 1.2);
         auraAlignment = Alignment.topRight;
-        auraColors = [AppColors.goldBorder.withValues(alpha: 0.32), Colors.transparent];
-        avatarBorderColor = AppColors.goldBorder;
+        auraColors = [context.c.goldBorder.withValues(alpha: 0.32), Colors.transparent];
+        avatarBorderColor = context.c.goldBorder;
         avatarBorderAlpha = 0.85;
-        avatarGlow = BoxShadow(color: AppColors.goldBorder.withValues(alpha: 0.40), blurRadius: 8);
+        avatarGlow = BoxShadow(color: context.c.goldBorder.withValues(alpha: 0.40), blurRadius: 8);
         break;
 
       case 'silver':
-        cardBorder = Border.all(color: AppColors.silverBorder.withValues(alpha: 0.45), width: 1.0);
+        cardBorder = Border.all(color: context.c.silverBorder.withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.topCenter;
-        auraColors = [AppColors.silverBorder.withValues(alpha: 0.25), Colors.transparent];
-        avatarBorderColor = AppColors.silverBorder;
+        auraColors = [context.c.silverBorder.withValues(alpha: 0.25), Colors.transparent];
+        avatarBorderColor = context.c.silverBorder;
         avatarBorderAlpha = 0.75;
         avatarGlow = null; // el glow separa oro y elite del resto
         break;
 
       default: // bronze
-        cardBorder = Border.all(color: AppColors.bronzeBorder.withValues(alpha: 0.45), width: 1.0);
+        cardBorder = Border.all(color: context.c.bronzeBorder.withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.bottomLeft;
-        auraColors = [AppColors.bronzeBorder.withValues(alpha: 0.28), Colors.transparent];
-        avatarBorderColor = AppColors.bronzeBorder;
+        auraColors = [context.c.bronzeBorder.withValues(alpha: 0.28), Colors.transparent];
+        avatarBorderColor = context.c.bronzeBorder;
         avatarBorderAlpha = 0.70;
         avatarGlow = null; // idem bronce
         break;
@@ -229,7 +229,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               builder: (context, constraints) {
                 final cardH = constraints.maxHeight;
                 return ColoredBox(
-                  color: AppColors.card,
+                  color: context.c.card,
                   child: Stack(
                     children: [
                       // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`).
@@ -258,7 +258,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               gradient: RadialGradient(
                                 center: Alignment.center,
                                 radius: 1.4,
-                                colors: [AppColors.eliteBorder.withValues(alpha: 0.22), Colors.transparent],
+                                colors: [context.c.eliteBorder.withValues(alpha: 0.22), Colors.transparent],
                               ),
                             ),
                           ),
@@ -412,12 +412,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               style: AppTypography.headline(
                                 size: 14,
                                 weight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: context.c.textPrimary,
                                 letterSpacing: 0.5,
                               ).copyWith(
                                 shadows: [
                                   Shadow(
-                                    color: AppColors.onPrimary.withValues(alpha: 0.8),
+                                    color: context.c.onPrimary.withValues(alpha: 0.8),
                                     blurRadius: 4,
                                     offset: const Offset(0, 1),
                                   ),
@@ -433,12 +433,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                   '${player.ovr}',
                                   style: AppTypography.sportNumber(
                                     size: 38,
-                                    color: AppColors.textPrimary,
+                                    color: context.c.textPrimary,
                                   ).copyWith(
                                     height: 0.92,
                                     shadows: [
                                       Shadow(
-                                        color: AppColors.onPrimary.withValues(alpha: 0.9),
+                                        color: context.c.onPrimary.withValues(alpha: 0.9),
                                         blurRadius: 6,
                                         offset: const Offset(0, 1),
                                       ),
@@ -490,12 +490,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                             style: AppTypography.headline(
                               size: 15,
                               weight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: context.c.textPrimary,
                               letterSpacing: 0.6,
                             ).copyWith(
                               shadows: [
                                 Shadow(
-                                  color: AppColors.onPrimary.withValues(alpha: 0.85),
+                                  color: context.c.onPrimary.withValues(alpha: 0.85),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -567,7 +567,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     // decide por luminancia y no por tier para que siga andando si algún día
     // cambian los colores.
     final onMetal =
-        tierColor.computeLuminance() > 0.45 ? AppColors.background : AppColors.textPrimary;
+        tierColor.computeLuminance() > 0.45 ? context.c.background : context.c.textPrimary;
 
     return Transform.translate(
       // Sale del padding del contenido (10) para tocar el borde de la carta.
@@ -695,13 +695,13 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       decoration: BoxDecoration(
         color: isSorted
-            ? AppColors.voltNeon.withValues(alpha: 0.16)
-            : AppColors.overlaySubtle,
+            ? context.c.brandVolt.withValues(alpha: 0.16)
+            : context.c.overlaySubtle,
         borderRadius: AppRadii.hairAll,
         border: Border.all(
           color: isSorted
-              ? AppColors.voltNeon.withValues(alpha: 0.65)
-              : AppColors.overlaySubtle,
+              ? context.c.brandVolt.withValues(alpha: 0.65)
+              : context.c.overlaySubtle,
           width: isSorted ? 1.2 : 0.8,
         ),
       ),
@@ -716,8 +716,8 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                 size: 9,
                 weight: FontWeight.w800,
                 color: isSorted
-                    ? AppColors.voltNeon
-                    : AppColors.textSecondary,
+                    ? context.c.primary
+                    : context.c.textSecondary,
               ),
             ),
           ),
@@ -729,15 +729,15 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               borderRadius: AppRadii.hairAll,
               child: Container(
                 height: 3.5,
-                color: AppColors.overlayLine,
+                color: context.c.overlayLine,
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: (val / 99.0).clamp(0.05, 1.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: isSorted
-                          ? AppColors.voltNeon.withValues(alpha: 0.75)
-                          : AppColors.overlayStrong,
+                          ? context.c.brandVolt.withValues(alpha: 0.75)
+                          : context.c.overlayStrong,
                       borderRadius: AppRadii.hairAll,
                     ),
                   ),
@@ -753,7 +753,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
             style: AppTypography.code(
               size: 10,
               weight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: context.c.textPrimary,
             ),
           ),
         ],

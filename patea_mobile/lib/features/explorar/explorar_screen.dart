@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/dates.dart';
 import '../../core/theme/match_theme.dart';
@@ -212,17 +212,17 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
             if (incomplete.isEmpty)
               Container(
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll),
+                decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
-                    Icon(Icons.groups_outlined, size: 44, color: AppColors.textSecondary),
+                    Icon(Icons.groups_outlined, size: 44, color: context.c.textSecondary),
                     const SizedBox(height: 10),
                     Text('Plantel Completo', style: AppTypography.headline(size: 15)),
                     const SizedBox(height: 6),
                     Text(
                       'El mercado se abre cuando organizás un partido al que le falten jugadores.',
                       textAlign: TextAlign.center,
-                      style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
                     ),
                   ],
                 ),
@@ -230,18 +230,18 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
             else ...[
               Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.06), borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.25))),
+                decoration: BoxDecoration(color: context.c.brandVolt.withValues(alpha: 0.06), borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.25))),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('BUSCANDO REFUERZOS PARA', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.voltNeon)),
+                    Text('BUSCANDO REFUERZOS PARA', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.primary)),
                     const SizedBox(height: 8),
                     DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedMatchId,
                         isExpanded: true,
-                        dropdownColor: AppColors.cardSurface,
-                        style: AppTypography.body(size: 14, weight: FontWeight.w700, color: AppColors.textPrimary),
+                        dropdownColor: context.c.cardSurface,
+                        style: AppTypography.body(size: 14, weight: FontWeight.w700, color: context.c.textPrimary),
                         items: incomplete
                             .map((m) => DropdownMenuItem(
                                   value: m.id,
@@ -254,16 +254,16 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                     if (match != null) ...[
                       const SizedBox(height: 8),
                       Row(children: [
-                        Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textSecondary),
+                        Icon(Icons.calendar_today_outlined, size: 13, color: context.c.textSecondary),
                         const SizedBox(width: 6),
-                        Text('${fmtDate(match.date)} · ${match.time ?? ''} hs', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                        Text('${fmtDate(match.date)} · ${match.time ?? ''} hs', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                       ]),
                       if (match.location != null) ...[
                         const SizedBox(height: 4),
                         Row(children: [
-                          Icon(Icons.location_on_outlined, size: 13, color: AppColors.textSecondary),
+                          Icon(Icons.location_on_outlined, size: 13, color: context.c.textSecondary),
                           const SizedBox(width: 6),
-                          Expanded(child: Text(match.location!, style: AppTypography.body(size: 11, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          Expanded(child: Text(match.location!, style: AppTypography.body(size: 11, color: context.c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                         ]),
                       ],
                     ],
@@ -283,7 +283,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                         label: Text(pos),
                         selected: selected,
                         onSelected: (_) => setState(() => _positionFilter = value),
-                        selectedColor: AppColors.voltNeon.withValues(alpha: 0.25),
+                        selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
                       ),
                     );
                   }).toList(),
@@ -291,13 +291,13 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
               ),
               const SizedBox(height: 14),
               Row(children: [
-                Text('JUGADORES DISPONIBLES', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textSecondary)),
+                Text('JUGADORES DISPONIBLES', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
                 if (filteredPlayers.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.surfaceAll),
-                    child: Text('${filteredPlayers.length}', style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w700)),
+                    decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.surfaceAll),
+                    child: Text('${filteredPlayers.length}', style: AppTypography.code(color: context.c.textSecondary, size: 11, weight: FontWeight.w700)),
                   ),
                 ],
               ]),
@@ -307,14 +307,14 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
               else if (filteredPlayers.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: AppColors.card.withValues(alpha: 0.4), borderRadius: AppRadii.cardAll),
+                  decoration: BoxDecoration(color: context.c.card.withValues(alpha: 0.4), borderRadius: AppRadii.cardAll),
                   child: Column(
                     children: [
-                      Icon(Icons.search_off, size: 36, color: AppColors.textSecondary),
+                      Icon(Icons.search_off, size: 36, color: context.c.textSecondary),
                       const SizedBox(height: 8),
-                      Text('Nadie disponible en la zona', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
+                      Text('Nadie disponible en la zona', style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text('No encontramos jugadores libres para esa fecha, horario y ubicación.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                      Text('No encontramos jugadores libres para esa fecha, horario y ubicación.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                     ],
                   ),
                 )
@@ -349,23 +349,23 @@ class _FreeAgentBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3))),
+      decoration: BoxDecoration(color: context.c.brandVolt.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3))),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(shape: BoxShape.circle, color: isFreeAgent ? AppColors.voltNeon : AppColors.cardSurface),
-            child: Icon(Icons.campaign_outlined, size: 18, color: isFreeAgent ? AppColors.onPrimary : AppColors.textSecondary),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: isFreeAgent ? context.c.primary : context.c.cardSurface),
+            child: Icon(Icons.campaign_outlined, size: 18, color: isFreeAgent ? context.c.onPrimary : context.c.textSecondary),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isFreeAgent ? 'Estás activo en el Mercado' : '¿Te falta partido?', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
+                Text(isFreeAgent ? 'Estás activo en el Mercado' : '¿Te falta partido?', style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700)),
                 Text(
                   isFreeAgent ? 'Los organizadores pueden reclutarte.' : 'Ofrecete como agente libre para que te inviten.',
-                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
                 ),
               ],
             ),
@@ -386,10 +386,10 @@ class _FreeAgentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chip = player.matchScore == 2
-        ? ('Coincide', AppColors.success)
+        ? ('Coincide', context.c.success)
         : player.matchScore == 1
-            ? ('Parcial', AppColors.warning)
-            : ('No coincide', AppColors.destructive);
+            ? ('Parcial', context.c.warning)
+            : ('No coincide', context.c.destructive);
 
     return InkWell(
       borderRadius: AppRadii.cardAll,
@@ -401,13 +401,13 @@ class _FreeAgentCard extends StatelessWidget {
       ),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+        decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${player.ovr}', style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: AppColors.voltNeon)),
+                Text('${player.ovr}', style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: context.c.primary)),
                 PlayerPositionBadge(position: player.position, fontSize: 11, dense: true),
               ],
             ),
@@ -418,8 +418,8 @@ class _FreeAgentCard extends StatelessWidget {
               size: 60,
             ),
             const SizedBox(height: 8),
-            Text(player.displayName, style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
+            Text(player.displayName, style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+            if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 10, color: context.c.textSecondary)),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -483,8 +483,8 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(player.displayName, style: AppTypography.headline(size: 17)),
-                    Text('${player.position} · OVR ${player.ovr}', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
-                    if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                    Text('${player.position} · OVR ${player.ovr}', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                    if (player.distanceKm != null) Text('${player.distanceKm!.toStringAsFixed(1)} km', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                   ],
                 ),
               ),
@@ -492,7 +492,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
           ),
           if (player.availability.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('DISPONIBILIDAD', style: AppTypography.headline(size: 11, weight: FontWeight.w800, color: AppColors.textSecondary)),
+            Text('DISPONIBILIDAD', style: AppTypography.headline(size: 11, weight: FontWeight.w800, color: context.c.textSecondary)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -500,8 +500,8 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
               children: player.availability.entries.map((e) {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
-                  child: Text('${e.key}: ${e.value.join(', ')}', style: AppTypography.body(color: AppColors.textSecondary, size: 11)),
+                  decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
+                  child: Text('${e.key}: ${e.value.join(', ')}', style: AppTypography.body(color: context.c.textSecondary, size: 11)),
                 );
               }).toList(),
             ),
@@ -511,17 +511,17 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(border: Border.all(color: AppColors.border, style: BorderStyle.solid), borderRadius: AppRadii.cardAll),
-              child: Text('Tu perfil de Pase Libre', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+              decoration: BoxDecoration(border: Border.all(color: context.c.border, style: BorderStyle.solid), borderRadius: AppRadii.cardAll),
+              child: Text('Tu perfil de Pase Libre', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
             )
           else
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isInviting ? null : _invite,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 12)),
+                style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary, padding: const EdgeInsets.symmetric(vertical: 12)),
                 icon: _isInviting
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                     : const Icon(Icons.person_add_alt_1, size: 18),
                 label: const Text('Invitar a mi partido'),
               ),
@@ -611,25 +611,25 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(children: [
-              Icon(Icons.search, color: AppColors.voltNeon),
+              Icon(Icons.search, color: context.c.primary),
               const SizedBox(width: 8),
               Text('Buscar Partido', style: AppTypography.headline(size: 16)),
             ]),
-            Text('Mostrá tu perfil a organizadores para que te inviten', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+            Text('Mostrá tu perfil a organizadores para que te inviten', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
             const SizedBox(height: 16),
             Row(
               children: [
-                Text('Visible para otros', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700)),
+                Text('Visible para otros', style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700)),
                 const Spacer(),
                 if (_isSaving) const Padding(padding: EdgeInsets.only(right: 8), child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))),
-                Switch(value: isVisible, activeThumbColor: AppColors.voltNeon, onChanged: _isSaving ? null : (v) => _toggle(v, locationAsync.value)),
+                Switch(value: isVisible, activeThumbColor: context.c.primary, onChanged: _isSaving ? null : (v) => _toggle(v, locationAsync.value)),
               ],
             ),
             const SizedBox(height: 12),
             if (_days.isEmpty && isVisible)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text('Por defecto: sábado y domingo', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                child: Text('Por defecto: sábado y domingo', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
               ),
             _DayTimePicker(
               days: _days,
@@ -645,7 +645,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
               },
             ),
             const SizedBox(height: 16),
-            Text('UBICACIÓN', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.textSecondary)),
+            Text('UBICACIÓN', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.textSecondary)),
             const SizedBox(height: 8),
             TextField(
               controller: _locationController,
@@ -667,12 +667,12 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             if (_suggestions.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(top: 4),
-                decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
+                decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: _suggestions
                       .map((s) => ListTile(
                             dense: true,
-                            title: Text(s.label, style: AppTypography.body(color: AppColors.textSecondary, size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            title: Text(s.label, style: AppTypography.body(color: context.c.textSecondary, size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                             onTap: () => setState(() {
                               _newLocation = s;
                               _locationController.text = s.label;
@@ -685,7 +685,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             else if (locationAsync.value != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('Actual: ${locationAsync.value!['label'] ?? '${locationAsync.value!['lat']}, ${locationAsync.value!['lng']}'}', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                child: Text('Actual: ${locationAsync.value!['label'] ?? '${locationAsync.value!['lat']}, ${locationAsync.value!['lng']}'}', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
               ),
           ],
         ),
@@ -722,12 +722,12 @@ class _DayTimePicker extends StatelessWidget {
                   label: Text(d['short'] as String),
                   selected: selected,
                   onSelected: (v) => onDaysChanged(v ? {...days, id} : {...days}..remove(id)),
-                  selectedColor: AppColors.voltNeon.withValues(alpha: 0.2),
+                  selectedColor: context.c.brandVolt.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),
             const SizedBox(height: 12),
-            Text('HORARIOS PREFERIDOS', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.textSecondary)),
+            Text('HORARIOS PREFERIDOS', style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.textSecondary)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -739,7 +739,7 @@ class _DayTimePicker extends StatelessWidget {
                   label: Text(t['label'] as String),
                   selected: selected,
                   onSelected: (v) => onTimesChanged(v ? {...times, id} : {...times}..remove(id)),
-                  selectedColor: AppColors.voltNeon.withValues(alpha: 0.2),
+                  selectedColor: context.c.brandVolt.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),
@@ -790,7 +790,7 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
                   label: Text(e.value),
                   selected: selected,
                   onSelected: (v) => setState(() => v ? _selectedTypes.add(e.key) : _selectedTypes.remove(e.key)),
-                  selectedColor: AppColors.voltNeon.withValues(alpha: 0.2),
+                  selectedColor: context.c.brandVolt.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),
@@ -798,14 +798,14 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
             if (filtered.isEmpty)
               Container(
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll),
+                decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
-                    Icon(Icons.calendar_month_outlined, size: 40, color: AppColors.textSecondary),
+                    Icon(Icons.calendar_month_outlined, size: 40, color: context.c.textSecondary),
                     const SizedBox(height: 10),
                     Text('No hay partidos disponibles', style: AppTypography.headline(size: 15)),
                     const SizedBox(height: 4),
-                    Text('Probá quitando filtros, o creá un partido público para que otros se unan.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                    Text('Probá quitando filtros, o creá un partido público para que otros se unan.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                   ],
                 ),
               )
@@ -813,7 +813,7 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${filtered.length} partido${filtered.length != 1 ? 's' : ''} disponible${filtered.length != 1 ? 's' : ''}', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                  Text('${filtered.length} partido${filtered.length != 1 ? 's' : ''} disponible${filtered.length != 1 ? 's' : ''}', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                   const SizedBox(height: 10),
                   for (final m in filtered)
                     Padding(
@@ -880,7 +880,7 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.c.card,
         borderRadius: AppRadii.cardAll,
         border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
       ),
@@ -897,12 +897,12 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
               const SizedBox(width: 7),
               Text(theme.label.toUpperCase(),
                   style: AppTypography.code(
-                      size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)),
+                      size: 9, weight: FontWeight.w700, color: context.c.textSecondary)),
               const Spacer(),
               if (match.matchSize > 0 && spots > 0)
                 Text(spots == 1 ? 'falta 1' : 'faltan $spots',
                     style: AppTypography.code(
-                        size: 10, weight: FontWeight.w800, color: AppColors.voltNeon)),
+                        size: 10, weight: FontWeight.w800, color: context.c.primary)),
             ],
           ),
           const SizedBox(height: 10),
@@ -959,15 +959,15 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
                     : FilledButton.icon(
                         onPressed: _busy ? null : _join,
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.voltNeon,
-                          foregroundColor: AppColors.background,
+                          backgroundColor: context.c.primary,
+                          foregroundColor: context.c.background,
                         ),
                         icon: _busy
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: AppColors.background))
+                                    strokeWidth: 2, color: context.c.background))
                             : Icon(
                                 needsApproval
                                     ? Icons.how_to_reg_rounded
@@ -977,7 +977,7 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
                             style: AppTypography.headline(
                                 size: 13,
                                 weight: FontWeight.w800,
-                                color: AppColors.background)),
+                                color: context.c.background)),
                       ),
               ),
             ],
@@ -990,11 +990,11 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
   Widget _row(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 12, color: AppColors.textSecondary),
+        Icon(icon, size: 12, color: context.c.textSecondary),
         const SizedBox(width: 6),
         Expanded(
           child: Text(text,
-              style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+              style: AppTypography.body(size: 11, color: context.c.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis),
         ),

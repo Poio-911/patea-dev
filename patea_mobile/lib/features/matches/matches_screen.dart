@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/dates.dart';
 import '../../core/theme/match_theme.dart';
@@ -144,7 +144,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             return AlertDialog(
                       title: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 22),
+                  Icon(Icons.warning_amber_rounded, color: context.c.warning, size: 22),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text('Tenés partidos sin finalizar', style: AppTypography.headline(size: 16)),
@@ -161,7 +161,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                       pending.length == 1
                           ? 'Tenés un partido que ya pasó y no fue finalizado. Podés finalizarlo ahora o ver los detalles.'
                           : 'Tenés ${pending.length} partidos que ya pasaron y no fueron finalizados. Podés finalizarlos ahora o ver los detalles de cada uno.',
-                      style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                      style: AppTypography.body(size: 13, color: context.c.textSecondary),
                     ),
                     const SizedBox(height: 12),
                     ConstrainedBox(
@@ -175,7 +175,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                           return Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.cardSurface,
+                              color: context.c.cardSurface,
                               borderRadius: AppRadii.chipAll,
                             ),
                             child: Row(
@@ -184,11 +184,11 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(match.title, style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      Text(match.title, style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       const SizedBox(height: 3),
                                       Text(
                                         '${fmtDate(match.date)} · ${match.time ?? ''} hs',
-                                        style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                                        style: AppTypography.body(size: 11, color: context.c.textSecondary),
                                       ),
                                     ],
                                   ),
@@ -225,9 +225,9 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                             if (context.mounted) Navigator.pop(context);
                           }
                         },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                   icon: isLoading
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                      ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                       : const Icon(Icons.check_circle_outline, size: 18),
                   label: Text(pending.length == 1 ? 'Finalizar Partido' : 'Finalizar ${pending.length} Partidos'),
                 ),
@@ -242,7 +242,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   Future<void> _openFiltersSheet() async {
     final result = await showModalBottomSheet<MatchFiltersState>(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.c.card,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
       builder: (context) => _MatchFiltersSheet(initial: _filters),
@@ -357,15 +357,15 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () => context.push('/matches/create'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.voltNeon,
-                          foregroundColor: AppColors.onPrimary,
+                          backgroundColor: context.c.primary,
+                          foregroundColor: context.c.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                         ),
                         icon: const Icon(Icons.add_circle, size: 18),
                         label: Text(
                           'Armar Partido',
-                          style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: AppColors.onPrimary),
+                          style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: context.c.onPrimary),
                         ),
                       ),
                     ),
@@ -401,8 +401,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                       OutlinedButton.icon(
                         onPressed: _openFiltersSheet,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
-                          side: BorderSide(color: AppColors.border),
+                          foregroundColor: context.c.textPrimary,
+                          side: BorderSide(color: context.c.border),
                         ),
                         icon: const Icon(Icons.filter_list, size: 16),
                         label: Text(_filters.activeCount > 0 ? 'Filtros (${_filters.activeCount})' : 'Filtros'),
@@ -423,7 +423,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   child: Center(
                     child: Text(
                       'No hay partidos en esta vista',
-                      style: AppTypography.body(color: AppColors.textSecondary),
+                      style: AppTypography.body(color: context.c.textSecondary),
                     ),
                   ),
                 )
@@ -496,10 +496,10 @@ class _ViewModeToggle extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: selected ? AppColors.voltNeon : Colors.transparent,
+            color: selected ? context.c.primary : Colors.transparent,
             borderRadius: AppRadii.chipAll,
           ),
-          child: Icon(icon, size: 16, color: selected ? AppColors.onPrimary : AppColors.textSecondary),
+          child: Icon(icon, size: 16, color: selected ? context.c.onPrimary : context.c.textSecondary),
         ),
       );
     }
@@ -507,9 +507,9 @@ class _ViewModeToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: context.c.cardSurface,
         borderRadius: AppRadii.chipAll,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.c.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -567,7 +567,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Por tipo', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: AppColors.textSecondary)),
+            Text('Por tipo', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -577,13 +577,13 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                   label: Text(entry.value),
                   selected: selected,
                   onSelected: (v) => setState(() => v ? _types.add(entry.key) : _types.remove(entry.key)),
-                  selectedColor: AppColors.voltNeon.withValues(alpha: 0.25),
-                  checkmarkColor: AppColors.voltNeon,
+                  selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                  checkmarkColor: context.c.primary,
                 );
               }).toList(),
             ),
             const SizedBox(height: 16),
-            Text('Por estado', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: AppColors.textSecondary)),
+            Text('Por estado', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -593,21 +593,21 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                   label: Text(entry.value),
                   selected: selected,
                   onSelected: (v) => setState(() => v ? _statuses.add(entry.key) : _statuses.remove(entry.key)),
-                  selectedColor: AppColors.voltNeon.withValues(alpha: 0.25),
-                  checkmarkColor: AppColors.voltNeon,
+                  selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                  checkmarkColor: context.c.primary,
                 );
               }).toList(),
             ),
             const SizedBox(height: 16),
-            Container(height: 1, color: AppColors.border.withValues(alpha: 0.3)),
+            Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
             const SizedBox(height: 8),
             Row(
               children: [
-                Text('Solo mis partidos', style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600)),
+                Text('Solo mis partidos', style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w600)),
                 const Spacer(),
                 Switch(
                   value: _onlyMine,
-                  activeThumbColor: AppColors.voltNeon,
+                  activeThumbColor: context.c.primary,
                   onChanged: (v) => setState(() => _onlyMine = v),
                 ),
               ],
@@ -620,7 +620,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                   context,
                   MatchFiltersState(types: _types, statuses: _statuses, onlyMine: _onlyMine),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+                style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                 child: const Text('Aplicar'),
               ),
             ),
@@ -688,20 +688,20 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.4), style: BorderStyle.solid),
-          color: AppColors.card.withValues(alpha: 0.3),
+          border: Border.all(color: context.c.border.withValues(alpha: 0.4), style: BorderStyle.solid),
+          color: context.c.card.withValues(alpha: 0.3),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.calendar_today_outlined, size: 40, color: AppColors.textSecondary.withValues(alpha: 0.6)),
+            Icon(Icons.calendar_today_outlined, size: 40, color: context.c.textSecondary.withValues(alpha: 0.6)),
             const SizedBox(height: 10),
             Text('No hay fútbol a la vista', style: AppTypography.headline(size: 15)),
             const SizedBox(height: 6),
             Text(
               'Armá un nuevo partido para que empiece a rodar la pelota.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+              style: AppTypography.body(size: 12, color: context.c.textSecondary),
             ),
           ],
         ),
@@ -723,7 +723,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
           border: Border.all(color: theme.brandColor.withValues(alpha: 0.5), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppColors.onPrimary.withValues(alpha: 0.4),
+              color: context.c.onPrimary.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -751,7 +751,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                 ),
               ),
             ),
-            Container(color: AppColors.onPrimary.withValues(alpha: 0.45)),
+            Container(color: context.c.onPrimary.withValues(alpha: 0.45)),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -776,16 +776,16 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.onPrimary.withValues(alpha: 0.6),
+                          color: context.c.onPrimary.withValues(alpha: 0.6),
                           borderRadius: AppRadii.surfaceAll,
-                          border: Border.all(color: AppColors.overlayStrong),
+                          border: Border.all(color: context.c.overlayStrong),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
                             const SizedBox(width: 6),
-                            Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textPrimary)),
+                            Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textPrimary)),
                           ],
                         ),
                       ),
@@ -800,7 +800,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 Expanded(child: _BannerTeam(team: match.teamA!)),
-                                Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: AppColors.overlayLine)),
+                                Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: context.c.overlayLine)),
                                 Expanded(child: _BannerTeam(team: match.teamB!)),
                               ],
                             )
@@ -811,14 +811,14 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.headline(size: 24, weight: FontWeight.w900, color: AppColors.textPrimary),
+                                style: AppTypography.headline(size: 24, weight: FontWeight.w900, color: context.c.textPrimary),
                               ),
                             ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(border: Border(top: BorderSide(color: AppColors.overlayLine))),
+                    decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.overlayLine))),
                     child: Wrap(
                       spacing: 16,
                       runSpacing: 4,
@@ -834,8 +834,8 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                     child: ElevatedButton.icon(
                       onPressed: () => context.push('/matches/${match.id}'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.voltNeon,
-                        foregroundColor: AppColors.onPrimary,
+                        backgroundColor: context.c.primary,
+                        foregroundColor: context.c.onPrimary,
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                       ),
@@ -855,7 +855,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                           width: active ? 20 : 6,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: active ? AppColors.textPrimary : AppColors.overlayStrong,
+                            color: active ? context.c.textPrimary : context.c.overlayStrong,
                             borderRadius: AppRadii.hairAll,
                           ),
                         );
@@ -885,14 +885,14 @@ class _BannerInfoRow extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: AppColors.textSecondary),
+          Icon(icon, size: 13, color: context.c.textSecondary),
           const SizedBox(width: 5),
           Flexible(
             child: Text(
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.body(size: 11, weight: FontWeight.w600, color: AppColors.textPrimary),
+              style: AppTypography.body(size: 11, weight: FontWeight.w600, color: context.c.textPrimary),
             ),
           ),
         ],
@@ -914,14 +914,14 @@ class _BannerTeam extends StatelessWidget {
         if (team.jersey != null)
           JerseyWidget(jersey: team.jersey!, size: 56)
         else
-          const Icon(Icons.checkroom, size: 48, color: AppColors.textSecondary),
+          Icon(Icons.checkroom, size: 48, color: context.c.textSecondary),
         const SizedBox(height: 6),
         Text(
           team.name.toUpperCase(),
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: AppColors.textPrimary),
+          style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textPrimary),
         ),
       ],
     );
@@ -943,15 +943,15 @@ class _BannerOrganizerBadge extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.onPrimary.withValues(alpha: 0.6),
+            color: context.c.onPrimary.withValues(alpha: 0.6),
             borderRadius: AppRadii.surfaceAll,
-            border: Border.all(color: AppColors.overlayLine),
+            border: Border.all(color: context.c.overlayLine),
           ),
           child: Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: 'Organiza: ', style: AppTypography.body(size: 9, weight: FontWeight.w700, color: AppColors.textPrimary)),
-                TextSpan(text: name.toUpperCase(), style: AppTypography.body(size: 9, weight: FontWeight.w800, color: AppColors.voltNeon)),
+                TextSpan(text: 'Organiza: ', style: AppTypography.body(size: 9, weight: FontWeight.w700, color: context.c.textPrimary)),
+                TextSpan(text: name.toUpperCase(), style: AppTypography.body(size: 9, weight: FontWeight.w800, color: context.c.primary)),
               ],
             ),
           ),
@@ -1042,7 +1042,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
             boxShadow: isLive
                 ? [
                     BoxShadow(
-                      color: AppColors.destructive.withValues(alpha: glow),
+                      color: context.c.destructive.withValues(alpha: glow),
                       blurRadius: 18 + _pulse.value * 10,
                       spreadRadius: _pulse.value * 2,
                     ),
@@ -1059,15 +1059,15 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
         borderRadius: AppRadii.cardAll,
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: context.c.card,
             borderRadius: AppRadii.cardAll,
             border: Border.all(
-              color: isLive ? AppColors.destructive : theme.brandColor.withValues(alpha: 0.35),
+              color: isLive ? context.c.destructive : theme.brandColor.withValues(alpha: 0.35),
               width: isLive ? 1.5 : 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.onPrimary.withValues(alpha: 0.3),
+                color: context.c.onPrimary.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1092,8 +1092,8 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        AppColors.card.withValues(alpha: 0.95),
-                        AppColors.card.withValues(alpha: 0.65),
+                        context.c.card.withValues(alpha: 0.95),
+                        context.c.card.withValues(alpha: 0.65),
                       ],
                     ),
                   ),
@@ -1118,9 +1118,9 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
+                    color: context.c.cardSurface,
                     borderRadius: AppRadii.surfaceAll,
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.c.border),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1137,7 +1137,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                       const SizedBox(width: 6),
                       Text(
                         theme.label.toUpperCase(),
-                        style: AppTypography.code(size: 10, weight: FontWeight.w700, color: AppColors.textPrimary),
+                        style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textPrimary),
                       ),
                     ],
                   ),
@@ -1146,7 +1146,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
-                    color: isLive ? AppColors.destructive.withValues(alpha: 0.15) : AppColors.voltNeon.withValues(alpha: 0.12),
+                    color: isLive ? context.c.destructive.withValues(alpha: 0.15) : context.c.brandVolt.withValues(alpha: 0.12),
                     borderRadius: AppRadii.chipAll,
                   ),
                   child: Row(
@@ -1161,14 +1161,14 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                             width: 6,
                             height: 6,
                             margin: const EdgeInsets.only(right: 5),
-                            decoration: const BoxDecoration(
-                                shape: BoxShape.circle, color: AppColors.destructive),
+                            decoration: BoxDecoration(
+                                shape: BoxShape.circle, color: context.c.destructive),
                           ),
                         ),
                       ],
                       Text(
                         statusLabel.toUpperCase(),
-                        style: AppTypography.code(size: 10, weight: FontWeight.w700, color: isLive ? AppColors.destructive : AppColors.voltNeon),
+                        style: AppTypography.code(size: 10, weight: FontWeight.w700, color: isLive ? context.c.destructive : context.c.primary),
                       ),
                     ],
                   ),
@@ -1177,7 +1177,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
             ),
 
             const SizedBox(height: 14),
-            Container(height: 1, color: AppColors.border.withValues(alpha: 0.3)),
+            Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
             const SizedBox(height: 14),
 
             // Fecha / hora. Los partidos en 'planning' todavía no tienen
@@ -1221,7 +1221,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                   _TeamJersey(team: match.teamA!),
                   Column(
                     children: [
-                      Text('VS', style: AppTypography.code(size: 12, weight: FontWeight.w700, color: AppColors.textSecondary)),
+                      Text('VS', style: AppTypography.code(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
                       if (match.status == 'completed' || match.status == 'evaluated')
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -1238,14 +1238,14 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
             else
               Row(
                 children: [
-                  Icon(Icons.groups_outlined, size: 20, color: AppColors.textSecondary),
+                  Icon(Icons.groups_outlined, size: 20, color: context.c.textSecondary),
                   const SizedBox(width: 8),
                   Text(
                     match.matchSize > 0 ? '${match.playerUids.length} / ${match.matchSize}' : '${match.playerUids.length}',
                     style: AppTypography.sportNumber(size: 18),
                   ),
                   const SizedBox(width: 4),
-                  Text('Jugadores', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
+                  Text('Jugadores', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
                 ],
               ),
 
@@ -1255,13 +1255,13 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
               child: ElevatedButton.icon(
                 onPressed: () => context.push('/matches/${match.id}'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isLive ? AppColors.destructive : AppColors.voltNeon,
-                  foregroundColor: isLive ? AppColors.textPrimary : AppColors.onPrimary,
+                  backgroundColor: isLive ? context.c.destructive : context.c.primary,
+                  foregroundColor: isLive ? context.c.textPrimary : context.c.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: const Icon(Icons.visibility_outlined, size: 18),
-                label: Text(_actionLabel(match.status), style: AppTypography.headline(size: 13, color: isLive ? AppColors.textPrimary : AppColors.onPrimary)),
+                label: Text(_actionLabel(match.status), style: AppTypography.headline(size: 13, color: isLive ? context.c.textPrimary : context.c.onPrimary)),
               ),
             ),
           ],
@@ -1298,12 +1298,12 @@ class _CompactMatchCard extends StatelessWidget {
         borderRadius: AppRadii.cardAll,
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: context.c.card,
             borderRadius: AppRadii.cardAll,
             border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.onPrimary.withValues(alpha: 0.25),
+                color: context.c.onPrimary.withValues(alpha: 0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -1328,8 +1328,8 @@ class _CompactMatchCard extends StatelessWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        AppColors.card.withValues(alpha: 0.95),
-                        AppColors.card.withValues(alpha: 0.65),
+                        context.c.card.withValues(alpha: 0.95),
+                        context.c.card.withValues(alpha: 0.65),
                       ],
                     ),
                   ),
@@ -1347,7 +1347,7 @@ class _CompactMatchCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.cardSurface,
+                      color: context.c.cardSurface,
                       borderRadius: AppRadii.surfaceAll,
                     ),
                     child: Row(
@@ -1359,7 +1359,7 @@ class _CompactMatchCard extends StatelessWidget {
                           child: Text(
                             theme.label.toUpperCase(),
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.code(size: 8, weight: FontWeight.w700, color: AppColors.textSecondary),
+                            style: AppTypography.code(size: 8, weight: FontWeight.w700, color: context.c.textSecondary),
                           ),
                         ),
                       ],
@@ -1372,7 +1372,7 @@ class _CompactMatchCard extends StatelessWidget {
                   style: AppTypography.code(
                     size: 8,
                     weight: FontWeight.w700,
-                    color: match.status == 'active' ? AppColors.destructive : AppColors.voltNeon,
+                    color: match.status == 'active' ? context.c.destructive : context.c.primary,
                   ),
                 ),
               ],
@@ -1387,16 +1387,16 @@ class _CompactMatchCard extends StatelessWidget {
                       Expanded(
                         child: match.teamA!.jersey != null
                             ? JerseyWidget(jersey: match.teamA!.jersey!, size: 32)
-                            : Icon(Icons.checkroom, size: 28, color: AppColors.textSecondary),
+                            : Icon(Icons.checkroom, size: 28, color: context.c.textSecondary),
                       ),
                       Text(
                         hasScore ? '${match.teamA!.score}-${match.teamB!.score}' : 'vs',
-                        style: AppTypography.body(size: 11, weight: FontWeight.w700, color: AppColors.textSecondary),
+                        style: AppTypography.body(size: 11, weight: FontWeight.w700, color: context.c.textSecondary),
                       ),
                       Expanded(
                         child: match.teamB!.jersey != null
                             ? JerseyWidget(jersey: match.teamB!.jersey!, size: 32)
-                            : Icon(Icons.checkroom, size: 28, color: AppColors.textSecondary),
+                            : Icon(Icons.checkroom, size: 28, color: context.c.textSecondary),
                       ),
                     ],
                   ),
@@ -1409,7 +1409,7 @@ class _CompactMatchCard extends StatelessWidget {
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(color: AppColors.textSecondary, size: 9, weight: FontWeight.w700),
+                          style: AppTypography.body(color: context.c.textSecondary, size: 9, weight: FontWeight.w700),
                         ),
                       ),
                       Expanded(
@@ -1418,7 +1418,7 @@ class _CompactMatchCard extends StatelessWidget {
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(color: AppColors.textSecondary, size: 9, weight: FontWeight.w700),
+                          style: AppTypography.body(color: context.c.textSecondary, size: 9, weight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -1434,7 +1434,7 @@ class _CompactMatchCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700),
+                    style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -1442,13 +1442,13 @@ class _CompactMatchCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.groups_outlined, size: 11, color: AppColors.textSecondary),
+                  Icon(Icons.groups_outlined, size: 11, color: context.c.textSecondary),
                   const SizedBox(width: 3),
                   Text(
                     match.matchSize > 0
                         ? '${match.playerUids.length}/${match.matchSize} jugadores'
                         : '${match.playerUids.length} jugadores',
-                    style: AppTypography.body(size: 9, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 9, color: context.c.textSecondary),
                   ),
                 ],
               ),
@@ -1469,7 +1469,7 @@ class _CompactMatchCard extends StatelessWidget {
             const SizedBox(height: 6),
             Align(
               alignment: Alignment.centerRight,
-              child: Icon(Icons.chevron_right, size: 14, color: AppColors.textSecondary),
+              child: Icon(Icons.chevron_right, size: 14, color: context.c.textSecondary),
             ),
             ],
           ),
@@ -1492,14 +1492,14 @@ class _CompactInfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 10, color: AppColors.textSecondary),
+        Icon(icon, size: 10, color: context.c.textSecondary),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.body(size: 9, color: AppColors.textSecondary),
+            style: AppTypography.body(size: 9, color: context.c.textSecondary),
           ),
         ),
       ],
@@ -1519,16 +1519,16 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.textSecondary),
+        Icon(icon, size: 18, color: context.c.textSecondary),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+              Text(label, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
               Text(
                 value,
-                style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.textPrimary),
+                style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -1551,7 +1551,7 @@ class _TeamJersey extends StatelessWidget {
         if (team.jersey != null)
           JerseyWidget(jersey: team.jersey!, size: 44)
         else
-          Icon(Icons.checkroom, size: 40, color: AppColors.textSecondary),
+          Icon(Icons.checkroom, size: 40, color: context.c.textSecondary),
         const SizedBox(height: 6),
         SizedBox(
           width: 88,
@@ -1560,7 +1560,7 @@ class _TeamJersey extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.body(size: 12, weight: FontWeight.w600, color: AppColors.textPrimary),
+            style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textPrimary),
           ),
         ),
       ],
@@ -1590,7 +1590,7 @@ class _OrganizerRow extends StatelessWidget {
           children: [
             PateaAvatar(photoUrl: photoUrl, seed: name, size: 20),
             const SizedBox(width: 6),
-            Text(name, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+            Text(name, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
           ],
         );
       },

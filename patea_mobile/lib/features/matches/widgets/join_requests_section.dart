@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/services/firestore_service.dart';
 import '../../../core/services/match_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -65,18 +65,18 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
                 style: AppTypography.headline(
                     size: 11,
                     weight: FontWeight.w800,
-                    color: AppColors.textSecondary,
+                    color: context.c.textSecondary,
                     letterSpacing: 1.2)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.voltNeon,
+                color: context.c.primary,
                 borderRadius: AppRadii.pillAll,
               ),
               child: Text('${requests.length}',
                   style: AppTypography.code(
-                      size: 11, weight: FontWeight.w800, color: AppColors.background)),
+                      size: 11, weight: FontWeight.w800, color: context.c.background)),
             ),
           ],
         ),
@@ -138,30 +138,30 @@ class _RequestRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${request.position}  ·  OVR ${request.ovr}',
-                  style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
                 ),
               ],
             ),
           ),
           if (busy)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 14),
               child: SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.voltNeon),
+                child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary),
               ),
             )
           else ...[
             _RespondButton(
               icon: Icons.close_rounded,
-              color: AppColors.textSecondary,
+              color: context.c.textSecondary,
               onTap: enabled ? onReject : null,
             ),
             const SizedBox(width: 8),
             _RespondButton(
               icon: Icons.check_rounded,
-              color: AppColors.success,
+              color: context.c.success,
               onTap: enabled ? onAccept : null,
             ),
           ],
@@ -190,7 +190,7 @@ class _RespondButton extends StatelessWidget {
           borderRadius: AppRadii.chipAll,
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
-        child: Icon(icon, size: 18, color: onTap == null ? AppColors.textSecondary : color),
+        child: Icon(icon, size: 18, color: onTap == null ? context.c.textSecondary : color),
       ),
     );
   }

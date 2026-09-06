@@ -1,12 +1,12 @@
 import 'dart:ui';
+import 'patea_avatar.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 import 'soccer_runner_icon.dart';
 import 'patea_help_dialog.dart';
@@ -78,10 +78,10 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
             // y por eso el desenfoque no se notaba: el vidrio tapaba lo que
             // tenía que dejar pasar. El blur se ve cuando baja la opacidad,
             // no cuando sube el sigma.
-            color: AppColors.card.withValues(alpha: 0.40),
+            color: context.c.card.withValues(alpha: 0.40),
             border: Border(
               bottom: BorderSide(
-                color: AppColors.overlayLine,
+                color: context.c.overlayLine,
                 width: 1,
               ),
             ),
@@ -99,9 +99,9 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                     InkWell(
                       onTap: () => context.go('/'),
                       borderRadius: AppRadii.chipAll,
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.all(4.0),
-                        child: SoccerRunnerIcon(size: 28, color: AppColors.voltNeon),
+                        child: SoccerRunnerIcon(size: 28, color: context.c.primary),
                       ),
                     ),
 
@@ -109,10 +109,10 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                       children: [
                         // Ayuda
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.help_outline_rounded,
                             size: 20,
-                            color: AppColors.textSecondary,
+                            color: context.c.textSecondary,
                           ),
                           onPressed: onHelpTap ??
                               () {
@@ -139,10 +139,10 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                           clipBehavior: Clip.none,
                           children: [
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.notifications_none_rounded,
                                 size: 20,
-                                color: AppColors.textSecondary,
+                                color: context.c.textSecondary,
                               ),
                               onPressed: onNotificationsTap ??
                                   () {
@@ -165,10 +165,10 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                     width: 10,
                                     height: 10,
                                     decoration: BoxDecoration(
-                                      color: AppColors.voltNeon,
+                                      color: context.c.primary,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: AppColors.background,
+                                        color: context.c.background,
                                         width: 1.5,
                                       ),
                                     ),
@@ -206,7 +206,7 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                         style: AppTypography.headline(
                                           size: 13,
                                           weight: FontWeight.w800,
-                                          color: AppColors.textPrimary,
+                                          color: context.c.textPrimary,
                                         ),
                                       ),
                                       // La web usa `PlayerPositionBadge` con
@@ -217,7 +217,7 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                           style: AppTypography.headline(
                                             size: 10,
                                             weight: FontWeight.w800,
-                                            color: AppColors.getPositionColor(userPosition),
+                                            color: context.c.positionColor(userPosition),
                                           ),
                                         ),
                                     ],
@@ -225,13 +225,19 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                   const SizedBox(width: 8),
                                 ],
 
-                                _Avatar(photoUrl: userPhotoUrl, initial: initial),
+                                // Era la tercera implementacion de un avatar en la app.
+                                PateaAvatar(
+                                  photoUrl: userPhotoUrl,
+                                  seed: currentUser?.uid ?? initial,
+                                  size: 36,
+                                  borderColor: context.c.overlayStrong,
+                                ),
 
                                 const SizedBox(width: 3),
-                                const Icon(
+                                Icon(
                                   Icons.keyboard_arrow_down_rounded,
                                   size: 15,
-                                  color: AppColors.textSecondary,
+                                  color: context.c.textSecondary,
                                 ),
                               ],
                             ),
@@ -252,52 +258,3 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
 
 /// Avatar del header. Estaba escrito tres veces seguidas —placeholder, error y
 /// caso sin foto— con el mismo `Container` de relleno copiado en cada rama.
-class _Avatar extends StatelessWidget {
-  final String? photoUrl;
-  final String initial;
-
-  const _Avatar({required this.photoUrl, required this.initial});
-
-  Widget get _fallback => Container(
-        color: AppColors.card,
-        child: Center(
-          child: Text(
-            initial,
-            style: AppTypography.headline(
-              size: 14,
-              weight: FontWeight.w800,
-              color: AppColors.voltNeon,
-            ),
-          ),
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    final url = photoUrl;
-
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: AppColors.overlayStrong,
-          width: 1.5,
-        ),
-      ),
-      child: ClipOval(
-        child: url != null && url.isNotEmpty
-            ? CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                memCacheWidth: 128,
-                maxWidthDiskCache: 256,
-                placeholder: (context, url) => _fallback,
-                errorWidget: (context, url, error) => _fallback,
-              )
-            : _fallback,
-      ),
-    );
-  }
-}

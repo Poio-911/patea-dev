@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/widgets/patea_background.dart';
@@ -60,7 +60,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             content: Text(
               _isRegister ? 'Error al registrar usuario: $e' : 'Las credenciales no son correctas.',
             ),
-            backgroundColor: AppColors.destructive,
+            backgroundColor: context.c.destructive,
           ),
         );
       }
@@ -94,15 +94,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 constraints: const BoxConstraints(maxWidth: 420),
                 padding: const EdgeInsets.all(28.0),
                 decoration: BoxDecoration(
-                  color: AppColors.card.withValues(alpha: 0.85),
+                  color: context.c.card.withValues(alpha: 0.85),
                   borderRadius: AppRadii.surfaceAll,
                   border: Border.all(
-                    color: AppColors.border.withValues(alpha: 0.5),
+                    color: context.c.border.withValues(alpha: 0.5),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.onPrimary.withValues(alpha: 0.4),
+                      color: context.c.onPrimary.withValues(alpha: 0.4),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -119,19 +119,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: 64,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.voltNeon.withValues(alpha: 0.12),
-                          border: Border.all(color: AppColors.voltNeon, width: 2),
+                          color: context.c.brandVolt.withValues(alpha: 0.12),
+                          border: Border.all(color: context.c.primary, width: 2),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.voltNeon.withValues(alpha: 0.25),
+                              color: context.c.brandVolt.withValues(alpha: 0.25),
                               blurRadius: 18,
                               spreadRadius: 2,
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.sports_soccer,
-                          color: AppColors.voltNeon,
+                          color: context.c.primary,
                           size: 34,
                         ),
                       ),
@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: AppTypography.headline(
                         size: 32,
                         weight: FontWeight.w900,
-                        color: AppColors.textPrimary,
+                        color: context.c.textPrimary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -155,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           : 'Inicia sesión para organizar los partidos con tus amigos.',
                       style: AppTypography.body(
                         size: 13,
-                        color: AppColors.textSecondary,
+                        color: context.c.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -165,22 +165,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     if (_isRegister) ...[
                       Text(
                         'Nombre / Apodo',
-                        style: AppTypography.headline(size: 12, weight: FontWeight.w600, color: AppColors.textSecondary),
+                        style: AppTypography.headline(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _nameController,
-                        style: AppTypography.body(color: AppColors.textSecondary),
-                        decoration: const InputDecoration(
+                        style: AppTypography.body(color: context.c.textSecondary),
+                        decoration: InputDecoration(
                           hintText: 'Tu nombre en la cancha',
-                          prefixIcon: Icon(Icons.person_outline, size: 18, color: AppColors.textSecondary),
+                          prefixIcon: Icon(Icons.person_outline, size: 18, color: context.c.textSecondary),
                         ),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'Tu puesto',
                         style: AppTypography.headline(
-                            size: 12, weight: FontWeight.w600, color: AppColors.textSecondary),
+                            size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
                       ),
                       const SizedBox(height: 6),
                       Row(
@@ -204,16 +204,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Campo Correo Electrónico
                     Text(
                       'Correo Electrónico',
-                      style: AppTypography.headline(size: 12, weight: FontWeight.w600, color: AppColors.textSecondary),
+                      style: AppTypography.headline(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: AppTypography.body(color: AppColors.textSecondary),
-                      decoration: const InputDecoration(
+                      style: AppTypography.body(color: context.c.textSecondary),
+                      decoration: InputDecoration(
                         hintText: 'tu@email.com',
-                        prefixIcon: Icon(Icons.mail_outline, size: 18, color: AppColors.textSecondary),
+                        prefixIcon: Icon(Icons.mail_outline, size: 18, color: context.c.textSecondary),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -221,21 +221,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Campo Contraseña
                     Text(
                       'Contraseña',
-                      style: AppTypography.headline(size: 12, weight: FontWeight.w600, color: AppColors.textSecondary),
+                      style: AppTypography.headline(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: AppTypography.body(color: AppColors.textSecondary),
+                      style: AppTypography.body(color: context.c.textSecondary),
                       decoration: InputDecoration(
                         hintText: '••••••••',
-                        prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textSecondary),
+                        prefixIcon: Icon(Icons.lock_outline, size: 18, color: context.c.textSecondary),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                             size: 18,
-                            color: AppColors.textSecondary,
+                            color: context.c.textSecondary,
                           ),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
@@ -247,27 +247,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ElevatedButton(
                       onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.voltNeon,
-                        foregroundColor: AppColors.onPrimary,
+                        backgroundColor: context.c.primary,
+                        foregroundColor: context.c.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppRadii.cardAll,
                         ),
                         elevation: 4,
-                        shadowColor: AppColors.voltNeon.withValues(alpha: 0.4),
+                        shadowColor: context.c.brandVolt.withValues(alpha: 0.4),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2),
+                              child: CircularProgressIndicator(color: context.c.onPrimary, strokeWidth: 2),
                             )
                           : Text(
                               _isRegister ? 'CREAR CUENTA' : 'INICIAR SESIÓN',
                               style: AppTypography.headline(
                                 size: 14,
                                 weight: FontWeight.w800,
-                                color: AppColors.onPrimary,
+                                color: context.c.onPrimary,
                               ),
                             ),
                     ),
@@ -282,7 +282,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             '¿Olvidaste tu contraseña?',
                             style: AppTypography.headline(
                               size: 12,
-                              color: AppColors.voltNeon,
+                              color: context.c.primary,
                               weight: FontWeight.w600,
                             ),
                           ),
@@ -295,15 +295,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14.0),
                       child: Row(
                         children: [
-                          const Expanded(child: Divider(color: AppColors.border)),
+                          Expanded(child: Divider(color: context.c.border)),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 10.0),
                             child: Text(
                               'o',
-                              style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+                              style: AppTypography.code(size: 11, color: context.c.textSecondary),
                             ),
                           ),
-                          const Expanded(child: Divider(color: AppColors.border)),
+                          Expanded(child: Divider(color: context.c.border)),
                         ],
                       ),
                     ),
@@ -312,20 +312,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     OutlinedButton.icon(
                       onPressed: _isLoading ? null : _handleGoogleSignIn,
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                        side: const BorderSide(color: AppColors.border),
+                        backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                        side: BorderSide(color: context.c.border),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppRadii.cardAll,
                         ),
                       ),
-                      icon: const Icon(Icons.g_mobiledata, size: 28, color: AppColors.textPrimary),
+                      icon: Icon(Icons.g_mobiledata, size: 28, color: context.c.textPrimary),
                       label: Text(
                         'Continuar con Google',
                         style: AppTypography.headline(
                           size: 13,
                           weight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: context.c.textPrimary,
                         ),
                       ),
                     ),
@@ -337,7 +337,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         Text(
                           _isRegister ? '¿Ya tienes una cuenta? ' : '¿No tienes una cuenta? ',
-                          style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                          style: AppTypography.body(size: 13, color: context.c.textSecondary),
                         ),
                         GestureDetector(
                           onTap: () => setState(() => _isRegister = !_isRegister),
@@ -346,7 +346,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             style: AppTypography.headline(
                               size: 13,
                               weight: FontWeight.w700,
-                              color: AppColors.voltNeon,
+                              color: context.c.primary,
                             ),
                           ),
                         ),
@@ -380,10 +380,10 @@ class _PositionChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 11),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? AppColors.voltNeon : Colors.transparent,
+          color: selected ? context.c.primary : Colors.transparent,
           borderRadius: AppRadii.cardAll,
           border: Border.all(
-            color: selected ? AppColors.voltNeon : AppColors.overlayStrong,
+            color: selected ? context.c.primary : context.c.overlayStrong,
           ),
         ),
         child: Text(
@@ -391,7 +391,7 @@ class _PositionChip extends StatelessWidget {
           style: AppTypography.headline(
             size: 12,
             weight: FontWeight.w800,
-            color: selected ? AppColors.onPrimary : AppColors.textSecondary,
+            color: selected ? context.c.onPrimary : context.c.textSecondary,
           ),
         ),
       ),

@@ -20,7 +20,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 
@@ -41,9 +41,9 @@ abstract final class PateaSnack {
 
   static void _mostrar(BuildContext context, String mensaje, _Tono tono) {
     final (icono, color) = switch (tono) {
-      _Tono.ok => (Icons.check_circle_rounded, AppColors.success),
-      _Tono.error => (Icons.error_rounded, AppColors.destructive),
-      _Tono.info => (Icons.info_rounded, AppColors.textSecondary),
+      _Tono.ok => (Icons.check_circle_rounded, context.c.success),
+      _Tono.error => (Icons.error_rounded, context.c.destructive),
+      _Tono.info => (Icons.info_rounded, context.c.textSecondary),
     };
 
     final messenger = ScaffoldMessenger.maybeOf(context);
@@ -56,7 +56,7 @@ abstract final class PateaSnack {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.popover,
+          backgroundColor: context.c.popover,
           elevation: 0,
           margin: const EdgeInsets.all(14),
           duration: Duration(seconds: tono == _Tono.error ? 4 : 2),
@@ -73,7 +73,7 @@ abstract final class PateaSnack {
                   mensaje,
                   style: AppTypography.body(
                     size: 13.5,
-                    color: AppColors.textPrimary,
+                    color: context.c.textPrimary,
                   ),
                 ),
               ),

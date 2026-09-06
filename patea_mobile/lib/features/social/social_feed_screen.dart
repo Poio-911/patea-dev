@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 
 class SocialFeedScreen extends StatelessWidget {
@@ -38,7 +38,7 @@ class SocialFeedScreen extends StatelessWidget {
             return Center(
               child: Text(
                 'No hay publicaciones en el feed todavía.',
-                style: AppTypography.body(color: AppColors.textSecondary),
+                style: AppTypography.body(color: context.c.textSecondary),
               ),
             );
           }
@@ -57,9 +57,9 @@ class SocialFeedScreen extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: context.c.card,
                   borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.c.border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,8 +67,8 @@ class SocialFeedScreen extends StatelessWidget {
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: AppColors.voltNeon.withValues(alpha: 0.2),
-                          child: const Icon(Icons.star, color: AppColors.voltNeon, size: 20),
+                          backgroundColor: context.c.brandVolt.withValues(alpha: 0.2),
+                          child: Icon(Icons.star, color: context.c.primary, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -81,7 +81,7 @@ class SocialFeedScreen extends StatelessWidget {
                               ),
                               Text(
                                 type == 'ovr_updated' ? 'Actualización de OVR' : 'Actividad deportiva',
-                                style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+                                style: AppTypography.code(size: 11, color: context.c.textSecondary),
                               ),
                             ],
                           ),
@@ -90,15 +90,15 @@ class SocialFeedScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: change >= 0
-                                ? AppColors.success.withValues(alpha: 0.15)
-                                : AppColors.destructive.withValues(alpha: 0.15),
+                                ? context.c.success.withValues(alpha: 0.15)
+                                : context.c.destructive.withValues(alpha: 0.15),
                             borderRadius: AppRadii.chipAll,
                           ),
                           child: Text(
                             change >= 0 ? '+$change OVR' : '$change OVR',
                             style: AppTypography.sportNumber(
                               size: 12,
-                              color: change >= 0 ? AppColors.success : AppColors.destructive,
+                              color: change >= 0 ? context.c.success : context.c.destructive,
                             ),
                           ),
                         ),
@@ -107,10 +107,10 @@ class SocialFeedScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       '¡$playerName ha alcanzado un nuevo OVR de $newOvr tras su última actuación en la cancha!',
-                      style: AppTypography.body(color: AppColors.textPrimary),
+                      style: AppTypography.body(color: context.c.textPrimary),
                     ),
                     const SizedBox(height: 14),
-                    const Divider(color: AppColors.border),
+                    Divider(color: context.c.border),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -158,7 +158,7 @@ class _ReactionButtonState extends State<_ReactionButton> {
               count > 0 ? '$count' : widget.label,
               style: AppTypography.code(
                 size: 11,
-                color: count > 0 ? AppColors.voltNeon : AppColors.textSecondary,
+                color: count > 0 ? context.c.primary : context.c.textSecondary,
               ),
             ),
           ],

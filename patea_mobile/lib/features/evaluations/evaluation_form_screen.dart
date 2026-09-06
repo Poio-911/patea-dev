@@ -3,7 +3,7 @@ import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/performance_tags.dart';
 import '../../core/services/evaluation_service.dart';
@@ -176,13 +176,13 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.25))),
+          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.25))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('TU RENDIMIENTO', style: AppTypography.headline(size: 13, color: AppColors.voltNeon)),
+              Text('TU RENDIMIENTO', style: AppTypography.headline(size: 13, color: context.c.primary)),
               const SizedBox(height: 4),
-              Text('Registrá tus estadísticas personales del partido.', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+              Text('Registrá tus estadísticas personales del partido.', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -204,7 +204,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
                       label: Text(e.value),
                       selected: selected,
                       onSelected: (_) => setState(() => _mvpVote = selected ? null : e.key),
-                      selectedColor: AppColors.voltNeon.withValues(alpha: 0.25),
+                      selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
                     );
                   }).toList(),
                 ),
@@ -228,9 +228,9 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: _isSubmitting ? null : _submit,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
+            style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
             icon: _isSubmitting
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                 : const Icon(Icons.save_outlined),
             label: Text(_isSubmitting ? 'Enviando...' : 'ENVIAR EVALUACIONES'),
           ),
@@ -255,11 +255,11 @@ class _MessageState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: AppColors.textSecondary),
+            Icon(icon, size: 44, color: context.c.textSecondary),
             const SizedBox(height: 12),
             Text(title, style: AppTypography.headline(size: 16)),
             const SizedBox(height: 6),
-            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
           ],
         ),
       ),
@@ -278,16 +278,16 @@ class _CounterDial extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
+      decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
       child: Column(
         children: [
-          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
+          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(onPressed: () => onChanged((value - 1).clamp(0, 20)), icon: const Icon(Icons.remove_circle_outline)),
-              SizedBox(width: 40, child: Text('$value', textAlign: TextAlign.center, style: AppTypography.sportNumber(size: 24, color: AppColors.voltNeon))),
+              SizedBox(width: 40, child: Text('$value', textAlign: TextAlign.center, style: AppTypography.sportNumber(size: 24, color: context.c.primary))),
               IconButton(onPressed: () => onChanged((value + 1).clamp(0, 20)), icon: const Icon(Icons.add_circle_outline)),
             ],
           ),
@@ -308,7 +308,7 @@ class _PlayerEvaluationCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+      decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -381,11 +381,11 @@ class _TypeToggle extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? AppColors.voltNeon.withValues(alpha: 0.15) : AppColors.cardSurface,
+          color: selected ? context.c.brandVolt.withValues(alpha: 0.15) : context.c.cardSurface,
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? AppColors.voltNeon : Colors.transparent),
+          border: Border.all(color: selected ? context.c.primary : Colors.transparent),
         ),
-        child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? AppColors.voltNeon : AppColors.textSecondary)),
+        child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? context.c.primary : context.c.textSecondary)),
       ),
     );
   }
@@ -402,7 +402,7 @@ class _PointsEditor extends StatelessWidget {
     final val = draft.rating;
     final isBad = val < 5;
     final isGood = val >= 7;
-    final color = isBad ? AppColors.destructive : (isGood ? AppColors.success : AppColors.warning);
+    final color = isBad ? context.c.destructive : (isGood ? context.c.success : context.c.warning);
 
     return Column(
       children: [
@@ -434,7 +434,7 @@ class _TagsEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Elegí al menos 3 (${draft.performanceTags.length} elegidas)', style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+        Text('Elegí al menos 3 (${draft.performanceTags.length} elegidas)', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
         const SizedBox(height: 8),
         ...draft.tagPool.map((tag) {
           final isChecked = draft.performanceTags.any((t) => t.id == tag.id);
@@ -454,21 +454,21 @@ class _TagsEditor extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isChecked ? (isPositive ? AppColors.success.withValues(alpha: 0.1) : AppColors.destructive.withValues(alpha: 0.1)) : AppColors.cardSurface,
+                  color: isChecked ? (isPositive ? context.c.success.withValues(alpha: 0.1) : context.c.destructive.withValues(alpha: 0.1)) : context.c.cardSurface,
                   borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: isChecked ? (isPositive ? AppColors.success : AppColors.destructive) : Colors.transparent),
+                  border: Border.all(color: isChecked ? (isPositive ? context.c.success : context.c.destructive) : Colors.transparent),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(isChecked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: isChecked ? (isPositive ? AppColors.success : AppColors.destructive) : AppColors.textSecondary),
+                    Icon(isChecked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: isChecked ? (isPositive ? context.c.success : context.c.destructive) : context.c.textSecondary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(tag.name, style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w700)),
-                          Text(tag.description, style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
+                          Text(tag.name, style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w700)),
+                          Text(tag.description, style: AppTypography.body(size: 10, color: context.c.textSecondary)),
                           const SizedBox(height: 4),
                           Wrap(
                             spacing: 6,
@@ -476,7 +476,7 @@ class _TagsEditor extends StatelessWidget {
                               final positive = e.value > 0;
                               return Text(
                                 '${positive ? '+' : ''}${e.value} ${e.key.toUpperCase()}',
-                                style: AppTypography.code(size: 9, weight: FontWeight.w700, color: positive ? AppColors.success : AppColors.destructive),
+                                style: AppTypography.code(size: 9, weight: FontWeight.w700, color: positive ? context.c.success : context.c.destructive),
                               );
                             }).toList(),
                           ),

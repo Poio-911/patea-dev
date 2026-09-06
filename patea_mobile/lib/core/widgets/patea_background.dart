@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 
 /// La web (`GameModeBackground`, montado UNA vez en `client-providers.tsx`)
 /// elige una foto al azar (1-9) una sola vez por carga de página y la
@@ -34,7 +34,7 @@ class PateaBackground extends ConsumerWidget {
       children: [
         // 1. Color base muy oscuro
         Positioned.fill(
-          child: Container(color: AppColors.background),
+          child: Container(color: context.c.background),
         ),
 
         // 2. Fotografía real de estadio / césped desenfocada
@@ -76,7 +76,7 @@ class PateaBackground extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.voltNeon.withValues(alpha: 0.12), // Volt tint
+                  context.c.brandVolt.withValues(alpha: 0.12), // Volt tint
                   Colors.transparent,
                   Color(0xF00B0E14), // Dark carbon
                 ],

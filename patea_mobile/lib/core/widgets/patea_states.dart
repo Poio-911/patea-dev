@@ -14,7 +14,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 
@@ -77,7 +77,7 @@ class PateaEmpty extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon,
-                size: compact ? 26 : 38, color: AppColors.textSecondary),
+                size: compact ? 26 : 38, color: context.c.textSecondary),
             SizedBox(height: compact ? 8 : 14),
             Text(
               title,
@@ -85,7 +85,7 @@ class PateaEmpty extends StatelessWidget {
               style: AppTypography.headline(
                 size: compact ? 14 : 16,
                 weight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.c.textPrimary,
               ),
             ),
             if (hint != null) ...[
@@ -96,7 +96,7 @@ class PateaEmpty extends StatelessWidget {
                 style: AppTypography.body(
                   size: 13,
                   height: 1.4,
-                  color: AppColors.textSecondary,
+                  color: context.c.textSecondary,
                 ),
               ),
             ],
@@ -151,11 +151,11 @@ class PateaError extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.destructive.withValues(alpha: 0.12),
+                color: context.c.destructive.withValues(alpha: 0.12),
                 borderRadius: AppRadii.chipAll,
               ),
               child: Icon(Icons.wifi_off_rounded,
-                  size: compact ? 18 : 22, color: AppColors.destructive),
+                  size: compact ? 18 : 22, color: context.c.destructive),
             ),
             SizedBox(height: compact ? 8 : 14),
             Text(
@@ -164,7 +164,7 @@ class PateaError extends StatelessWidget {
               style: AppTypography.body(
                 size: 14,
                 height: 1.4,
-                color: AppColors.textSecondary,
+                color: context.c.textSecondary,
               ),
             ),
             if (onRetry != null) ...[

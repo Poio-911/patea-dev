@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_radii.dart';
 
 import '../../../core/models/match_model.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../live_match_screen.dart' show kTeamAId;
 
@@ -26,14 +26,14 @@ class MatchTimelineView extends StatelessWidget {
         Text('MINUTO A MINUTO',
             style: AppTypography.headline(
                 size: 11, weight: FontWeight.w800,
-                color: AppColors.textSecondary, letterSpacing: 1.2)),
+                color: context.c.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 14),
         if (events.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
               child: Text('Todavía no pasó nada.',
-                  style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
+                  style: AppTypography.body(size: 13, color: context.c.textSecondary)),
             ),
           )
         else
@@ -59,23 +59,25 @@ class _TimelineRow extends StatelessWidget {
     return a.players.any((p) => p.uid == event.playerId);
   }
 
-  ({IconData icon, Color color}) get _mark {
+  /// El icono y el color de cada tipo de evento. Recibe el contexto porque
+  /// el color sale del tema.
+  ({IconData icon, Color color}) _mark(BuildContext context) {
     switch (event.type) {
       case 'goal':
-        return (icon: Icons.sports_soccer_rounded, color: AppColors.voltNeon);
+        return (icon: Icons.sports_soccer_rounded, color: context.c.primary);
       case 'card':
         return (
           icon: Icons.style_rounded,
-          color: event.cardType == 'red' ? AppColors.destructive : AppColors.warning
+          color: event.cardType == 'red' ? context.c.destructive : context.c.warning
         );
       case 'substitution':
-        return (icon: Icons.swap_horiz_rounded, color: AppColors.textSecondary);
+        return (icon: Icons.swap_horiz_rounded, color: context.c.textSecondary);
       case 'corner':
-        return (icon: Icons.flag_rounded, color: AppColors.textSecondary);
+        return (icon: Icons.flag_rounded, color: context.c.textSecondary);
       case 'foul':
-        return (icon: Icons.report_gmailerrorred_rounded, color: AppColors.textSecondary);
+        return (icon: Icons.report_gmailerrorred_rounded, color: context.c.textSecondary);
       default:
-        return (icon: Icons.circle, color: AppColors.textSecondary);
+        return (icon: Icons.circle, color: context.c.textSecondary);
     }
   }
 
@@ -112,7 +114,7 @@ class _TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mark = _mark;
+    final mark = _mark(context);
     final left = _isTeamA;
 
     final content = Column(
@@ -128,7 +130,7 @@ class _TimelineRow extends StatelessWidget {
           Text(
             _detail!,
             textAlign: left ? TextAlign.right : TextAlign.left,
-            style: AppTypography.body(size: 11, color: AppColors.textSecondary),
+            style: AppTypography.body(size: 11, color: context.c.textSecondary),
           ),
         ],
       ],
@@ -164,11 +166,11 @@ class _TimelineRow extends StatelessWidget {
               children: [
                 Text("${event.minute}'",
                     style: AppTypography.code(
-                        size: 11, weight: FontWeight.w800, color: AppColors.textSecondary)),
+                        size: 11, weight: FontWeight.w800, color: context.c.textSecondary)),
                 const SizedBox(height: 4),
                 badge,
                 Expanded(
-                  child: Container(width: 1, color: AppColors.overlayLine),
+                  child: Container(width: 1, color: context.c.overlayLine),
                 ),
               ],
             ),
@@ -192,14 +194,16 @@ class OpposedBar extends StatelessWidget {
   final String label;
   final int a;
   final int b;
-  final Color color;
+  final Color? color;
 
   const OpposedBar({
     super.key,
     required this.label,
     required this.a,
     required this.b,
-    this.color = AppColors.voltNeon,
+    /// Null = el primario del tema: un parámetro por defecto tiene que ser
+    /// constante.
+    this.color,
   });
 
   @override
@@ -217,18 +221,18 @@ class OpposedBar extends StatelessWidget {
               SizedBox(
                 width: 28,
                 child: Text('$a',
-                    style: AppTypography.code(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800)),
+                    style: AppTypography.code(color: context.c.textSecondary, size: 13, weight: FontWeight.w800)),
               ),
               Expanded(
                 child: Text(label,
                     textAlign: TextAlign.center,
-                    style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                    style: AppTypography.body(size: 11, color: context.c.textSecondary)),
               ),
               SizedBox(
                 width: 28,
                 child: Text('$b',
                     textAlign: TextAlign.right,
-                    style: AppTypography.code(color: AppColors.textSecondary, size: 13, weight: FontWeight.w800)),
+                    style: AppTypography.code(color: context.c.textSecondary, size: 13, weight: FontWeight.w800)),
               ),
             ],
           ),
@@ -243,14 +247,14 @@ class OpposedBar extends StatelessWidget {
                     flex: (fracA * 1000).round().clamp(1, 999),
                     child: Container(
                       color: total == 0
-                          ? AppColors.overlaySubtle
-                          : color.withValues(alpha: 0.85),
+                          ? context.c.overlaySubtle
+                          : (color ?? context.c.primary).withValues(alpha: 0.85),
                     ),
                   ),
                   const SizedBox(width: 2),
                   Expanded(
                     flex: ((1 - fracA) * 1000).round().clamp(1, 999),
-                    child: Container(color: AppColors.overlayStrong),
+                    child: Container(color: context.c.overlayStrong),
                   ),
                 ],
               ),

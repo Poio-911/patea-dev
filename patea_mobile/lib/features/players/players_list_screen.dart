@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/models/player_model.dart';
 import '../../core/services/firestore_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/player_card_widget.dart';
@@ -88,8 +88,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
             ),
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-              decoration: const BoxDecoration(
-                color: AppColors.popover,
+              decoration: BoxDecoration(
+                color: context.c.popover,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
               ),
               child: SafeArea(
@@ -104,7 +104,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                         height: 5,
                         margin: const EdgeInsets.only(bottom: 18),
                         decoration: BoxDecoration(
-                          color: AppColors.textSecondary.withValues(alpha: 0.3),
+                          color: context.c.textSecondary.withValues(alpha: 0.3),
                           borderRadius: AppRadii.hairAll,
                         ),
                       ),
@@ -124,29 +124,29 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                             }),
                             child: Text('Limpiar',
                                 style: AppTypography.body(
-                                    size: 13, color: AppColors.textSecondary)),
+                                    size: 13, color: context.c.textSecondary)),
                           ),
                       ],
                     ),
                     const SizedBox(height: 14),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: context.c.background,
                         borderRadius: AppRadii.cardAll,
-                        border: Border.all(color: AppColors.overlayLine),
+                        border: Border.all(color: context.c.overlayLine),
                       ),
                       child: TextField(
                         controller: _searchController,
                         onChanged: (val) => update(() => _searchQuery = val),
-                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                        style: TextStyle(color: context.c.textPrimary, fontSize: 14),
                         decoration: InputDecoration(
                           hintText: 'Buscar jugador...',
                           hintStyle: TextStyle(
-                            color: AppColors.overlayStrong,
+                            color: context.c.overlayStrong,
                             fontSize: 13,
                           ),
                           prefixIcon: Icon(Icons.search,
-                              size: 20, color: AppColors.overlayStrong),
+                              size: 20, color: context.c.overlayStrong),
                           border: InputBorder.none,
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -155,7 +155,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text('POSICIÓN',
-                        style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
+                        style: AppTypography.code(size: 10, color: context.c.textSecondary)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -173,7 +173,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text('ORDENAR POR',
-                        style: AppTypography.code(size: 10, color: AppColors.textSecondary)),
+                        style: AppTypography.code(size: 10, color: context.c.textSecondary)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -195,15 +195,15 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(sheetContext),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.voltNeon,
-                          foregroundColor: AppColors.onPrimary,
+                          backgroundColor: context.c.primary,
+                          foregroundColor: context.c.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                               borderRadius: AppRadii.cardAll),
                         ),
                         child: Text('Ver jugadores',
                             style: AppTypography.headline(
-                                size: 14, weight: FontWeight.w700, color: AppColors.onPrimary)),
+                                size: 14, weight: FontWeight.w700, color: context.c.onPrimary)),
                       ),
                     ),
                   ],
@@ -221,11 +221,11 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.voltNeon.withValues(alpha: 0.16)
-              : AppColors.background,
+              ? context.c.brandVolt.withValues(alpha: 0.16)
+              : context.c.background,
           borderRadius: AppRadii.cardAll,
           border: Border.all(
-            color: selected ? AppColors.voltNeon : AppColors.overlayLine,
+            color: selected ? context.c.primary : context.c.overlayLine,
             width: selected ? 1.4 : 1,
           ),
         ),
@@ -234,7 +234,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
           style: AppTypography.headline(
             size: 12,
             weight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? AppColors.voltNeon : AppColors.textSecondary,
+            color: selected ? context.c.primary : context.c.textSecondary,
           ),
         ),
       );
@@ -309,15 +309,15 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.voltNeon,
-                            foregroundColor: AppColors.onPrimary,
+                            backgroundColor: context.c.primary,
+                            foregroundColor: context.c.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                           ),
                           icon: const Icon(Icons.add_circle, size: 18),
                           label: Text(
                             'Agregar Jugador',
-                            style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: AppColors.onPrimary),
+                            style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: context.c.onPrimary),
                           ),
                         ),
                       ),
@@ -333,7 +333,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       child: Center(
                         child: Text(
                           'No hay jugadores que coincidan con la búsqueda.',
-                          style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                          style: AppTypography.body(size: 13, color: context.c.textSecondary),
                         ),
                       ),
                     ),
@@ -383,10 +383,10 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
               ],
             );
           },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.voltNeon),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: context.c.primary),
           ),
-          error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: AppColors.textPrimary))),
+          error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.c.textPrimary))),
         ),
     );
   }

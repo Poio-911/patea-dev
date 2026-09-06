@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/match_model.dart';
 import '../../../core/services/match_result_service.dart';
 import '../../../core/services/match_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/player_avatar_fallback.dart';
@@ -139,9 +139,9 @@ class _Paper extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.55),
+        color: context.c.card.withValues(alpha: 0.55),
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
       ),
       child: child,
     );
@@ -169,10 +169,10 @@ class _Masthead extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.voltNeon.withValues(alpha: 0.15),
+                  color: context.c.brandVolt.withValues(alpha: 0.15),
                   borderRadius: AppRadii.chipAll,
                 ),
-                child: const Icon(Icons.auto_stories_rounded, size: 15, color: AppColors.voltNeon),
+                child: Icon(Icons.auto_stories_rounded, size: 15, color: context.c.primary),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -183,7 +183,7 @@ class _Masthead extends StatelessWidget {
                   style: AppTypography.code(
                     size: 9.5,
                     weight: FontWeight.w800,
-                    color: AppColors.voltNeon,
+                    color: context.c.primary,
                   ).copyWith(letterSpacing: 1.4),
                 ),
               ),
@@ -192,13 +192,13 @@ class _Masthead extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                   decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
+                    color: context.c.cardSurface,
                     borderRadius: AppRadii.chipAll,
-                    border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+                    border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
                   ),
                   child: Text(
                     '${match.teamA!.score} - ${match.teamB!.score}',
-                    style: AppTypography.jersey(size: 15, color: AppColors.textPrimary),
+                    style: AppTypography.jersey(size: 15, color: context.c.textPrimary),
                   ),
                 ),
               ],
@@ -213,7 +213,7 @@ class _Masthead extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Container(height: 1, color: AppColors.border.withValues(alpha: 0.25)),
+          Container(height: 1, color: context.c.border.withValues(alpha: 0.25)),
         ],
       ),
     );
@@ -233,9 +233,9 @@ class _MvpMedallion extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
+          color: context.c.cardSurface,
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.5)),
+          border: Border.all(color: context.c.goldBorder.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
@@ -244,7 +244,7 @@ class _MvpMedallion extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.goldBorder, width: 2),
+                border: Border.all(color: context.c.goldBorder, width: 2),
               ),
               child: ClipOval(child: _Avatar(player: player)),
             ),
@@ -256,18 +256,18 @@ class _MvpMedallion extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.emoji_events_rounded, size: 13, color: AppColors.goldBorder),
+                      Icon(Icons.emoji_events_rounded, size: 13, color: context.c.goldBorder),
                       const SizedBox(width: 5),
                       Text(
                         'FIGURA DEL PARTIDO',
-                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.goldBorder)
+                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.goldBorder)
                             .copyWith(letterSpacing: 1.3),
                       ),
                       if (votes > 0) ...[
                         const Spacer(),
                         Text(
                           '$votes voto${votes > 1 ? "s" : ""}',
-                          style: AppTypography.code(size: 9, color: AppColors.textSecondary),
+                          style: AppTypography.code(size: 9, color: context.c.textSecondary),
                         ),
                       ],
                     ],
@@ -316,7 +316,7 @@ class _StoryState extends State<_Story> {
       style: AppTypography.body(
         size: 13.5,
         height: 1.6,
-        color: AppColors.textPrimary.withValues(alpha: 0.9),
+        color: context.c.textPrimary.withValues(alpha: 0.9),
       ),
     );
 
@@ -354,8 +354,8 @@ class _StoryState extends State<_Story> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.card.withValues(alpha: 0.0),
-                          AppColors.card.withValues(alpha: 0.95),
+                          context.c.card.withValues(alpha: 0.0),
+                          context.c.card.withValues(alpha: 0.95),
                         ],
                       ),
                     ),
@@ -372,18 +372,18 @@ class _StoryState extends State<_Story> {
               icon: Icon(
                 _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
                 size: 18,
-                color: AppColors.voltNeon,
+                color: context.c.primary,
               ),
               label: Text(
                 _expanded ? 'MOSTRAR MENOS' : 'LEER CRÓNICA COMPLETA',
                 style: AppTypography.code(
                   size: 10,
                   weight: FontWeight.w800,
-                  color: AppColors.voltNeon,
+                  color: context.c.primary,
                 ).copyWith(letterSpacing: 1.4),
               ),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.voltNeon,
+                foregroundColor: context.c.primary,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -419,10 +419,10 @@ class _Boxscore extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
       decoration: BoxDecoration(
-        color: AppColors.onPrimary.withValues(alpha: 0.28),
+        color: context.c.onPrimary.withValues(alpha: 0.28),
         border: Border(
-          top: BorderSide(color: AppColors.border.withValues(alpha: 0.30)),
-          bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.30)),
+          top: BorderSide(color: context.c.border.withValues(alpha: 0.30)),
+          bottom: BorderSide(color: context.c.border.withValues(alpha: 0.30)),
         ),
       ),
       child: Column(
@@ -431,7 +431,7 @@ class _Boxscore extends StatelessWidget {
           Text(
             'LA PLANILLA',
             style: AppTypography.code(
-                size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)
+                size: 9, weight: FontWeight.w700, color: context.c.textSecondary)
                 .copyWith(letterSpacing: 3),
           ),
           // Dos listas separadas y no una sola: quien marcó y asistió aparece
@@ -441,7 +441,7 @@ class _Boxscore extends StatelessWidget {
             _TallyHeader(
                 icon: Icons.sports_soccer_rounded,
                 text: 'GOLES',
-                color: AppColors.voltNeon),
+                color: context.c.primary),
             const SizedBox(height: 8),
             for (final t in scorers)
               _TallyLine(
@@ -449,7 +449,7 @@ class _Boxscore extends StatelessWidget {
                 player: playerOf(t.playerId),
                 name: nameOf(t.playerId),
                 count: t.goals,
-                color: AppColors.voltNeon,
+                color: context.c.primary,
               ),
           ],
           if (assisters.isNotEmpty) ...[
@@ -457,7 +457,7 @@ class _Boxscore extends StatelessWidget {
             _TallyHeader(
                 icon: Icons.compare_arrows_rounded,
                 text: 'ASISTENCIAS',
-                color: AppColors.info),
+                color: context.c.info),
             const SizedBox(height: 8),
             for (final t in assisters)
               _TallyLine(
@@ -465,7 +465,7 @@ class _Boxscore extends StatelessWidget {
                 player: playerOf(t.playerId),
                 name: nameOf(t.playerId),
                 count: t.assists,
-                color: AppColors.info,
+                color: context.c.info,
               ),
           ],
         ],
@@ -568,12 +568,12 @@ class _Voices extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Icon(Icons.format_quote_rounded, size: 14, color: AppColors.textSecondary),
+                Icon(Icons.format_quote_rounded, size: 14, color: context.c.textSecondary),
                 const SizedBox(width: 6),
                 Text(
                   'VOCES DEL VESTUARIO',
                   style: AppTypography.code(
-                      size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)
+                      size: 9, weight: FontWeight.w700, color: context.c.textSecondary)
                       .copyWith(letterSpacing: 3),
                 ),
               ],
@@ -617,9 +617,9 @@ class _VoiceCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.75),
+        color: context.c.card.withValues(alpha: 0.75),
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
       ),
       child: Stack(
         children: [
@@ -632,7 +632,7 @@ class _VoiceCard extends StatelessWidget {
               child: Icon(
                 Icons.format_quote_rounded,
                 size: 86,
-                color: AppColors.overlaySubtle,
+                color: context.c.overlaySubtle,
               ),
             ),
           ),
@@ -648,7 +648,7 @@ class _VoiceCard extends StatelessWidget {
                     size: 13,
                     italic: true,
                     height: 1.5,
-                    color: AppColors.textPrimary.withValues(alpha: 0.9),
+                    color: context.c.textPrimary.withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -678,7 +678,7 @@ class _VoiceCard extends StatelessWidget {
                             style: AppTypography.code(
                                 size: 8,
                                 weight: FontWeight.w700,
-                                color: AppColors.getPositionColor(player!.position))
+                                color: context.c.positionColor(player!.position))
                                 .copyWith(letterSpacing: 1.2),
                           ),
                       ],
@@ -721,10 +721,10 @@ class _CoverPending extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.voltNeon.withValues(alpha: 0.12),
+                  color: context.c.brandVolt.withValues(alpha: 0.12),
                   borderRadius: AppRadii.cardAll,
                 ),
-                child: const Icon(Icons.auto_stories_rounded, size: 20, color: AppColors.voltNeon),
+                child: Icon(Icons.auto_stories_rounded, size: 20, color: context.c.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -735,7 +735,7 @@ class _CoverPending extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       'Relato oficial con IA a partir de goles, asistencias y votos.',
-                      style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
                     ),
                   ],
                 ),
@@ -746,7 +746,7 @@ class _CoverPending extends StatelessWidget {
             const SizedBox(height: 12),
             Text(error!,
                 textAlign: TextAlign.center,
-                style: AppTypography.body(size: 11, color: AppColors.destructive)),
+                style: AppTypography.body(size: 11, color: context.c.destructive)),
           ],
           const SizedBox(height: 14),
           SizedBox(
@@ -754,21 +754,21 @@ class _CoverPending extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: generating ? null : onTap,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.voltNeon,
-                foregroundColor: AppColors.onPrimary,
+                backgroundColor: context.c.primary,
+                foregroundColor: context.c.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
               ),
               icon: generating
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 15,
                       height: 15,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary),
                     )
-                  : const Icon(Icons.auto_awesome, size: 16, color: AppColors.onPrimary),
+                  : Icon(Icons.auto_awesome, size: 16, color: context.c.onPrimary),
               label: Text(
                 generating ? 'ESCRIBIENDO RELATO...' : 'GENERAR CRÓNICA CON IA',
-                style: AppTypography.jersey(size: 14, color: AppColors.onPrimary, letterSpacing: 1),
+                style: AppTypography.jersey(size: 14, color: context.c.onPrimary, letterSpacing: 1),
               ),
             ),
           ),

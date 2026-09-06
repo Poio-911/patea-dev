@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
 import '../../../core/services/match_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/jersey_painter.dart';
@@ -115,11 +115,11 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
                     style: AppTypography.headline(
                         size: 12,
                         weight: FontWeight.w800,
-                        color: AppColors.textSecondary,
+                        color: context.c.textSecondary,
                         letterSpacing: 1.2)),
                 const SizedBox(height: 4),
                 Text('Tocá a un jugador para pasarlo al otro equipo.',
-                    style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               ],
             ),
           ),
@@ -128,7 +128,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: _TeamColumn(team: teamA, players: _playersOf(0), onTap: _move)),
-                Container(width: 1, color: AppColors.overlaySubtle),
+                Container(width: 1, color: context.c.overlaySubtle),
                 Expanded(child: _TeamColumn(team: teamB, players: _playersOf(1), onTap: _move)),
               ],
             ),
@@ -140,20 +140,20 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
               child: FilledButton(
                 onPressed: !_dirty || _saving ? null : _save,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.voltNeon,
-                  foregroundColor: AppColors.background,
+                  backgroundColor: context.c.primary,
+                  foregroundColor: context.c.background,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 child: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child:
-                            CircularProgressIndicator(strokeWidth: 2, color: AppColors.background))
+                            CircularProgressIndicator(strokeWidth: 2, color: context.c.background))
                     : Text(_dirty ? 'Guardar equipos' : 'Sin cambios',
                         style: AppTypography.headline(
-                            size: 14, weight: FontWeight.w800, color: AppColors.background)),
+                            size: 14, weight: FontWeight.w800, color: context.c.background)),
               ),
             ),
           ),
@@ -195,7 +195,7 @@ class _TeamColumn extends StatelessWidget {
                   style: AppTypography.headline(size: 13, weight: FontWeight.w800)),
               const SizedBox(height: 2),
               Text('${players.length} · media $avg',
-                  style: AppTypography.body(size: 10, color: AppColors.textSecondary)),
+                  style: AppTypography.body(size: 10, color: context.c.textSecondary)),
             ],
           ),
         ),
@@ -206,7 +206,7 @@ class _TeamColumn extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     child: Text('Sin jugadores',
                         textAlign: TextAlign.center,
-                        style: AppTypography.body(size: 11, color: AppColors.textSecondary)),
+                        style: AppTypography.body(size: 11, color: context.c.textSecondary)),
                   ),
                 )
               : ListView.builder(
@@ -240,7 +240,7 @@ class _TeamColumn extends StatelessWidget {
                                   style: AppTypography.code(
                                       size: 11,
                                       weight: FontWeight.w800,
-                                      color: AppColors.textSecondary)),
+                                      color: context.c.textSecondary)),
                           ],
                         ),
                       ),
@@ -283,12 +283,12 @@ class DuplicatePlayersAlert extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.45)),
+        border: Border.all(color: context.c.warning.withValues(alpha: 0.45)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 20, color: AppColors.warning),
+          Icon(Icons.warning_amber_rounded, size: 20, color: context.c.warning),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -305,20 +305,20 @@ class DuplicatePlayersAlert extends StatelessWidget {
                   isOne
                       ? 'Va a evaluarse a sí mismo y los puntajes van a salir mal.'
                       : '${names.join(', ')}. Las evaluaciones van a salir mal.',
-                  style: AppTypography.body(size: 11.5, color: AppColors.textSecondary),
+                  style: AppTypography.body(size: 11.5, color: context.c.textSecondary),
                 ),
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: () => EditTeamsSheet.show(context, match),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.warning,
+                    foregroundColor: context.c.warning,
                     padding: EdgeInsets.zero,
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text('Revisar equipos',
                       style: AppTypography.headline(
-                          size: 12, weight: FontWeight.w800, color: AppColors.warning)),
+                          size: 12, weight: FontWeight.w800, color: context.c.warning)),
                 ),
               ],
             ),

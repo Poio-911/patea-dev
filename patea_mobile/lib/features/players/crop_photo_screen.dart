@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/profile_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 
 /// Ajuste del encuadre de la foto de perfil.
@@ -110,7 +110,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
             TextButton(
               onPressed: _saving ? null : _reset,
               child: Text('Centrar',
-                  style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
+                  style: AppTypography.body(size: 13, color: context.c.textSecondary)),
             ),
         ],
       ),
@@ -122,7 +122,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
             child: Text(
               'Arrastrá para mover y pellizcá para acercar. Así se va a ver en tu carta.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 13, color: AppColors.textSecondary, height: 1.45),
+              style: AppTypography.body(size: 13, color: context.c.textSecondary, height: 1.45),
             ),
           ),
           const Spacer(),
@@ -136,10 +136,10 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
               height: _circle,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.voltNeon, width: 3),
+                border: Border.all(color: context.c.primary, width: 3),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.voltNeon.withValues(alpha: 0.25),
+                    color: context.c.brandVolt.withValues(alpha: 0.25),
                     blurRadius: 22,
                   ),
                 ],
@@ -153,15 +153,15 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     fit: BoxFit.cover,
                     memCacheWidth: 780,
                     placeholder: (_, _) => Container(
-                      color: AppColors.cardSurface,
-                      child: const Center(
-                        child: CircularProgressIndicator(color: AppColors.voltNeon),
+                      color: context.c.cardSurface,
+                      child: Center(
+                        child: CircularProgressIndicator(color: context.c.primary),
                       ),
                     ),
                     errorWidget: (_, _, _) => Container(
-                      color: AppColors.cardSurface,
+                      color: context.c.cardSurface,
                       child: Icon(Icons.broken_image_outlined,
-                          color: AppColors.textSecondary, size: 40),
+                          color: context.c.textSecondary, size: 40),
                     ),
                   ),
                 ),
@@ -176,24 +176,24 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Row(
               children: [
-                Icon(Icons.zoom_out, size: 18, color: AppColors.textSecondary),
+                Icon(Icons.zoom_out, size: 18, color: context.c.textSecondary),
                 Expanded(
                   child: Slider(
                     value: _zoom,
                     min: _minZoom,
                     max: _maxZoom,
-                    activeColor: AppColors.voltNeon,
-                    inactiveColor: AppColors.overlayLine,
+                    activeColor: context.c.primary,
+                    inactiveColor: context.c.overlayLine,
                     onChanged: _saving ? null : (v) => setState(() => _zoom = v),
                   ),
                 ),
-                Icon(Icons.zoom_in, size: 18, color: AppColors.textSecondary),
+                Icon(Icons.zoom_in, size: 18, color: context.c.textSecondary),
               ],
             ),
           ),
           Text(
             '${_zoom.toStringAsFixed(1)}×',
-            style: AppTypography.code(size: 11, color: AppColors.textSecondary),
+            style: AppTypography.code(size: 11, color: context.c.textSecondary),
           ),
 
           const Spacer(),
@@ -204,7 +204,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
               child: Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: AppTypography.body(size: 12, color: AppColors.destructive),
+                style: AppTypography.body(size: 12, color: context.c.destructive),
               ),
             ),
 
@@ -215,22 +215,22 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
               child: ElevatedButton.icon(
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.voltNeon,
-                  foregroundColor: AppColors.onPrimary,
+                  backgroundColor: context.c.primary,
+                  foregroundColor: context.c.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary),
                       )
                     : const Icon(Icons.check, size: 18),
                 label: Text(
                   _saving ? 'Guardando…' : 'Usar este encuadre',
                   style: AppTypography.headline(
-                      size: 14, weight: FontWeight.w700, color: AppColors.onPrimary),
+                      size: 14, weight: FontWeight.w700, color: context.c.onPrimary),
                 ),
               ),
             ),

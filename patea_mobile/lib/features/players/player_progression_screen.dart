@@ -3,7 +3,7 @@ import '../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/firestore_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/ovr_progression_chart.dart';
 
@@ -29,16 +29,16 @@ class PlayerProgressionScreen extends ConsumerWidget {
         ),
       ),
       body: playerAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
         error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: AppColors.textSecondary)),
+          child: Text('Error: $err', style: AppTypography.body(color: context.c.textSecondary)),
         ),
         data: (player) {
           if (player == null) {
             return Center(
               child: Text(
                 'Jugador no encontrado.',
-                style: AppTypography.body(color: AppColors.textSecondary),
+                style: AppTypography.body(color: context.c.textSecondary),
               ),
             );
           }
@@ -50,24 +50,24 @@ class PlayerProgressionScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 'Tu evolución a lo largo de los partidos evaluados.',
-                style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+                style: AppTypography.body(size: 13, color: context.c.textSecondary),
               ),
               const SizedBox(height: 22),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: context.c.card,
                   borderRadius: AppRadii.surfaceAll,
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.c.border),
                 ),
                 child: historyAsync.when(
-                  loading: () => const SizedBox(
+                  loading: () => SizedBox(
                     height: 200,
-                    child: Center(child: CircularProgressIndicator(color: AppColors.voltNeon)),
+                    child: Center(child: CircularProgressIndicator(color: context.c.primary)),
                   ),
                   error: (err, _) => Text(
                     'No se pudo cargar la progresión.',
-                    style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary),
                   ),
                   data: (history) => OvrProgressionChart(
                     player: player,

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/services/player_profile_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/jersey_painter.dart';
 
@@ -32,7 +32,7 @@ class PlayerTeamsList extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.checkroom, size: 18, color: AppColors.voltNeon),
+                Icon(Icons.checkroom, size: 18, color: context.c.primary),
                 const SizedBox(width: 8),
                 Text(
                   'EQUIPOS ACTUALES',
@@ -75,15 +75,15 @@ class PlayerTeamsList extends ConsumerWidget {
                                   height: 24,
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
-                                    color: AppColors.cardSurface,
+                                    color: context.c.cardSurface,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: AppColors.background, width: 2),
+                                    border: Border.all(color: context.c.background, width: 2),
                                   ),
                                   child: Text(
                                     number > 0 ? '$number' : '#',
                                     style: AppTypography.code(
                                       size: 10,
-                                      color: AppColors.textPrimary,
+                                      color: context.c.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -99,7 +99,7 @@ class PlayerTeamsList extends ConsumerWidget {
                             style: AppTypography.body(
                               size: 11,
                               weight: FontWeight.w600,
-                              color: AppColors.textSecondary,
+                              color: context.c.textSecondary,
                             ),
                           ),
                         ],

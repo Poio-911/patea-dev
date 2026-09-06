@@ -18,7 +18,7 @@ import '../../core/services/firestore_service.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/match_service.dart';
 import '../../core/services/push_permission.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/dates.dart';
@@ -112,17 +112,17 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.card,
+        backgroundColor: context.c.card,
         title: Text('¿Borrar este partido?', style: AppTypography.headline(size: 16)),
         content: Text(
           'Esta acción es permanente y no se puede deshacer. Los jugadores inscriptos recibirán una notificación de cancelación.',
-          style: AppTypography.body(color: AppColors.textSecondary, size: 13),
+          style: AppTypography.body(color: context.c.textSecondary, size: 13),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive),
+            style: ElevatedButton.styleFrom(backgroundColor: context.c.destructive),
             child: const Text('Eliminar'),
           ),
         ],
@@ -150,7 +150,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.card,
+          backgroundColor: context.c.card,
           title: Text('Reprogramar partido', style: AppTypography.headline(size: 16)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -197,9 +197,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         setDialogState(() => submitting = false);
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+              style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
               child: submitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                   : const Text('Guardar'),
             ),
           ],
@@ -220,7 +220,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.card,
+          backgroundColor: context.c.card,
           title: Text('Cambiar cancha', style: AppTypography.headline(size: 16)),
           content: SizedBox(
             width: double.maxFinite,
@@ -251,7 +251,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       children: suggestions
                           .map((s) => ListTile(
                                 dense: true,
-                                title: Text(s.label, style: AppTypography.body(color: AppColors.textSecondary, size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                title: Text(s.label, style: AppTypography.body(color: context.c.textSecondary, size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                                 onTap: () => setDialogState(() {
                                   selected = s;
                                   controller.text = s.label;
@@ -286,9 +286,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         setDialogState(() => submitting = false);
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.voltNeon, foregroundColor: AppColors.onPrimary),
+              style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
               child: submitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
                   : const Text('Guardar'),
             ),
           ],
@@ -298,11 +298,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 
   void _showSnack(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: AppColors.success));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: context.c.success));
   }
 
   void _showError(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: AppColors.destructive));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: context.c.destructive));
   }
 
   Future<void> _openMaps(MatchModel match) async {
@@ -325,7 +325,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           return Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(backgroundColor: Colors.transparent),
-            body: Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: AppColors.textSecondary))),
+            body: Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: context.c.textSecondary))),
           );
         }
 
@@ -342,10 +342,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            leading: const BackButton(color: AppColors.textPrimary),
+            leading: BackButton(color: context.c.textPrimary),
             actions: [
               IconButton(
-                icon: const Icon(Icons.share_outlined, size: 20, color: AppColors.textPrimary),
+                icon: Icon(Icons.share_outlined, size: 20, color: context.c.textPrimary),
                 tooltip: 'Compartir partido',
                 onPressed: () {
                   SharePlus.instance.share(
@@ -358,10 +358,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               if (isOwner)
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert_rounded),
-                  color: AppColors.card,
+                  color: context.c.card,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppRadii.cardAll,
-                    side: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
+                    side: BorderSide(color: context.c.border.withValues(alpha: 0.4)),
                   ),
                   onSelected: (action) {
                     switch (action) {
@@ -386,7 +386,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             children: [
                               const Icon(Icons.calendar_month_outlined, size: 18),
                               const SizedBox(width: 10),
-                              Text('Reprogramar partido', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
+                              Text('Reprogramar partido', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
                             ],
                           ),
                         ),
@@ -396,7 +396,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             children: [
                               const Icon(Icons.map_outlined, size: 18),
                               const SizedBox(width: 10),
-                              Text('Cambiar cancha', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
+                              Text('Cambiar cancha', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
                             ],
                           ),
                         ),
@@ -406,9 +406,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            const Icon(Icons.delete_outline, size: 18, color: AppColors.destructive),
+                            Icon(Icons.delete_outline, size: 18, color: context.c.destructive),
                             const SizedBox(width: 10),
-                            Text('Eliminar partido', style: AppTypography.body(size: 13, color: AppColors.destructive)),
+                            Text('Eliminar partido', style: AppTypography.body(size: 13, color: context.c.destructive)),
                           ],
                         ),
                       ),
@@ -503,7 +503,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       ),
       error: (e, _) => Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(child: Text('Error: $e', style: AppTypography.body(color: AppColors.destructive))),
+        body: Center(child: Text('Error: $e', style: AppTypography.body(color: context.c.destructive))),
       ),
     );
   }
@@ -562,7 +562,7 @@ class _HeroCard extends StatelessWidget {
                 colors: [
                   Colors.black.withValues(alpha: 0.75),
                   Colors.black.withValues(alpha: 0.40),
-                  AppColors.background,
+                  context.c.background,
                 ],
               ),
             ),
@@ -586,7 +586,7 @@ class _HeroCard extends StatelessWidget {
                   style: AppTypography.code(
                     size: 11,
                     weight: FontWeight.w800,
-                    color: isLive ? AppColors.destructive : AppColors.voltNeon,
+                    color: isLive ? context.c.destructive : context.c.primary,
                   ).copyWith(letterSpacing: 2.0),
                 ),
                 const SizedBox(height: 8),
@@ -598,7 +598,7 @@ class _HeroCard extends StatelessWidget {
                     size: 34,
                     height: 1.05,
                     letterSpacing: 1.2,
-                    color: AppColors.textPrimary,
+                    color: context.c.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -606,7 +606,7 @@ class _HeroCard extends StatelessWidget {
                 // Fecha y hora protagonista
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.voltNeon),
+                    Icon(Icons.calendar_today_rounded, size: 16, color: context.c.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -614,7 +614,7 @@ class _HeroCard extends StatelessWidget {
                         style: AppTypography.jersey(
                           size: 18,
                           letterSpacing: 0.8,
-                          color: AppColors.textPrimary,
+                          color: context.c.textPrimary,
                         ),
                       ),
                     ),
@@ -632,7 +632,7 @@ class _HeroCard extends StatelessWidget {
                       Icon(
                         Icons.place_outlined,
                         size: 17,
-                        color: hasVenue ? AppColors.voltNeon : AppColors.textSecondary,
+                        color: hasVenue ? context.c.primary : context.c.textSecondary,
                       ),
                       const SizedBox(width: 7),
                       Flexible(
@@ -643,13 +643,13 @@ class _HeroCard extends StatelessWidget {
                           style: AppTypography.body(
                             size: 14.5,
                             weight: FontWeight.w600,
-                            color: hasVenue ? AppColors.textPrimary : AppColors.textSecondary,
+                            color: hasVenue ? context.c.textPrimary : context.c.textSecondary,
                           ),
                         ),
                       ),
                       if (hasVenue) ...[
                         const SizedBox(width: 5),
-                        const Icon(Icons.arrow_outward_rounded, size: 12, color: AppColors.voltNeon),
+                        Icon(Icons.arrow_outward_rounded, size: 12, color: context.c.primary),
                       ],
                     ],
                   ),
@@ -681,7 +681,7 @@ class _TeamsRoster extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '${match.players.length} JUGADORES',
-              style: AppTypography.code(size: 9, weight: FontWeight.w700, color: AppColors.textSecondary)
+              style: AppTypography.code(size: 9, weight: FontWeight.w700, color: context.c.textSecondary)
                   .copyWith(letterSpacing: 1.6),
             ),
           ],
@@ -742,7 +742,7 @@ class _TeamBlock extends ConsumerWidget {
                   softWrap: false,
                   style: AppTypography.jersey(
                     size: 56,
-                    color: AppColors.overlaySubtle,
+                    color: context.c.overlaySubtle,
                     letterSpacing: -1,
                     height: 1,
                   ),
@@ -759,7 +759,7 @@ class _TeamBlock extends ConsumerWidget {
                 if (team.jersey != null)
                   JerseyWidget(jersey: team.jersey!, size: 44)
                 else
-                  Icon(Icons.checkroom, size: 38, color: AppColors.textSecondary),
+                  Icon(Icons.checkroom, size: 38, color: context.c.textSecondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -782,8 +782,8 @@ class _TeamBlock extends ConsumerWidget {
                               style: AppTypography.jersey(
                                 size: 28,
                                 color: (team.score > (match.teamA == team ? (match.teamB?.score ?? 0) : (match.teamA?.score ?? 0)))
-                                    ? AppColors.voltNeon
-                                    : AppColors.textPrimary,
+                                    ? context.c.primary
+                                    : context.c.textPrimary,
                               ),
                             ),
                           ],
@@ -797,23 +797,23 @@ class _TeamBlock extends ConsumerWidget {
                         children: [
                           Text(
                             '${team.players.length} JUGADORES',
-                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: AppColors.textSecondary)
+                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: context.c.textSecondary)
                                 .copyWith(letterSpacing: 1.4),
                           ),
                           if (avgOvr != null) ...[
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
-                                color: AppColors.voltNeon.withValues(alpha: 0.12),
+                                color: context.c.brandVolt.withValues(alpha: 0.12),
                                 borderRadius: AppRadii.hairAll,
-                                border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
+                                border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3)),
                               ),
                               child: Text(
                                 'OVR PROM. ${avgOvr.toStringAsFixed(1)}',
                                 style: AppTypography.code(
                                   size: 8,
                                   weight: FontWeight.w800,
-                                  color: AppColors.voltNeon,
+                                  color: context.c.primary,
                                 ),
                               ),
                             ),
@@ -919,14 +919,14 @@ class _MosaicPlayer extends StatelessWidget {
                           style: AppTypography.code(
                             size: 8.5,
                             weight: FontWeight.w700,
-                            color: AppColors.getPositionColor(player.position),
+                            color: context.c.positionColor(player.position),
                           ),
                         ),
                         if (player.ovr > 0) ...[
                           const SizedBox(width: 4),
                           Text(
                             '${player.ovr}',
-                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: AppColors.textSecondary),
+                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: context.c.textSecondary),
                           ),
                         ],
                       ],
@@ -988,27 +988,27 @@ class _PlayerMatchBadges extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: AppColors.goldBorder.withValues(alpha: 0.2),
+                color: context.c.goldBorder.withValues(alpha: 0.2),
                 borderRadius: AppRadii.hairAll,
-                border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.5)),
+                border: Border.all(color: context.c.goldBorder.withValues(alpha: 0.5)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.emoji_events_rounded, size: 9, color: AppColors.goldBorder),
+                  Icon(Icons.emoji_events_rounded, size: 9, color: context.c.goldBorder),
                   const SizedBox(width: 2),
-                  Text('FIGURA', style: AppTypography.code(size: 7.5, weight: FontWeight.w800, color: AppColors.goldBorder)),
+                  Text('FIGURA', style: AppTypography.code(size: 7.5, weight: FontWeight.w800, color: context.c.goldBorder)),
                 ],
               ),
             ),
           if (goals > 0)
-            _MiniBadge(label: goals > 1 ? '⚽ $goals' : '⚽', color: AppColors.voltNeon),
+            _MiniBadge(label: goals > 1 ? '⚽ $goals' : '⚽', color: context.c.primary),
           if (assists > 0)
-            _MiniBadge(label: assists > 1 ? '👟 $assists' : '👟', color: AppColors.textSecondary),
+            _MiniBadge(label: assists > 1 ? '👟 $assists' : '👟', color: context.c.textSecondary),
           if (reds > 0)
-            _MiniBadge(label: '🟥', color: AppColors.destructive),
+            _MiniBadge(label: '🟥', color: context.c.destructive),
           if (yellows > 0)
-            _MiniBadge(label: '🟨', color: AppColors.warning),
+            _MiniBadge(label: '🟨', color: context.c.warning),
         ],
       ),
     );
@@ -1049,23 +1049,23 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.40),
+        color: context.c.card.withValues(alpha: 0.40),
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.groups_outlined, size: 18, color: AppColors.textSecondary),
+              Icon(Icons.groups_outlined, size: 18, color: context.c.textSecondary),
               const SizedBox(width: 8),
               Text('Jugadores Confirmados', style: AppTypography.headline(size: 15)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.surfaceAll),
-                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w700)),
+                decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.surfaceAll),
+                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: context.c.textSecondary, size: 11, weight: FontWeight.w700)),
               ),
             ],
           ),
@@ -1074,7 +1074,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text('Todavía no hay jugadores confirmados', style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
+                child: Text('Todavía no hay jugadores confirmados', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               ),
             )
           else
@@ -1112,7 +1112,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                               ),
                               Text(
                                 '${p.position} ${p.ovr > 0 ? p.ovr : ""}'.trim(),
-                                style: AppTypography.code(size: 8.5, color: AppColors.getPositionColor(p.position)),
+                                style: AppTypography.code(size: 8.5, color: context.c.positionColor(p.position)),
                               ),
                             ],
                           ),
@@ -1164,9 +1164,9 @@ class _OrganizerPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.55),
+        color: context.c.card.withValues(alpha: 0.55),
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1176,15 +1176,15 @@ class _OrganizerPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.voltNeon.withValues(alpha: 0.15),
+                  color: context.c.brandVolt.withValues(alpha: 0.15),
                   borderRadius: AppRadii.chipAll,
                 ),
-                child: const Icon(Icons.admin_panel_settings_rounded, size: 16, color: AppColors.voltNeon),
+                child: Icon(Icons.admin_panel_settings_rounded, size: 16, color: context.c.primary),
               ),
               const SizedBox(width: 8),
               Text(
                 'PANEL DEL ORGANIZADOR',
-                style: AppTypography.code(size: 10, weight: FontWeight.w800, color: AppColors.voltNeon)
+                style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.primary)
                     .copyWith(letterSpacing: 1.4),
               ),
             ],
@@ -1201,9 +1201,9 @@ class _OrganizerPanel extends StatelessWidget {
                     icon: const Icon(Icons.person_search_outlined, size: 15),
                     label: const Text('Falta uno'),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                      foregroundColor: AppColors.textPrimary,
-                      side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+                      backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                      foregroundColor: context.c.textPrimary,
+                      side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                     ),
@@ -1214,9 +1214,9 @@ class _OrganizerPanel extends StatelessWidget {
                     icon: const Icon(Icons.swap_horiz_rounded, size: 15),
                     label: const Text('Armar equipos'),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                      foregroundColor: AppColors.textPrimary,
-                      side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+                      backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                      foregroundColor: context.c.textPrimary,
+                      side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                     ),
@@ -1224,13 +1224,13 @@ class _OrganizerPanel extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: isShuffling ? null : onShuffle,
                   icon: isShuffling
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.voltNeon))
+                      ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary))
                       : const Icon(Icons.shuffle_rounded, size: 15),
                   label: Text(hasTeams ? 'Sortear' : 'Generar'),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                    foregroundColor: AppColors.voltNeon,
-                    side: BorderSide(color: AppColors.voltNeon.withValues(alpha: 0.4)),
+                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                    foregroundColor: context.c.primary,
+                    side: BorderSide(color: context.c.brandVolt.withValues(alpha: 0.4)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
@@ -1240,9 +1240,9 @@ class _OrganizerPanel extends StatelessWidget {
                   icon: const Icon(Icons.calendar_month_outlined, size: 15),
                   label: const Text('Reprogramar'),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                    foregroundColor: AppColors.textPrimary,
-                    side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                    foregroundColor: context.c.textPrimary,
+                    side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
@@ -1252,9 +1252,9 @@ class _OrganizerPanel extends StatelessWidget {
                   icon: const Icon(Icons.map_outlined, size: 15),
                   label: const Text('Cambiar Cancha'),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                    foregroundColor: AppColors.textPrimary,
-                    side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                    foregroundColor: context.c.textPrimary,
+                    side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
@@ -1263,12 +1263,12 @@ class _OrganizerPanel extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: isFinishing ? null : onFinish,
                     icon: isFinishing
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
-                        : const Icon(Icons.check_circle_outline, size: 15, color: AppColors.onPrimary),
-                    label: Text('Finalizar Partido', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.onPrimary)),
+                        ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                        : Icon(Icons.check_circle_outline, size: 15, color: context.c.onPrimary),
+                    label: Text('Finalizar Partido', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.onPrimary)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.voltNeon,
-                      foregroundColor: AppColors.onPrimary,
+                      backgroundColor: context.c.primary,
+                      foregroundColor: context.c.onPrimary,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                     ),
@@ -1277,11 +1277,11 @@ class _OrganizerPanel extends StatelessWidget {
               if (isFinished) ...[
                 ElevatedButton.icon(
                   onPressed: () => context.push('/matches/${match.id}/evaluate'),
-                  icon: const Icon(Icons.fact_check_rounded, size: 15, color: AppColors.onPrimary),
-                  label: Text('Ver Evaluaciones', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: AppColors.onPrimary)),
+                  icon: Icon(Icons.fact_check_rounded, size: 15, color: context.c.onPrimary),
+                  label: Text('Ver Evaluaciones', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.onPrimary)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.voltNeon,
-                    foregroundColor: AppColors.onPrimary,
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.onPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
@@ -1289,12 +1289,12 @@ class _OrganizerPanel extends StatelessWidget {
               ],
               OutlinedButton.icon(
                 onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded, size: 15, color: AppColors.destructive),
-                label: Text('Eliminar Partido', style: AppTypography.body(size: 13, color: AppColors.destructive)),
+                icon: Icon(Icons.delete_outline_rounded, size: 15, color: context.c.destructive),
+                label: Text('Eliminar Partido', style: AppTypography.body(size: 13, color: context.c.destructive)),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                  foregroundColor: AppColors.destructive,
-                  side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.4)),
+                  backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                  foregroundColor: context.c.destructive,
+                  side: BorderSide(color: context.c.destructive.withValues(alpha: 0.4)),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
@@ -1345,48 +1345,48 @@ class _StickyActionBar extends StatelessWidget {
       actionWidget = ElevatedButton.icon(
         onPressed: () => context.push('/matches/${match.id}/live'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.destructive,
-          foregroundColor: AppColors.textPrimary,
+          backgroundColor: context.c.destructive,
+          foregroundColor: context.c.textPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 4,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
-        icon: const Icon(Icons.sensors_rounded, size: 20, color: AppColors.textPrimary),
+        icon: Icon(Icons.sensors_rounded, size: 20, color: context.c.textPrimary),
         label: Text(
           isOwner ? 'DIRIGIR EN VIVO' : 'SEGUIR EN VIVO',
-          style: AppTypography.jersey(size: 16, color: AppColors.textPrimary, letterSpacing: 1.2),
+          style: AppTypography.jersey(size: 16, color: context.c.textPrimary, letterSpacing: 1.2),
         ),
       );
     } else if (isCompleted && !isCompetition) {
       actionWidget = ElevatedButton.icon(
         onPressed: () => context.push(isOwner ? '/matches/${match.id}/evaluate' : '/evaluations/${match.id}'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.voltNeon,
-          foregroundColor: AppColors.onPrimary,
+          backgroundColor: context.c.primary,
+          foregroundColor: context.c.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 4,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
-        icon: Icon(isOwner ? Icons.fact_check_rounded : Icons.rate_review_rounded, size: 20, color: AppColors.onPrimary),
+        icon: Icon(isOwner ? Icons.fact_check_rounded : Icons.rate_review_rounded, size: 20, color: context.c.onPrimary),
         label: Text(
           isOwner ? 'VER EVALUACIONES' : 'EVALUAR PARTIDO',
-          style: AppTypography.jersey(size: 16, color: AppColors.onPrimary, letterSpacing: 1.2),
+          style: AppTypography.jersey(size: 16, color: context.c.onPrimary, letterSpacing: 1.2),
         ),
       );
     } else if (match.status == 'evaluated') {
       actionWidget = ElevatedButton.icon(
         onPressed: () => context.push('/matches/${match.id}/evaluate'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.voltNeon,
-          foregroundColor: AppColors.onPrimary,
+          backgroundColor: context.c.primary,
+          foregroundColor: context.c.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 4,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
-        icon: const Icon(Icons.insights_rounded, size: 20, color: AppColors.onPrimary),
+        icon: Icon(Icons.insights_rounded, size: 20, color: context.c.onPrimary),
         label: Text(
           'VER EVALUACIONES',
-          style: AppTypography.jersey(size: 16, color: AppColors.onPrimary, letterSpacing: 1.2),
+          style: AppTypography.jersey(size: 16, color: context.c.onPrimary, letterSpacing: 1.2),
         ),
       );
     } else if (match.status == 'upcoming' && !isCompetition) {
@@ -1398,13 +1398,13 @@ class _StickyActionBar extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () => context.push('/matches/${match.id}/live'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cardSurface,
-                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: context.c.cardSurface,
+                  foregroundColor: context.c.textPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                label: Text('DIRIGIR', style: AppTypography.jersey(size: 15, color: AppColors.textPrimary)),
+                label: Text('DIRIGIR', style: AppTypography.jersey(size: 15, color: context.c.textPrimary)),
               ),
             ),
             if (canFinalize) ...[
@@ -1413,15 +1413,15 @@ class _StickyActionBar extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: isFinishing ? null : onFinish,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.voltNeon,
-                    foregroundColor: AppColors.onPrimary,
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   icon: isFinishing
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
-                      : const Icon(Icons.check_circle_outline, size: 18, color: AppColors.onPrimary),
-                  label: Text('FINALIZAR', style: AppTypography.jersey(size: 15, color: AppColors.onPrimary)),
+                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                      : Icon(Icons.check_circle_outline, size: 18, color: context.c.onPrimary),
+                  label: Text('FINALIZAR', style: AppTypography.jersey(size: 15, color: context.c.onPrimary)),
                 ),
               ),
             ],
@@ -1435,18 +1435,18 @@ class _StickyActionBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
+                  color: context.c.cardSurface,
                   borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.35)),
+                  border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.35)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle_rounded, size: 16, color: AppColors.voltNeon),
+                    Icon(Icons.check_circle_rounded, size: 16, color: context.c.primary),
                     const SizedBox(width: 7),
                     Text(
                       'ANOTADO',
-                      style: AppTypography.code(size: 11, weight: FontWeight.w800, color: AppColors.voltNeon).copyWith(letterSpacing: 0.8),
+                      style: AppTypography.code(size: 11, weight: FontWeight.w800, color: context.c.primary).copyWith(letterSpacing: 0.8),
                     ),
                   ],
                 ),
@@ -1456,18 +1456,18 @@ class _StickyActionBar extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: isJoining ? null : onJoinLeave,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.cardSurface.withValues(alpha: 0.5),
-                    foregroundColor: AppColors.textSecondary,
-                    side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                    foregroundColor: context.c.textSecondary,
+                    side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   icon: isJoining
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textSecondary))
-                      : const Icon(Icons.logout_rounded, size: 16, color: AppColors.textSecondary),
+                      ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.textSecondary))
+                      : Icon(Icons.logout_rounded, size: 16, color: context.c.textSecondary),
                   label: Text(
                     'Darme de baja',
-                    style: AppTypography.body(size: 13, weight: FontWeight.w600, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 13, weight: FontWeight.w600, color: context.c.textSecondary),
                   ),
                 ),
               ),
@@ -1477,16 +1477,16 @@ class _StickyActionBar extends StatelessWidget {
           actionWidget = Container(
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
-              color: AppColors.cardSurface,
+              color: context.c.cardSurface,
               borderRadius: AppRadii.cardAll,
-              border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
+              border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.hourglass_top_rounded, size: 18, color: AppColors.voltNeon),
+                Icon(Icons.hourglass_top_rounded, size: 18, color: context.c.primary),
                 const SizedBox(width: 8),
-                Text('SOLICITUD ENVIADA', style: AppTypography.jersey(size: 14, color: AppColors.voltNeon, letterSpacing: 0.8)),
+                Text('SOLICITUD ENVIADA', style: AppTypography.jersey(size: 14, color: context.c.primary, letterSpacing: 0.8)),
               ],
             ),
           );
@@ -1494,30 +1494,30 @@ class _StickyActionBar extends StatelessWidget {
           actionWidget = Container(
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
-              color: AppColors.cardSurface,
+              color: context.c.cardSurface,
               borderRadius: AppRadii.cardAll,
-              border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+              border: Border.all(color: context.c.border.withValues(alpha: 0.3)),
             ),
             child: Center(
-              child: Text('PARTIDO COMPLETO', style: AppTypography.jersey(size: 15, color: AppColors.textSecondary, letterSpacing: 1)),
+              child: Text('PARTIDO COMPLETO', style: AppTypography.jersey(size: 15, color: context.c.textSecondary, letterSpacing: 1)),
             ),
           );
         } else {
           actionWidget = ElevatedButton.icon(
             onPressed: isJoining ? null : onJoinLeave,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.voltNeon,
-              foregroundColor: AppColors.onPrimary,
+              backgroundColor: context.c.primary,
+              foregroundColor: context.c.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
             ),
             icon: isJoining
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
-                : Icon(needsApproval ? Icons.how_to_reg_rounded : Icons.sports_soccer_rounded, size: 20, color: AppColors.onPrimary),
+                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                : Icon(needsApproval ? Icons.how_to_reg_rounded : Icons.sports_soccer_rounded, size: 20, color: context.c.onPrimary),
             label: Text(
               needsApproval ? 'PEDIR LUGAR' : 'ANOTARME AL PARTIDO',
-              style: AppTypography.jersey(size: 16, color: AppColors.onPrimary, letterSpacing: 1.2),
+              style: AppTypography.jersey(size: 16, color: context.c.onPrimary, letterSpacing: 1.2),
             ),
           );
         }
@@ -1534,7 +1534,7 @@ class _StickyActionBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF0B0E14).withValues(alpha: 0.88),
             border: Border(
-              top: BorderSide(color: AppColors.border.withValues(alpha: 0.35)),
+              top: BorderSide(color: context.c.border.withValues(alpha: 0.35)),
             ),
           ),
           child: actionWidget,
@@ -1570,9 +1570,9 @@ class _ChatPreviewCard extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.40),
+        color: context.c.card.withValues(alpha: 0.40),
         borderRadius: AppRadii.cardAll,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -1586,7 +1586,7 @@ class _ChatPreviewCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.chat_bubble_outline_rounded, color: AppColors.voltNeon, size: 18),
+                    Icon(Icons.chat_bubble_outline_rounded, color: context.c.primary, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1600,12 +1600,12 @@ class _ChatPreviewCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: AppColors.voltNeon.withValues(alpha: 0.12),
+                        color: context.c.brandVolt.withValues(alpha: 0.12),
                         borderRadius: AppRadii.cardAll,
                       ),
                       child: Text(
                         'ABRIR',
-                        style: AppTypography.code(size: 9.5, weight: FontWeight.w800, color: AppColors.voltNeon)
+                        style: AppTypography.code(size: 9.5, weight: FontWeight.w800, color: context.c.primary)
                             .copyWith(letterSpacing: 1),
                       ),
                     ),
@@ -1615,14 +1615,14 @@ class _ChatPreviewCard extends ConsumerWidget {
                 if (lastMsg == null)
                   Text(
                     'Sin mensajes aún. Tocá para iniciar la charla.',
-                    style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary),
                   )
                 else
                   Text(
                     '${(lastMsg['senderName'] as String?) ?? "Jugador"}: ${(lastMsg['text'] as String?) ?? ""}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 12.5, color: AppColors.textSecondary),
+                    style: AppTypography.body(size: 12.5, color: context.c.textSecondary),
                   ),
               ],
             ),
@@ -1644,7 +1644,7 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
         decoration: BoxDecoration(
           color: const Color(0xFF0F141C),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+          border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         child: Column(
@@ -1654,7 +1654,7 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
               width: 38,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.overlayStrong,
+                color: context.c.overlayStrong,
                 borderRadius: AppRadii.hairAll,
               ),
             ),
@@ -1699,8 +1699,8 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
                 icon: const Icon(Icons.badge_outlined, size: 16),
                 label: const Text('Ver perfil completo'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: BorderSide(color: AppColors.border.withValues(alpha: 0.6)),
+                  foregroundColor: context.c.textPrimary,
+                  side: BorderSide(color: context.c.border.withValues(alpha: 0.6)),
                 ),
               ),
           ],
@@ -1769,9 +1769,9 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
       height: MediaQuery.of(context).size.height * 0.82,
       padding: EdgeInsets.only(bottom: keyboardHeight),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.c.background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -1780,7 +1780,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
             width: 38,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.overlayStrong,
+              color: context.c.overlayStrong,
               borderRadius: AppRadii.hairAll,
             ),
           ),
@@ -1788,19 +1788,19 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
             child: Row(
               children: [
-                Icon(Icons.chat_bubble_outline_rounded, color: AppColors.voltNeon, size: 18),
+                Icon(Icons.chat_bubble_outline_rounded, color: context.c.primary, size: 18),
                 const SizedBox(width: 8),
                 Text('Chat del Partido', style: AppTypography.headline(size: 16)),
                 const Spacer(),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  color: AppColors.textSecondary,
+                  color: context.c.textSecondary,
                 ),
               ],
             ),
           ),
-          Container(height: 1, color: AppColors.border.withValues(alpha: 0.3)),
+          Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
@@ -1813,7 +1813,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                 if (docs.isEmpty) {
                   return Center(
                     child: Text('¡Sé el primero en saludar al grupo!',
-                        style: AppTypography.body(size: 13, color: AppColors.textSecondary)),
+                        style: AppTypography.body(size: 13, color: context.c.textSecondary)),
                   );
                 }
                 final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -1831,10 +1831,10 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                         constraints: const BoxConstraints(maxWidth: 270),
                         decoration: BoxDecoration(
-                          color: isMine ? AppColors.voltNeon.withValues(alpha: 0.18) : AppColors.cardSurface,
+                          color: isMine ? context.c.brandVolt.withValues(alpha: 0.18) : context.c.cardSurface,
                           borderRadius: AppRadii.cardAll,
                           border: Border.all(
-                            color: isMine ? AppColors.voltNeon.withValues(alpha: 0.35) : AppColors.border.withValues(alpha: 0.25),
+                            color: isMine ? context.c.brandVolt.withValues(alpha: 0.35) : context.c.border.withValues(alpha: 0.25),
                           ),
                         ),
                         child: Column(
@@ -1844,9 +1844,9 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                             if (!isMine)
                               Text(
                                 data['senderName'] as String? ?? 'Usuario',
-                                style: AppTypography.body(size: 10.5, weight: FontWeight.w700, color: AppColors.voltNeon),
+                                style: AppTypography.body(size: 10.5, weight: FontWeight.w700, color: context.c.primary),
                               ),
-                            Text(data['text'] as String? ?? '', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
+                            Text(data['text'] as String? ?? '', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
                           ],
                         ),
                       ),
@@ -1856,7 +1856,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
               },
             ),
           ),
-          Container(height: 1, color: AppColors.border.withValues(alpha: 0.3)),
+          Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -1877,7 +1877,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                   onPressed: _sending ? null : _send,
                   icon: _sending
                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(Icons.send_rounded, color: AppColors.voltNeon),
+                      : Icon(Icons.send_rounded, color: context.c.primary),
                 ),
               ],
             ),

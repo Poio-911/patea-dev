@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/models/group_model.dart';
 import '../../../core/models/player_model.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// Una fila editable del plantel.
@@ -114,8 +114,8 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         height: 300,
-        decoration: const BoxDecoration(
-          color: AppColors.popover,
+        decoration: BoxDecoration(
+          color: context.c.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
@@ -140,7 +140,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                         i == 0 ? 'sin número' : '$i',
                         style: AppTypography.sportNumber(
                           size: i == 0 ? 16 : 24,
-                          color: i == 0 ? AppColors.textSecondary : AppColors.textPrimary,
+                          color: i == 0 ? context.c.textSecondary : context.c.textPrimary,
                         ),
                       ),
                     ),
@@ -178,8 +178,8 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.popover,
+        decoration: BoxDecoration(
+          color: context.c.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
@@ -189,7 +189,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
               width: 48,
               height: 5,
               decoration: BoxDecoration(
-                color: AppColors.textSecondary.withValues(alpha: 0.3),
+                color: context.c.textSecondary.withValues(alpha: 0.3),
                 borderRadius: AppRadii.hairAll,
               ),
             ),
@@ -205,7 +205,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                             style: AppTypography.headline(size: 19, weight: FontWeight.w800)),
                         Text(
                           '$_starterCount ${_starterCount == 1 ? 'titular' : 'titulares'} · $_subCount ${_subCount == 1 ? 'suplente' : 'suplentes'}',
-                          style: AppTypography.body(size: 12, color: AppColors.textSecondary),
+                          style: AppTypography.body(size: 12, color: context.c.textSecondary),
                         ),
                       ],
                     ),
@@ -214,8 +214,8 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                     onPressed: _autoNumber,
                     icon: const Icon(Icons.auto_fix_high, size: 15),
                     label: Text('Autonumerar',
-                        style: AppTypography.body(color: AppColors.textSecondary, size: 12, weight: FontWeight.w600)),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.voltNeon),
+                        style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w600)),
+                    style: TextButton.styleFrom(foregroundColor: context.c.primary),
                   ),
                 ],
               ),
@@ -227,12 +227,12 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                 margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.12),
+                  color: context.c.warning.withValues(alpha: 0.12),
                   borderRadius: AppRadii.chipAll,
                 ),
                 child: Text(
                   'Números repetidos: ${(dups.toList()..sort()).join(', ')}',
-                  style: AppTypography.body(size: 12, color: AppColors.warning),
+                  style: AppTypography.body(size: 12, color: context.c.warning),
                 ),
               ),
 
@@ -268,14 +268,14 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                 child: ElevatedButton(
                   onPressed: _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.voltNeon,
-                    foregroundColor: AppColors.onPrimary,
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   child: Text('Guardar plantel',
                       style: AppTypography.headline(
-                          size: 14, weight: FontWeight.w700, color: AppColors.onPrimary)),
+                          size: 14, weight: FontWeight.w700, color: context.c.onPrimary)),
                 ),
               ),
             ),
@@ -311,7 +311,7 @@ class _RosterRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: context.c.background,
           borderRadius: AppRadii.cardAll,
         ),
         child: Row(
@@ -322,7 +322,7 @@ class _RosterRow extends StatelessWidget {
               child: Icon(
                 inTeam ? Icons.check_circle : Icons.add_circle_outline,
                 size: 21,
-                color: inTeam ? AppColors.voltNeon : AppColors.textSecondary,
+                color: inTeam ? context.c.primary : context.c.textSecondary,
               ),
             ),
             const SizedBox(width: 11),
@@ -332,7 +332,7 @@ class _RosterRow extends StatelessWidget {
                 entry.player.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(color: AppColors.textSecondary, size: 13, weight: FontWeight.w600),
+                style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w600),
               ),
             ),
 
@@ -344,8 +344,8 @@ class _RosterRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
                     color: entry.starter
-                        ? AppColors.voltNeon.withValues(alpha: 0.16)
-                        : AppColors.overlaySubtle,
+                        ? context.c.brandVolt.withValues(alpha: 0.16)
+                        : context.c.overlaySubtle,
                     borderRadius: AppRadii.chipAll,
                   ),
                   child: Text(
@@ -353,7 +353,7 @@ class _RosterRow extends StatelessWidget {
                     style: AppTypography.code(
                       size: 9,
                       weight: FontWeight.w700,
-                      color: entry.starter ? AppColors.voltNeon : AppColors.textSecondary,
+                      color: entry.starter ? context.c.primary : context.c.textSecondary,
                     ),
                   ),
                 ),
@@ -369,18 +369,18 @@ class _RosterRow extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: duplicated
-                        ? AppColors.warning.withValues(alpha: 0.18)
-                        : AppColors.overlaySubtle,
+                        ? context.c.warning.withValues(alpha: 0.18)
+                        : context.c.overlaySubtle,
                     borderRadius: AppRadii.chipAll,
                     border: duplicated
-                        ? Border.all(color: AppColors.warning.withValues(alpha: 0.7))
+                        ? Border.all(color: context.c.warning.withValues(alpha: 0.7))
                         : null,
                   ),
                   child: Text(
                     entry.number == 0 ? '—' : '${entry.number}',
                     style: AppTypography.sportNumber(
                       size: 14,
-                      color: entry.number == 0 ? AppColors.textSecondary : AppColors.textPrimary,
+                      color: entry.number == 0 ? context.c.textSecondary : context.c.textPrimary,
                     ),
                   ),
                 ),
