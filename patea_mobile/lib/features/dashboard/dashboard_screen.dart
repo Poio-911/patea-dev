@@ -537,21 +537,31 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.stadium_outlined, size: 14, color: context.c.textSecondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    _shortLocation(match.location),
-                    style: AppTypography.code(
-                      size: 10,
-                      weight: FontWeight.w700,
-                      color: context.c.textSecondary,
+              // La sede es la que cede: el contador de convocados es corto y
+              // fijo, el nombre de la cancha no tiene techo. Sin esto la fila
+              // desbordaba 38 px con un nombre largo, ya a escala normal.
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.stadium_outlined, size: 14, color: context.c.textSecondary),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        _shortLocation(match.location),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.code(
+                          size: 10,
+                          weight: FontWeight.w700,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

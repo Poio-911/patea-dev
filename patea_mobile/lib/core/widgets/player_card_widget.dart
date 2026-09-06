@@ -214,9 +214,17 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       //
       // 3) Borde y foil trazados como Path (no RRect primitivo):
       //    Evita cualquier degradación en el pipeline Skia/Impeller.
-      child: AspectRatio(
-        aspectRatio: 2.0 / 3.0,
-        child: Transform(
+      // La carta es un gráfico de proporción fija 2:3 con las tipografías
+      // puestas a mano, igual que `.player-card` en la web: no reflowa, se
+      // escala entera. La preferencia de texto del sistema sí agrandaba el
+      // contenido pero no la carta, y a 1,3× desbordaba 6,8 px sobre la
+      // grilla de atributos. Con techo en 1,15× sigue respetando al usuario
+      // que agranda la letra —hasta donde la carta lo aguanta— y no recorta.
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.15,
+        child: AspectRatio(
+          aspectRatio: 2.0 / 3.0,
+          child: Transform(
           transform: Matrix4.identity()
             ..setEntry(3, 2, 0.0012)
             ..rotateX(_curX)
@@ -546,6 +554,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       ),
     ),
   ),
+),
 );
 }
 

@@ -91,12 +91,15 @@ color: Colors.black.withValues(alpha: 0.6),
               children: [
                 SoccerRunnerIcon(size: 24, color: context.c.primary),
                 const SizedBox(width: 8),
-                Text(
-                  '¡Bienvenid@ a Pateá!',
-                  style: AppTypography.headline(
-                    size: 20,
-                    weight: FontWeight.w900,
-                    color: context.c.textPrimary,
+                Flexible(
+                  child: Text(
+                    '¡Bienvenid@ a Pateá!',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.headline(
+                      size: 20,
+                      weight: FontWeight.w900,
+                      color: context.c.textPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -113,8 +116,13 @@ color: Colors.black.withValues(alpha: 0.6),
             const SizedBox(height: 18),
 
             // Carrusel de pasos
+            //
+            // La altura crece con la escala de texto del sistema. Era 180
+            // fijos y adentro hay tres líneas de texto: a 1,3× el paso
+            // desbordaba 44 px por abajo. Es el caso de manual del `height:`
+            // fijo con texto adentro.
             SizedBox(
-              height: 180,
+              height: MediaQuery.textScalerOf(context).scale(180),
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _steps.length,

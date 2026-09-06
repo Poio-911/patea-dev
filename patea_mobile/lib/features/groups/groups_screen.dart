@@ -695,9 +695,14 @@ class _PlayedMatchRow extends StatelessWidget {
                   Icon(Icons.emoji_events_rounded,
                       size: 12, color: context.c.goldBorder),
                   const SizedBox(width: 4),
-                  Text('MVP · ${mvpName!}',
-                      style: AppTypography.code(
-                          size: 10, color: context.c.goldBorder)),
+                  // Un nombre largo desbordaba la fila 84 px a 1,3×.
+                  Expanded(
+                    child: Text('MVP · ${mvpName!}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.code(
+                            size: 10, color: context.c.goldBorder)),
+                  ),
                 ],
               ),
             ],

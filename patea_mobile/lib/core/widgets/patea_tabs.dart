@@ -48,18 +48,26 @@ class PateaTabs extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            for (var i = 0; i < tabs.length; i++)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: _Tab(
-                  tab: tabs[i],
-                  active: i == active,
-                  onTap: () => onChanged(i),
+        // Se desplaza en horizontal en vez de recortar. La barra de
+        // Evaluaciones (Pendientes / Historial / Solicitudes) ya no entraba a
+        // escala normal: se comía 26 px de la tercera pestaña, y a 1,3× de
+        // texto, 88. Mientras entren, se ven exactamente igual que antes.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const ClampingScrollPhysics(),
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: _Tab(
+                    tab: tabs[i],
+                    active: i == active,
+                    onTap: () => onChanged(i),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
         Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
       ],
