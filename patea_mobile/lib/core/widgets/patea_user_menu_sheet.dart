@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
+import '../theme/fondo_claro.dart';
 import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -194,6 +195,39 @@ class PateaUserMenuSheet extends ConsumerWidget {
                     ref.read(themeControllerProvider.notifier).elegir(s.first),
               ),
             ),
+
+            // ANDAMIO: las tres candidatas de fondo del tema claro, acá
+            // porque el recorrido hasta `/dev/gallery` era largo para lo que
+            // hay que hacer, que es alternar y mirar. Sólo en debug y sólo
+            // con el tema claro puesto: en `game` el fondo es la foto de
+            // cancha y esto no cambiaría nada.
+            //
+            // Se va entero cuando esté elegida la variante. Ver
+            // `core/theme/fondo_claro.dart`.
+            if (kDebugMode &&
+                ref.watch(themeControllerProvider) == PateaTheme.light)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                child: SegmentedButton<FondoClaro>(
+                  showSelectedIcon: false,
+                  style: const ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  segments: [
+                    for (final v in FondoClaro.values)
+                      ButtonSegment(
+                        value: v,
+                        label: Text(
+                          v.etiqueta,
+                          style: AppTypography.body(size: 12),
+                        ),
+                      ),
+                  ],
+                  selected: {ref.watch(fondoClaroProvider)},
+                  onSelectionChanged: (s) =>
+                      ref.read(fondoClaroProvider.notifier).elegir(s.first),
+                ),
+              ),
 
             // La galeria del sistema de diseno. Solo en debug: es la vista con
             // la que se aprueba un cambio de paleta sin recorrer la app.
