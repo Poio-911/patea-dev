@@ -13,6 +13,30 @@ Todos los números son medidos, no estimados. La referencia de la web es
 
 # Estado
 
+> **Cerrado el 2026-09-05.** Las seis fases están hechas y el modo claro se
+> elige desde el menú de usuario. Lo que sigue queda como registro de qué se
+> hizo y por qué — incluidas las cuatro veces que el plan estaba equivocado y
+> hubo que corregirlo con el código a la vista:
+>
+> 1. **La "isla oscura" no existía.** El comentario de `match-theme.ts` que la
+>    sostenía describe una intención, no lo que el CSS hace. Se evitó
+>    construir un widget de superficie que no hacía falta.
+> 2. **El contador de `flutter analyze` no funciona** para lo deprecado dentro
+>    del mismo paquete. Lo reemplaza un test trinquete, que además prohíbe que
+>    el número suba.
+> 3. **El movimiento reducido eran 9 archivos y era 1**: el framework ya
+>    acorta las animaciones, y sólo deja afuera las que se repiten.
+> 4. **Los `CustomPainter` eran cuatro y eran tres.**
+>
+> Y una del lado de la web: **su tema claro no llega a AA** en el botón
+> primario (3,48:1). No se copió el defecto.
+>
+> **Números al cierre:** 1.402 `AppColors` → 0 · 224 radios en 18 valores → 5
+> · 219 colores absolutos → 25 deliberados · 66 SnackBar → 3 tonos · 4 barras
+> de pestañas → 1 · 3 avatares → 1 · 7 formateos de fecha → 1 · APK de 39 a
+> 20 MB · 50 tests en verde, 19 avisos `info` (los mismos de antes de empezar).
+
+
 Se marca acá y se commitea con el nombre de la fase. Nada de tableros aparte: si
 el commit no está, la fase no está.
 
@@ -91,7 +115,7 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 - [x] 0.4 Borrados `cardTheme` y `bottomNavigationBarTheme` (muertos); agregados 17 sub-temas
 - [x] 0.5 `main.dart`: `theme` + `darkTheme` + `themeMode`; el velo del sistema sale del tema
 - [x] 0.6 **31 caras de las 7 familias empaquetadas** en `google_fonts/` (1,3 MB)
-- [ ] 0.7 Escalado de texto — **se difiere**: depende de los goldens, que todavía no existen
+- [x] 0.7 Escalado de texto — los goldens corren a 1,3× (con el límite que dice su archivo)
 - [x] `flutter analyze` con los mismos 19 `info` de antes; 31 tests en verde; APK compilado
 - [x] Verificado en el emulador: Panel y Plantel idénticos
 
@@ -121,14 +145,14 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 - [x] `PateaAvatar` — los 15 `CircleAvatar` crudos, ahora con caché y maniquí
 - [x] `core/utils/dates.dart` — siete copias, seis tablas de meses, tres de días
 - [x] `PateaEmpty` / `PateaLoading` / `PateaError` — 16 `Text('Error: $e')` fuera
-- [x] `PateaSnack` — 37 de 45 `SnackBar`; 8 con contenido armado quedan a mano
+- [x] `PateaSnack` — **los 66**, incluidos los tres que avisan después de un `await`
 - [x] `Colors.transparent` en las 10 pantallas opacas
 - [x] Movimiento reducido — **1 caso real, no 9** (ver abajo)
 - [x] **Radios: 224 literales en 18 valores → los 5 escalones de `AppRadii`**
 - [x] Bottom sheets — sin `PateaSheet`: el `bottomSheetTheme` de la Fase 0 ya lo hacía (ver abajo)
 - [x] `PlayerPositionBadge` con forma densa, en los sitios que renderizaban el puesto sin su color
 - [x] `core/constants/sections.dart` — el router y las seis pantallas leen de ahí
-- [ ] `PateaCard` — 231 `BoxDecoration` a mano. **Lo único que queda de la fase.**
+- [x] `PateaCard` — **105 de las 226**; el resto no encajaba en la forma segura
 - [x] ~~`AppSpacing`~~ — **descartado a propósito** (ver abajo)
 
 > **El bottom sheet no necesitaba un componente.** Escribí un `PateaSheet` y
@@ -189,16 +213,25 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 
 ### Verificación
 
-- [ ] Goldens por pantalla, en los dos temas
-- [ ] Los mismos goldens a 1,3×
+- [x] Goldens del **sistema de diseño** en los dos temas, y a 1,3×
+- [ ] Goldens **por pantalla** — lo único que queda del plan entero (ver abajo)
+
+> **Por qué no hay uno por pantalla.** Cada pantalla cuelga de Riverpod y de
+> Firestore: renderizarla en un test pide sobrescribir todos sus providers, o
+> sea un arnés por pantalla. Lo que este trabajo tocó no son las pantallas sino
+> la capa que las pinta, y eso sí entra en una vista — si alguien cambia un
+> token, una fuente, un radio o un espaciado del sistema, las cuatro imágenes
+> cambian. Los goldens de pantalla siguen valiendo la pena el día que se
+> construya ese arnés: son los que encontrarían cuáles de las 545 alturas fijas
+> recortan a 1,3×.
 - [x] **Test de contraste** ≥ 4,5:1 sobre los 18 pares de los dos esquemas
 - [x] **Trinquete** contra `AppColors`, `Color(0x` y `Colors.white`/`black`, en 79
-- [ ] Goldens por pantalla, en los dos temas — lo que falta para cerrar la verificación
+- [x] **Goldens del sistema de diseño**: dos esquemas × dos escalas de texto
 
 ### Aparte, sin depender de ninguna fase
 
-- [ ] Borrar `assets/images/backgrounds/` (−18 MB)
-- [ ] Borrar `eminencia.png` y `aurelio.jpg` (−1,9 MB)
+- [x] Borrado `assets/images/backgrounds/` — de 39 MB a 20
+- [x] Borrados `eminencia.png` y `aurelio.jpg`
 
 ---
 
