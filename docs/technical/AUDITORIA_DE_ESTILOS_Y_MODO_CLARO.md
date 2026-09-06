@@ -13,10 +13,11 @@ Todos los números son medidos, no estimados. La referencia de la web es
 
 # Estado
 
-> **Cerrado el 2026-09-05.** Las seis fases están hechas y el modo claro se
-> elige desde el menú de usuario. Lo que sigue queda como registro de qué se
-> hizo y por qué — incluidas las cuatro veces que el plan estaba equivocado y
-> hubo que corregirlo con el código a la vista:
+> **Cerrado el 2026-09-06.** Las seis fases están hechas, el modo claro se
+> elige desde el menú de usuario, y ya no queda ninguna casilla abierta. Lo que
+> sigue queda como registro de qué se hizo y por qué — incluidas las **cinco**
+> veces que el plan estaba equivocado y hubo que corregirlo con el código a la
+> vista:
 >
 > 1. **La "isla oscura" no existía.** El comentario de `match-theme.ts` que la
 >    sostenía describe una intención, no lo que el CSS hace. Se evitó
@@ -27,6 +28,11 @@ Todos los números son medidos, no estimados. La referencia de la web es
 > 3. **El movimiento reducido eran 9 archivos y era 1**: el framework ya
 >    acorta las animaciones, y sólo deja afuera las que se repiten.
 > 4. **Los `CustomPainter` eran cuatro y eran tres.**
+> 5. **"Los goldens por pantalla necesitan un arnés por pantalla" era falso**,
+>    y encima fue la excusa para cerrar el plan con un punto abierto. El arnés
+>    es un archivo para las doce, y encontró ocho defectos reales: cinco
+>    desbordes de layout —dos visibles hoy, a escala normal— y el texto negro
+>    sobre la foto de cancha en tema claro.
 >
 > Y una del lado de la web: **su tema claro no llega a AA** en el botón
 > primario (3,48:1). No se copió el defecto.
@@ -34,7 +40,19 @@ Todos los números son medidos, no estimados. La referencia de la web es
 > **Números al cierre:** 1.402 `AppColors` → 0 · 224 radios en 18 valores → 5
 > · 219 colores absolutos → 25 deliberados · 66 SnackBar → 3 tonos · 4 barras
 > de pestañas → 1 · 3 avatares → 1 · 7 formateos de fecha → 1 · APK de 39 a
-> 20 MB · 50 tests en verde, 19 avisos `info` (los mismos de antes de empezar).
+> 20 MB · **88 tests en verde**, 19 avisos `info` (los mismos de antes de
+> empezar).
+>
+> **El defecto que le faltaba al tema claro.** El banner del próximo partido y
+> la portada del detalle son una foto de cancha con un velo negro: son oscuros
+> en los **dos** temas, pero pintaban su texto con `textPrimary`. En claro el
+> título del partido salía casi negro sobre el césped. Es el defecto simétrico
+> al de `textMuted`, y no lo veía ningún test porque el de contraste mide texto
+> contra `card`, no contra una fotografía. Lo arreglan tres tokens nuevos
+> —`onPhoto`, `onPhotoMuted`, `onPhotoLine`— que **valen lo mismo en los dos
+> esquemas**: no describen el tema, describen la foto. Ojo con no confundirlos
+> con las tarjetas de la lista de partidos, que también tienen foto abajo pero
+> teñida con `card` al 65-95 %: ahí la superficie sí sigue al tema.
 
 
 Se marca acá y se commitea con el nombre de la fase. Nada de tableros aparte: si
@@ -214,19 +232,34 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 ### Verificación
 
 - [x] Goldens del **sistema de diseño** en los dos temas, y a 1,3×
-- [ ] Goldens **por pantalla** — lo único que queda del plan entero (ver abajo)
+- [x] Goldens **por pantalla** — 12 pantallas × 2 temas, más la pasada de 1,3×
 
-> **Por qué no hay uno por pantalla.** Cada pantalla cuelga de Riverpod y de
-> Firestore: renderizarla en un test pide sobrescribir todos sus providers, o
-> sea un arnés por pantalla. Lo que este trabajo tocó no son las pantallas sino
-> la capa que las pinta, y eso sí entra en una vista — si alguien cambia un
-> token, una fuente, un radio o un espaciado del sistema, las cuatro imágenes
-> cambian. Los goldens de pantalla siguen valiendo la pena el día que se
-> construya ese arnés: son los que encontrarían cuáles de las 545 alturas fijas
-> recortan a 1,3×.
+> **Estuvo abierto un día y estaba mal cerrado.** El párrafo que había acá
+> decía que un arnés de providers por pantalla no valía la pena porque este
+> trabajo tocó la capa que pinta, no las pantallas. Es cierto lo segundo y no
+> se sigue lo primero: el arnés terminó siendo **un solo archivo**
+> (`test/goldens/arnes.dart`) con datos falsos fijos y una lista de overrides
+> que sirve para las doce, y encontró **ocho defectos reales** — cinco
+> desbordes de layout, dos de ellos visibles a escala normal, y el texto negro
+> sobre la foto de cancha en tema claro. La razón para no escribirlo era el
+> tamaño estimado, y el tamaño estimado estaba mal.
+>
+> Cada pantalla se dibuja tres veces: imagen en `game`, imagen en `claro`, y
+> los dos temas a 1,3× **sin** imagen. La tercera no guarda golden a propósito:
+> a 1,3× no interesa cómo queda sino si entra, y un desborde llega al test como
+> excepción. Son 24 imágenes en vez de 48.
+>
+> Tres trampas, por si hay que hacer algo parecido: `FlutterError.onError` se
+> restaura **antes** del `expect` o el binding revienta con un mensaje que no
+> dice eso; las fuentes y las fotos se cargan con `Future` reales que bajo el
+> reloj falso del test no avanzan nunca, así que hay que precargarlas en
+> `setUpAll` —sin eso, dos corridas seguidas daban imágenes con 93 % de píxeles
+> distintos—; y `pumpAndSettle` no sirve con animaciones infinitas, pero un
+> `pump` corto tampoco, porque retrata las tarjetas a mitad del fundido.
 - [x] **Test de contraste** ≥ 4,5:1 sobre los 18 pares de los dos esquemas
 - [x] **Trinquete** contra `AppColors`, `Color(0x` y `Colors.white`/`black`, en 79
 - [x] **Goldens del sistema de diseño**: dos esquemas × dos escalas de texto
+- [x] **Goldens por pantalla**: 12 pantallas × 2 temas + la pasada de 1,3×
 
 ### Aparte, sin depender de ninguna fase
 
