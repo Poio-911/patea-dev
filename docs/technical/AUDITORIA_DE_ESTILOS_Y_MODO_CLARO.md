@@ -250,9 +250,14 @@ sólo que ahí se disimulan. Quedan abiertos:
 - [x] Los tres defectos de la carta que sobreviven a la decisión: los seis
       `Colors.transparent`, el borde de la caja de atributo, y el contraste de
       la barra de progreso.
-- [ ] Pendiente viejo, de la pasada de diseño y no de este plan: el fondo de
+- [x] Pendiente viejo, de la pasada de diseño y no de este plan: el fondo de
       cancha debería verse desenfocado a través del `BackdropFilter` del
-      `PateaTopHeader`. Hoy no se ve ese blur.
+      `PateaTopHeader`. Resuelto: se alinearon los degradados de
+      `PateaBackground` con `globals.css` / web (aliviando la viñeta superior,
+      retirando `Colors.transparent` y evitando el ahogado de luz en la parte alta)
+      y se eliminó el `SafeArea` envolvente de `CustomScrollView` en
+      `dashboard_screen.dart` para que el contenido scrollee libremente por detrás
+      del header esmerilado.
 
 ---
 

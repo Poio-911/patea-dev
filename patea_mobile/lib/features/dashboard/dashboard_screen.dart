@@ -106,74 +106,72 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // Cabecera: Mate Oficial + EL VESTUARIO en Italic + Dorsal Pill
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              sliver: SliverToBoxAdapter(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icons/mate.svg',
-                      width: 34,
-                      height: 34,
-                      colorFilter: ColorFilter.mode(context.c.primary, BlendMode.srcIn),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            spec(Section.panel).title.toUpperCase(),
-                            style: AppTypography.headline(
-                              size: 26,
-                              weight: FontWeight.w900,
-                              letterSpacing: -0.5,
-                            ),
+      body: CustomScrollView(
+        slivers: [
+          // Cabecera: Mate Oficial + EL VESTUARIO en Italic + Dorsal Pill
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 14, 20, 0),
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    'assets/icons/mate.svg',
+                    width: 34,
+                    height: 34,
+                    colorFilter: ColorFilter.mode(context.c.primary, BlendMode.srcIn),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          spec(Section.panel).title.toUpperCase(),
+                          style: AppTypography.headline(
+                            size: 26,
+                            weight: FontWeight.w900,
+                            letterSpacing: -0.5,
                           ),
-                          Text(
-                            spec(Section.panel).description!,
-                            style: AppTypography.body(size: 11, color: context.c.textSecondary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+                        ),
+                        Text(
+                          spec(Section.panel).description!,
+                          style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+          ),
 
-            // Tab Bar con barra deslizante Volt
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              sliver: SliverToBoxAdapter(
-                child: PateaTabs(
-                  tabs: const [PateaTab('Mi Resumen'), PateaTab('Mi Grupo')],
-                  active: _tab,
-                  onChanged: _saveTab,
-                ),
+          // Tab Bar con barra deslizante Volt
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            sliver: SliverToBoxAdapter(
+              child: PateaTabs(
+                tabs: const [PateaTab('Mi Resumen'), PateaTab('Mi Grupo')],
+                active: _tab,
+                onChanged: _saveTab,
               ),
             ),
+          ),
 
-            // Contenido dinámico según Tab
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-              sliver: SliverToBoxAdapter(
-                child: uid == null
-                    ? const SizedBox.shrink()
-                    : (_tab == 0
-                        ? _ResumenTab(uid: uid, player: player)
-                        : _GrupoTab(uid: uid)),
-              ),
+          // Contenido dinámico según Tab
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(20, 14, 20, 28 + MediaQuery.of(context).padding.bottom),
+            sliver: SliverToBoxAdapter(
+              child: uid == null
+                  ? const SizedBox.shrink()
+                  : (_tab == 0
+                      ? _ResumenTab(uid: uid, player: player)
+                      : _GrupoTab(uid: uid)),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

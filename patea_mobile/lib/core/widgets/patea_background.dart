@@ -13,6 +13,9 @@ import '../theme/patea_colors.dart';
 /// cualquier pantalla que use `PateaBackground`.
 final backgroundIndexProvider = Provider<int>((ref) => Random().nextInt(9) + 1);
 
+/// Azul noche idéntico al blue-950 de Tailwind / globals.css web
+const _blue950 = Color(0xFF040E24);
+
 /// Fondo de la aplicación idéntico a GameModeBackground de la webapp
 /// Incluye imagen de césped de cancha real desenfocada + viñetas azul noche / carbon
 class PateaBackground extends ConsumerWidget {
@@ -66,17 +69,17 @@ class PateaBackground extends ConsumerWidget {
           ),
         ),
 
-        // 3. Overlay viñeta azul noche (from-blue-950/40 to-blue-950/60)
-        const Positioned.fill(
+        // 3. Overlay viñeta azul noche (from-blue-950/40 via-transparent to-blue-950/60)
+        Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0x80040E24),
-                  Color(0x30040E24),
-                  Color(0xB3040E24),
+                  _blue950.withValues(alpha: 0.40),
+                  _blue950.withValues(alpha: 0.0),
+                  _blue950.withValues(alpha: 0.60),
                 ],
               ),
             ),
@@ -84,6 +87,7 @@ class PateaBackground extends ConsumerWidget {
         ),
 
         // 4. Overlay sutil neón en esquina y oscurecido hacia abajo
+        // (from-primary/5 via-transparent to-background/80)
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -91,9 +95,9 @@ class PateaBackground extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  context.c.brandVolt.withValues(alpha: 0.12),
-                  Colors.transparent,
-                  const Color(0xF00B0E14),
+                  context.c.brandVolt.withValues(alpha: 0.05),
+                  context.c.brandVolt.withValues(alpha: 0.0),
+                  context.c.background.withValues(alpha: 0.80),
                 ],
               ),
             ),
