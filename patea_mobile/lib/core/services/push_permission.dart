@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 import 'notifications_service.dart';
 
@@ -49,8 +49,8 @@ class PushPermission {
       builder: (ctx) => Container(
         padding: EdgeInsets.fromLTRB(
             22, 18, 22, 18 + MediaQuery.of(ctx).padding.bottom),
-        decoration: const BoxDecoration(
-          color: AppColors.popover,
+        decoration: BoxDecoration(
+          color: context.c.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
@@ -62,7 +62,7 @@ class PushPermission {
               height: 5,
               margin: const EdgeInsets.only(bottom: 18),
               decoration: BoxDecoration(
-                color: AppColors.textSecondary.withValues(alpha: 0.3),
+                color: context.c.textSecondary.withValues(alpha: 0.3),
                 borderRadius: AppRadii.hairAll,
               ),
             ),
@@ -72,7 +72,7 @@ class PushPermission {
             const SizedBox(height: 8),
             Text(
               reason,
-              style: AppTypography.body(size: 13, color: AppColors.textSecondary),
+              style: AppTypography.body(size: 13, color: context.c.textSecondary),
             ),
             const SizedBox(height: 18),
             Row(
@@ -81,14 +81,14 @@ class PushPermission {
                   child: TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.textSecondary,
+                      foregroundColor: context.c.textSecondary,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                     ),
                     child: Text('Ahora no',
                         style: AppTypography.headline(
                             size: 13,
                             weight: FontWeight.w600,
-                            color: AppColors.textSecondary)),
+                            color: context.c.textSecondary)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -96,8 +96,8 @@ class PushPermission {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(ctx, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.voltNeon,
-                      foregroundColor: AppColors.onPrimary,
+                      backgroundColor: context.c.primary,
+                      foregroundColor: context.c.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
                           borderRadius: AppRadii.cardAll),
@@ -106,7 +106,7 @@ class PushPermission {
                         style: AppTypography.headline(
                             size: 13,
                             weight: FontWeight.w700,
-                            color: AppColors.onPrimary)),
+                            color: context.c.onPrimary)),
                   ),
                 ),
               ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patea_mobile/core/theme/app_colors.dart';
+import 'package:patea_mobile/core/theme/patea_colors.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/widgets/patea_page_header.dart';
 
@@ -22,27 +22,27 @@ void main() {
 
     test('el tema es oscuro y usa el fondo de la marca', () {
       expect(AppTheme.darkTheme.brightness, Brightness.dark);
-      expect(AppTheme.darkTheme.scaffoldBackgroundColor, AppColors.background);
+      expect(AppTheme.darkTheme.scaffoldBackgroundColor, PateaColors.game.background);
     });
   });
 
-  group('AppColors', () {
+  group('PateaColors', () {
     test('los tiers de OVR respetan los cortes reales', () {
-      expect(AppColors.getOvrBorderColor(90), AppColors.eliteBorder);
-      expect(AppColors.getOvrBorderColor(86), AppColors.eliteBorder);
-      expect(AppColors.getOvrBorderColor(85), AppColors.goldBorder);
-      expect(AppColors.getOvrBorderColor(76), AppColors.goldBorder);
-      expect(AppColors.getOvrBorderColor(75), AppColors.silverBorder);
-      expect(AppColors.getOvrBorderColor(65), AppColors.silverBorder);
-      expect(AppColors.getOvrBorderColor(64), AppColors.bronzeBorder);
+      expect(PateaColors.game.ovrBorderColor(90), PateaColors.game.eliteBorder);
+      expect(PateaColors.game.ovrBorderColor(86), PateaColors.game.eliteBorder);
+      expect(PateaColors.game.ovrBorderColor(85), PateaColors.game.goldBorder);
+      expect(PateaColors.game.ovrBorderColor(76), PateaColors.game.goldBorder);
+      expect(PateaColors.game.ovrBorderColor(75), PateaColors.game.silverBorder);
+      expect(PateaColors.game.ovrBorderColor(65), PateaColors.game.silverBorder);
+      expect(PateaColors.game.ovrBorderColor(64), PateaColors.game.bronzeBorder);
     });
 
     test('cada posición tiene su color y lo desconocido no rompe', () {
-      expect(AppColors.getPositionColor('DEL'), AppColors.posDel);
-      expect(AppColors.getPositionColor('med'), AppColors.posMed);
-      expect(AppColors.getPositionColor('DEF'), AppColors.posDef);
-      expect(AppColors.getPositionColor('POR'), AppColors.posPor);
-      expect(AppColors.getPositionColor('XXX'), AppColors.textSecondary);
+      expect(PateaColors.game.positionColor('DEL'), PateaColors.game.posDel);
+      expect(PateaColors.game.positionColor('med'), PateaColors.game.posMed);
+      expect(PateaColors.game.positionColor('DEF'), PateaColors.game.posDef);
+      expect(PateaColors.game.positionColor('POR'), PateaColors.game.posPor);
+      expect(PateaColors.game.positionColor('XXX'), PateaColors.game.textSecondary);
     });
   });
 

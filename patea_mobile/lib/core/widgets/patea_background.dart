@@ -26,6 +26,33 @@ class PateaBackground extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // En claro no hay foto de cancha. No es una simplificación: es lo que hace
+    // la web, donde `ThemeBackground` devuelve `null` fuera del tema `game` y
+    // el fondo es el degradado suave del `body`. Con la foto puesta, el texto
+    // oscuro del tema claro queda ilegible sobre el césped.
+    if (!context.c.isDarkSurface) {
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    context.c.primary.withValues(alpha: 0.06),
+                    context.c.accent.withValues(alpha: 0.05),
+                    context.c.background,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          child,
+        ],
+      );
+    }
+
     final int index = backgroundIndex ?? ref.watch(backgroundIndexProvider);
     final int clampedIndex = index < 1 ? 1 : (index > 9 ? 9 : index);
     final bgAsset = 'assets/images/backgrounds/fondo_$clampedIndex.jpg';
@@ -33,9 +60,7 @@ class PateaBackground extends ConsumerWidget {
     return Stack(
       children: [
         // 1. Color base muy oscuro
-        Positioned.fill(
-          child: Container(color: context.c.background),
-        ),
+        Positioned.fill(child: ColoredBox(color: context.c.background)),
 
         // 2. Fotografía real de estadio / césped desenfocada
         Positioned.fill(
@@ -44,17 +69,15 @@ class PateaBackground extends ConsumerWidget {
             child: Image.asset(
               bgAsset,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const SizedBox();
-              },
+              errorBuilder: (context, error, stackTrace) => const SizedBox(),
             ),
           ),
         ),
 
         // 3. Overlay viñeta azul noche (from-blue-950/40 to-blue-950/60)
-        Positioned.fill(
-          child: Container(
-            decoration: const BoxDecoration(
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -68,17 +91,17 @@ class PateaBackground extends ConsumerWidget {
           ),
         ),
 
-        // 4. Overlay sutil neón en esquina y oscurecido hacia abajo (from-primary/5 to-background/90)
+        // 4. Overlay sutil neón en esquina y oscurecido hacia abajo
         Positioned.fill(
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  context.c.brandVolt.withValues(alpha: 0.12), // Volt tint
+                  context.c.brandVolt.withValues(alpha: 0.12),
                   Colors.transparent,
-                  Color(0xF00B0E14), // Dark carbon
+                  const Color(0xF00B0E14),
                 ],
               ),
             ),

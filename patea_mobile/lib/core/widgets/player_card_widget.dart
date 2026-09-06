@@ -417,7 +417,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               ).copyWith(
                                 shadows: [
                                   Shadow(
-                                    color: context.c.onPrimary.withValues(alpha: 0.8),
+                                    color: Colors.black.withValues(alpha: 0.8),
                                     blurRadius: 4,
                                     offset: const Offset(0, 1),
                                   ),
@@ -438,7 +438,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                     height: 0.92,
                                     shadows: [
                                       Shadow(
-                                        color: context.c.onPrimary.withValues(alpha: 0.9),
+                                        color: Colors.black.withValues(alpha: 0.9),
                                         blurRadius: 6,
                                         offset: const Offset(0, 1),
                                       ),
@@ -495,7 +495,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                             ).copyWith(
                               shadows: [
                                 Shadow(
-                                  color: context.c.onPrimary.withValues(alpha: 0.85),
+                                  color: Colors.black.withValues(alpha: 0.85),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),

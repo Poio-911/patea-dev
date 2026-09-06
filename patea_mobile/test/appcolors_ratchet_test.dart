@@ -25,11 +25,16 @@ import 'package:flutter_test/flutter_test.dart';
 ///   2. `Color(0x...)`       — literales sueltos
 ///   3. `Colors.white/black` — absolutos, no sobreviven al tema claro
 ///
-/// Sólo la migración a `context.c` baja ese número. Cuando llegue a 0 se borra
-/// `app_colors.dart` y este archivo con él.
+/// `app_colors.dart` ya no existe: los 1.402 usos migraron a `context.c` y la
+/// clase se borró. Lo que este test cuida ahora es que no vuelvan.
 void main() {
-  // Al cerrar la Fase 1. Detalle: AppColors 1265 · literales 43 · absolutos 219.
-  const presupuesto = 1527;
+  // Al migrar todo a context.c: AppColors 0 · literales 40 · absolutos 24.
+  //
+  // Los 64 que quedan son deliberados: los diez duotonos del maniqui, los
+  // siete colores de marca por tipo de partido, los degradados del fondo, los
+  // velos negros sobre foto y la aritmetica de color de las cartas. Bajar de
+  // aca ya no es limpieza, es cambiar decisiones de diseno.
+  const presupuesto = 64;
 
   test('los colores fuera del tema sólo pueden bajar', () {
     final patrones = <String, RegExp>{

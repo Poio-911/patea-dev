@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/sections.dart';
 import '../services/auth_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/patea_top_header.dart';
 import '../widgets/patea_background.dart';
@@ -310,8 +310,8 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        decoration: const BoxDecoration(
-          color: AppColors.popover,
+        decoration: BoxDecoration(
+          color: context.c.popover,
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
@@ -322,7 +322,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
               height: 5,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: AppColors.textSecondary.withValues(alpha: 0.3),
+                color: context.c.textSecondary.withValues(alpha: 0.3),
                 borderRadius: AppRadii.hairAll,
               ),
             ),
@@ -371,16 +371,17 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.card.withValues(alpha: 0.40), // bg-card/40
+              color: context.c.card.withValues(alpha: 0.40), // bg-card/40
               border: Border(
                 top: BorderSide(
-                  color: AppColors.overlayLine,
+                  color: context.c.overlayLine,
                   width: 1.0,
                 ),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.onPrimary.withValues(alpha: 0.4),
+                  // Una sombra es negra en los dos temas.
+color: Colors.black.withValues(alpha: 0.4),
                   blurRadius: 16,
                   offset: const Offset(0, -4),
                 ),
@@ -467,7 +468,7 @@ class _NavItem extends StatelessWidget {
             Icon(
               isSelected ? activeIcon : icon,
               size: 22,
-              color: isSelected ? AppColors.voltNeon : AppColors.textSecondary,
+              color: isSelected ? context.c.primary : context.c.textSecondary,
             ),
             const SizedBox(height: 3),
             Text(
@@ -475,7 +476,7 @@ class _NavItem extends StatelessWidget {
               style: AppTypography.headline(
                 size: 10,
                 weight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected ? AppColors.voltNeon : AppColors.textSecondary,
+                color: isSelected ? context.c.primary : context.c.textSecondary,
               ),
             ),
             const SizedBox(height: 2),
@@ -484,7 +485,7 @@ class _NavItem extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected ? AppColors.voltNeon : Colors.transparent,
+                color: isSelected ? context.c.primary : Colors.transparent,
               ),
             ),
           ],
@@ -515,7 +516,7 @@ class _PartidosSheetItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.voltNeon.withValues(alpha: 0.1) : Colors.transparent,
+          color: isActive ? context.c.brandVolt.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: AppRadii.cardAll,
         ),
         child: Row(
@@ -524,15 +525,15 @@ class _PartidosSheetItem extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isActive ? AppColors.voltNeon : AppColors.cardSurface,
+                color: isActive ? context.c.primary : context.c.cardSurface,
                 borderRadius: AppRadii.cardAll,
               ),
-              child: Icon(icon, size: 20, color: isActive ? AppColors.onPrimary : AppColors.textSecondary),
+              child: Icon(icon, size: 20, color: isActive ? context.c.onPrimary : context.c.textSecondary),
             ),
             const SizedBox(width: 14),
             Text(
               label,
-              style: AppTypography.headline(size: 15, color: isActive ? AppColors.voltNeon : AppColors.textPrimary),
+              style: AppTypography.headline(size: 15, color: isActive ? context.c.primary : context.c.textPrimary),
             ),
           ],
         ),

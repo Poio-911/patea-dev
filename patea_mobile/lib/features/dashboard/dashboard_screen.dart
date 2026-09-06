@@ -663,7 +663,7 @@ class _CleanTunnelSide extends StatelessWidget {
                   width: 50,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: context.c.onPrimary.withValues(alpha: 0.35),
+                    color: Colors.black.withValues(alpha: 0.35),
                     borderRadius: AppRadii.cardAll,
                   ),
                 ),

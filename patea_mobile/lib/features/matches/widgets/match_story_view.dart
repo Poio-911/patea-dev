@@ -419,7 +419,7 @@ class _Boxscore extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
       decoration: BoxDecoration(
-        color: context.c.onPrimary.withValues(alpha: 0.28),
+        color: Colors.black.withValues(alpha: 0.28),
         border: Border(
           top: BorderSide(color: context.c.border.withValues(alpha: 0.30)),
           bottom: BorderSide(color: context.c.border.withValues(alpha: 0.30)),

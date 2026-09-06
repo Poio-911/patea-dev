@@ -102,7 +102,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: context.c.onPrimary.withValues(alpha: 0.4),
+                      // Una sombra es negra en los dos temas.
+color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),

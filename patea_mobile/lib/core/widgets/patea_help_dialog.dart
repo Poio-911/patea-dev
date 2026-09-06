@@ -74,7 +74,8 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
           border: Border.all(color: context.c.overlayLine, width: 1),
           boxShadow: [
             BoxShadow(
-              color: context.c.onPrimary.withValues(alpha: 0.6),
+              // Una sombra es negra en los dos temas.
+color: Colors.black.withValues(alpha: 0.6),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),

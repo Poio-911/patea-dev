@@ -134,7 +134,7 @@ class PateaPageHeader extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xB3141923),
+                  color: context.c.card.withValues(alpha: 0.70),
                   borderRadius: AppRadii.cardAll,
                   border: Border.all(
                     color: activeFilterCount > 0

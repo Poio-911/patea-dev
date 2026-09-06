@@ -44,7 +44,14 @@ class PateaColors extends ThemeExtension<PateaColors> {
   final Color input;
 
   // Accion y marca
-  /// volt en game, azul en claro
+  /// Volt en game, azul en claro.
+  ///
+  /// El azul es dos escalones más oscuro que el `--primary` de la web
+  /// (`hsl(217 91% 52%)` contra `60%`) **a propósito**: con el de la web, el
+  /// texto blanco del botón primario da 3,48:1, por debajo del mínimo de 4,5
+  /// que pide WCAG AA para texto normal. La etiqueta del botón es 15px en
+  /// negrita, que no llega a "texto grande" (18,7px), así que no hay excusa.
+  /// La web tiene ese defecto; no se copia.
   final Color primary;
   /// --primary-foreground
   final Color onPrimary;
@@ -185,7 +192,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
     input: Color(0xFFD9DFE8),
 
   // Accion y marca
-    primary: Color(0xFF3C83F6),
+    primary: Color(0xFF156BF4),
     onPrimary: Color(0xFFF8FAFC),
     accent: Color(0xFFFBBD23),
     brandVolt: Color(0xFFCCFF33),
@@ -194,11 +201,11 @@ class PateaColors extends ThemeExtension<PateaColors> {
     destructive: Color(0xFFEF4444),
     success: Color(0xFF16A249),
     warning: Color(0xFFF59F0A),
-    info: Color(0xFF3C83F6),
+    info: Color(0xFF156BF4),
 
   // Texto
     textPrimary: Color(0xFF020817),
-    textSecondary: Color(0xFF64748B),
+    textSecondary: Color(0xFF5E6D82),
 
   // Veladuras (nuevas, sin uso hasta la Fase 2)
     overlaySubtle: Color(0x0A000000),

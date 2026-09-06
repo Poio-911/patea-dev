@@ -723,7 +723,8 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
           border: Border.all(color: theme.brandColor.withValues(alpha: 0.5), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: context.c.onPrimary.withValues(alpha: 0.4),
+              // Una sombra es negra en los dos temas.
+color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -751,7 +752,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                 ),
               ),
             ),
-            Container(color: context.c.onPrimary.withValues(alpha: 0.45)),
+            Container(color: Colors.black.withValues(alpha: 0.45)),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -776,7 +777,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: context.c.onPrimary.withValues(alpha: 0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: AppRadii.surfaceAll,
                           border: Border.all(color: context.c.overlayStrong),
                         ),
@@ -943,7 +944,7 @@ class _BannerOrganizerBadge extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: context.c.onPrimary.withValues(alpha: 0.6),
+            color: Colors.black.withValues(alpha: 0.6),
             borderRadius: AppRadii.surfaceAll,
             border: Border.all(color: context.c.overlayLine),
           ),
@@ -1067,7 +1068,8 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
             ),
             boxShadow: [
               BoxShadow(
-                color: context.c.onPrimary.withValues(alpha: 0.3),
+                // Una sombra es negra en los dos temas.
+color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1303,7 +1305,8 @@ class _CompactMatchCard extends StatelessWidget {
             border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
-                color: context.c.onPrimary.withValues(alpha: 0.25),
+                // Una sombra es negra en los dos temas.
+color: Colors.black.withValues(alpha: 0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
