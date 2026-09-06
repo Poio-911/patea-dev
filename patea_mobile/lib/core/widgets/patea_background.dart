@@ -61,7 +61,7 @@ class PateaBackground extends ConsumerWidget {
 
     final int index = backgroundIndex ?? ref.watch(backgroundIndexProvider);
     final int clampedIndex = index < 1 ? 1 : (index > 9 ? 9 : index);
-    final bgAsset = 'assets/images/backgrounds/fondo_$clampedIndex.jpg';
+    final bgAsset = 'assets/backgrounds/fondo_$clampedIndex.jpg';
 
     return Stack(
       children: [

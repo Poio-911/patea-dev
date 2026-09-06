@@ -97,9 +97,11 @@ flutter:
     # tests renderizan en Roboto y validan una tipografia que no es la de la
     # app. Ver docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md, Fase 0.6.
     - google_fonts/
+    # Una sola copia de las nueve fotos de cancha. Estaban tambien en
+    # `assets/images/backgrounds/`, byte a byte iguales, y las dos carpetas
+    # estaban declaradas aca: 18 MB de duplicado viajando en el APK.
     - assets/jerseys/
     - assets/backgrounds/
-    - assets/images/backgrounds/
     - assets/icons-pos/
     - assets/avatars/
     - assets/icons/
