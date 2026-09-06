@@ -139,16 +139,16 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     ];
 
     // Configuración visual por tier (OVR)
-    Border cardBorder;
     Alignment auraAlignment;
     List<Color> auraColors;
     Color avatarBorderColor;
     double avatarBorderAlpha;
     BoxShadow? avatarGlow;
+    double borderWidth;
 
     switch (tier) {
       case 'elite':
-        cardBorder = Border.all(color: c.eliteBorder.withValues(alpha: 0.65), width: 1.5);
+        borderWidth = 2.0;
         auraAlignment = Alignment.topCenter;
         auraColors = [c.eliteBorder.withValues(alpha: 0.62), c.eliteBorder.withValues(alpha: 0)];
         avatarBorderColor = c.eliteBorder;
@@ -157,7 +157,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         break;
 
       case 'gold':
-        cardBorder = Border.all(color: c.goldBorder.withValues(alpha: 0.55), width: 1.2);
+        borderWidth = 1.8;
         auraAlignment = Alignment.topRight;
         auraColors = [c.goldBorder.withValues(alpha: 0.32), c.goldBorder.withValues(alpha: 0)];
         avatarBorderColor = c.goldBorder;
@@ -166,7 +166,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         break;
 
       case 'silver':
-        cardBorder = Border.all(color: c.silverBorder.withValues(alpha: 0.45), width: 1.0);
+        borderWidth = 1.5;
         auraAlignment = Alignment.topCenter;
         auraColors = [c.silverBorder.withValues(alpha: 0.25), c.silverBorder.withValues(alpha: 0)];
         avatarBorderColor = c.silverBorder;
@@ -175,7 +175,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         break;
 
       default: // bronze
-        cardBorder = Border.all(color: c.bronzeBorder.withValues(alpha: 0.45), width: 1.0);
+        borderWidth = 1.5;
         auraAlignment = Alignment.bottomLeft;
         auraColors = [c.bronzeBorder.withValues(alpha: 0.28), c.bronzeBorder.withValues(alpha: 0)];
         avatarBorderColor = c.bronzeBorder;
@@ -183,6 +183,17 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         avatarGlow = null; // idem bronce
         break;
     }
+
+    final borderGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color.lerp(avatarBorderColor, Colors.white, 0.28)!,
+        avatarBorderColor,
+        Color.lerp(avatarBorderColor, Colors.black, 0.30)!,
+      ],
+      stops: const [0.0, 0.45, 1.0],
+    );
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -393,16 +404,45 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                       ),
                     ),
 
-                  // 5. Borde, trazado como path por el mismo motivo que la
-                  // forma: con BoxDecoration se pierde una esquina al
-                  // inclinar la carta.
+                  // 5. Borde metálico de la carta con el mismo estilo y foil
+                  // que la pastilla de OVR: degradado del tier + CardFoil reactivo.
                   Positioned.fill(
                     child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _CardBorderPainter(
-                          color: cardBorder.top.color,
-                          width: cardBorder.top.width,
-                        ),
+                      child: Stack(
+                        children: [
+                          ClipPath(
+                            clipper: _CardBorderRingClipper(borderWidth),
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: borderGradient,
+                                    ),
+                                  ),
+                                ),
+                                Positioned.fill(
+                                  child: CardFoil(
+                                    tier: tier,
+                                    tiltX: _curX / _maxTilt,
+                                    tiltY: _curY / _maxTilt,
+                                    seed: (player.id.hashCode % 1000) / 1000.0 * 6.28,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          CustomPaint(
+                            size: Size.infinite,
+                            painter: _CardBorderPainter(
+                              width: borderWidth,
+                              gradient: borderGradient,
+                              glowColor: avatarGlow != null
+                                  ? avatarBorderColor.withValues(alpha: 0.35)
+                                  : null,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -801,15 +841,18 @@ class _CardClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-/// El borde de la carta, trazado como path.
-///
-/// No es un capricho: ver la nota en el build. Un borde de `BoxDecoration`
-/// se pierde en una esquina cuando la carta se inclina.
+/// El borde de la carta, trazado con degradado metálico para coincidir
+/// exactamente con el estilo de la pastilla de OVR.
 class _CardBorderPainter extends CustomPainter {
-  final Color color;
   final double width;
+  final Gradient gradient;
+  final Color? glowColor;
 
-  const _CardBorderPainter({required this.color, required this.width});
+  const _CardBorderPainter({
+    required this.width,
+    required this.gradient,
+    this.glowColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -819,16 +862,56 @@ class _CardBorderPainter extends CustomPainter {
     final inset = rect.deflate(width / 2);
     final path = Path()
       ..addRRect(RRect.fromRectAndRadius(inset, Radius.circular(16 - width / 2)));
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = width
-        ..color = color,
-    );
+
+    if (glowColor != null) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width + 1.5
+          ..color = glowColor!
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0),
+      );
+    }
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..shader = gradient.createShader(rect);
+
+    canvas.drawPath(path, paint);
   }
 
   @override
   bool shouldRepaint(_CardBorderPainter old) =>
-      old.color != color || old.width != width;
+      old.width != width ||
+      old.gradient != gradient ||
+      old.glowColor != glowColor;
+}
+
+/// Clipper que aísla exactamente el anillo perimetral de la carta
+/// para estamparle el CardFoil shader y degradado metálico idéntico al OVR.
+class _CardBorderRingClipper extends CustomClipper<Path> {
+  final double borderWidth;
+  const _CardBorderRingClipper(this.borderWidth);
+
+  @override
+  Path getClip(Size size) {
+    final outer = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(16),
+    );
+    final inner = RRect.fromRectAndRadius(
+      (Offset.zero & size).deflate(borderWidth),
+      Radius.circular((16 - borderWidth).clamp(0.0, 16.0)),
+    );
+    return Path()
+      ..addRRect(outer)
+      ..addRRect(inner)
+      ..fillType = PathFillType.evenOdd;
+  }
+
+  @override
+  bool shouldReclip(_CardBorderRingClipper oldClipper) =>
+      oldClipper.borderWidth != borderWidth;
 }
