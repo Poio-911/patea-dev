@@ -51,7 +51,11 @@ class LivePitchView extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: AppRadii.cardAll,
-          color: const Color(0xFF14301F),
+          // El verde es cancha, no interfaz: se queda verde en los dos
+          // temas. En claro sube de tono para no ser un agujero oscuro.
+          color: context.c.isDarkSurface
+              ? const Color(0xFF14301F)
+              : const Color(0xFF2E7D4F),
         ),
         clipBehavior: Clip.antiAlias,
         child: CustomPaint(

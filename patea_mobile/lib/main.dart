@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'core/theme/theme_mode_provider.dart';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -115,10 +116,10 @@ class PateaApp extends ConsumerWidget {
       // es que exista el lugar donde enchufarlo.
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      // `game` no es "el modo oscuro": es una identidad de marca con volt,
-      // foto de cancha y scanlines. Por eso no sigue al ajuste del sistema —
-      // le pondria una estetica de videojuego a alguien que no la pidio.
-      themeMode: ThemeMode.dark,
+      // No sigue al ajuste del sistema: lo elige el usuario en su menú.
+      // `game` no es "el modo oscuro", es una identidad de marca, y ponérsela
+      // a alguien porque tiene el teléfono en oscuro sería una suposición.
+      themeMode: ref.watch(themeControllerProvider).modo,
       routerConfig: router,
     );
   }

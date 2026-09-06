@@ -419,7 +419,7 @@ class _TeamToggle extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
           decoration: BoxDecoration(
-            color: selected ? context.c.brandVolt.withValues(alpha: 0.12) : Colors.transparent,
+            color: selected ? context.c.primary.withValues(alpha: 0.12) : Colors.transparent,
             borderRadius: AppRadii.cardAll,
             border: Border.all(
               color: selected ? context.c.primary : context.c.overlayLine,
@@ -491,7 +491,7 @@ class _PlayerPicker extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? context.c.brandVolt.withValues(alpha: 0.14) : Colors.transparent,
+            color: selected ? context.c.primary.withValues(alpha: 0.14) : Colors.transparent,
             borderRadius: AppRadii.chipAll,
             border: Border.all(
               color: selected ? context.c.primary : context.c.overlayLine,

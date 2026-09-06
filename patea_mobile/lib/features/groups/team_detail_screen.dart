@@ -350,7 +350,7 @@ class _TeamBanner extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFC64A)
+                                color: context.c.goldBorder
                                     .withValues(alpha: 0.14),
                                 borderRadius: AppRadii.surfaceAll,
                               ),
@@ -362,7 +362,7 @@ class _TeamBanner extends StatelessWidget {
                                         ? Icons.emoji_events_rounded
                                         : Icons.workspace_premium_rounded,
                                     size: 12,
-                                    color: const Color(0xFFFFC64A),
+                                    color: context.c.goldBorder,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -372,7 +372,7 @@ class _TeamBanner extends StatelessWidget {
                                     style: AppTypography.code(
                                         size: 9,
                                         weight: FontWeight.w700,
-                                        color: const Color(0xFFFFC64A)),
+                                        color: context.c.goldBorder),
                                   ),
                                 ],
                               ),

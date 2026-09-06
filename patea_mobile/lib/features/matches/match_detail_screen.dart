@@ -1532,7 +1532,7 @@ class _StickyActionBar extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + MediaQuery.of(context).padding.bottom),
           decoration: BoxDecoration(
-            color: const Color(0xFF0B0E14).withValues(alpha: 0.88),
+            color: Colors.black.withValues(alpha: 0.88),
             border: Border(
               top: BorderSide(color: context.c.border.withValues(alpha: 0.35)),
             ),
@@ -1642,7 +1642,7 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
     builder: (ctx) {
       return Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0F141C),
+          color: context.c.popover,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
           border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
         ),

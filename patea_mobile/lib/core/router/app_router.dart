@@ -516,7 +516,7 @@ class _PartidosSheetItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isActive ? context.c.brandVolt.withValues(alpha: 0.1) : Colors.transparent,
+          color: isActive ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: AppRadii.cardAll,
         ),
         child: Row(

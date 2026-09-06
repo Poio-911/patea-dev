@@ -189,7 +189,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
-                          color: selected ? context.c.brandVolt.withValues(alpha: 0.1) : Colors.transparent,
+                          color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
                           borderRadius: AppRadii.cardAll,
                           border: Border.all(color: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4)),
                         ),

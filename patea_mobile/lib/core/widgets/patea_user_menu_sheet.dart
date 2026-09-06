@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -169,6 +170,30 @@ class PateaUserMenuSheet extends ConsumerWidget {
             const SizedBox(height: 8),
             Divider(color: context.c.overlayLine, height: 1),
             const SizedBox(height: 8),
+
+            // El tema. Dos opciones, no tres: ver theme_mode_provider.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
+              child: SegmentedButton<PateaTheme>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final t in PateaTheme.values)
+                    ButtonSegment(
+                      value: t,
+                      icon: Icon(
+                        t == PateaTheme.game
+                            ? Icons.sports_soccer_rounded
+                            : Icons.light_mode_rounded,
+                        size: 16,
+                      ),
+                      label: Text(t.etiqueta),
+                    ),
+                ],
+                selected: {ref.watch(themeControllerProvider)},
+                onSelectionChanged: (s) =>
+                    ref.read(themeControllerProvider.notifier).elegir(s.first),
+              ),
+            ),
 
             // La galeria del sistema de diseno. Solo en debug: es la vista con
             // la que se aprueba un cambio de paleta sin recorrer la app.

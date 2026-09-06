@@ -156,27 +156,44 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 
 ### Fase 4 · El tema claro
 
-- [ ] `PateaColors.light` con los valores convertidos
-- [ ] Variantes más oscuras para los colores bajo 4,5:1 que terminen siendo texto
-- [ ] La isla oscura: tarjetas de partido
-- [ ] Repartir los 321 `voltNeon` en `primary` / `brandVolt`
-- [ ] Sombras y degradados: hundir en vez de iluminar
-- [ ] Los 4 `CustomPainter`
-- [ ] Duotonos claros de `PlayerAvatarFallback`
-- [ ] Barra de estado del sistema
-- [ ] La crónica en papel claro
+- [x] **La migración: 1.402 `AppColors` → `context.c`, y `app_colors.dart` borrado**
+- [x] `PateaColors.light`, con `primary` y `textSecondary` **más oscuros que la web** (ver abajo)
+- [x] Los 321 `voltNeon` repartidos: 253 `primary`, 42 `brandVolt`
+- [x] ~~La isla oscura~~ — no existe (ver la corrección arriba)
+- [x] El fondo: en claro no monta la foto de cancha
+- [x] Duotonos claros de `PlayerAvatarFallback` — diez tonos escritos, no los oscuros aclarados
+- [x] Barra de estado del sistema (venía de la Fase 0)
+- [x] La crónica — ya usaba `card`, así que el papel se aclara solo
+- [x] Sombras: las negras se quedan negras (hunden en los dos temas); los brillos volt siguen al tema
+- [x] ~~Los 4 `CustomPainter`~~ — **son tres**, y dos no dependen del tema (ver abajo)
+
+> **El texto del botón primario en claro no llegaba a AA, y es un defecto de
+> la web.** El test de contraste lo encontró: `--primary` (`hsl(217 91% 60%)`)
+> con blanco encima da **3,48:1**, contra el 4,5 que pide WCAG para texto
+> normal — y la etiqueta del botón es 15px en negrita, que no llega al umbral
+> de "texto grande" (18,7px). Nuestro azul va dos escalones más oscuro
+> (`52%`), y `textSecondary` un punto más, porque sobre `--secondary` daba
+> 4,35. No se copia el defecto.
+
+> **Los painters eran cuatro y son tres.** `_NewsprintPainter` ya no existe
+> — se fue en una reescritura anterior de la crónica, y la auditoría lo contó
+> de una lectura vieja. De los tres, el del foil holográfico usa un
+> `FragmentShader` y el del borde de la carta ya recibía su color; el único que
+> hubo que tocar fue el de la cancha, que ahora recibe los suyos al
+> construirse — el patrón para cualquier painter que venga.
 
 ### Fase 5 · Elegirlo y guardarlo
 
-- [ ] `themeModeProvider` + `SharedPreferences`
-- [ ] Control en `PateaUserMenuSheet`, dos opciones, sin seguir al sistema
+- [x] `ThemeController` (Riverpod) + `SharedPreferences`, verificado matando la app
+- [x] Control en `PateaUserMenuSheet`: **Cancha / Claro**, dos opciones, sin seguir al sistema
 
 ### Verificación
 
 - [ ] Goldens por pantalla, en los dos temas
 - [ ] Los mismos goldens a 1,3×
-- [ ] Test de contraste ≥ 4,5:1 sobre los pares de los dos esquemas
-- [ ] Lint contra `Color(0x` y `Colors.white`/`black` fuera de `core/theme/`
+- [x] **Test de contraste** ≥ 4,5:1 sobre los 18 pares de los dos esquemas
+- [x] **Trinquete** contra `AppColors`, `Color(0x` y `Colors.white`/`black`, en 79
+- [ ] Goldens por pantalla, en los dos temas — lo que falta para cerrar la verificación
 
 ### Aparte, sin depender de ninguna fase
 

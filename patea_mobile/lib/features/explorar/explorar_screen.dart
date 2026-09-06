@@ -283,7 +283,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                         label: Text(pos),
                         selected: selected,
                         onSelected: (_) => setState(() => _positionFilter = value),
-                        selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                        selectedColor: context.c.primary.withValues(alpha: 0.25),
                       ),
                     );
                   }).toList(),
@@ -722,7 +722,7 @@ class _DayTimePicker extends StatelessWidget {
                   label: Text(d['short'] as String),
                   selected: selected,
                   onSelected: (v) => onDaysChanged(v ? {...days, id} : {...days}..remove(id)),
-                  selectedColor: context.c.brandVolt.withValues(alpha: 0.2),
+                  selectedColor: context.c.primary.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),
@@ -739,7 +739,7 @@ class _DayTimePicker extends StatelessWidget {
                   label: Text(t['label'] as String),
                   selected: selected,
                   onSelected: (v) => onTimesChanged(v ? {...times, id} : {...times}..remove(id)),
-                  selectedColor: context.c.brandVolt.withValues(alpha: 0.2),
+                  selectedColor: context.c.primary.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),
@@ -790,7 +790,7 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
                   label: Text(e.value),
                   selected: selected,
                   onSelected: (v) => setState(() => v ? _selectedTypes.add(e.key) : _selectedTypes.remove(e.key)),
-                  selectedColor: context.c.brandVolt.withValues(alpha: 0.2),
+                  selectedColor: context.c.primary.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),

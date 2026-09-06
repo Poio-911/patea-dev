@@ -28,13 +28,18 @@ import 'package:flutter_test/flutter_test.dart';
 /// `app_colors.dart` ya no existe: los 1.402 usos migraron a `context.c` y la
 /// clase se borró. Lo que este test cuida ahora es que no vuelvan.
 void main() {
-  // Al migrar todo a context.c: AppColors 0 · literales 40 · absolutos 24.
+  // Al cerrar el modo claro: AppColors 0 · literales 54 · absolutos 25.
   //
-  // Los 64 que quedan son deliberados: los diez duotonos del maniqui, los
-  // siete colores de marca por tipo de partido, los degradados del fondo, los
-  // velos negros sobre foto y la aritmetica de color de las cartas. Bajar de
-  // aca ya no es limpieza, es cambiar decisiones de diseno.
-  const presupuesto = 64;
+  // Subio de 64 a 79 y esta bien: son los diez duotonos claros del maniqui.
+  // No se pueden derivar aclarando los oscuros —eso da grises sucios— asi que
+  // son una paleta escrita, igual que la oscura.
+  //
+  // Los 79 son todos deliberados: los veinte duotonos del maniqui, los siete
+  // colores de marca por tipo de partido, los degradados del fondo de cancha,
+  // los velos negros sobre foto, el verde de la cancha del modo en vivo y la
+  // aritmetica de color de las cartas. Bajar de aca ya no es limpieza: es
+  // cambiar decisiones de diseno.
+  const presupuesto = 79;
 
   test('los colores fuera del tema sólo pueden bajar', () {
     final patrones = <String, RegExp>{

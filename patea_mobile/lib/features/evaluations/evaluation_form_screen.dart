@@ -204,7 +204,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
                       label: Text(e.value),
                       selected: selected,
                       onSelected: (_) => setState(() => _mvpVote = selected ? null : e.key),
-                      selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                      selectedColor: context.c.primary.withValues(alpha: 0.25),
                     );
                   }).toList(),
                 ),
@@ -381,7 +381,7 @@ class _TypeToggle extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? context.c.brandVolt.withValues(alpha: 0.15) : context.c.cardSurface,
+          color: selected ? context.c.primary.withValues(alpha: 0.15) : context.c.cardSurface,
           borderRadius: AppRadii.cardAll,
           border: Border.all(color: selected ? context.c.primary : Colors.transparent),
         ),

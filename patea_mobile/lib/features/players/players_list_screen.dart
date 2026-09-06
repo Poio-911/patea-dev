@@ -221,7 +221,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
           color: selected
-              ? context.c.brandVolt.withValues(alpha: 0.16)
+              ? context.c.primary.withValues(alpha: 0.16)
               : context.c.background,
           borderRadius: AppRadii.cardAll,
           border: Border.all(

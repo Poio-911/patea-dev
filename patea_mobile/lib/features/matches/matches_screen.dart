@@ -577,7 +577,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                   label: Text(entry.value),
                   selected: selected,
                   onSelected: (v) => setState(() => v ? _types.add(entry.key) : _types.remove(entry.key)),
-                  selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                  selectedColor: context.c.primary.withValues(alpha: 0.25),
                   checkmarkColor: context.c.primary,
                 );
               }).toList(),
@@ -593,7 +593,7 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                   label: Text(entry.value),
                   selected: selected,
                   onSelected: (v) => setState(() => v ? _statuses.add(entry.key) : _statuses.remove(entry.key)),
-                  selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                  selectedColor: context.c.primary.withValues(alpha: 0.25),
                   checkmarkColor: context.c.primary,
                 );
               }).toList(),

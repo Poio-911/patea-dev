@@ -567,7 +567,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       _matchSize = size;
                       _selectedPlayerIds.clear();
                     }),
-                    selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                    selectedColor: context.c.primary.withValues(alpha: 0.25),
                   ),
                 ),
               );
@@ -818,7 +818,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         label: Text(pos == 'all' ? 'Todos' : pos),
                         selected: isSelected,
                         onSelected: (_) => setState(() => _positionFilter = pos),
-                        selectedColor: context.c.brandVolt.withValues(alpha: 0.25),
+                        selectedColor: context.c.primary.withValues(alpha: 0.25),
                         labelStyle: AppTypography.body(color: context.c.textSecondary, size: 12),
                       ),
                     );
@@ -943,7 +943,7 @@ class _TypeOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? context.c.brandVolt.withValues(alpha: 0.12) : context.c.cardSurface,
+          color: selected ? context.c.primary.withValues(alpha: 0.12) : context.c.cardSurface,
           borderRadius: AppRadii.cardAll,
           border: Border.all(color: selected ? context.c.primary : context.c.border),
         ),
@@ -977,7 +977,7 @@ class _PlayerSelectRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? context.c.brandVolt.withValues(alpha: 0.1) : Colors.transparent,
+          color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: AppRadii.cardAll,
           border: Border.all(color: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4)),
         ),

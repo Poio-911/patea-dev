@@ -39,10 +39,16 @@ class PateaBackground extends ConsumerWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
+                  // El blanco manda y los tintes son apenas dos esquinas. Con
+                  // tres paradas el ambar se comia la mitad de abajo: la web
+                  // lo disimula animando un degradado del 400% del tamano de
+                  // la pantalla, que aca no tiene sentido.
+                  stops: const [0.0, 0.22, 0.72, 1.0],
                   colors: [
-                    context.c.primary.withValues(alpha: 0.06),
-                    context.c.accent.withValues(alpha: 0.05),
+                    context.c.primary.withValues(alpha: 0.05),
                     context.c.background,
+                    context.c.background,
+                    context.c.accent.withValues(alpha: 0.05),
                   ],
                 ),
               ),

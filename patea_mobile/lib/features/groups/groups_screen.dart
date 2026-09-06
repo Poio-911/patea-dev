@@ -563,7 +563,7 @@ class _GroupSwitchRow extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: active
-              ? context.c.brandVolt.withValues(alpha: 0.1)
+              ? context.c.primary.withValues(alpha: 0.1)
               : context.c.cardSurface.withValues(alpha: 0.5),
           borderRadius: AppRadii.cardAll,
         ),
@@ -695,11 +695,11 @@ class _PlayedMatchRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Icon(Icons.emoji_events_rounded,
-                      size: 12, color: const Color(0xFFFFC64A)),
+                      size: 12, color: context.c.goldBorder),
                   const SizedBox(width: 4),
                   Text('MVP · ${mvpName!}',
                       style: AppTypography.code(
-                          size: 10, color: const Color(0xFFFFC64A))),
+                          size: 10, color: context.c.goldBorder)),
                 ],
               ),
             ],

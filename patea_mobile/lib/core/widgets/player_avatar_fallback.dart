@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/patea_colors.dart';
+
 /// Lo que se ve cuando el jugador todavía no subió foto.
 ///
 /// Antes era un recuadro gris plano con la inicial. En la carta con foto en la
@@ -48,10 +50,30 @@ class PlayerAvatarFallback extends StatelessWidget {
     return acc;
   }
 
+  /// Los mismos diez tonos, subidos de luz para el tema claro.
+  ///
+  /// No son los oscuros aclarados con un `withValues`: eso da grises sucios.
+  /// Es la misma familia de tonos con la luminosidad y la saturación de un
+  /// fondo claro, así que el maniquí —que es de color saturado— sigue
+  /// destacándose en vez de perderse.
+  static const List<List<Color>> _palettesLight = [
+    [Color(0xFFB9DCD4), Color(0xFF7FBCAF)], // verde cancha
+    [Color(0xFFE8C3CC), Color(0xFFC98D9C)], // vino
+    [Color(0xFFC2D2EC), Color(0xFF8FAAD3)], // azul noche
+    [Color(0xFFE7D3B4), Color(0xFFC7A876)], // tierra
+    [Color(0xFFD3CBE7), Color(0xFFA79ACC)], // violeta
+    [Color(0xFFBBD8E4), Color(0xFF83B4C7)], // celeste profundo
+    [Color(0xFFEFCDB4), Color(0xFFD9A276)], // naranja quemado
+    [Color(0xFFBFDDC9), Color(0xFF88BE9C)], // verde musgo
+    [Color(0xFFE2C6DA), Color(0xFFC195B4)], // ciruela
+    [Color(0xFFCBD3DC), Color(0xFF9AA7B5)], // pizarra
+  ];
+
   @override
   Widget build(BuildContext context) {
     final h = _hash;
-    final palette = _palettes[h % _palettes.length];
+    final paleta = context.c.isDarkSurface ? _palettes : _palettesLight;
+    final palette = paleta[h % paleta.length];
     // El muñeco se elige con otra parte del hash: si se usara el mismo resto,
     // color y muñeco irían siempre de a pares y se verían sólo 10 variantes.
     final avatar = (h ~/ _palettes.length) % _avatarCount + 1;
