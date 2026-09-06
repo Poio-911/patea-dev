@@ -113,9 +113,21 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
 
   @override
   Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        extensions: <ThemeExtension<dynamic>>[PateaColors.game],
+      ),
+      child: Builder(
+        builder: (cardContext) => _buildCard(cardContext),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
+    final c = context.c;
     final player = widget.player;
     final tier = _getOvrTier(player.ovr);
-    final posColor = context.c.positionColor(player.position);
+    final posColor = c.positionColor(player.position);
 
     final statsList = [
       {'key': 'PAC', 'label': 'RIT', 'val': player.pac},
@@ -136,37 +148,37 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
 
     switch (tier) {
       case 'elite':
-        cardBorder = Border.all(color: context.c.eliteBorder.withValues(alpha: 0.65), width: 1.5);
+        cardBorder = Border.all(color: c.eliteBorder.withValues(alpha: 0.65), width: 1.5);
         auraAlignment = Alignment.topCenter;
-        auraColors = [context.c.eliteBorder.withValues(alpha: 0.62), Colors.transparent];
-        avatarBorderColor = context.c.eliteBorder;
+        auraColors = [c.eliteBorder.withValues(alpha: 0.62), c.eliteBorder.withValues(alpha: 0)];
+        avatarBorderColor = c.eliteBorder;
         avatarBorderAlpha = 0.88;
-        avatarGlow = BoxShadow(color: context.c.eliteBorder.withValues(alpha: 0.60), blurRadius: 8);
+        avatarGlow = BoxShadow(color: c.eliteBorder.withValues(alpha: 0.60), blurRadius: 8);
         break;
 
       case 'gold':
-        cardBorder = Border.all(color: context.c.goldBorder.withValues(alpha: 0.55), width: 1.2);
+        cardBorder = Border.all(color: c.goldBorder.withValues(alpha: 0.55), width: 1.2);
         auraAlignment = Alignment.topRight;
-        auraColors = [context.c.goldBorder.withValues(alpha: 0.32), Colors.transparent];
-        avatarBorderColor = context.c.goldBorder;
+        auraColors = [c.goldBorder.withValues(alpha: 0.32), c.goldBorder.withValues(alpha: 0)];
+        avatarBorderColor = c.goldBorder;
         avatarBorderAlpha = 0.85;
-        avatarGlow = BoxShadow(color: context.c.goldBorder.withValues(alpha: 0.40), blurRadius: 8);
+        avatarGlow = BoxShadow(color: c.goldBorder.withValues(alpha: 0.40), blurRadius: 8);
         break;
 
       case 'silver':
-        cardBorder = Border.all(color: context.c.silverBorder.withValues(alpha: 0.45), width: 1.0);
+        cardBorder = Border.all(color: c.silverBorder.withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.topCenter;
-        auraColors = [context.c.silverBorder.withValues(alpha: 0.25), Colors.transparent];
-        avatarBorderColor = context.c.silverBorder;
+        auraColors = [c.silverBorder.withValues(alpha: 0.25), c.silverBorder.withValues(alpha: 0)];
+        avatarBorderColor = c.silverBorder;
         avatarBorderAlpha = 0.75;
         avatarGlow = null; // el glow separa oro y elite del resto
         break;
 
       default: // bronze
-        cardBorder = Border.all(color: context.c.bronzeBorder.withValues(alpha: 0.45), width: 1.0);
+        cardBorder = Border.all(color: c.bronzeBorder.withValues(alpha: 0.45), width: 1.0);
         auraAlignment = Alignment.bottomLeft;
-        auraColors = [context.c.bronzeBorder.withValues(alpha: 0.28), Colors.transparent];
-        avatarBorderColor = context.c.bronzeBorder;
+        auraColors = [c.bronzeBorder.withValues(alpha: 0.28), c.bronzeBorder.withValues(alpha: 0)];
+        avatarBorderColor = c.bronzeBorder;
         avatarBorderAlpha = 0.70;
         avatarGlow = null; // idem bronce
         break;
@@ -237,7 +249,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               builder: (context, constraints) {
                 final cardH = constraints.maxHeight;
                 return ColoredBox(
-                  color: context.c.card,
+                  color: c.card,
                   child: Stack(
                     children: [
                       // 1. Efecto Aura por Tier (radial-gradient de `.game .aura-*`).
@@ -266,7 +278,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               gradient: RadialGradient(
                                 center: Alignment.center,
                                 radius: 1.4,
-                                colors: [context.c.eliteBorder.withValues(alpha: 0.22), Colors.transparent],
+                                colors: [c.eliteBorder.withValues(alpha: 0.22), c.eliteBorder.withValues(alpha: 0)],
                               ),
                             ),
                           ),
@@ -366,13 +378,13 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                 (_curX / _maxTilt) + 0.9,
                               ),
                               colors: [
-                                Colors.transparent,
+                                c.onPhoto.withValues(alpha: 0),
                                 // Brillo especular: la opacidad sale de la
                                 // inclinacion, no es una veladura del tema.
-                                Colors.white.withValues(
+                                c.onPhoto.withValues(
                                   alpha: 0.10 * (_curX.abs() + _curY.abs()) / _maxTilt,
                                 ),
-                                Colors.transparent,
+                                c.onPhoto.withValues(alpha: 0),
                               ],
                               stops: const [0.32, 0.5, 0.68],
                             ),
@@ -420,7 +432,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                               style: AppTypography.headline(
                                 size: 14,
                                 weight: FontWeight.w800,
-                                color: context.c.textPrimary,
+                                color: c.textPrimary,
                                 letterSpacing: 0.5,
                               ).copyWith(
                                 shadows: [
@@ -441,7 +453,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                   '${player.ovr}',
                                   style: AppTypography.sportNumber(
                                     size: 38,
-                                    color: context.c.textPrimary,
+                                    color: c.textPrimary,
                                   ).copyWith(
                                     height: 0.92,
                                     shadows: [
@@ -454,7 +466,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                _ovrBadge(tier, avatarBorderColor, player.id),
+                                _ovrBadge(c, tier, avatarBorderColor, player.id),
                               ],
                             ),
                           ],
@@ -498,7 +510,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                             style: AppTypography.headline(
                               size: 15,
                               weight: FontWeight.w800,
-                              color: context.c.textPrimary,
+                              color: c.textPrimary,
                               letterSpacing: 0.6,
                             ).copyWith(
                               shadows: [
@@ -519,25 +531,25 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: _attributeBox(statsList[0])),
+                                  Expanded(child: _attributeBox(c, statsList[0])),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _attributeBox(statsList[1])),
+                                  Expanded(child: _attributeBox(c, statsList[1])),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Expanded(child: _attributeBox(statsList[2])),
+                                  Expanded(child: _attributeBox(c, statsList[2])),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _attributeBox(statsList[3])),
+                                  Expanded(child: _attributeBox(c, statsList[3])),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Expanded(child: _attributeBox(statsList[4])),
+                                  Expanded(child: _attributeBox(c, statsList[4])),
                                   const SizedBox(width: 5),
-                                  Expanded(child: _attributeBox(statsList[5])),
+                                  Expanded(child: _attributeBox(c, statsList[5])),
                                 ],
                               ),
                             ],
@@ -571,12 +583,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
   ///
   /// Debajo del shader va el color del tier plano con un degradado corto, para
   /// que también se lea como oro o plata **quieta**, no sólo al moverla.
-  Widget _ovrBadge(String tier, Color tierColor, String playerId) {
+  Widget _ovrBadge(PateaColors c, String tier, Color tierColor, String playerId) {
     // Texto oscuro sobre los metales claros, blanco sobre el bronce. Se
     // decide por luminancia y no por tier para que siga andando si algún día
     // cambian los colores.
     final onMetal =
-        tierColor.computeLuminance() > 0.45 ? context.c.background : context.c.textPrimary;
+        tierColor.computeLuminance() > 0.45 ? c.background : c.textPrimary;
 
     return Transform.translate(
       // Sale del padding del contenido (10) para tocar el borde de la carta.
@@ -693,7 +705,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
   /// en una carta bronce salían las seis barras marrones sobre oscuro. El
   /// único resaltado que queda es el del criterio de orden, que sí dice por
   /// qué la grilla está ordenada así.
-  Widget _attributeBox(Map<String, dynamic> stat) {
+  Widget _attributeBox(PateaColors c, Map<String, dynamic> stat) {
     final key = stat['key'] as String;
     final label = stat['label'] as String;
     final val = stat['val'] as int;
@@ -704,13 +716,13 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       decoration: BoxDecoration(
         color: isSorted
-            ? context.c.brandVolt.withValues(alpha: 0.16)
-            : context.c.overlaySubtle,
+            ? c.brandVolt.withValues(alpha: 0.16)
+            : c.overlaySubtle,
         borderRadius: AppRadii.hairAll,
         border: Border.all(
           color: isSorted
-              ? context.c.brandVolt.withValues(alpha: 0.65)
-              : context.c.overlaySubtle,
+              ? c.brandVolt.withValues(alpha: 0.65)
+              : c.overlayLine,
           width: isSorted ? 1.2 : 0.8,
         ),
       ),
@@ -725,8 +737,8 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                 size: 9,
                 weight: FontWeight.w800,
                 color: isSorted
-                    ? context.c.primary
-                    : context.c.textSecondary,
+                    ? c.primary
+                    : c.textSecondary,
               ),
             ),
           ),
@@ -738,15 +750,15 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
               borderRadius: AppRadii.hairAll,
               child: Container(
                 height: 3.5,
-                color: context.c.overlayLine,
+                color: c.overlayLine,
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: (val / 99.0).clamp(0.05, 1.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: isSorted
-                          ? context.c.brandVolt.withValues(alpha: 0.75)
-                          : context.c.overlayStrong,
+                          ? c.brandVolt.withValues(alpha: 0.75)
+                          : c.textSecondary.withValues(alpha: 0.65),
                       borderRadius: AppRadii.hairAll,
                     ),
                   ),
@@ -762,7 +774,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
             style: AppTypography.code(
               size: 10,
               weight: FontWeight.w800,
-              color: context.c.textPrimary,
+              color: c.textPrimary,
             ),
           ),
         ],

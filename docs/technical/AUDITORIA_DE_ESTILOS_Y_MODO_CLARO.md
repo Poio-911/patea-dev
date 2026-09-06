@@ -71,7 +71,7 @@ decisión tomada sin implementar.
 | Frente | Diagnóstico | Decisión | Código |
 | --- | --- | --- | --- |
 | 1 · Fondo del tema claro | cerrado | **pendiente** — elegir entre tres | andamio en el árbol |
-| 2 · Carta de jugador en claro | cerrado | tomada — oscura en los dos temas | **sin empezar** |
+| 2 · Carta de jugador en claro | cerrado | tomada — oscura en los dos temas | **hecho** |
 
 ## Frente 1 · El fondo del tema claro
 
@@ -244,10 +244,10 @@ sólo que ahí se disimulan. Quedan abiertos:
       usuario y el de la galería. Regenerar los goldens en claro.
 - [ ] Opcional, ofrecido y sin responder: preparar la **foto desenfocada** y la
       **mancha más marcada** para una segunda vuelta de comparación.
-- [ ] **Implementar la carta oscura en los dos temas** (decisión tomada
+- [x] **Implementar la carta oscura en los dos temas** (decisión tomada
       arriba). Regenerar los goldens de `plantel`, `jugador_detalle` y
       `partido_detalle` en claro.
-- [ ] Los tres defectos de la carta que sobreviven a la decisión: los seis
+- [x] Los tres defectos de la carta que sobreviven a la decisión: los seis
       `Colors.transparent`, el borde de la caja de atributo, y el contraste de
       la barra de progreso.
 - [ ] Pendiente viejo, de la pasada de diseño y no de este plan: el fondo de
