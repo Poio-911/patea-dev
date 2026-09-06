@@ -141,7 +141,7 @@ class PateaNotificationsSheet extends ConsumerWidget {
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: AppColors.overlayStrong,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadii.hairAll,
                 ),
               ),
             ),

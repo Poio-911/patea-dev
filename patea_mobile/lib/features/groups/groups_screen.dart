@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
@@ -180,7 +181,7 @@ class _NoActiveGroupView extends ConsumerWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3))),
+          decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3))),
           child: Row(
             children: [
               Icon(Icons.groups_2_outlined, color: AppColors.voltNeon),
@@ -197,7 +198,7 @@ class _NoActiveGroupView extends ConsumerWidget {
             if (groups.isEmpty) {
               return Container(
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
                     Icon(Icons.groups_2_outlined, size: 40, color: AppColors.textSecondary),
@@ -215,7 +216,7 @@ class _NoActiveGroupView extends ConsumerWidget {
                 ...groups.map((g) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadii.cardAll,
                         onTap: () async {
                           try {
                             await ref.read(groupServiceProvider).setActiveGroup(g.id);
@@ -227,7 +228,7 @@ class _NoActiveGroupView extends ConsumerWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border.withValues(alpha: 0.5))),
+                          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.5))),
                           child: Row(
                             children: [
                               Icon(Icons.shield_outlined, color: AppColors.voltNeon),
@@ -365,13 +366,13 @@ class _ActiveGroupView extends ConsumerWidget {
                     children: teams
                         .map((team) => InkWell(
                               onTap: () => context.push('/groups/teams/${team.id}'),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: AppRadii.cardAll,
                               child: Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: AppColors.cardSurface.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: AppRadii.cardAll,
                                 ),
                                 child: Row(
                                   children: [
@@ -513,7 +514,7 @@ class _Section extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
       ),
       child: Column(
@@ -556,7 +557,7 @@ class _GroupSwitchRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(10),
@@ -564,7 +565,7 @@ class _GroupSwitchRow extends StatelessWidget {
           color: active
               ? AppColors.voltNeon.withValues(alpha: 0.1)
               : AppColors.cardSurface.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
         ),
         child: Row(
           children: [
@@ -657,13 +658,13 @@ class _PlayedMatchRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.cardSurface.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -727,7 +728,7 @@ class _GroupHeroCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.card, AppColors.cardSurface]),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadii.surfaceAll,
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Column(
@@ -743,7 +744,7 @@ class _GroupHeroCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.overlaySubtle,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadii.surfaceAll,
                 ),
                 child: Text(roleLabel(role!).toUpperCase(),
                     style: AppTypography.code(
@@ -762,10 +763,10 @@ class _GroupHeroCard extends StatelessWidget {
                     Clipboard.setData(ClipboardData(text: group.inviteCode));
                     PateaSnack.ok(context, '¡Código copiado!');
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadii.chipAll,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
+                    decoration: BoxDecoration(color: AppColors.background, borderRadius: AppRadii.chipAll, border: Border.all(color: AppColors.border)),
                     child: Row(
                       children: [
                         Text('CÓDIGO', style: AppTypography.body(size: 10, color: AppColors.textSecondary)),

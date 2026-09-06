@@ -428,7 +428,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               margin: const EdgeInsets.only(top: 4),
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadii.cardAll,
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
@@ -448,7 +448,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.voltNeon.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadii.cardAll,
               border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
             ),
             child: Row(
@@ -508,7 +508,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               constraints: const BoxConstraints(minHeight: 60),
-              decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
               child: Center(
                 child: _loadingWeather
                     ? Row(
@@ -609,7 +609,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadii.cardAll,
               border: Border.all(color: AppColors.border),
             ),
             child: Row(
@@ -772,7 +772,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               ),
               const SizedBox(height: 6),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppRadii.hairAll,
                 child: LinearProgressIndicator(
                   value: (_selectedPlayerIds.length / _matchSize).clamp(0, 1),
                   minHeight: 6,
@@ -787,7 +787,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadii.chipAll,
                     border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Text(
@@ -912,7 +912,7 @@ class _StepIndicator extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 color: isActive ? AppColors.voltNeon : AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadii.hairAll,
               ),
             ),
           );
@@ -939,12 +939,12 @@ class _TypeOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selected ? AppColors.voltNeon.withValues(alpha: 0.12) : AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border),
         ),
         child: Row(
@@ -972,13 +972,13 @@ class _PlayerSelectRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.voltNeon.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border.withValues(alpha: 0.4)),
         ),
         child: Row(
@@ -1012,7 +1012,7 @@ class _PlayerSelectRow extends StatelessWidget {
               height: 22,
               decoration: BoxDecoration(
                 color: selected ? AppColors.voltNeon : Colors.transparent,
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: AppRadii.hairAll,
                 border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textSecondary),
               ),
               child: selected ? const Icon(Icons.check, size: 16, color: AppColors.onPrimary) : null,

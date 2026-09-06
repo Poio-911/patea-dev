@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -208,7 +209,7 @@ class CupBracketScreen extends ConsumerWidget {
             ...roundMatches.map(
               (m) => InkWell(
                 onTap: () => _showRecordResultDialog(context, ref, m),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadii.cardAll,
                 child: _BracketMatchCard(match: m),
               ),
             ),
@@ -250,7 +251,7 @@ class _BracketMatchCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(
           color: hasWinner ? AppColors.goldBorder.withValues(alpha: 0.8) : AppColors.border,
           width: hasWinner ? 1.5 : 1.0,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -59,7 +60,7 @@ class PlayerTeamsList extends ConsumerWidget {
                     width: 88,
                     child: InkWell(
                       onTap: () => context.push('/groups/teams/${team.id}'),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadii.cardAll,
                       child: Column(
                         children: [
                           Stack(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -76,7 +77,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.card,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadii.surfaceAll),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

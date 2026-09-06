@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_radii.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/models/group_model.dart';
@@ -115,7 +116,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
         height: 300,
         decoration: const BoxDecoration(
           color: AppColors.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
           children: [
@@ -179,7 +180,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       builder: (context, scrollController) => Container(
         decoration: const BoxDecoration(
           color: AppColors.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
           children: [
@@ -189,7 +190,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
               height: 5,
               decoration: BoxDecoration(
                 color: AppColors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: AppRadii.hairAll,
               ),
             ),
             Padding(
@@ -227,7 +228,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                 decoration: BoxDecoration(
                   color: AppColors.warning.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: AppRadii.chipAll,
                 ),
                 child: Text(
                   'Números repetidos: ${(dups.toList()..sort()).join(', ')}',
@@ -270,7 +271,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                     backgroundColor: AppColors.voltNeon,
                     foregroundColor: AppColors.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   child: Text('Guardar plantel',
                       style: AppTypography.headline(
@@ -311,7 +312,7 @@ class _RosterRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.background,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
         ),
         child: Row(
           children: [
@@ -345,7 +346,7 @@ class _RosterRow extends StatelessWidget {
                     color: entry.starter
                         ? AppColors.voltNeon.withValues(alpha: 0.16)
                         : AppColors.overlaySubtle,
-                    borderRadius: BorderRadius.circular(7),
+                    borderRadius: AppRadii.chipAll,
                   ),
                   child: Text(
                     entry.starter ? 'TITULAR' : 'SUPLENTE',
@@ -370,7 +371,7 @@ class _RosterRow extends StatelessWidget {
                     color: duplicated
                         ? AppColors.warning.withValues(alpha: 0.18)
                         : AppColors.overlaySubtle,
-                    borderRadius: BorderRadius.circular(7),
+                    borderRadius: AppRadii.chipAll,
                     border: duplicated
                         ? Border.all(color: AppColors.warning.withValues(alpha: 0.7))
                         : null,

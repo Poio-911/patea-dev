@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -177,7 +178,7 @@ class _MatchCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadii.surfaceAll,
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -255,7 +256,7 @@ class _OvrBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
@@ -324,7 +325,7 @@ class _AttributeDeltas extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadii.chipAll,
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Text(
@@ -422,7 +423,7 @@ class _PeerEvalTile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(7),
+                          borderRadius: AppRadii.chipAll,
                           border: Border.all(color: color.withValues(alpha: 0.28)),
                         ),
                         child: Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -80,7 +81,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: isUser ? AppColors.voltNeon : AppColors.card,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppRadii.cardAll,
                       border: Border.all(
                         color: isUser ? AppColors.voltNeon : AppColors.border,
                       ),

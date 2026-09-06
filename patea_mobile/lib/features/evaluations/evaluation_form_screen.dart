@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -175,7 +176,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.25))),
+          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.25))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -277,7 +278,7 @@ class _CounterDial extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
       child: Column(
         children: [
           Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.textSecondary)),
@@ -307,7 +308,7 @@ class _PlayerEvaluationCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -375,13 +376,13 @@ class _TypeToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.voltNeon.withValues(alpha: 0.15) : AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(color: selected ? AppColors.voltNeon : Colors.transparent),
         ),
         child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? AppColors.voltNeon : AppColors.textSecondary)),
@@ -449,12 +450,12 @@ class _TagsEditor extends StatelessWidget {
                 }
                 onChanged();
               },
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadii.cardAll,
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isChecked ? (isPositive ? AppColors.success.withValues(alpha: 0.1) : AppColors.destructive.withValues(alpha: 0.1)) : AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadii.cardAll,
                   border: Border.all(color: isChecked ? (isPositive ? AppColors.success : AppColors.destructive) : Colors.transparent),
                 ),
                 child: Row(

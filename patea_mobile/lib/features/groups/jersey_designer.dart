@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -54,7 +55,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
         Center(
           child: Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
             child: JerseyWidget(jersey: value, size: 90),
           ),
         ),
@@ -70,12 +71,12 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
             final type = jerseyTemplates.keys.elementAt(index);
             final selected = type == value.pattern;
             return InkWell(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadii.cardAll,
               onTap: () => widget.onChanged(JerseyModel(pattern: type, primaryColor: value.primaryColor, secondaryColor: value.secondaryColor)),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadii.cardAll,
                   border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border, width: selected ? 2 : 1),
                 ),
                 child: JerseyWidget(jersey: JerseyModel(pattern: type, primaryColor: '#9CA3AF', secondaryColor: '#E5E7EB'), size: 40),

@@ -190,7 +190,6 @@ class _LocationVotingState extends ConsumerState<_LocationVoting> {
     final picked = await showModalBottomSheet<LocationSuggestion>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
       builder: (_) => const _LocationSearchSheet(),
     );
@@ -455,7 +454,7 @@ class _ProposalRow extends StatelessWidget {
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               color: leading ? AppColors.voltNeon : AppColors.overlayLine,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: AppRadii.hairAll,
             ),
           ),
           Expanded(

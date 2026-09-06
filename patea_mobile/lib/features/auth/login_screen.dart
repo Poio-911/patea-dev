@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -94,7 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 padding: const EdgeInsets.all(28.0),
                 decoration: BoxDecoration(
                   color: AppColors.card.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: AppRadii.surfaceAll,
                   border: Border.all(
                     color: AppColors.border.withValues(alpha: 0.5),
                     width: 1.2,
@@ -250,7 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         foregroundColor: AppColors.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadii.cardAll,
                         ),
                         elevation: 4,
                         shadowColor: AppColors.voltNeon.withValues(alpha: 0.4),
@@ -315,7 +316,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         side: const BorderSide(color: AppColors.border),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadii.cardAll,
                         ),
                       ),
                       icon: const Icon(Icons.g_mobiledata, size: 28, color: AppColors.textPrimary),
@@ -374,13 +375,13 @@ class _PositionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 11),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.voltNeon : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(
             color: selected ? AppColors.voltNeon : AppColors.overlayStrong,
           ),

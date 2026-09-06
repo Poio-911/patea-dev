@@ -62,7 +62,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
                   color: AppColors.overlayStrong,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadii.hairAll,
                 ),
               ),
             ),

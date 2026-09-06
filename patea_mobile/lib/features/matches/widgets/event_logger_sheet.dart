@@ -208,7 +208,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
                     margin: const EdgeInsets.only(bottom: 18),
                     decoration: BoxDecoration(
                       color: AppColors.overlayStrong,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppRadii.hairAll,
                     ),
                   ),
                 ),
@@ -598,7 +598,7 @@ class _CardColorPicker extends StatelessWidget {
             Container(
               width: 12,
               height: 16,
-              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: color, borderRadius: AppRadii.hairAll),
             ),
             const SizedBox(width: 8),
             Text(label,

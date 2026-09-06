@@ -124,11 +124,28 @@ se construiría y se revisaría contra una referencia rota. Los recaudos:
 - [x] `PateaSnack` — 37 de 45 `SnackBar`; 8 con contenido armado quedan a mano
 - [x] `Colors.transparent` en las 10 pantallas opacas
 - [x] Movimiento reducido — **1 caso real, no 9** (ver abajo)
-- [ ] `PateaCard` — 231 `BoxDecoration`, 18 radios → los 3 de `AppRadii`
-- [ ] `PateaSheet` — los 5 fondos de bottom sheet
-- [ ] `PlayerPositionBadge` en todas las pantallas
-- [ ] `AppSpacing`
-- [ ] `core/constants/sections.dart` (con `navLabel` y `title` separados a propósito)
+- [x] **Radios: 224 literales en 18 valores → los 5 escalones de `AppRadii`**
+- [x] Bottom sheets — sin `PateaSheet`: el `bottomSheetTheme` de la Fase 0 ya lo hacía (ver abajo)
+- [x] `PlayerPositionBadge` con forma densa, en los sitios que renderizaban el puesto sin su color
+- [x] `core/constants/sections.dart` — el router y las seis pantallas leen de ahí
+- [ ] `PateaCard` — 231 `BoxDecoration` a mano. **Lo único que queda de la fase.**
+- [x] ~~`AppSpacing`~~ — **descartado a propósito** (ver abajo)
+
+> **El bottom sheet no necesitaba un componente.** Escribí un `PateaSheet` y
+> lo borré antes de commitear: habría sido un componente sin adoptar, que es
+> exactamente el error que este documento le señala a `PateaTabs`. Los cinco
+> fondos distintos salían de que cada llamada pasaba su `backgroundColor`; el
+> `bottomSheetTheme` que agregó la Fase 0 ya define `popover` y el radio de
+> arriba. Alcanzó con **sacar los 8 overrides** y dejar que el tema haga su
+> trabajo — que es para lo que se construyó.
+
+> **`AppSpacing`: descartado, y por qué.** Son 19 valores de `SizedBox` y 18
+> de `EdgeInsets`, y snapearlos a una escala de cinco cambia el layout de toda
+> la app en 2 a 4 píxeles por caja. A diferencia del color, el espaciado **no
+> bloquea el modo claro**, y a diferencia de los radios —donde 18 valores sí
+> se leen como desprolijidad— la diferencia entre 14 y 16 no la ve nadie. Es
+> la única incoherencia de la lista donde el arreglo cuesta mucho y se nota
+> poco. Si alguna vez se hace, que sea con goldens ya andando.
 
 > **Movimiento reducido: el hallazgo era más chico de lo que decía la
 > auditoría.** `AnimationController` ya acorta las animaciones cuando

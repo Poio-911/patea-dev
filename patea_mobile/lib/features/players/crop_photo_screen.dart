@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/theme/app_radii.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -217,7 +218,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                   backgroundColor: AppColors.voltNeon,
                   foregroundColor: AppColors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: _saving
                     ? const SizedBox(

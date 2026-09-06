@@ -176,7 +176,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                   height: 6,
                   decoration: BoxDecoration(
                     color: isCurrent ? AppColors.voltNeon : AppColors.overlayStrong,
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: AppRadii.hairAll,
                   ),
                 );
               }),

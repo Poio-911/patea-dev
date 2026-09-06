@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
+import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,7 +45,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> with Si
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'TORNEOS Y COPAS',
+          spec(Section.competitions).title.toUpperCase(),
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),
         ),
         // Antes era el `TabBar` de Material sin tocar, que en medio de la app
@@ -114,12 +116,12 @@ class _CompetitionsList extends StatelessWidget {
               context.push('/competitions/cup/${comp.id}');
             }
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.cardAll,
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.card,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadii.cardAll,
               border: Border.all(color: AppColors.border),
             ),
             child: Row(

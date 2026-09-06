@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/firestore_service.dart';
@@ -56,7 +57,7 @@ class PlayerProgressionScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.card,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadii.surfaceAll,
                   border: Border.all(color: AppColors.border),
                 ),
                 child: historyAsync.when(

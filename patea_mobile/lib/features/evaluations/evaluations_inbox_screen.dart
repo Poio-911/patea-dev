@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
+import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
@@ -111,8 +113,8 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
                 Padding(
                   padding: EdgeInsets.fromLTRB(
                       16, MediaQuery.of(context).padding.top + 12, 16, 0),
-                  child: const PateaPageHeader(
-                    title: 'Evaluaciones',
+                  child: PateaPageHeader(
+                    title: spec(Section.evaluations).title,
                     description:
                         'Puntuá a tus compañeros después de cada partido: de ahí salen los OVR de todos.',
                     showCountRow: false,
@@ -194,7 +196,7 @@ class _StatBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
       child: Column(
         children: [
           Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: color ?? AppColors.textPrimary)),
@@ -251,7 +253,7 @@ class _PendingList extends StatelessWidget {
         final urgency = _urgency(item.matchDate);
         return Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -259,7 +261,7 @@ class _PendingList extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.chipAll),
                     child: Column(
                       children: [
                         Text(fmtMonthShort(item.matchDate), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: AppColors.voltNeon)),
@@ -277,7 +279,7 @@ class _PendingList extends StatelessWidget {
                           Container(
                             margin: const EdgeInsets.only(top: 4),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: urgency.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
+                            decoration: BoxDecoration(color: urgency.color.withValues(alpha: 0.12), borderRadius: AppRadii.surfaceAll),
                             child: Text(urgency.label, style: AppTypography.code(size: 10, weight: FontWeight.w700, color: urgency.color)),
                           ),
                       ],
@@ -295,7 +297,7 @@ class _PendingList extends StatelessWidget {
                   children: item.assignedPlayers.map((p) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
+                      decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.surfaceAll),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -348,7 +350,7 @@ class _HistoryList extends StatelessWidget {
         final item = items[index];
         return Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.success.withValues(alpha: 0.2))),
+          decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.success.withValues(alpha: 0.2))),
           child: Row(
             children: [
               Icon(Icons.check_circle, color: AppColors.success, size: 20),
@@ -444,7 +446,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
     final r = widget.request;
     return Container(
       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+      decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

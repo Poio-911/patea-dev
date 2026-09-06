@@ -1,4 +1,5 @@
 import 'dart:ui';
+import '../../core/theme/app_radii.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -97,7 +98,7 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                     // Logo
                     InkWell(
                       onTap: () => context.go('/'),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadii.chipAll,
                       child: const Padding(
                         padding: EdgeInsets.all(4.0),
                         child: SoccerRunnerIcon(size: 28, color: AppColors.voltNeon),
@@ -190,7 +191,7 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                   builder: (_) => const PateaUserMenuSheet(),
                                 );
                               },
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: AppRadii.surfaceAll,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             child: Row(

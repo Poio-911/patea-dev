@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_radii.dart';
 
 import '../../../core/models/match_model.dart';
 import '../../../core/theme/app_colors.dart';
@@ -233,7 +234,7 @@ class OpposedBar extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           ClipRRect(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: AppRadii.hairAll,
             child: SizedBox(
               height: 5,
               child: Row(

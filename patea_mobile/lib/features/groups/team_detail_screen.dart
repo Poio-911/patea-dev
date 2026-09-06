@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/widgets/player_position_badge.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'package:flutter/material.dart';
@@ -44,8 +46,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.card,
-        title: Text('¿Eliminar "${team.name}"?', style: AppTypography.headline(size: 16)),
+          title: Text('¿Eliminar "${team.name}"?', style: AppTypography.headline(size: 16)),
         content: Text('Esta acción es permanente.', style: AppTypography.body(color: AppColors.textSecondary, size: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
@@ -80,7 +81,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       context: context,
       backgroundColor: AppColors.card,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Padding(
           padding: EdgeInsets.only(
@@ -308,7 +309,7 @@ class _TeamBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.cardAll,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -351,7 +352,7 @@ class _TeamBanner extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFC64A)
                                     .withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: AppRadii.surfaceAll,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -474,14 +475,14 @@ class _ActionButton extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(11),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         height: 44,
         padding: EdgeInsets.symmetric(horizontal: label == null ? 14 : 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: AppRadii.cardAll,
         ),
         child: busy
             ? SizedBox(
@@ -567,13 +568,13 @@ class _RosterTile extends StatelessWidget {
       opacity: starter ? 1 : 0.72,
       child: InkWell(
         onTap: p == null ? null : () => context.push('/players/${p.id}'),
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: AppRadii.cardAll,
         child: Container(
           margin: const EdgeInsets.only(bottom: 5),
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
           decoration: BoxDecoration(
             color: AppColors.background,
-            borderRadius: BorderRadius.circular(11),
+            borderRadius: AppRadii.cardAll,
             border: starter
                 ? const Border(
                     left: BorderSide(color: AppColors.voltNeon, width: 2.5))
@@ -610,9 +611,7 @@ class _RosterTile extends StatelessWidget {
                 ),
               ),
               if (p != null) ...[
-                Text(p.position,
-                    style: AppTypography.code(
-                        size: 9, color: AppColors.textSecondary)),
+                PlayerPositionBadge(position: p.position, fontSize: 9, dense: true),
                 const SizedBox(width: 9),
                 Text('${p.ovr}', style: AppTypography.sportNumber(size: 16)),
               ],
@@ -644,13 +643,13 @@ class _AgendaRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(11),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         margin: const EdgeInsets.only(bottom: 5),
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.background,
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: AppRadii.cardAll,
         ),
         child: Row(
           children: [

@@ -140,7 +140,7 @@ class _Paper extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
       ),
       child: child,
@@ -170,7 +170,7 @@ class _Masthead extends StatelessWidget {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: AppColors.voltNeon.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadii.chipAll,
                 ),
                 child: const Icon(Icons.auto_stories_rounded, size: 15, color: AppColors.voltNeon),
               ),
@@ -193,7 +193,7 @@ class _Masthead extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadii.chipAll,
                     border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
                   ),
                   child: Text(
@@ -234,7 +234,7 @@ class _MvpMedallion extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.5)),
         ),
         child: Row(
@@ -722,7 +722,7 @@ class _CoverPending extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppColors.voltNeon.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadii.cardAll,
                 ),
                 child: const Icon(Icons.auto_stories_rounded, size: 20, color: AppColors.voltNeon),
               ),
@@ -757,7 +757,7 @@ class _CoverPending extends StatelessWidget {
                 backgroundColor: AppColors.voltNeon,
                 foregroundColor: AppColors.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
               ),
               icon: generating
                   ? const SizedBox(

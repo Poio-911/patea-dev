@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -45,7 +46,7 @@ class LeaderboardScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.card,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppRadii.cardAll,
                   border: Border.all(
                     color: isPodium ? podiumColor.withValues(alpha: 0.6) : AppColors.border,
                     width: isPodium ? 1.5 : 1.0,

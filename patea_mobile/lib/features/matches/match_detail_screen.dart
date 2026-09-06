@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'dart:ui' show ImageFilter;
 
@@ -359,7 +360,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                   icon: const Icon(Icons.more_vert_rounded),
                   color: AppColors.card,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppRadii.cardAll,
                     side: BorderSide(color: AppColors.border.withValues(alpha: 0.4)),
                   ),
                   onSelected: (action) {
@@ -804,7 +805,7 @@ class _TeamBlock extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
                                 color: AppColors.voltNeon.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: AppRadii.hairAll,
                                 border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
                               ),
                               child: Text(
@@ -880,7 +881,7 @@ class _MosaicPlayer extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadii.cardAll,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
@@ -988,7 +989,7 @@ class _PlayerMatchBadges extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
                 color: AppColors.goldBorder.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppRadii.hairAll,
                 border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.5)),
               ),
               child: Row(
@@ -1026,7 +1027,7 @@ class _MiniBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadii.hairAll,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(
@@ -1049,7 +1050,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: 0.40),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
       ),
       child: Column(
@@ -1063,7 +1064,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.surfaceAll),
                 child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w700)),
               ),
             ],
@@ -1089,7 +1090,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () => _showPlayerCardModal(context, ref, p, photo: p.photoURL),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadii.cardAll,
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: SizedBox(
@@ -1164,7 +1165,7 @@ class _OrganizerPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
       ),
       child: Column(
@@ -1176,7 +1177,7 @@ class _OrganizerPanel extends StatelessWidget {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: AppColors.voltNeon.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadii.chipAll,
                 ),
                 child: const Icon(Icons.admin_panel_settings_rounded, size: 16, color: AppColors.voltNeon),
               ),
@@ -1204,7 +1205,7 @@ class _OrganizerPanel extends StatelessWidget {
                       foregroundColor: AppColors.textPrimary,
                       side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                     ),
                   ),
                 if (hasTeams)
@@ -1217,7 +1218,7 @@ class _OrganizerPanel extends StatelessWidget {
                       foregroundColor: AppColors.textPrimary,
                       side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                     ),
                   ),
                 OutlinedButton.icon(
@@ -1231,7 +1232,7 @@ class _OrganizerPanel extends StatelessWidget {
                     foregroundColor: AppColors.voltNeon,
                     side: BorderSide(color: AppColors.voltNeon.withValues(alpha: 0.4)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                 ),
                 OutlinedButton.icon(
@@ -1243,7 +1244,7 @@ class _OrganizerPanel extends StatelessWidget {
                     foregroundColor: AppColors.textPrimary,
                     side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                 ),
                 OutlinedButton.icon(
@@ -1255,7 +1256,7 @@ class _OrganizerPanel extends StatelessWidget {
                     foregroundColor: AppColors.textPrimary,
                     side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                 ),
                 if (canFinalize)
@@ -1269,7 +1270,7 @@ class _OrganizerPanel extends StatelessWidget {
                       backgroundColor: AppColors.voltNeon,
                       foregroundColor: AppColors.onPrimary,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                     ),
                   ),
               ],
@@ -1282,7 +1283,7 @@ class _OrganizerPanel extends StatelessWidget {
                     backgroundColor: AppColors.voltNeon,
                     foregroundColor: AppColors.onPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                 ),
               ],
@@ -1295,7 +1296,7 @@ class _OrganizerPanel extends StatelessWidget {
                   foregroundColor: AppColors.destructive,
                   side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.4)),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
               ),
             ],
@@ -1348,7 +1349,7 @@ class _StickyActionBar extends StatelessWidget {
           foregroundColor: AppColors.textPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
         icon: const Icon(Icons.sensors_rounded, size: 20, color: AppColors.textPrimary),
         label: Text(
@@ -1364,7 +1365,7 @@ class _StickyActionBar extends StatelessWidget {
           foregroundColor: AppColors.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
         icon: Icon(isOwner ? Icons.fact_check_rounded : Icons.rate_review_rounded, size: 20, color: AppColors.onPrimary),
         label: Text(
@@ -1380,7 +1381,7 @@ class _StickyActionBar extends StatelessWidget {
           foregroundColor: AppColors.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
         icon: const Icon(Icons.insights_rounded, size: 20, color: AppColors.onPrimary),
         label: Text(
@@ -1400,7 +1401,7 @@ class _StickyActionBar extends StatelessWidget {
                   backgroundColor: AppColors.cardSurface,
                   foregroundColor: AppColors.textPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: const Icon(Icons.play_arrow_rounded, size: 18),
                 label: Text('DIRIGIR', style: AppTypography.jersey(size: 15, color: AppColors.textPrimary)),
@@ -1415,7 +1416,7 @@ class _StickyActionBar extends StatelessWidget {
                     backgroundColor: AppColors.voltNeon,
                     foregroundColor: AppColors.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   icon: isFinishing
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
@@ -1435,7 +1436,7 @@ class _StickyActionBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadii.cardAll,
                   border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.35)),
                 ),
                 child: Row(
@@ -1459,7 +1460,7 @@ class _StickyActionBar extends StatelessWidget {
                     foregroundColor: AppColors.textSecondary,
                     side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   icon: isJoining
                       ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textSecondary))
@@ -1477,7 +1478,7 @@ class _StickyActionBar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
               color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadii.cardAll,
               border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3)),
             ),
             child: Row(
@@ -1494,7 +1495,7 @@ class _StickyActionBar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
               color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadii.cardAll,
               border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
             ),
             child: Center(
@@ -1509,7 +1510,7 @@ class _StickyActionBar extends StatelessWidget {
               foregroundColor: AppColors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
             ),
             icon: isJoining
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
@@ -1570,7 +1571,7 @@ class _ChatPreviewCard extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: 0.40),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1600,7 +1601,7 @@ class _ChatPreviewCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                       decoration: BoxDecoration(
                         color: AppColors.voltNeon.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadii.cardAll,
                       ),
                       child: Text(
                         'ABRIR',
@@ -1642,7 +1643,7 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
       return Container(
         decoration: BoxDecoration(
           color: const Color(0xFF0F141C),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
           border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -1654,7 +1655,7 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
               height: 4,
               decoration: BoxDecoration(
                 color: AppColors.overlayStrong,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadii.hairAll,
               ),
             ),
             const SizedBox(height: 18),
@@ -1769,7 +1770,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
       padding: EdgeInsets.only(bottom: keyboardHeight),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
       ),
       child: Column(
@@ -1780,7 +1781,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
             height: 4,
             decoration: BoxDecoration(
               color: AppColors.overlayStrong,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: AppRadii.hairAll,
             ),
           ),
           Padding(
@@ -1831,7 +1832,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                         constraints: const BoxConstraints(maxWidth: 270),
                         decoration: BoxDecoration(
                           color: isMine ? AppColors.voltNeon.withValues(alpha: 0.18) : AppColors.cardSurface,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: AppRadii.cardAll,
                           border: Border.all(
                             color: isMine ? AppColors.voltNeon.withValues(alpha: 0.35) : AppColors.border.withValues(alpha: 0.25),
                           ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../core/theme/app_radii.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -573,8 +574,8 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
       offset: const Offset(10, 0),
       child: ClipRRect(
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(7),
-          bottomLeft: Radius.circular(7),
+          topLeft: Radius.circular(AppRadii.chip),
+          bottomLeft: Radius.circular(AppRadii.chip),
         ),
         child: Stack(
           children: [
@@ -696,7 +697,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
         color: isSorted
             ? AppColors.voltNeon.withValues(alpha: 0.16)
             : AppColors.overlaySubtle,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: AppRadii.hairAll,
         border: Border.all(
           color: isSorted
               ? AppColors.voltNeon.withValues(alpha: 0.65)
@@ -725,7 +726,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
           // Mini Barra de Progreso
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: AppRadii.hairAll,
               child: Container(
                 height: 3.5,
                 color: AppColors.overlayLine,
@@ -737,7 +738,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
                       color: isSorted
                           ? AppColors.voltNeon.withValues(alpha: 0.75)
                           : AppColors.overlayStrong,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppRadii.hairAll,
                     ),
                   ),
                 ),
@@ -771,7 +772,7 @@ class _CardClipper extends CustomClipper<Path> {
     return Path()
       ..addRRect(RRect.fromRectAndRadius(
         Offset.zero & size,
-        const Radius.circular(16),
+        const Radius.circular(AppRadii.card),
       ));
   }
 

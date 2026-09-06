@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -50,7 +51,7 @@ class PateaPageHeader extends StatelessWidget {
               height: description != null ? 58 : 34,
               margin: const EdgeInsets.only(top: 2, right: 10),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppRadii.hairAll,
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -129,12 +130,12 @@ class PateaPageHeader extends StatelessWidget {
             // Botón Filtros
             InkWell(
               onTap: onFiltersTap,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadii.cardAll,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xB3141923),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadii.cardAll,
                   border: Border.all(
                     color: activeFilterCount > 0
                         ? AppColors.voltNeon.withValues(alpha: 0.7)

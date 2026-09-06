@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../../core/theme/app_radii.dart';
+import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
 
@@ -140,8 +142,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: AppColors.card,
-              title: Row(
+                      title: Row(
                 children: [
                   const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 22),
                   const SizedBox(width: 8),
@@ -175,7 +176,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppColors.cardSurface,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: AppRadii.chipAll,
                             ),
                             child: Row(
                               children: [
@@ -243,7 +244,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
       context: context,
       backgroundColor: AppColors.card,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
       builder: (context) => _MatchFiltersSheet(initial: _filters),
     );
     if (result != null) {
@@ -348,8 +349,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 12, 16, 0),
                 sliver: SliverToBoxAdapter(
                   child: PateaPageHeader(
-                    title: 'Partidos',
-                    description: 'Organizá y gestioná todos tus partidos.',
+                    title: spec(Section.matches).title,
+                    description: spec(Section.matches).description,
                     showCountRow: false,
                     actionButton: SizedBox(
                       width: double.infinity,
@@ -359,7 +360,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                           backgroundColor: AppColors.voltNeon,
                           foregroundColor: AppColors.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                         ),
                         icon: const Icon(Icons.add_circle, size: 18),
                         label: Text(
@@ -490,13 +491,13 @@ class _ViewModeToggle extends StatelessWidget {
     Widget button(IconData icon, MatchViewMode value) {
       final selected = mode == value;
       return InkWell(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadii.chipAll,
         onTap: () => onChanged(value),
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: selected ? AppColors.voltNeon : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: AppRadii.chipAll,
           ),
           child: Icon(icon, size: 16, color: selected ? AppColors.onPrimary : AppColors.textSecondary),
         ),
@@ -507,7 +508,7 @@ class _ViewModeToggle extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadii.chipAll,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -686,7 +687,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         height: 200,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(color: AppColors.border.withValues(alpha: 0.4), style: BorderStyle.solid),
           color: AppColors.card.withValues(alpha: 0.3),
         ),
@@ -714,11 +715,11 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
     final dateObj = DateTime.tryParse(match.date)?.toLocal();
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         height: 320,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(color: theme.brandColor.withValues(alpha: 0.5), width: 1.5),
           boxShadow: [
             BoxShadow(
@@ -776,7 +777,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.onPrimary.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: AppRadii.surfaceAll,
                           border: Border.all(color: AppColors.overlayStrong),
                         ),
                         child: Row(
@@ -836,7 +837,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                         backgroundColor: AppColors.voltNeon,
                         foregroundColor: AppColors.onPrimary,
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                       ),
                       icon: const Text('Ver Detalles'),
                       label: const Icon(Icons.arrow_forward, size: 16),
@@ -855,7 +856,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                           height: 4,
                           decoration: BoxDecoration(
                             color: active ? AppColors.textPrimary : AppColors.overlayStrong,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: AppRadii.hairAll,
                           ),
                         );
                       }),
@@ -943,7 +944,7 @@ class _BannerOrganizerBadge extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.onPrimary.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadii.surfaceAll,
             border: Border.all(color: AppColors.overlayLine),
           ),
           child: Text.rich(
@@ -1037,7 +1038,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
         final glow = isLive ? (0.18 + _pulse.value * 0.32) : 0.0;
         return Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadii.cardAll,
             boxShadow: isLive
                 ? [
                     BoxShadow(
@@ -1053,13 +1054,13 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
       },
       child: InkWell(
       onTap: () => context.push('/matches/${match.id}'),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadii.cardAll,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.cardAll,
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.card,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadii.cardAll,
             border: Border.all(
               color: isLive ? AppColors.destructive : theme.brandColor.withValues(alpha: 0.35),
               width: isLive ? 1.5 : 1.0,
@@ -1118,7 +1119,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: AppRadii.surfaceAll,
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
@@ -1146,7 +1147,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
                     color: isLive ? AppColors.destructive.withValues(alpha: 0.15) : AppColors.voltNeon.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: AppRadii.chipAll,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1257,7 +1258,7 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
                   backgroundColor: isLive ? AppColors.destructive : AppColors.voltNeon,
                   foregroundColor: isLive ? AppColors.textPrimary : AppColors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: const Icon(Icons.visibility_outlined, size: 18),
                 label: Text(_actionLabel(match.status), style: AppTypography.headline(size: 13, color: isLive ? AppColors.textPrimary : AppColors.onPrimary)),
@@ -1291,14 +1292,14 @@ class _CompactMatchCard extends StatelessWidget {
     final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadii.cardAll,
       onTap: () => context.push('/matches/${match.id}'),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.cardAll,
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.card,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadii.cardAll,
             border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
@@ -1347,7 +1348,7 @@ class _CompactMatchCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: AppRadii.surfaceAll,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

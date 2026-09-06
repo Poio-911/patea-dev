@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
@@ -126,7 +127,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'EL VESTUARIO',
+                            spec(Section.panel).title.toUpperCase(),
                             style: AppTypography.headline(
                               size: 26,
                               weight: FontWeight.w900,
@@ -134,7 +135,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                           Text(
-                            'El pantallazo del cuadro sin vueltas.',
+                            spec(Section.panel).description!,
                             style: AppTypography.body(size: 11, color: AppColors.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -663,7 +664,7 @@ class _CleanTunnelSide extends StatelessWidget {
                   height: 6,
                   decoration: BoxDecoration(
                     color: AppColors.onPrimary.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadii.cardAll,
                   ),
                 ),
 
@@ -695,7 +696,7 @@ class _CleanTunnelSide extends StatelessWidget {
                           height: 2.5,
                           decoration: BoxDecoration(
                             color: teamColor,
-                            borderRadius: BorderRadius.circular(1.5),
+                            borderRadius: AppRadii.hairAll,
                           ),
                         ),
                       ],
@@ -1174,7 +1175,7 @@ class _GrupoTabBody extends ConsumerWidget {
                 foregroundColor: AppColors.voltNeon,
                 side: const BorderSide(color: AppColors.voltNeon, width: 1.2),
                 padding: const EdgeInsets.symmetric(vertical: 11),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
               ),
               icon: const Icon(Icons.share_rounded, size: 16),
               label: Text('Invitar al cuadro', style: AppTypography.headline(size: 13, weight: FontWeight.w800)),
@@ -1330,7 +1331,7 @@ class _EmptyMural extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.voltNeon,
               foregroundColor: AppColors.onPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
             ),
             child: Text(actionLabel, style: AppTypography.headline(size: 12, weight: FontWeight.w800)),
           ),

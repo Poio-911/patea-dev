@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
@@ -107,7 +108,7 @@ class _Tab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: active ? AppColors.voltNeon : AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadii.surfaceAll,
                 ),
                 child: Text(
                   '${tab.count}',

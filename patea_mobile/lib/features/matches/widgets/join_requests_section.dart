@@ -72,7 +72,7 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.voltNeon,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppRadii.pillAll,
               ),
               child: Text('${requests.length}',
                   style: AppTypography.code(

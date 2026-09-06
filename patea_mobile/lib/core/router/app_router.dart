@@ -1,10 +1,12 @@
 import 'dart:async';
+import '../../core/theme/app_radii.dart';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../constants/sections.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -268,14 +270,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 Widget _withBackground(Widget child) => PateaBackground(child: child);
 
 /// Índices de las ramas del `StatefulShellRoute`, en el mismo orden que
-/// `branches` de arriba.
+/// `branches` de arriba. Salen de `core/constants/sections.dart`, que es
+/// donde vive la identidad de cada sección: ruta, rótulo del menú, título,
+/// bajada e íconos. Antes el rótulo estaba acá y el título en la pantalla, y
+/// dos de las cinco secciones ya habían divergido.
 class _Branch {
-  static const panel = 0;
-  static const players = 1;
-  static const matches = 2;
-  static const competitions = 3;
-  static const explorar = 5;
-  static const evaluations = 6;
+  static final panel = spec(Section.panel).branch;
+  static final players = spec(Section.players).branch;
+  static final matches = spec(Section.matches).branch;
+  static final competitions = spec(Section.competitions).branch;
+  static final explorar = spec(Section.explorar).branch;
+  static final evaluations = spec(Section.evaluations).branch;
 }
 
 /// Port de nav-config.ts + mobile-nav.tsx (web): 5 slots reales —
@@ -307,7 +312,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         decoration: const BoxDecoration(
           color: AppColors.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -318,7 +323,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: AppColors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: AppRadii.hairAll,
               ),
             ),
             _PartidosSheetItem(
@@ -333,7 +338,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
             const SizedBox(height: 8),
             _PartidosSheetItem(
               icon: Icons.emoji_events,
-              label: 'Competiciones',
+              label: spec(Section.competitions).navLabel,
               isActive: isCompetitionsActive,
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -389,37 +394,37 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _NavItem(
-                      icon: Icons.dashboard_outlined,
-                      activeIcon: Icons.dashboard_rounded,
-                      label: 'Panel',
+                      icon: spec(Section.panel).icon,
+                      activeIcon: spec(Section.panel).activeIcon,
+                      label: spec(Section.panel).navLabel,
                       isSelected: current == _Branch.panel,
                       onTap: () => _goBranch(_Branch.panel),
                     ),
                     _NavItem(
-                      icon: Icons.person_outline,
-                      activeIcon: Icons.person,
-                      label: 'Jugadores',
+                      icon: spec(Section.players).icon,
+                      activeIcon: spec(Section.players).activeIcon,
+                      label: spec(Section.players).navLabel,
                       isSelected: current == _Branch.players,
                       onTap: () => _goBranch(_Branch.players),
                     ),
                     _NavItem(
-                      icon: Icons.calendar_today_outlined,
-                      activeIcon: Icons.calendar_today,
-                      label: 'Partidos',
+                      icon: spec(Section.matches).icon,
+                      activeIcon: spec(Section.matches).activeIcon,
+                      label: spec(Section.matches).navLabel,
                       isSelected: isMatchesActive,
                       onTap: () => _openPartidosSheet(context),
                     ),
                     _NavItem(
-                      icon: Icons.public_outlined,
-                      activeIcon: Icons.public,
-                      label: 'Explorar',
+                      icon: spec(Section.explorar).icon,
+                      activeIcon: spec(Section.explorar).activeIcon,
+                      label: spec(Section.explorar).navLabel,
                       isSelected: current == _Branch.explorar,
                       onTap: () => _goBranch(_Branch.explorar),
                     ),
                     _NavItem(
-                      icon: Icons.checklist_rtl_outlined,
-                      activeIcon: Icons.checklist_rtl,
-                      label: 'Evaluaciones',
+                      icon: spec(Section.evaluations).icon,
+                      activeIcon: spec(Section.evaluations).activeIcon,
+                      label: spec(Section.evaluations).navLabel,
                       isSelected: current == _Branch.evaluations,
                       onTap: () => _goBranch(_Branch.evaluations),
                     ),
@@ -506,12 +511,12 @@ class _PartidosSheetItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isActive ? AppColors.voltNeon.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.cardAll,
         ),
         child: Row(
           children: [
@@ -520,7 +525,7 @@ class _PartidosSheetItem extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: isActive ? AppColors.voltNeon : AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadii.cardAll,
               ),
               child: Icon(icon, size: 20, color: isActive ? AppColors.onPrimary : AppColors.textSecondary),
             ),

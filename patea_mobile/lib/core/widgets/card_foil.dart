@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 
 /// Capa de material de la carta, dibujada con un fragment shader.
 ///
@@ -127,7 +128,7 @@ class _FoilPainter extends CustomPainter {
     // redondeadas se degradan. Si el foil nace con sus esquinas, deja de
     // depender de que el recorte sobreviva a la matriz.
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(16)));
+      ..addRRect(RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(AppRadii.card)));
     canvas.drawPath(path, Paint()..shader = shader);
   }
 

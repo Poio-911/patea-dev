@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../core/theme/app_radii.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -103,7 +104,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         decoration: const BoxDecoration(
           color: AppColors.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: SafeArea(
           top: false,
@@ -116,7 +117,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
                   color: AppColors.textSecondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: AppRadii.hairAll,
                 ),
               ),
               _SheetAction(
@@ -215,7 +216,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         height: 320,
         decoration: const BoxDecoration(
           color: AppColors.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
           children: [
@@ -495,12 +496,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _Label('Año de nacimiento'),
                     InkWell(
                       onTap: _saving ? null : _openBirthYearPicker,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadii.cardAll,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
                         decoration: BoxDecoration(
                           color: AppColors.card,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadii.cardAll,
                           border: Border.all(color: AppColors.overlayLine),
                         ),
                         child: Row(
@@ -563,7 +564,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.destructive.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadii.cardAll,
                           border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
                         ),
                         child: Row(
@@ -589,7 +590,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           foregroundColor: AppColors.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadii.cardAll,
                           ),
                         ),
                         icon: _saving
@@ -657,7 +658,7 @@ class _Field extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.cardAll,
         border: Border.all(color: AppColors.overlayLine),
       ),
       child: TextField(
@@ -701,7 +702,7 @@ class _ChoiceChip extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? color.withValues(alpha: 0.16) : AppColors.card,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(
             color: selected ? color : AppColors.overlayLine,
             width: selected ? 1.5 : 1,
@@ -739,7 +740,7 @@ class _SheetAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadii.cardAll,
       child: Container(
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -749,7 +750,7 @@ class _SheetAction extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadii.cardAll,
               ),
               child: Icon(icon, size: 20, color: AppColors.voltNeon),
             ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
+import '../../core/constants/sections.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +90,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               decoration: const BoxDecoration(
                 color: AppColors.popover,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
               ),
               child: SafeArea(
                 top: false,
@@ -103,7 +105,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                         margin: const EdgeInsets.only(bottom: 18),
                         decoration: BoxDecoration(
                           color: AppColors.textSecondary.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: AppRadii.hairAll,
                         ),
                       ),
                     ),
@@ -130,7 +132,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     Container(
                       decoration: BoxDecoration(
                         color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadii.cardAll,
                         border: Border.all(color: AppColors.overlayLine),
                       ),
                       child: TextField(
@@ -197,7 +199,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                           foregroundColor: AppColors.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                              borderRadius: AppRadii.cardAll),
                         ),
                         child: Text('Ver jugadores',
                             style: AppTypography.headline(
@@ -221,7 +223,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
           color: selected
               ? AppColors.voltNeon.withValues(alpha: 0.16)
               : AppColors.background,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadii.cardAll,
           border: Border.all(
             color: selected ? AppColors.voltNeon : AppColors.overlayLine,
             width: selected ? 1.4 : 1,
@@ -291,8 +293,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                   padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 12, 16, 0),
                   sliver: SliverToBoxAdapter(
                     child: PateaPageHeader(
-                      title: 'Plantel',
-                      description: 'Gestioná la plantilla de tu equipo y las estadísticas de los jugadores.',
+                      title: spec(Section.players).title,
+                      description: spec(Section.players).description,
                       currentCount: filtered.length,
                       totalCount: players.length,
                       activeFilterCount: _activeFilterCount,
@@ -310,7 +312,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                             backgroundColor: AppColors.voltNeon,
                             foregroundColor: AppColors.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                           ),
                           icon: const Icon(Icons.add_circle, size: 18),
                           label: Text(

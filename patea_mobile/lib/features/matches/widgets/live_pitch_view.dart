@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/widgets/patea_avatar.dart';
 
 import '../../../core/models/match_model.dart';
@@ -49,7 +50,7 @@ class LivePitchView extends StatelessWidget {
       aspectRatio: 0.72,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadii.cardAll,
           color: const Color(0xFF14301F),
         ),
         clipBehavior: Clip.antiAlias,
@@ -193,7 +194,7 @@ class _PlayerDot extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
                     color: AppColors.voltNeon,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: AppRadii.pillAll,
                   ),
                   child: Text(
                     goals == 1 ? '⚽' : '⚽$goals',

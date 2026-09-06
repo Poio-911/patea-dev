@@ -351,7 +351,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
             const SizedBox(height: 20),
             if (_uploading) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppRadii.pillAll,
                 child: LinearProgressIndicator(
                   value: _progress == 0 ? null : _progress,
                   minHeight: 6,
@@ -517,8 +517,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.card,
-        title: Text('¿Borrar el clip?',
+          title: Text('¿Borrar el clip?',
             style: AppTypography.headline(size: 16, weight: FontWeight.w800)),
         content: Text('No se puede deshacer.',
             style: AppTypography.body(size: 13, color: AppColors.textSecondary)),

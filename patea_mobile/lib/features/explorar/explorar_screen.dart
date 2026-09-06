@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../../core/widgets/player_position_badge.dart';
+import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
@@ -82,10 +84,9 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
           Padding(
             padding: EdgeInsets.fromLTRB(
                 16, MediaQuery.of(context).padding.top + 12, 16, 0),
-            child: const PateaPageHeader(
-              title: 'Explorar',
-              description:
-                  'Reclutá agentes libres para tus partidos, o sumate a partidos abiertos.',
+            child: PateaPageHeader(
+              title: spec(Section.explorar).title,
+              description: spec(Section.explorar).description,
               showCountRow: false,
             ),
           ),
@@ -171,8 +172,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.card,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
       builder: (context) => _AvailabilitySheet(uid: widget.uid),
     );
   }
@@ -212,7 +212,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
             if (incomplete.isEmpty)
               Container(
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
                     Icon(Icons.groups_outlined, size: 44, color: AppColors.textSecondary),
@@ -230,7 +230,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
             else ...[
               Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.25))),
+                decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.06), borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.25))),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -296,7 +296,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.surfaceAll),
                     child: Text('${filteredPlayers.length}', style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w700)),
                   ),
                 ],
@@ -307,7 +307,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
               else if (filteredPlayers.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: AppColors.card.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: AppColors.card.withValues(alpha: 0.4), borderRadius: AppRadii.cardAll),
                   child: Column(
                     children: [
                       Icon(Icons.search_off, size: 36, color: AppColors.textSecondary),
@@ -349,7 +349,7 @@ class _FreeAgentBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3))),
+      decoration: BoxDecoration(color: AppColors.voltNeon.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.voltNeon.withValues(alpha: 0.3))),
       child: Row(
         children: [
           Container(
@@ -392,24 +392,23 @@ class _FreeAgentCard extends StatelessWidget {
             : ('No coincide', AppColors.destructive);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadii.cardAll,
       onTap: () => showModalBottomSheet<void>(
         context: context,
-        backgroundColor: AppColors.card,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          isScrollControlled: true,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
         builder: (context) => _FreeAgentDetailSheet(player: player, matchId: matchId),
       ),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
+        decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll, border: Border.all(color: AppColors.border.withValues(alpha: 0.4))),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('${player.ovr}', style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: AppColors.voltNeon)),
-                Text(player.position, style: AppTypography.code(color: AppColors.textSecondary, size: 11, weight: FontWeight.w800)),
+                PlayerPositionBadge(position: player.position, fontSize: 11, dense: true),
               ],
             ),
             const SizedBox(height: 8),
@@ -424,7 +423,7 @@ class _FreeAgentCard extends StatelessWidget {
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: chip.$2.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20), border: Border.all(color: chip.$2.withValues(alpha: 0.4))),
+              decoration: BoxDecoration(color: chip.$2.withValues(alpha: 0.12), borderRadius: AppRadii.surfaceAll, border: Border.all(color: chip.$2.withValues(alpha: 0.4))),
               child: Text(chip.$1, style: AppTypography.code(size: 9, weight: FontWeight.w700, color: chip.$2)),
             ),
           ],
@@ -501,7 +500,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
               children: player.availability.entries.map((e) {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
                   child: Text('${e.key}: ${e.value.join(', ')}', style: AppTypography.body(color: AppColors.textSecondary, size: 11)),
                 );
               }).toList(),
@@ -512,7 +511,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(border: Border.all(color: AppColors.border, style: BorderStyle.solid), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(border: Border.all(color: AppColors.border, style: BorderStyle.solid), borderRadius: AppRadii.cardAll),
               child: Text('Tu perfil de Pase Libre', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: AppColors.textSecondary)),
             )
           else
@@ -668,7 +667,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             if (_suggestions.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(top: 4),
-                decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: AppColors.cardSurface, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: _suggestions
                       .map((s) => ListTile(
@@ -799,7 +798,7 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
             if (filtered.isEmpty)
               Container(
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: AppColors.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
                     Icon(Icons.calendar_month_outlined, size: 40, color: AppColors.textSecondary),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_colors.dart';
@@ -50,7 +51,7 @@ class PushPermission {
             22, 18, 22, 18 + MediaQuery.of(ctx).padding.bottom),
         decoration: const BoxDecoration(
           color: AppColors.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -62,7 +63,7 @@ class PushPermission {
               margin: const EdgeInsets.only(bottom: 18),
               decoration: BoxDecoration(
                 color: AppColors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: AppRadii.hairAll,
               ),
             ),
             Text('¿Te avisamos?',
@@ -99,7 +100,7 @@ class PushPermission {
                       foregroundColor: AppColors.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: AppRadii.cardAll),
                     ),
                     child: Text('Avisame',
                         style: AppTypography.headline(

@@ -30,7 +30,6 @@ class RecruitPlayersSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
       builder: (_) => RecruitPlayersSheet(match: match),
     );

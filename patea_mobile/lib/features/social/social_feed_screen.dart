@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -57,7 +58,7 @@ class SocialFeedScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.card,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppRadii.cardAll,
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
@@ -91,7 +92,7 @@ class SocialFeedScreen extends StatelessWidget {
                             color: change >= 0
                                 ? AppColors.success.withValues(alpha: 0.15)
                                 : AppColors.destructive.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadii.chipAll,
                           ),
                           child: Text(
                             change >= 0 ? '+$change OVR' : '$change OVR',
@@ -146,7 +147,7 @@ class _ReactionButtonState extends State<_ReactionButton> {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => setState(() => count++),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadii.chipAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         child: Row(

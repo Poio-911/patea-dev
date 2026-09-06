@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
@@ -183,13 +184,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     final selected = _selectedPlayerIds.contains(p.id);
                     return InkWell(
                       onTap: () => setState(() => selected ? _selectedPlayerIds.remove(p.id) : _selectedPlayerIds.add(p.id)),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppRadii.cardAll,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
                           color: selected ? AppColors.voltNeon.withValues(alpha: 0.1) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadii.cardAll,
                           border: Border.all(color: selected ? AppColors.voltNeon : AppColors.border.withValues(alpha: 0.4)),
                         ),
                         child: Row(
@@ -208,7 +209,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                               height: 22,
                               decoration: BoxDecoration(
                                 color: selected ? AppColors.voltNeon : Colors.transparent,
-                                borderRadius: BorderRadius.circular(5),
+                                borderRadius: AppRadii.hairAll,
                                 border: Border.all(color: selected ? AppColors.voltNeon : AppColors.textSecondary),
                               ),
                               child: selected ? const Icon(Icons.check, size: 16, color: AppColors.onPrimary) : null,
@@ -241,7 +242,7 @@ class _StepIndicator extends StatelessWidget {
             child: Container(
               margin: EdgeInsets.only(right: i < 1 ? 6 : 0),
               height: 4,
-              decoration: BoxDecoration(color: isActive ? AppColors.voltNeon : AppColors.cardSurface, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: isActive ? AppColors.voltNeon : AppColors.cardSurface, borderRadius: AppRadii.hairAll),
             ),
           );
         }),
