@@ -1,12 +1,15 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/widgets/patea_background.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_snack.dart';
 
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/fondo_claro.dart';
 import '../../core/theme/patea_colors.dart';
 
 /// La galería del sistema de diseño. Sólo en debug.
@@ -23,14 +26,15 @@ import '../../core/theme/patea_colors.dart';
 /// el primer día.
 ///
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
-class DesignGalleryScreen extends StatefulWidget {
+class DesignGalleryScreen extends ConsumerStatefulWidget {
   const DesignGalleryScreen({super.key});
 
   @override
-  State<DesignGalleryScreen> createState() => _DesignGalleryScreenState();
+  ConsumerState<DesignGalleryScreen> createState() =>
+      _DesignGalleryScreenState();
 }
 
-class _DesignGalleryScreenState extends State<DesignGalleryScreen> {
+class _DesignGalleryScreenState extends ConsumerState<DesignGalleryScreen> {
   bool _game = true;
 
   @override
@@ -41,7 +45,9 @@ class _DesignGalleryScreenState extends State<DesignGalleryScreen> {
     return Theme(
       data: theme,
       child: Scaffold(
-        backgroundColor: c.background,
+        // Transparente: abajo va el fondo de verdad, que es lo que se esta
+        // comparando. Antes pintaba `c.background` plano.
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text('Sistema de diseño'),
           actions: [
@@ -59,10 +65,20 @@ class _DesignGalleryScreenState extends State<DesignGalleryScreen> {
             ),
           ],
         ),
-        body: ListView(
+        body: PateaBackground(
+          child: ListView(
           padding: EdgeInsets.fromLTRB(
               16, 16, 16, MediaQuery.paddingOf(context).bottom + 32),
           children: [
+            if (!_game) ...[
+              _Title('Fondo del tema claro'),
+              _Note('Tres candidatas. La eleccion vale para toda la app y '
+                  'sobrevive a cerrarla, asi que se puede salir de aca y '
+                  'mirar las pantallas de verdad. Es andamio: cuando este '
+                  'decidida queda una sola y esto se borra.'),
+              const _SelectorDeFondo(),
+              const SizedBox(height: 8),
+            ],
             _Section('Superficies', [
               _Swatch('background', c.background),
               _Swatch('card', c.card),
@@ -203,7 +219,29 @@ class _DesignGalleryScreenState extends State<DesignGalleryScreen> {
             ]),
           ],
         ),
+        ),
       ),
+    );
+  }
+}
+
+/// Los tres botones que cambian el fondo del tema claro.
+class _SelectorDeFondo extends ConsumerWidget {
+  const _SelectorDeFondo();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actual = ref.watch(fondoClaroProvider);
+
+    return SegmentedButton<FondoClaro>(
+      showSelectedIcon: false,
+      segments: [
+        for (final v in FondoClaro.values)
+          ButtonSegment(value: v, label: Text(v.etiqueta)),
+      ],
+      selected: {actual},
+      onSelectionChanged: (s) =>
+          ref.read(fondoClaroProvider.notifier).elegir(s.first),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../theme/fondo_claro.dart';
 import '../theme/patea_colors.dart';
 
 /// La web (`GameModeBackground`, montado UNA vez en `client-providers.tsx`)
@@ -30,37 +31,22 @@ class PateaBackground extends ConsumerWidget {
     // la web, donde `ThemeBackground` devuelve `null` fuera del tema `game` y
     // el fondo es el degradado suave del `body`. Con la foto puesta, el texto
     // oscuro del tema claro queda ilegible sobre el césped.
+    final int index = backgroundIndex ?? ref.watch(backgroundIndexProvider);
+    final int clampedIndex = index < 1 ? 1 : (index > 9 ? 9 : index);
+
     if (!context.c.isDarkSurface) {
+      // Cual de las tres variantes candidatas se dibuja lo decide
+      // `fondoClaroProvider`, y el selector vive en `/dev/gallery`. Es
+      // andamio para poder comparar en el telefono: cuando este elegida,
+      // aca queda una sola y `fondo_claro.dart` se borra.
       return Stack(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  // El blanco manda y los tintes son apenas dos esquinas. Con
-                  // tres paradas el ambar se comia la mitad de abajo: la web
-                  // lo disimula animando un degradado del 400% del tamano de
-                  // la pantalla, que aca no tiene sentido.
-                  stops: const [0.0, 0.22, 0.72, 1.0],
-                  colors: [
-                    context.c.primary.withValues(alpha: 0.05),
-                    context.c.background,
-                    context.c.background,
-                    context.c.accent.withValues(alpha: 0.05),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          Positioned.fill(child: FondoClaroWidget(indiceFoto: clampedIndex)),
           child,
         ],
       );
     }
 
-    final int index = backgroundIndex ?? ref.watch(backgroundIndexProvider);
-    final int clampedIndex = index < 1 ? 1 : (index > 9 ? 9 : index);
     final bgAsset = 'assets/backgrounds/fondo_$clampedIndex.jpg';
 
     return Stack(
