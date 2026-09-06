@@ -39,11 +39,9 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
     try {
       await ref.read(matchServiceProvider).respondJoinRequest(widget.matchId, req.uid, accepted);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(accepted
+      PateaSnack.info(context, accepted
             ? '${req.displayName} entró al partido.'
-            : 'Se rechazó a ${req.displayName}.'),
-      ));
+            : 'Se rechazó a ${req.displayName}.');
     } catch (e) {
       if (!mounted) return;
       PateaSnack.error(context, '$e');

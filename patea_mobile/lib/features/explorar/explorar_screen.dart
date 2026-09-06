@@ -869,11 +869,9 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
       final pending =
           await ref.read(matchServiceProvider).joinOrRequest(widget.match, widget.uid);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(pending
+      PateaSnack.info(context, pending
             ? 'Solicitud enviada. El organizador te va a responder.'
-            : 'Te anotaste a "${widget.match.title}".'),
-      ));
+            : 'Te anotaste a "${widget.match.title}".');
     } catch (e) {
       if (!mounted) return;
       PateaSnack.error(context, '$e');

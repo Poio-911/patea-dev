@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
 import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
@@ -150,21 +151,19 @@ class PateaUserMenuSheet extends ConsumerWidget {
               icon: Icons.notifications_active_outlined,
               label: 'Activar Notificaciones',
               onTap: () async {
-                final verde = context.c.card;
-                final rojo = context.c.destructive;
-                final messenger = ScaffoldMessenger.of(context);
+                // Se captura antes del await: después el contexto puede no
+                // valer, y esta hoja además se cierra en el medio.
+                final avisar = PateaSnack.of(context);
                 Navigator.pop(context);
                 final granted = await PushPermission.requestNow();
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(granted
-                        ? 'Listo, te vamos a avisar.'
-                        : 'Android tiene las notificaciones bloqueadas para Pateá. '
-                            'Se habilitan desde Ajustes › Apps › Pateá › Notificaciones.'),
-                    backgroundColor: granted ? verde : rojo,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                if (granted) {
+                  avisar.ok('Listo, te vamos a avisar.');
+                } else {
+                  avisar.error(
+                    'Android tiene las notificaciones bloqueadas para Pateá. '
+                    'Se habilitan desde Ajustes › Apps › Pateá › Notificaciones.',
+                  );
+                }
               },
             ),
 

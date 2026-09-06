@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
 
 import 'package:flutter/material.dart';
@@ -66,18 +67,12 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
   MatchService get _service => ref.read(matchServiceProvider);
 
   Future<void> _guard(Future<void> Function() action) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final rojo = context.c.destructive;
+    // Se captura antes del await: después el contexto puede no valer.
+    final avisar = PateaSnack.of(context);
     try {
       await action();
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('$e'),
-          backgroundColor: rojo,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      avisar.error('$e');
     }
   }
 

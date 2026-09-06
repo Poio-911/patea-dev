@@ -56,14 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isRegister ? 'Error al registrar usuario: $e' : 'Las credenciales no son correctas.',
-            ),
-            backgroundColor: context.c.destructive,
-          ),
-        );
+        PateaSnack.error(context, _isRegister ? 'Error al registrar usuario: $e' : 'Las credenciales no son correctas.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

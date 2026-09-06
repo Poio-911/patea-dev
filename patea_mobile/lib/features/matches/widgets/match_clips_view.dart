@@ -227,8 +227,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
           );
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Clip subido.')));
+      PateaSnack.info(context, 'Clip subido.');
     } catch (e) {
       if (mounted) {
         setState(() {

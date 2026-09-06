@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_avatar.dart';
@@ -299,11 +300,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 
   void _showSnack(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: context.c.success));
+    PateaSnack.ok(context, text);
   }
 
   void _showError(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: context.c.destructive));
+    PateaSnack.error(context, text);
   }
 
   Future<void> _openMaps(MatchModel match) async {

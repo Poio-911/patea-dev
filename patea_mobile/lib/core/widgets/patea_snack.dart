@@ -39,14 +39,49 @@ abstract final class PateaSnack {
   static void info(BuildContext context, String mensaje) =>
       _mostrar(context, mensaje, _Tono.info);
 
-  static void _mostrar(BuildContext context, String mensaje, _Tono tono) {
-    final (icono, color) = switch (tono) {
-      _Tono.ok => (Icons.check_circle_rounded, context.c.success),
-      _Tono.error => (Icons.error_rounded, context.c.destructive),
-      _Tono.info => (Icons.info_rounded, context.c.textSecondary),
-    };
+  /// Para avisar **después de un `await`**.
+  ///
+  /// Pasado el await el widget puede estar desmontado y el `BuildContext` ya
+  /// no vale — ni para buscar el messenger ni para leer los colores. Se
+  /// captura esto antes, y se usa después:
+  ///
+  /// ```dart
+  /// final avisar = PateaSnack.of(context);
+  /// try {
+  ///   await guardar();
+  /// } catch (e) {
+  ///   avisar.error('No se pudo guardar');
+  /// }
+  /// ```
+  static PateaSnackSender of(BuildContext context) => PateaSnackSender._(
+        ScaffoldMessenger.maybeOf(context),
+        context.c,
+      );
 
-    final messenger = ScaffoldMessenger.maybeOf(context);
+  static void _mostrar(BuildContext context, String mensaje, _Tono tono) {
+    PateaSnackSender._(ScaffoldMessenger.maybeOf(context), context.c)
+        ._enviar(mensaje, tono);
+  }
+}
+
+/// Un avisador que ya no necesita el `BuildContext`. Ver [PateaSnack.of].
+class PateaSnackSender {
+  final ScaffoldMessengerState? _messenger;
+  final PateaColors _c;
+
+  const PateaSnackSender._(this._messenger, this._c);
+
+  void ok(String mensaje) => _enviar(mensaje, _Tono.ok);
+  void error(String mensaje) => _enviar(mensaje, _Tono.error);
+  void info(String mensaje) => _enviar(mensaje, _Tono.info);
+
+  void _enviar(String mensaje, _Tono tono) {
+    final (icono, color) = switch (tono) {
+      _Tono.ok => (Icons.check_circle_rounded, _c.success),
+      _Tono.error => (Icons.error_rounded, _c.destructive),
+      _Tono.info => (Icons.info_rounded, _c.textSecondary),
+    };
+    final messenger = _messenger;
     if (messenger == null) return;
 
     messenger
@@ -56,7 +91,7 @@ abstract final class PateaSnack {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: context.c.popover,
+          backgroundColor: _c.popover,
           elevation: 0,
           margin: const EdgeInsets.all(14),
           duration: Duration(seconds: tono == _Tono.error ? 4 : 2),
@@ -73,7 +108,7 @@ abstract final class PateaSnack {
                   mensaje,
                   style: AppTypography.body(
                     size: 13.5,
-                    color: context.c.textPrimary,
+                    color: _c.textPrimary,
                   ),
                 ),
               ),

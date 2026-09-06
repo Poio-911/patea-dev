@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_card.dart';
 
 import 'package:flutter/material.dart';
@@ -560,8 +561,5 @@ class _IconAction extends StatelessWidget {
 }
 
 void _snack(BuildContext context, String message, {bool error = false}) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text(message),
-    backgroundColor: error ? context.c.destructive : null,
-  ));
+  error ? PateaSnack.error(context, message) : PateaSnack.info(context, message);
 }

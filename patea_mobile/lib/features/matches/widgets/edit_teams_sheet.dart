@@ -76,8 +76,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
       await ref.read(matchServiceProvider).updateMatchTeams(widget.match.id, _side);
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Equipos actualizados.')));
+      PateaSnack.info(context, 'Equipos actualizados.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);

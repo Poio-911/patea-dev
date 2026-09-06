@@ -436,10 +436,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
       await ref.read(evaluationServiceProvider).respondToIdentityReveal(widget.request.evaluationId, response);
       if (mounted) {
         widget.onResponded();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response == 'accepted' ? 'Identidad revelada.' : 'Anonimato mantenido.'),
-          backgroundColor: context.c.success,
-        ));
+        PateaSnack.ok(context, response == 'accepted' ? 'Identidad revelada.' : 'Anonimato mantenido.');
       }
     } catch (e) {
       if (mounted) {

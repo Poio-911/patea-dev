@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
@@ -123,8 +124,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final messenger = ScaffoldMessenger.of(context);
-    final rojo = context.c.destructive;
+    final avisar = PateaSnack.of(context);
     final navigator = Navigator.of(context);
     final match = widget.match;
     final uid = ref.read(authStateProvider).value?.uid;
@@ -171,13 +171,7 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
       navigator.pop();
     } catch (e) {
       setState(() => _saving = false);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('$e'),
-          backgroundColor: rojo,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      avisar.error('$e');
     }
   }
 

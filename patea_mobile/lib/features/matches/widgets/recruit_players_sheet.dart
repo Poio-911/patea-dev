@@ -101,9 +101,7 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
           .sendMatchInvitations(matchId: widget.match.id, playerIds: _selected.toList());
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(sent == 1 ? 'Invitación enviada.' : '$sent invitaciones enviadas.'),
-      ));
+      PateaSnack.info(context, sent == 1 ? 'Invitación enviada.' : '$sent invitaciones enviadas.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
