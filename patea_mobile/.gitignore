@@ -48,3 +48,6 @@ app.*.map.json
 android/key.properties
 *.jks
 *.keystore
+
+# Salida de un golden que fallo: son imagenes de diagnostico, no fuente.
+test/goldens/failures/
