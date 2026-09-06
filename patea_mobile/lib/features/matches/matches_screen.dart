@@ -4,7 +4,6 @@ import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -779,14 +778,14 @@ color: Colors.black.withValues(alpha: 0.4),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: AppRadii.surfaceAll,
-                          border: Border.all(color: context.c.overlayStrong),
+                          border: Border.all(color: context.c.onPhotoLine),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
                             const SizedBox(width: 6),
-                            Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textPrimary)),
+                            Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.onPhoto)),
                           ],
                         ),
                       ),
@@ -801,7 +800,7 @@ color: Colors.black.withValues(alpha: 0.4),
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 Expanded(child: _BannerTeam(team: match.teamA!)),
-                                Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: context.c.overlayLine)),
+                                Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: context.c.onPhotoLine)),
                                 Expanded(child: _BannerTeam(team: match.teamB!)),
                               ],
                             )
@@ -812,14 +811,14 @@ color: Colors.black.withValues(alpha: 0.4),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.headline(size: 24, weight: FontWeight.w900, color: context.c.textPrimary),
+                                style: AppTypography.headline(size: 24, weight: FontWeight.w900, color: context.c.onPhoto),
                               ),
                             ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.overlayLine))),
+                    decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.onPhotoLine))),
                     child: Wrap(
                       spacing: 16,
                       runSpacing: 4,
@@ -856,7 +855,7 @@ color: Colors.black.withValues(alpha: 0.4),
                           width: active ? 20 : 6,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: active ? context.c.textPrimary : context.c.overlayStrong,
+                            color: active ? context.c.onPhoto : context.c.onPhotoLine,
                             borderRadius: AppRadii.hairAll,
                           ),
                         );
@@ -886,14 +885,14 @@ class _BannerInfoRow extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: context.c.textSecondary),
+          Icon(icon, size: 13, color: context.c.onPhotoMuted),
           const SizedBox(width: 5),
           Flexible(
             child: Text(
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.body(size: 11, weight: FontWeight.w600, color: context.c.textPrimary),
+              style: AppTypography.body(size: 11, weight: FontWeight.w600, color: context.c.onPhoto),
             ),
           ),
         ],
@@ -915,14 +914,14 @@ class _BannerTeam extends StatelessWidget {
         if (team.jersey != null)
           JerseyWidget(jersey: team.jersey!, size: 56)
         else
-          Icon(Icons.checkroom, size: 48, color: context.c.textSecondary),
+          Icon(Icons.checkroom, size: 48, color: context.c.onPhotoMuted),
         const SizedBox(height: 6),
         Text(
           team.name.toUpperCase(),
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textPrimary),
+          style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.onPhoto),
         ),
       ],
     );
@@ -937,21 +936,20 @@ class _BannerOrganizerBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (ownerUid == null) return const SizedBox.shrink();
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('users').doc(ownerUid).get(),
-      builder: (context, snapshot) {
-        final name = snapshot.data?.data()?['displayName'] as String? ?? 'Club';
+    return Consumer(
+      builder: (context, ref, _) {
+        final name = ref.watch(userProfileProvider(ownerUid!)).value?['displayName'] as String? ?? 'Club';
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.6),
             borderRadius: AppRadii.surfaceAll,
-            border: Border.all(color: context.c.overlayLine),
+            border: Border.all(color: context.c.onPhotoLine),
           ),
           child: Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: 'Organiza: ', style: AppTypography.body(size: 9, weight: FontWeight.w700, color: context.c.textPrimary)),
+                TextSpan(text: 'Organiza: ', style: AppTypography.body(size: 9, weight: FontWeight.w700, color: context.c.onPhoto)),
                 TextSpan(text: name.toUpperCase(), style: AppTypography.body(size: 9, weight: FontWeight.w800, color: context.c.primary)),
               ],
             ),
@@ -1582,10 +1580,9 @@ class _OrganizerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     if (ownerUid == null) return const SizedBox.shrink();
 
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('users').doc(ownerUid).get(),
-      builder: (context, snapshot) {
-        final data = snapshot.data?.data();
+    return Consumer(
+      builder: (context, ref, _) {
+        final data = ref.watch(userProfileProvider(ownerUid!)).value;
         final name = data?['displayName'] as String? ?? 'Organizador';
         final photoUrl = data?['photoURL'] as String?;
 

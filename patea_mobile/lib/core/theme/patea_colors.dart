@@ -84,6 +84,21 @@ class PateaColors extends ThemeExtension<PateaColors> {
   /// separacion marcada
   final Color overlayStrong;
 
+  // Sobre foto
+  //
+  // La app apoya texto sobre fotos de cancha —el banner del proximo partido,
+  // la portada del detalle— y esa superficie es oscura en los DOS temas: es
+  // una foto con un velo negro encima, no una superficie del tema. Con
+  // `textPrimary` el titulo salia negro sobre el cesped en tema claro, y con
+  // `overlayLine` el separador desaparecia. Por eso estos tres no cambian
+  // entre esquemas: no describen el tema, describen la foto.
+  /// texto sobre foto
+  final Color onPhoto;
+  /// texto secundario sobre foto
+  final Color onPhotoMuted;
+  /// linea y borde sobre foto
+  final Color onPhotoLine;
+
   // Tiers de OVR
   /// Corregido contra globals.css en la Fase 1.
   final Color eliteBorder;
@@ -125,6 +140,9 @@ class PateaColors extends ThemeExtension<PateaColors> {
     required this.overlaySubtle,
     required this.overlayLine,
     required this.overlayStrong,
+    required this.onPhoto,
+    required this.onPhotoMuted,
+    required this.onPhotoLine,
     required this.eliteBorder,
     required this.goldBorder,
     required this.silverBorder,
@@ -166,6 +184,11 @@ class PateaColors extends ThemeExtension<PateaColors> {
     overlaySubtle: Color(0x0FFFFFFF),
     overlayLine: Color(0x1FFFFFFF),
     overlayStrong: Color(0x33FFFFFF),
+
+  // Sobre foto — los mismos en los dos esquemas, a proposito.
+    onPhoto: Color(0xFFF8FAFC),
+    onPhotoMuted: Color(0xFFCBD5E1),
+    onPhotoLine: Color(0x33FFFFFF),
 
   // Tiers de OVR
     eliteBorder: Color(0xFFF7F7F8),
@@ -211,6 +234,11 @@ class PateaColors extends ThemeExtension<PateaColors> {
     overlaySubtle: Color(0x0A000000),
     overlayLine: Color(0x14000000),
     overlayStrong: Color(0x24000000),
+
+  // Sobre foto — los mismos en los dos esquemas, a proposito.
+    onPhoto: Color(0xFFF8FAFC),
+    onPhotoMuted: Color(0xFFCBD5E1),
+    onPhotoLine: Color(0x33FFFFFF),
 
   // Tiers de OVR
     eliteBorder: Color(0xFF2D5286),
@@ -269,6 +297,9 @@ class PateaColors extends ThemeExtension<PateaColors> {
     Color? overlaySubtle,
     Color? overlayLine,
     Color? overlayStrong,
+    Color? onPhoto,
+    Color? onPhotoMuted,
+    Color? onPhotoLine,
     Color? eliteBorder,
     Color? goldBorder,
     Color? silverBorder,
@@ -299,6 +330,9 @@ class PateaColors extends ThemeExtension<PateaColors> {
       overlaySubtle: overlaySubtle ?? this.overlaySubtle,
       overlayLine: overlayLine ?? this.overlayLine,
       overlayStrong: overlayStrong ?? this.overlayStrong,
+      onPhoto: onPhoto ?? this.onPhoto,
+      onPhotoMuted: onPhotoMuted ?? this.onPhotoMuted,
+      onPhotoLine: onPhotoLine ?? this.onPhotoLine,
       eliteBorder: eliteBorder ?? this.eliteBorder,
       goldBorder: goldBorder ?? this.goldBorder,
       silverBorder: silverBorder ?? this.silverBorder,
@@ -336,6 +370,9 @@ class PateaColors extends ThemeExtension<PateaColors> {
       overlaySubtle: Color.lerp(overlaySubtle, other.overlaySubtle, t)!,
       overlayLine: Color.lerp(overlayLine, other.overlayLine, t)!,
       overlayStrong: Color.lerp(overlayStrong, other.overlayStrong, t)!,
+      onPhoto: Color.lerp(onPhoto, other.onPhoto, t)!,
+      onPhotoMuted: Color.lerp(onPhotoMuted, other.onPhotoMuted, t)!,
+      onPhotoLine: Color.lerp(onPhotoLine, other.onPhotoLine, t)!,
       eliteBorder: Color.lerp(eliteBorder, other.eliteBorder, t)!,
       goldBorder: Color.lerp(goldBorder, other.goldBorder, t)!,
       silverBorder: Color.lerp(silverBorder, other.silverBorder, t)!,

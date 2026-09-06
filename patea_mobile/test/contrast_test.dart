@@ -53,6 +53,37 @@ void main() {
       });
     });
   }
+
+  /// El texto sobre foto no puede seguir al tema.
+  ///
+  /// El banner del próximo partido y la portada del detalle son una foto de
+  /// cancha con un velo negro encima: son oscuros en los dos esquemas. Cuando
+  /// ese texto usaba `textPrimary`, en tema claro salía casi negro sobre el
+  /// césped — ilegible, y no lo veía ningún test de contraste porque el par
+  /// que se medía era contra `card`, no contra la foto.
+  ///
+  /// No se puede medir el contraste contra una fotografía, así que lo que se
+  /// fija es la regla: estos tres tokens valen lo mismo en los dos esquemas.
+  /// Si alguien los hace seguir al tema, este test lo dice.
+  group('sobre foto', () {
+    test('no cambian entre esquemas', () {
+      expect(PateaColors.light.onPhoto, PateaColors.game.onPhoto);
+      expect(PateaColors.light.onPhotoMuted, PateaColors.game.onPhotoMuted);
+      expect(PateaColors.light.onPhotoLine, PateaColors.game.onPhotoLine);
+    });
+
+    // El velo es `black` al 45 % sobre la foto, y arriba de eso hay un
+    // degradado que la oscurece más. El peor caso realista es el parche de
+    // césped más claro visto a través del velo; se toma un gris medio como
+    // referencia conservadora.
+    const peorCaso = Color(0xFF6B6B6B);
+
+    test('onPhoto se lee sobre el peor parche de la foto', () {
+      final r = _contraste(PateaColors.game.onPhoto, peorCaso);
+      expect(r, greaterThanOrEqualTo(minimo),
+          reason: 'onPhoto sobre el césped da ${r.toStringAsFixed(2)}:1');
+    });
+  });
 }
 
 double _luminancia(Color c) {

@@ -600,7 +600,10 @@ class _HeroCard extends StatelessWidget {
                     size: 34,
                     height: 1.05,
                     letterSpacing: 1.2,
-                    color: context.c.textPrimary,
+                    // La portada es una foto de cancha con un velo negro: es
+                    // oscura en los dos temas. Con `textPrimary` el titulo
+                    // salia casi negro sobre el cesped en tema claro.
+                    color: context.c.onPhoto,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -616,7 +619,7 @@ class _HeroCard extends StatelessWidget {
                         style: AppTypography.jersey(
                           size: 18,
                           letterSpacing: 0.8,
-                          color: context.c.textPrimary,
+                          color: context.c.onPhoto,
                         ),
                       ),
                     ),
@@ -634,7 +637,7 @@ class _HeroCard extends StatelessWidget {
                       Icon(
                         Icons.place_outlined,
                         size: 17,
-                        color: hasVenue ? context.c.primary : context.c.textSecondary,
+                        color: hasVenue ? context.c.primary : context.c.onPhotoMuted,
                       ),
                       const SizedBox(width: 7),
                       Flexible(
@@ -645,7 +648,7 @@ class _HeroCard extends StatelessWidget {
                           style: AppTypography.body(
                             size: 14.5,
                             weight: FontWeight.w600,
-                            color: hasVenue ? context.c.textPrimary : context.c.textSecondary,
+                            color: hasVenue ? context.c.onPhoto : context.c.onPhotoMuted,
                           ),
                         ),
                       ),
