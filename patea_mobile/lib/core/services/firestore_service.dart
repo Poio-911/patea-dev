@@ -145,6 +145,26 @@ final matchAssignmentsStreamProvider = StreamProvider.family<List<EvaluationAssi
   return ref.watch(firestoreServiceProvider).getMatchAssignmentsStream(matchId);
 });
 
+/// Perfil crudo de un usuario — hoy sólo para "organiza: X" en las tarjetas
+/// de partido.
+///
+/// Estaba tres veces escrito como `FirebaseFirestore.instance...get()` dentro
+/// de un `FutureBuilder`, que era la única forma en la app de leer Firestore
+/// sin pasar por acá. Tres problemas de una: una lectura por tarjeta y otra
+/// en cada rebuild (`Future` nuevo cada vez, sin caché), ninguna atadura a la
+/// sesión —lo que explica el comentario de arriba—, y ninguna forma de montar
+/// la pantalla en un test sin Firebase.
+final userProfileProvider =
+    FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) {
+  return ref.watch(firestoreServiceProvider).getUserProfile(uid);
+});
+
+/// El feed de Comunidad.
+final feedActivitiesStreamProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(firestoreServiceProvider).getFeedActivitiesStream();
+});
+
 final leaguesStreamProvider = StreamProvider<List<CompetitionModel>>((ref) {
   return ref.watch(firestoreServiceProvider).getCompetitionsStream(type: 'leagues');
 });
@@ -287,6 +307,24 @@ class FirestoreService {
         .where('status', isEqualTo: 'upcoming')
         .snapshots()
         .map((snap) => snap.docs.map((d) => MatchModel.fromFirestore(d.data(), d.id)).toList());
+  }
+
+  /// `users/{uid}` crudo. Sólo se usa para el nombre y la foto de quien
+  /// organiza un partido, que no tienen modelo propio.
+  Future<Map<String, dynamic>?> getUserProfile(String uid) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+    return doc.data();
+  }
+
+  /// El feed de Comunidad. Los documentos van crudos porque todavía no hay un
+  /// modelo: la pantalla lee `type`, `playerName`, `change` y `newOvr`.
+  Stream<List<Map<String, dynamic>>> getFeedActivitiesStream() {
+    return _firestore
+        .collection('feedActivities')
+        .orderBy('createdAt', descending: true)
+        .limit(25)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
 
   Stream<List<EvaluationAssignmentModel>> getMatchAssignmentsStream(String matchId) {

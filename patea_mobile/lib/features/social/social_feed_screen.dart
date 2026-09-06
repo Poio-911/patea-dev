@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/firestore_service.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 
-class SocialFeedScreen extends StatelessWidget {
+class SocialFeedScreen extends ConsumerWidget {
   const SocialFeedScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final stream = FirebaseFirestore.instance
-        .collection('feedActivities')
-        .orderBy('createdAt', descending: true)
-        .limit(25)
-        .snapshots();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final feedAsync = ref.watch(feedActivitiesStreamProvider);
 
     return Scaffold(
       // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
@@ -27,14 +24,13 @@ class SocialFeedScreen extends StatelessWidget {
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),
         ),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: stream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Builder(
+        builder: (context) {
+          if (feedAsync.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final docs = snapshot.data?.docs ?? [];
+          final docs = feedAsync.value ?? const <Map<String, dynamic>>[];
           if (docs.isEmpty) {
             return Center(
               child: Text(
@@ -49,7 +45,7 @@ class SocialFeedScreen extends StatelessWidget {
             itemCount: docs.length,
             separatorBuilder: (_, index) => const SizedBox(height: 14),
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
+              final data = docs[index];
               final type = data['type'] ?? 'ovr_updated';
               final playerName = data['playerName'] ?? 'Jugador';
               final change = data['change'] ?? 0;

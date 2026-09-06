@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/player_position_badge.dart';
 import '../../core/theme/app_radii.dart';
@@ -163,7 +162,10 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final teamAsync = ref.watch(singleTeamStreamProvider(widget.teamId));
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    // Antes leia FirebaseAuth.instance directo. Es el mismo uid, pero por el
+    // provider la pantalla se puede montar sin Firebase y se reconstruye sola
+    // al cambiar de sesion.
+    final uid = ref.watch(currentUidProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
