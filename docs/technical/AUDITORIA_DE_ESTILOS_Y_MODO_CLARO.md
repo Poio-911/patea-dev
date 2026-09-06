@@ -14,10 +14,10 @@ Todos los números son medidos, no estimados. La referencia de la web es
 # Estado
 
 > **Cerrado el 2026-09-06.** Las seis fases están hechas, el modo claro se
-> elige desde el menú de usuario, y ya no queda ninguna casilla abierta. Lo que
-> sigue queda como registro de qué se hizo y por qué — incluidas las **cinco**
-> veces que el plan estaba equivocado y hubo que corregirlo con el código a la
-> vista:
+> elige desde el menú de usuario, y no queda ninguna casilla abierta **del
+> plan**. Lo que sigue queda como registro de qué se hizo y por qué — incluidas
+> las **cinco** veces que el plan estaba equivocado y hubo que corregirlo con el
+> código a la vista:
 >
 > 1. **La "isla oscura" no existía.** El comentario de `match-theme.ts` que la
 >    sostenía describe una intención, no lo que el CSS hace. Se evitó
@@ -53,7 +53,208 @@ Todos los números son medidos, no estimados. La referencia de la web es
 > esquemas**: no describen el tema, describen la foto. Ojo con no confundirlos
 > con las tarjetas de la lista de partidos, que también tienen foto abajo pero
 > teñida con `card` al 65-95 %: ahí la superficie sí sigue al tema.
+>
+> **Trabajo posterior al cierre, con cosas abiertas:** ver
+> *Reabierto el 2026-09-06* más abajo — el fondo del tema claro (decisión
+> pendiente, andamio en el árbol) y la carta de jugador en claro (decisión
+> tomada, código sin empezar).
 
+---
+
+# Reabierto el 2026-09-06 — dos frentes del tema claro
+
+El plan de las seis fases está cerrado y no se reabre: lo de acá abajo es
+trabajo **posterior**, encontrado mirando la app en el emulador y no leyendo
+código. Son dos frentes del tema claro, con una decisión pendiente y una
+decisión tomada sin implementar.
+
+| Frente | Diagnóstico | Decisión | Código |
+| --- | --- | --- | --- |
+| 1 · Fondo del tema claro | cerrado | **pendiente** — elegir entre tres | andamio en el árbol |
+| 2 · Carta de jugador en claro | cerrado | tomada — oscura en los dos temas | **sin empezar** |
+
+## Frente 1 · El fondo del tema claro
+
+Commits `883e3732` (el arreglo y las tres candidatas) y `4a35c600` (el
+selector en el menú de usuario).
+
+### El bug: el 5 % era 49 %
+
+El degradado del fondo claro mezclaba una parada **translúcida** (el tinte al
+5 %) con una **opaca** (el blanco del fondo). Toda la rampa entre las dos
+arrastra alfa intermedia, así que a mitad de camino había medio azul opaco.
+Medido sobre el golden, a 200 px de la esquina:
+
+    RGBA(125, 173, 247, alpha 124/255)  →  #BED6FA sobre blanco
+
+**49 % de azul arriba a la izquierda y 38 % de ámbar abajo a la derecha, donde
+el código decía 5 %.** No era una cuestión de gusto: era un defecto de
+composición.
+
+La web tiene la misma estructura de paradas, pero estira el degradado a 400 %
+de la pantalla y lo desliza, así que nunca muestra más que una tajada fina de
+esa rampa. Nosotros la comprimimos entera en un viewport y la dejamos quieta.
+
+### La regla que sale de ahí
+
+> **Un degradado no mezcla paradas translúcidas con opacas.** O todas las
+> paradas son opacas (pre-mezcladas contra el fondo con `Color.alphaBlend`), o
+> el degradado se apoya sobre una base opaca y se desvanece hacia **el mismo
+> color con alfa 0** — nunca hacia `Colors.transparent`, que es negro
+> invisible: Flutter interpola sin premultiplicar y el medio de la rampa
+> arrastra gris.
+
+Vale para toda la app, no sólo para el fondo. Ver el Frente 2, donde el mismo
+bug sigue vivo en seis sitios.
+
+### Las tres candidatas
+
+Arreglado, el 5 % es 5 %, y la desviación máxima respecto del blanco pasa de
+**60 a 6** — casi blanco liso. Por eso van tres, detrás de un selector, para
+elegir mirando el teléfono en vez de a ciegas:
+
+| Variante | Desviación | Qué es |
+| --- | --- | --- |
+| `degradado` | 6 | el arreglado; prácticamente blanco |
+| `mancha` | 12 | 2-3 manchas radiales suaves, disposición sorteada una vez por sesión (no animada: una pantalla completa repintándose siempre es batería que en la web no se paga) |
+| `foto` | 14 | la misma foto del tema `game` en luma gris bajo un velo; deja **textura y no color** — el fondo queda `#EEEEEF` contra tarjetas `#FFFFFF`, que es la separación que hoy hace sólo el borde |
+
+### El andamio, y qué se borra
+
+`patea_mobile/lib/core/theme/fondo_claro.dart` **es andamio y lo dice en su
+cabecera.** Cuando esté elegida la variante:
+
+1. queda una sola implementación dentro de `PateaBackground`;
+2. se borra `fondo_claro.dart` entero;
+3. se borra el `SegmentedButton<FondoClaro>` de `patea_user_menu_sheet.dart`
+   (marcado `ANDAMIO`, sólo en `kDebugMode` y sólo con el tema claro puesto);
+4. se borra el `_SelectorDeFondo` de `design_gallery_screen.dart`;
+5. se regeneran los goldens de las doce pantallas en claro.
+
+### Riesgo conocido de la variante `foto`
+
+La foto se sortea entre nueve. **No todas se comportan igual**: en una sesión
+sale grano y en otra sale una figura reconocible —el poste y el banderín de
+córner quedaron claramente legibles abajo a la derecha—. Si se elige `foto`,
+hay que desenfocarla fuerte (`ImageFiltered`) para que las nueve den lo mismo.
+
+Oferta hecha y sin responder: preparar la **foto desenfocada** y la **mancha un
+escalón más marcada** (10-12 % en vez de 6-7 %) para una segunda vuelta de
+comparación.
+
+## Frente 2 · La carta de jugador en el tema claro
+
+**Diagnóstico cerrado, decisión tomada, código sin empezar.**
+
+La carta está diseñada como un objeto oscuro, y al tema claro se la tradujo
+superficie por superficie. Siete defectos, medidos sobre
+`test/goldens/pantalla_plantel_claro.png`:
+
+1. **El nombre, el OVR y la posición llevan una sombra negra** (`Colors.black`
+   α 0,8-0,9, blur 4-6). Esa sombra existe para separar texto **blanco** del
+   fondo de la foto. Con texto casi negro (`textPrimary` = `#020817`) sobre
+   blanco no separa nada: engorda el glifo con un halo gris. Lo feo no es el
+   negro, es el negro **con halo negro**.
+2. **El material del tier desaparece.** `shaders/card_foil.frag` pinta plata
+   como `mix(#B8C4DB, blanco, sheen)` y oro como `mix(#FAC747, #FFF5CC, sheen)`,
+   con α máxima ~0,05 en reposo. Pintar casi-blanco al 5 % sobre una carta
+   blanca no mueve ni un canal: **bronce, plata, oro y élite se ven idénticos
+   en claro.** El shader, las auras y los tiers —la razón de ser de la carta—
+   sólo existen en `game`.
+3. **La grilla de atributos no tiene contraste.** `overlaySubtle` (4 % negro)
+   sobre blanco da `#F5F5F5`, y el borde de la caja usa **ese mismo token**
+   (defecto de los dos temas, no sólo de claro). La barra: pista `#E2E2E2`,
+   relleno `#D2D2D2` → **1,17:1**. Un 70/99 y un 40/99 se ven iguales.
+4. **La pastilla de OVR de plata y de élite queda mal.** En claro
+   `silverBorder` = `#737B8C` y `eliteBorder` = `#2D5286`: pastillas gris
+   pizarra y azul marino con texto blanco, que leen como botón deshabilitado y
+   no como metal. La de oro (`#E6A605`) es la única que funciona.
+5. **La marca de agua de posición se vuelve más agresiva, no menos.** En claro
+   `posDel` = `#F04242` (rojo puro) al 10 % sobre blanco: se ve el contorno del
+   monigote cruzando la columna TIR/REG/FIS. En `game` es un pastel `#F47171`
+   sobre carbón y desaparece bien.
+6. **`PlayerAvatarFallback` usa su paleta clara** (`#B9DCD4` → `#7FBCAF`), así
+   que la mitad superior es un pastel lavado y la inferior es blanco: la carta
+   no tiene un solo punto de anclaje visual.
+7. **Sigue vivo el bug de alfa del Frente 1**, en seis degradados de la carta:
+   las cuatro auras por tier (`player_card_widget.dart:141,150,159,168`), la
+   capa extra de élite (`:269`) y el brillo especular (`:369,375`) terminan en
+   `Colors.transparent`. Sobre oscuro se disimula; sobre blanco ensucia.
+   *(El otro `Colors.transparent`, el de `:308`, es legítimo: es la máscara de
+   opacidad de un `ShaderMask`, no un color.)*
+
+### La causa raíz
+
+La carta no es una superficie de la app: **es un objeto.** Y la app ya tomó
+esa decisión dos veces:
+
+- las tarjetas de partido son oscuras en los dos temas, por decisión explícita
+  de la web (`src/lib/match-theme.ts`: *"Cards are always dark — independent of
+  the app theme"*);
+- los tokens `onPhoto` / `onPhotoMuted` / `onPhotoLine` existen justamente
+  porque hay superficies que **no describen el tema, describen el objeto**.
+
+La carta de jugador es el tercer caso y quedó afuera.
+
+> **Y ojo con el argumento "así lo hace la web".** En la web *todos* los
+> overrides de `.player-card` están dentro de `.game` y `.nike`
+> (`globals.css:151-183` y `:579-677`). En claro la web **no tiene carta
+> diseñada**: tiene una `Card` de shadcn blanca con `h3 text-sm`. Copiar eso
+> sería tirar el shader, las auras y los materiales.
+
+### La decisión — 2026-09-06
+
+**La carta se dibuja siempre con el esquema `game`, sea cual sea el tema de la
+app.** No se re-abre.
+
+Implementación prevista, mínima: un `Theme` que reemplaza la extensión
+`PateaColors` por `PateaColors.game` alrededor de la carta. `context.c` adentro
+resuelve al esquema oscuro y arrastra **gratis** a `CardFoil`, a
+`PlayerAvatarFallback` (vuelven los diez duotonos oscuros) y a la marca de agua
+de posición. Cero tokens nuevos, cero ediciones repartidas.
+
+    Theme(
+      data: Theme.of(context).copyWith(
+        extensions: <ThemeExtension<dynamic>>[PateaColors.game],
+      ),
+      child: Builder(builder: _construirCarta),
+    )
+
+Cuidado al implementarlo: `build` hoy lee `context.c` **antes** de armar el
+árbol (`posColor`, los colores por tier), así que hay que mover esas lecturas
+adentro del `Builder` o no ven el esquema nuevo.
+
+Toca las cinco pantallas que montan la carta: `players_list_screen.dart`,
+`player_detail_screen.dart`, `match_detail_screen.dart`,
+`edit_profile_screen.dart` y la galería.
+
+### Lo que la decisión **no** arregla
+
+Los defectos 3 y 7 son de la carta, no del tema: empeoran también en `game`,
+sólo que ahí se disimulan. Quedan abiertos:
+
+- los seis `Colors.transparent` de las auras y del especular;
+- el borde de la caja de atributo, que usa el mismo token que su relleno;
+- la barra de progreso a 1,17:1 (en `game` da 1,45:1 — tampoco alcanza).
+
+## Lo que falta
+
+- [ ] **Elegir la variante de fondo del tema claro** (`degradado` / `mancha` /
+      `foto`), y borrar el andamio: `fondo_claro.dart`, el selector del menú de
+      usuario y el de la galería. Regenerar los goldens en claro.
+- [ ] Opcional, ofrecido y sin responder: preparar la **foto desenfocada** y la
+      **mancha más marcada** para una segunda vuelta de comparación.
+- [ ] **Implementar la carta oscura en los dos temas** (decisión tomada
+      arriba). Regenerar los goldens de `plantel`, `jugador_detalle` y
+      `partido_detalle` en claro.
+- [ ] Los tres defectos de la carta que sobreviven a la decisión: los seis
+      `Colors.transparent`, el borde de la caja de atributo, y el contraste de
+      la barra de progreso.
+- [ ] Pendiente viejo, de la pasada de diseño y no de este plan: el fondo de
+      cancha debería verse desenfocado a través del `BackdropFilter` del
+      `PateaTopHeader`. Hoy no se ve ese blur.
+
+---
 
 Se marca acá y se commitea con el nombre de la fase. Nada de tableros aparte: si
 el commit no está, la fase no está.
