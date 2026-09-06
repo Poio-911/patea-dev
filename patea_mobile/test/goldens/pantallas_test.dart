@@ -115,6 +115,14 @@ void main() {
     // daban imágenes distintas —una con la foto de cancha de fondo y otra
     // sin ella— y el 93 % de los píxeles cambiaba. Precargarlas acá, con el
     // reloj real, deja la caché lista antes del primer frame.
+    //
+    // Y hay que agrandarle el techo a la caché primero. Trece fotos de
+    // 1080×2400 son ~130 MB decodificadas y el límite por defecto es 100:
+    // entraban todas y después el propio uso iba expulsando algunas, así que
+    // cuatro pantallas salían con foto o sin foto según el orden de la
+    // corrida. Ese fue el segundo intento fallido de hacer esto determinista.
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 512 << 20;
+
     final manifiesto = await AssetManifest.loadFromAssetBundle(rootBundle);
     for (final clave in manifiesto.listAssets()) {
       if (!clave.endsWith('.jpg') && !clave.endsWith('.png')) continue;
