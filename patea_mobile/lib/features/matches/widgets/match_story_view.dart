@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
@@ -136,15 +137,13 @@ class _Paper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: context.c.card.withValues(alpha: 0.55),
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
-      ),
-      child: child,
-    );
+    return PateaCard(
+             color: context.c.card.withValues(alpha: 0.55),
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.35),
+             clipBehavior: Clip.antiAlias,
+             child: child,
+           );
   }
 }
 
@@ -166,12 +165,10 @@ class _Masthead extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
+              PateaCard(
+                color: context.c.brandVolt.withValues(alpha: 0.15),
+                radius: AppRadii.chipAll,
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: context.c.brandVolt.withValues(alpha: 0.15),
-                  borderRadius: AppRadii.chipAll,
-                ),
                 child: Icon(Icons.auto_stories_rounded, size: 15, color: context.c.primary),
               ),
               const SizedBox(width: 8),
@@ -189,13 +186,11 @@ class _Masthead extends StatelessWidget {
               ),
               if (hasScore) ...[
                 const SizedBox(width: 8),
-                Container(
+                PateaCard(
+                  color: context.c.cardSurface,
+                  radius: AppRadii.chipAll,
+                  borderColor: context.c.border.withValues(alpha: 0.4),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: context.c.cardSurface,
-                    borderRadius: AppRadii.chipAll,
-                    border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
-                  ),
                   child: Text(
                     '${match.teamA!.score} - ${match.teamB!.score}',
                     style: AppTypography.jersey(size: 15, color: context.c.textPrimary),
@@ -230,14 +225,12 @@ class _MvpMedallion extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: context.c.cardSurface,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(color: context.c.goldBorder.withValues(alpha: 0.5)),
-        ),
-        child: Row(
+      child: PateaCard(
+               color: context.c.cardSurface,
+               radius: AppRadii.cardAll,
+               borderColor: context.c.goldBorder.withValues(alpha: 0.5),
+               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+               child: Row(
           children: [
             Container(
               width: 40,
@@ -284,7 +277,7 @@ class _MvpMedallion extends StatelessWidget {
             ),
           ],
         ),
-      ),
+             ),
     );
   }
 }
@@ -612,16 +605,14 @@ class _VoiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 250,
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.c.card.withValues(alpha: 0.75),
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
-      ),
-      child: Stack(
+    return PateaCard(
+             color: context.c.card.withValues(alpha: 0.75),
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.35),
+             width: 250,
+             clipBehavior: Clip.antiAlias,
+             padding: const EdgeInsets.all(16),
+             child: Stack(
         children: [
           // La comilla gigante de fondo, girada, como en la web.
           Positioned(
@@ -690,7 +681,7 @@ class _VoiceCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -718,12 +709,10 @@ class _CoverPending extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
+              PateaCard(
+                color: context.c.brandVolt.withValues(alpha: 0.12),
+                radius: AppRadii.cardAll,
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.c.brandVolt.withValues(alpha: 0.12),
-                  borderRadius: AppRadii.cardAll,
-                ),
                 child: Icon(Icons.auto_stories_rounded, size: 20, color: context.c.primary),
               ),
               const SizedBox(width: 12),

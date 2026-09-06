@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_card.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -248,19 +249,15 @@ class _Scoreboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final live = match.status == 'active';
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-      decoration: BoxDecoration(
-        color: context.c.card,
-        borderRadius: AppRadii.surfaceAll,
-        border: Border.all(
-          color: live
+    return PateaCard(
+             color: context.c.card,
+             radius: AppRadii.surfaceAll,
+             borderColor: live
               ? context.c.destructive.withValues(alpha: 0.55)
               : context.c.overlaySubtle,
           width: live ? 1.5 : 1,
-        ),
-      ),
-      child: Column(
+             padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+             child: Column(
         children: [
           _StatusLine(match: match, clock: clock),
           const SizedBox(height: 16),
@@ -280,7 +277,7 @@ class _Scoreboard extends StatelessWidget {
           ),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -467,14 +464,12 @@ class _ControlButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(color: border),
-        ),
-        child: Row(
+      child: PateaCard(
+               color: bg,
+               radius: AppRadii.cardAll,
+               borderColor: border,
+               padding: const EdgeInsets.symmetric(vertical: 13),
+               child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 18, color: fg),
@@ -489,7 +484,7 @@ class _ControlButton extends StatelessWidget {
             ),
           ],
         ),
-      ),
+             ),
     );
   }
 }
@@ -527,13 +522,11 @@ class _QuickEvents extends StatelessWidget {
                 child: InkWell(
                   onTap: () => onPick(_items[i].$1),
                   borderRadius: AppRadii.cardAll,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: AppRadii.cardAll,
-                      border: Border.all(color: context.c.overlayLine),
-                    ),
-                    child: Column(
+                  child: PateaCard(
+                           radius: AppRadii.cardAll,
+                           borderColor: context.c.overlayLine,
+                           padding: const EdgeInsets.symmetric(vertical: 12),
+                           child: Column(
                       children: [
                         Icon(_items[i].$2, size: 20, color: context.c.textPrimary),
                         const SizedBox(height: 6),
@@ -541,7 +534,7 @@ class _QuickEvents extends StatelessWidget {
                             style: AppTypography.body(size: 10, color: context.c.textSecondary)),
                       ],
                     ),
-                  ),
+                         ),
                 ),
               ),
             ],

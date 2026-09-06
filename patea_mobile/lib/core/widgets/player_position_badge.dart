@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
@@ -61,14 +62,13 @@ class PlayerPositionBadge extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: AppRadii.chipAll,
-        border: Border.all(color: color.withValues(alpha: 0.8), width: 1),
-      ),
-      child: Text(
+    return PateaCard(
+             color: color.withValues(alpha: 0.18),
+             radius: AppRadii.chipAll,
+             borderColor: color.withValues(alpha: 0.8),
+             borderWidth: 1,
+             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+             child: Text(
         texto,
         style: AppTypography.headline(
           size: fontSize,
@@ -76,6 +76,6 @@ class PlayerPositionBadge extends StatelessWidget {
           color: color,
         ),
       ),
-    );
+           );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'dart:ui' show ImageFilter;
@@ -801,13 +802,11 @@ class _TeamBlock extends ConsumerWidget {
                                 .copyWith(letterSpacing: 1.4),
                           ),
                           if (avgOvr != null) ...[
-                            Container(
+                            PateaCard(
+                              color: context.c.brandVolt.withValues(alpha: 0.12),
+                              radius: AppRadii.hairAll,
+                              borderColor: context.c.brandVolt.withValues(alpha: 0.3),
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: context.c.brandVolt.withValues(alpha: 0.12),
-                                borderRadius: AppRadii.hairAll,
-                                border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3)),
-                              ),
                               child: Text(
                                 'OVR PROM. ${avgOvr.toStringAsFixed(1)}',
                                 style: AppTypography.code(
@@ -985,13 +984,11 @@ class _PlayerMatchBadges extends StatelessWidget {
         runSpacing: 2,
         children: [
           if (isMvp)
-            Container(
+            PateaCard(
+              color: context.c.goldBorder.withValues(alpha: 0.2),
+              radius: AppRadii.hairAll,
+              borderColor: context.c.goldBorder.withValues(alpha: 0.5),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: context.c.goldBorder.withValues(alpha: 0.2),
-                borderRadius: AppRadii.hairAll,
-                border: Border.all(color: context.c.goldBorder.withValues(alpha: 0.5)),
-              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1023,18 +1020,16 @@ class _MiniBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: AppRadii.hairAll,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(
+    return PateaCard(
+             color: color.withValues(alpha: 0.14),
+             radius: AppRadii.hairAll,
+             borderColor: color.withValues(alpha: 0.35),
+             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
+             child: Text(
         label,
         style: AppTypography.code(size: 8, weight: FontWeight.w700, color: color),
       ),
-    );
+           );
   }
 }
 
@@ -1046,14 +1041,12 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.c.card.withValues(alpha: 0.40),
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
-      ),
-      child: Column(
+    return PateaCard(
+             color: context.c.card.withValues(alpha: 0.40),
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.35),
+             padding: const EdgeInsets.all(16),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -1125,7 +1118,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
             ),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -1161,14 +1154,12 @@ class _OrganizerPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final isFinished = match.status == 'completed' || match.status == 'evaluated';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.c.card.withValues(alpha: 0.55),
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
-      ),
-      child: Column(
+    return PateaCard(
+             color: context.c.card.withValues(alpha: 0.55),
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.35),
+             padding: const EdgeInsets.all(16),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -1303,7 +1294,7 @@ class _OrganizerPanel extends StatelessWidget {
           ),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -1432,13 +1423,11 @@ class _StickyActionBar extends StatelessWidget {
         if (isUserInMatch) {
           actionWidget = Row(
             children: [
-              Container(
+              PateaCard(
+                color: context.c.cardSurface,
+                radius: AppRadii.cardAll,
+                borderColor: context.c.brandVolt.withValues(alpha: 0.35),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.c.cardSurface,
-                  borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.35)),
-                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1474,14 +1463,12 @@ class _StickyActionBar extends StatelessWidget {
             ],
           );
         } else if (isPending) {
-          actionWidget = Container(
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            decoration: BoxDecoration(
-              color: context.c.cardSurface,
-              borderRadius: AppRadii.cardAll,
-              border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3)),
-            ),
-            child: Row(
+          actionWidget = PateaCard(
+                           color: context.c.cardSurface,
+                           radius: AppRadii.cardAll,
+                           borderColor: context.c.brandVolt.withValues(alpha: 0.3),
+                           padding: const EdgeInsets.symmetric(vertical: 13),
+                           child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.hourglass_top_rounded, size: 18, color: context.c.primary),
@@ -1489,19 +1476,17 @@ class _StickyActionBar extends StatelessWidget {
                 Text('SOLICITUD ENVIADA', style: AppTypography.jersey(size: 14, color: context.c.primary, letterSpacing: 0.8)),
               ],
             ),
-          );
+                         );
         } else if (isMatchFull) {
-          actionWidget = Container(
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            decoration: BoxDecoration(
-              color: context.c.cardSurface,
-              borderRadius: AppRadii.cardAll,
-              border: Border.all(color: context.c.border.withValues(alpha: 0.3)),
-            ),
-            child: Center(
+          actionWidget = PateaCard(
+                           color: context.c.cardSurface,
+                           radius: AppRadii.cardAll,
+                           borderColor: context.c.border.withValues(alpha: 0.3),
+                           padding: const EdgeInsets.symmetric(vertical: 13),
+                           child: Center(
               child: Text('PARTIDO COMPLETO', style: AppTypography.jersey(size: 15, color: context.c.textSecondary, letterSpacing: 1)),
             ),
-          );
+                         );
         } else {
           actionWidget = ElevatedButton.icon(
             onPressed: isJoining ? null : onJoinLeave,
@@ -1568,14 +1553,12 @@ class _ChatPreviewCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lastMsg = ref.watch(matchLastMessageStreamProvider(matchId)).valueOrNull;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.c.card.withValues(alpha: 0.40),
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.border.withValues(alpha: 0.35)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
+    return PateaCard(
+             color: context.c.card.withValues(alpha: 0.40),
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.35),
+             clipBehavior: Clip.antiAlias,
+             child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onOpenChat,
@@ -1629,7 +1612,7 @@ class _ChatPreviewCard extends ConsumerWidget {
           ),
         ),
       ),
-    );
+           );
   }
 }
 
@@ -1640,14 +1623,12 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
-      return Container(
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-          border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        child: Column(
+      return PateaCard(
+               color: context.c.popover,
+               radius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+               borderColor: context.c.border.withValues(alpha: 0.4),
+               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+               child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -1705,7 +1686,7 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
               ),
           ],
         ),
-      );
+             );
     },
   );
 }
@@ -1765,15 +1746,13 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.82,
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      decoration: BoxDecoration(
-        color: context.c.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
-      ),
-      child: Column(
+    return PateaCard(
+             color: context.c.background,
+             radius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+             borderColor: context.c.border.withValues(alpha: 0.4),
+             height: MediaQuery.of(context).size.height * 0.82,
+             padding: EdgeInsets.only(bottom: keyboardHeight),
+             child: Column(
         children: [
           const SizedBox(height: 10),
           Container(
@@ -1884,6 +1863,6 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
           ),
         ],
       ),
-    );
+           );
   }
 }

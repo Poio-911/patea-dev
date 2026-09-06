@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
@@ -174,9 +175,11 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Container(
+        PateaCard(
+          color: context.c.card,
+          radius: AppRadii.cardAll,
+          borderColor: context.c.brandVolt.withValues(alpha: 0.25),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.25))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -276,10 +279,11 @@ class _CounterDial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
-      child: Column(
+    return PateaCard(
+             color: context.c.cardSurface,
+             radius: AppRadii.cardAll,
+             padding: const EdgeInsets.symmetric(vertical: 14),
+             child: Column(
         children: [
           Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
           const SizedBox(height: 6),
@@ -293,7 +297,7 @@ class _CounterDial extends StatelessWidget {
           ),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -305,11 +309,13 @@ class _PlayerEvaluationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
-      child: Column(
+    return PateaCard(
+             color: context.c.card,
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.4),
+             margin: const EdgeInsets.only(bottom: 14),
+             padding: const EdgeInsets.all(14),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -361,7 +367,7 @@ class _PlayerEvaluationCard extends StatelessWidget {
           if (draft.evaluationType == 'points') _PointsEditor(draft: draft, onChanged: onChanged) else _TagsEditor(draft: draft, onChanged: onChanged),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -377,16 +383,14 @@ class _TypeToggle extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? context.c.primary.withValues(alpha: 0.15) : context.c.cardSurface,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? context.c.primary : Colors.transparent),
-        ),
-        child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? context.c.primary : context.c.textSecondary)),
-      ),
+      child: PateaCard(
+               color: selected ? context.c.primary.withValues(alpha: 0.15) : context.c.cardSurface,
+               radius: AppRadii.cardAll,
+               borderColor: selected ? context.c.primary : Colors.transparent,
+               padding: const EdgeInsets.symmetric(vertical: 8),
+               alignment: Alignment.center,
+               child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? context.c.primary : context.c.textSecondary)),
+             ),
     );
   }
 }
@@ -451,14 +455,12 @@ class _TagsEditor extends StatelessWidget {
                 onChanged();
               },
               borderRadius: AppRadii.cardAll,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isChecked ? (isPositive ? context.c.success.withValues(alpha: 0.1) : context.c.destructive.withValues(alpha: 0.1)) : context.c.cardSurface,
-                  borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: isChecked ? (isPositive ? context.c.success : context.c.destructive) : Colors.transparent),
-                ),
-                child: Row(
+              child: PateaCard(
+                       color: isChecked ? (isPositive ? context.c.success.withValues(alpha: 0.1) : context.c.destructive.withValues(alpha: 0.1)) : context.c.cardSurface,
+                       radius: AppRadii.cardAll,
+                       borderColor: isChecked ? (isPositive ? context.c.success : context.c.destructive) : Colors.transparent,
+                       padding: const EdgeInsets.all(10),
+                       child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(isChecked ? Icons.check_box : Icons.check_box_outline_blank, size: 18, color: isChecked ? (isPositive ? context.c.success : context.c.destructive) : context.c.textSecondary),
@@ -485,7 +487,7 @@ class _TagsEditor extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+                     ),
             ),
           );
         }),

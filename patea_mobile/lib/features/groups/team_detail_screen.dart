@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/player_position_badge.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
@@ -476,15 +477,13 @@ class _ActionButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        height: 44,
-        padding: EdgeInsets.symmetric(horizontal: label == null ? 14 : 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: AppRadii.cardAll,
-        ),
-        child: busy
+      child: PateaCard(
+               color: bg,
+               radius: AppRadii.cardAll,
+               height: 44,
+               padding: EdgeInsets.symmetric(horizontal: label == null ? 14 : 12),
+               alignment: Alignment.center,
+               child: busy
             ? SizedBox(
                 width: 15,
                 height: 15,
@@ -502,7 +501,7 @@ class _ActionButton extends StatelessWidget {
                   ],
                 ],
               ),
-      ),
+             ),
     );
   }
 }
@@ -644,14 +643,12 @@ class _AgendaRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 5),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-        decoration: BoxDecoration(
-          color: context.c.background,
-          borderRadius: AppRadii.cardAll,
-        ),
-        child: Row(
+      child: PateaCard(
+               color: context.c.background,
+               radius: AppRadii.cardAll,
+               margin: const EdgeInsets.only(bottom: 5),
+               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+               child: Row(
           children: [
             if (live) ...[
               Container(
@@ -692,7 +689,7 @@ class _AgendaRow extends StatelessWidget {
                 size: 18, color: context.c.textSecondary),
           ],
         ),
-      ),
+             ),
     );
   }
 }

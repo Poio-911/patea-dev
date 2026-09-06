@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/patea_colors.dart';
@@ -54,14 +55,12 @@ class SocialFeedScreen extends StatelessWidget {
               final change = data['change'] ?? 0;
               final newOvr = data['newOvr'] ?? 70;
 
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.c.card,
-                  borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: context.c.border),
-                ),
-                child: Column(
+              return PateaCard(
+                       color: context.c.card,
+                       radius: AppRadii.cardAll,
+                       borderColor: context.c.border,
+                       padding: const EdgeInsets.all(16),
+                       child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -121,7 +120,7 @@ class SocialFeedScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              );
+                     );
             },
           );
         },

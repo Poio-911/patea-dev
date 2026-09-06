@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../core/widgets/patea_card.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -448,14 +449,12 @@ class _ProposalRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
+          PateaCard(
+            color: leading ? context.c.primary : context.c.overlayLine,
+            radius: AppRadii.hairAll,
             width: 3,
             height: 38,
             margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: leading ? context.c.primary : context.c.overlayLine,
-              borderRadius: AppRadii.hairAll,
-            ),
           ),
           Expanded(
             child: Column(
@@ -514,21 +513,17 @@ class _VoteButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.chipAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: voted ? context.c.primary : Colors.transparent,
-          borderRadius: AppRadii.chipAll,
-          border: Border.all(
-            color: voted ? context.c.primary : context.c.overlayStrong,
-          ),
-        ),
-        child: Icon(
+      child: PateaCard(
+               color: voted ? context.c.primary : Colors.transparent,
+               radius: AppRadii.chipAll,
+               borderColor: voted ? context.c.primary : context.c.overlayStrong,
+               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+               child: Icon(
           voted ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
           size: 16,
           color: voted ? context.c.background : context.c.textSecondary,
         ),
-      ),
+             ),
     );
   }
 }
@@ -553,14 +548,12 @@ class _IconAction extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: AppRadii.chipAll,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: AppRadii.chipAll,
-            border: Border.all(color: color.withValues(alpha: 0.4)),
-          ),
-          child: Icon(icon, size: 16, color: color),
-        ),
+        child: PateaCard(
+                 radius: AppRadii.chipAll,
+                 borderColor: color.withValues(alpha: 0.4),
+                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                 child: Icon(icon, size: 16, color: color),
+               ),
       ),
     );
   }

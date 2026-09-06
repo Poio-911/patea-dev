@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 
 import '../../core/theme/patea_colors.dart';
@@ -53,11 +54,12 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
         Text('VISTA PREVIA', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
         const SizedBox(height: 10),
         Center(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
-            child: JerseyWidget(jersey: value, size: 90),
-          ),
+          child: PateaCard(
+                   color: context.c.cardSurface,
+                   radius: AppRadii.cardAll,
+                   padding: const EdgeInsets.all(20),
+                   child: JerseyWidget(jersey: value, size: 90),
+                 ),
         ),
         const SizedBox(height: 24),
         Text('DISEÑO', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
@@ -73,14 +75,12 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
             return InkWell(
               borderRadius: AppRadii.cardAll,
               onTap: () => widget.onChanged(JerseyModel(pattern: type, primaryColor: value.primaryColor, secondaryColor: value.secondaryColor)),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: AppRadii.cardAll,
-                  border: Border.all(color: selected ? context.c.primary : context.c.border, width: selected ? 2 : 1),
-                ),
-                child: JerseyWidget(jersey: JerseyModel(pattern: type, primaryColor: '#9CA3AF', secondaryColor: '#E5E7EB'), size: 40),
-              ),
+              child: PateaCard(
+                       radius: AppRadii.cardAll,
+                       borderColor: selected ? context.c.primary : context.c.border, width: selected ? 2 : 1,
+                       padding: const EdgeInsets.all(8),
+                       child: JerseyWidget(jersey: JerseyModel(pattern: type, primaryColor: '#9CA3AF', secondaryColor: '#E5E7EB'), size: 40),
+                     ),
             );
           },
         ),

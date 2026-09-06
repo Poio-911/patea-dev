@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
@@ -142,9 +143,10 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
-                      Container(
+                      PateaCard(
+                        color: context.c.card,
+                        radius: AppRadii.cardAll,
                         padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_states.dart';
@@ -117,14 +118,12 @@ class _CompetitionsList extends StatelessWidget {
             }
           },
           borderRadius: AppRadii.cardAll,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.c.card,
-              borderRadius: AppRadii.cardAll,
-              border: Border.all(color: context.c.border),
-            ),
-            child: Row(
+          child: PateaCard(
+                   color: context.c.card,
+                   radius: AppRadii.cardAll,
+                   borderColor: context.c.border,
+                   padding: const EdgeInsets.all(16),
+                   child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -158,7 +157,7 @@ class _CompetitionsList extends StatelessWidget {
                 Icon(Icons.chevron_right, color: context.c.textSecondary),
               ],
             ),
-          ),
+                 ),
         );
       },
     );

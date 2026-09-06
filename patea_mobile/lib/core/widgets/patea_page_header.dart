@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
@@ -131,19 +132,15 @@ class PateaPageHeader extends StatelessWidget {
             InkWell(
               onTap: onFiltersTap,
               borderRadius: AppRadii.cardAll,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: context.c.card.withValues(alpha: 0.70),
-                  borderRadius: AppRadii.cardAll,
-                  border: Border.all(
-                    color: activeFilterCount > 0
+              child: PateaCard(
+                       color: context.c.card.withValues(alpha: 0.70),
+                       radius: AppRadii.cardAll,
+                       borderColor: activeFilterCount > 0
                         ? context.c.brandVolt.withValues(alpha: 0.7)
                         : context.c.border.withValues(alpha: 0.6),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
+                       borderWidth: 1,
+                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                       child: Row(
                   children: [
                     Icon(
                       Icons.filter_list_rounded,
@@ -179,7 +176,7 @@ class PateaPageHeader extends StatelessWidget {
                     Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: context.c.textSecondary),
                   ],
                 ),
-              ),
+                     ),
             ),
           ],
         ),

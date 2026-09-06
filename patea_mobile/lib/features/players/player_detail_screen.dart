@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -249,14 +250,12 @@ class _ActionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: AppRadii.cardAll,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: context.c.card,
-            borderRadius: AppRadii.cardAll,
-            border: Border.all(color: context.c.border.withValues(alpha: 0.6)),
-          ),
-          child: Column(
+        child: PateaCard(
+                 color: context.c.card,
+                 radius: AppRadii.cardAll,
+                 borderColor: context.c.border.withValues(alpha: 0.6),
+                 padding: const EdgeInsets.all(14),
+                 child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -277,7 +276,7 @@ class _ActionCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
+               ),
       ),
     );
   }
@@ -313,14 +312,12 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: context.c.card,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(color: context.c.border),
-        ),
-        child: Column(
+      child: PateaCard(
+               color: context.c.card,
+               radius: AppRadii.cardAll,
+               borderColor: context.c.border,
+               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+               child: Column(
           children: [
             Text(value, style: AppTypography.sportNumber(size: 18, color: context.c.primary)),
             const SizedBox(height: 4),
@@ -332,7 +329,7 @@ class _StatCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
+             ),
     );
   }
 }

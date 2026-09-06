@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
@@ -185,15 +186,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     return InkWell(
                       onTap: () => setState(() => selected ? _selectedPlayerIds.remove(p.id) : _selectedPlayerIds.add(p.id)),
                       borderRadius: AppRadii.cardAll,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
-                          borderRadius: AppRadii.cardAll,
-                          border: Border.all(color: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4)),
-                        ),
-                        child: Row(
+                      child: PateaCard(
+                               color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
+                               radius: AppRadii.cardAll,
+                               borderColor: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4),
+                               margin: const EdgeInsets.only(bottom: 6),
+                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                               child: Row(
                           children: [
                             PateaAvatar(
                               photoUrl: p.photoUrl,
@@ -216,7 +215,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                             ),
                           ],
                         ),
-                      ),
+                             ),
                     );
                   },
                 ),
@@ -239,11 +238,12 @@ class _StepIndicator extends StatelessWidget {
         children: List.generate(2, (i) {
           final isActive = i < step;
           return Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: i < 1 ? 6 : 0),
-              height: 4,
-              decoration: BoxDecoration(color: isActive ? context.c.primary : context.c.cardSurface, borderRadius: AppRadii.hairAll),
-            ),
+            child: PateaCard(
+                     color: isActive ? context.c.primary : context.c.cardSurface,
+                     radius: AppRadii.hairAll,
+                     margin: EdgeInsets.only(right: i < 1 ? 6 : 0),
+                     height: 4,
+                   ),
           );
         }),
       ),

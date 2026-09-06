@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -308,13 +309,11 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        ),
-        child: Column(
+      builder: (sheetContext) => PateaCard(
+                                   color: context.c.popover,
+                                   radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+                                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                                   child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -347,7 +346,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
             ),
           ],
         ),
-      ),
+                                 ),
     );
   }
 
@@ -513,13 +512,11 @@ class _PartidosSheetItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isActive ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: AppRadii.cardAll,
-        ),
-        child: Row(
+      child: PateaCard(
+               color: isActive ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
+               radius: AppRadii.cardAll,
+               padding: const EdgeInsets.all(14),
+               child: Row(
           children: [
             Container(
               width: 40,
@@ -537,7 +534,7 @@ class _PartidosSheetItem extends StatelessWidget {
             ),
           ],
         ),
-      ),
+             ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_snack.dart';
 
 import '../../core/theme/app_radii.dart';
@@ -271,13 +272,11 @@ class _Swatch extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          PateaCard(
+            color: color,
+            radius: AppRadii.chipAll,
+            borderColor: c.border,
             height: 46,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: AppRadii.chipAll,
-              border: Border.all(color: c.border),
-            ),
           ),
           const SizedBox(height: 4),
           Text(name,
@@ -327,14 +326,12 @@ class _ContrastBlock extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        color: on,
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: c.border),
-      ),
-      child: Column(
+    return PateaCard(
+             color: on,
+             radius: AppRadii.cardAll,
+             borderColor: c.border,
+             padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label.toUpperCase(),
@@ -345,7 +342,7 @@ class _ContrastBlock extends StatelessWidget {
           row('primary', c.primary),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -356,33 +353,29 @@ class _Overlays extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget box(String name, Color overlay) => Expanded(
-          child: Container(
-            height: 62,
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: overlay,
-              borderRadius: AppRadii.chipAll,
-              border: Border.all(color: c.overlayLine),
-            ),
-            alignment: Alignment.center,
-            child: Text(name,
+          child: PateaCard(
+                   color: overlay,
+                   radius: AppRadii.chipAll,
+                   borderColor: c.overlayLine,
+                   height: 62,
+                   margin: const EdgeInsets.only(right: 8),
+                   alignment: Alignment.center,
+                   child: Text(name,
                 style: AppTypography.code(size: 9, color: c.textSecondary)),
-          ),
+                 ),
         );
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: c.card,
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: c.border),
-      ),
-      child: Row(children: [
+    return PateaCard(
+             color: c.card,
+             radius: AppRadii.cardAll,
+             borderColor: c.border,
+             padding: const EdgeInsets.all(10),
+             child: Row(children: [
         box('subtle', c.overlaySubtle),
         box('line', c.overlayLine),
         box('strong', c.overlayStrong),
       ]),
-    );
+           );
   }
 }
 

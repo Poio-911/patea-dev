@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/widgets/patea_card.dart';
 import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter/material.dart';
@@ -68,12 +69,10 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
                     color: context.c.textSecondary,
                     letterSpacing: 1.2)),
             const SizedBox(width: 8),
-            Container(
+            PateaCard(
+              color: context.c.primary,
+              radius: AppRadii.pillAll,
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: context.c.primary,
-                borderRadius: AppRadii.pillAll,
-              ),
               child: Text('${requests.length}',
                   style: AppTypography.code(
                       size: 11, weight: FontWeight.w800, color: context.c.background)),
@@ -183,15 +182,13 @@ class _RespondButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.chipAll,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          borderRadius: AppRadii.chipAll,
-          border: Border.all(color: color.withValues(alpha: 0.4)),
-        ),
-        child: Icon(icon, size: 18, color: onTap == null ? context.c.textSecondary : color),
-      ),
+      child: PateaCard(
+               radius: AppRadii.chipAll,
+               borderColor: color.withValues(alpha: 0.4),
+               width: 36,
+               height: 36,
+               child: Icon(icon, size: 18, color: onTap == null ? context.c.textSecondary : color),
+             ),
     );
   }
 }

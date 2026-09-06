@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,17 +43,13 @@ class LeaderboardScreen extends ConsumerWidget {
                       ? context.c.silverBorder
                       : context.c.bronzeBorder;
 
-              return Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: context.c.card,
-                  borderRadius: AppRadii.cardAll,
-                  border: Border.all(
-                    color: isPodium ? podiumColor.withValues(alpha: 0.6) : context.c.border,
+              return PateaCard(
+                       color: context.c.card,
+                       radius: AppRadii.cardAll,
+                       borderColor: isPodium ? podiumColor.withValues(alpha: 0.6) : context.c.border,
                     width: isPodium ? 1.5 : 1.0,
-                  ),
-                ),
-                child: Row(
+                       padding: const EdgeInsets.all(14),
+                       child: Row(
                   children: [
                     SizedBox(
                       width: 32,
@@ -91,7 +88,7 @@ class LeaderboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-              );
+                     );
             },
           );
         },

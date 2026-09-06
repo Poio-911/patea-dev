@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../core/widgets/patea_card.dart';
 import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -275,18 +276,16 @@ class _OvrPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tier = context.c.ovrBorderColor(ovr);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: tier.withValues(alpha: 0.12),
-        borderRadius: AppRadii.chipAll,
-        border: Border.all(color: tier.withValues(alpha: 0.35)),
-      ),
-      child: Text(
+    return PateaCard(
+             color: tier.withValues(alpha: 0.12),
+             radius: AppRadii.chipAll,
+             borderColor: tier.withValues(alpha: 0.35),
+             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+             child: Text(
         '$ovr',
         style: AppTypography.headline(size: 16, weight: FontWeight.w900, color: tier),
       ),
-    );
+           );
   }
 }
 

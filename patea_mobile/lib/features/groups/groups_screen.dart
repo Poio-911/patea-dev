@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
@@ -179,9 +180,11 @@ class _NoActiveGroupView extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        Container(
+        PateaCard(
+          color: context.c.brandVolt.withValues(alpha: 0.08),
+          radius: AppRadii.cardAll,
+          borderColor: context.c.brandVolt.withValues(alpha: 0.3),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: context.c.brandVolt.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3))),
           child: Row(
             children: [
               Icon(Icons.groups_2_outlined, color: context.c.primary),
@@ -196,17 +199,18 @@ class _NoActiveGroupView extends ConsumerWidget {
         groupsAsync.when(
           data: (groups) {
             if (groups.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
-                child: Column(
+              return PateaCard(
+                       color: context.c.card,
+                       radius: AppRadii.cardAll,
+                       padding: const EdgeInsets.all(28),
+                       child: Column(
                   children: [
                     Icon(Icons.groups_2_outlined, size: 40, color: context.c.textSecondary),
                     const SizedBox(height: 10),
                     Text('Todavía no formás parte de ningún grupo', style: AppTypography.body(size: 13, color: context.c.textSecondary), textAlign: TextAlign.center),
                   ],
                 ),
-              );
+                     );
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,10 +230,12 @@ class _NoActiveGroupView extends ConsumerWidget {
                             }
                           }
                         },
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.5))),
-                          child: Row(
+                        child: PateaCard(
+                                 color: context.c.card,
+                                 radius: AppRadii.cardAll,
+                                 borderColor: context.c.border.withValues(alpha: 0.5),
+                                 padding: const EdgeInsets.all(14),
+                                 child: Row(
                             children: [
                               Icon(Icons.shield_outlined, color: context.c.primary),
                               const SizedBox(width: 12),
@@ -237,7 +243,7 @@ class _NoActiveGroupView extends ConsumerWidget {
                               Icon(Icons.chevron_right, color: context.c.textSecondary),
                             ],
                           ),
-                        ),
+                               ),
                       ),
                     )),
               ],
@@ -367,14 +373,12 @@ class _ActiveGroupView extends ConsumerWidget {
                         .map((team) => InkWell(
                               onTap: () => context.push('/groups/teams/${team.id}'),
                               borderRadius: AppRadii.cardAll,
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: context.c.cardSurface.withValues(alpha: 0.5),
-                                  borderRadius: AppRadii.cardAll,
-                                ),
-                                child: Row(
+                              child: PateaCard(
+                                       color: context.c.cardSurface.withValues(alpha: 0.5),
+                                       radius: AppRadii.cardAll,
+                                       margin: const EdgeInsets.only(bottom: 8),
+                                       padding: const EdgeInsets.all(10),
+                                       child: Row(
                                   children: [
                                     JerseyWidget(jersey: team.jersey, size: 36),
                                     const SizedBox(width: 10),
@@ -396,7 +400,7 @@ class _ActiveGroupView extends ConsumerWidget {
                                         size: 18, color: context.c.textSecondary),
                                   ],
                                 ),
-                              ),
+                                     ),
                             ))
                         .toList(),
                   );
@@ -510,14 +514,12 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.c.card.withValues(alpha: 0.4),
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
-      ),
-      child: Column(
+    return PateaCard(
+             color: context.c.card.withValues(alpha: 0.4),
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.4),
+             padding: const EdgeInsets.all(16),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -538,7 +540,7 @@ class _Section extends StatelessWidget {
           child,
         ],
       ),
-    );
+           );
   }
 }
 
@@ -558,16 +560,14 @@ class _GroupSwitchRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: active
+      child: PateaCard(
+               color: active
               ? context.c.primary.withValues(alpha: 0.1)
               : context.c.cardSurface.withValues(alpha: 0.5),
-          borderRadius: AppRadii.cardAll,
-        ),
-        child: Row(
+               radius: AppRadii.cardAll,
+               margin: const EdgeInsets.only(bottom: 8),
+               padding: const EdgeInsets.all(10),
+               child: Row(
           children: [
             Icon(
               active ? Icons.radio_button_checked : Icons.radio_button_off,
@@ -595,7 +595,7 @@ class _GroupSwitchRow extends StatelessWidget {
                       color: context.c.primary)),
           ],
         ),
-      ),
+             ),
     );
   }
 }
@@ -659,14 +659,12 @@ class _PlayedMatchRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: context.c.cardSurface.withValues(alpha: 0.5),
-          borderRadius: AppRadii.cardAll,
-        ),
-        child: Column(
+      child: PateaCard(
+               color: context.c.cardSurface.withValues(alpha: 0.5),
+               radius: AppRadii.cardAll,
+               margin: const EdgeInsets.only(bottom: 8),
+               padding: const EdgeInsets.all(10),
+               child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -705,7 +703,7 @@ class _PlayedMatchRow extends StatelessWidget {
             ],
           ],
         ),
-      ),
+             ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_card.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/widgets/patea_avatar.dart';
 
@@ -196,17 +197,15 @@ class _PlayerDot extends StatelessWidget {
               Positioned(
                 right: -4,
                 top: -4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: context.c.primary,
-                    borderRadius: AppRadii.pillAll,
-                  ),
-                  child: Text(
+                child: PateaCard(
+                         color: context.c.primary,
+                         radius: AppRadii.pillAll,
+                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                         child: Text(
                     goals == 1 ? '⚽' : '⚽$goals',
                     style: const TextStyle(fontSize: 9, height: 1.3),
                   ),
-                ),
+                       ),
               ),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/player_position_badge.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
@@ -210,9 +211,10 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
             _FreeAgentBanner(isFreeAgent: isFreeAgent, onTap: () => _showAvailabilitySheet(isFreeAgent)),
             const SizedBox(height: 18),
             if (incomplete.isEmpty)
-              Container(
+              PateaCard(
+                color: context.c.card,
+                radius: AppRadii.cardAll,
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
                     Icon(Icons.groups_outlined, size: 44, color: context.c.textSecondary),
@@ -228,9 +230,11 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                 ),
               )
             else ...[
-              Container(
+              PateaCard(
+                color: context.c.brandVolt.withValues(alpha: 0.06),
+                radius: AppRadii.cardAll,
+                borderColor: context.c.brandVolt.withValues(alpha: 0.25),
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: context.c.brandVolt.withValues(alpha: 0.06), borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.25))),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -294,9 +298,10 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                 Text('JUGADORES DISPONIBLES', style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
                 if (filteredPlayers.isNotEmpty) ...[
                   const SizedBox(width: 8),
-                  Container(
+                  PateaCard(
+                    color: context.c.cardSurface,
+                    radius: AppRadii.surfaceAll,
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.surfaceAll),
                     child: Text('${filteredPlayers.length}', style: AppTypography.code(color: context.c.textSecondary, size: 11, weight: FontWeight.w700)),
                   ),
                 ],
@@ -305,9 +310,10 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
               if (_loadingPlayers)
                 const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
               else if (filteredPlayers.isEmpty)
-                Container(
+                PateaCard(
+                  color: context.c.card.withValues(alpha: 0.4),
+                  radius: AppRadii.cardAll,
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: context.c.card.withValues(alpha: 0.4), borderRadius: AppRadii.cardAll),
                   child: Column(
                     children: [
                       Icon(Icons.search_off, size: 36, color: context.c.textSecondary),
@@ -347,10 +353,12 @@ class _FreeAgentBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: context.c.brandVolt.withValues(alpha: 0.08), borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3))),
-      child: Row(
+    return PateaCard(
+             color: context.c.brandVolt.withValues(alpha: 0.08),
+             radius: AppRadii.cardAll,
+             borderColor: context.c.brandVolt.withValues(alpha: 0.3),
+             padding: const EdgeInsets.all(14),
+             child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
@@ -373,7 +381,7 @@ class _FreeAgentBanner extends StatelessWidget {
           OutlinedButton(onPressed: onTap, child: Text(isFreeAgent ? 'Ajustar' : 'Ofrecerme')),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -399,10 +407,12 @@ class _FreeAgentCard extends StatelessWidget {
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
         builder: (context) => _FreeAgentDetailSheet(player: player, matchId: matchId),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
-        child: Column(
+      child: PateaCard(
+               color: context.c.card,
+               radius: AppRadii.cardAll,
+               borderColor: context.c.border.withValues(alpha: 0.4),
+               padding: const EdgeInsets.all(12),
+               child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -428,7 +438,7 @@ class _FreeAgentCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
+             ),
     );
   }
 }
@@ -498,20 +508,22 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
               spacing: 6,
               runSpacing: 6,
               children: player.availability.entries.map((e) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
-                  child: Text('${e.key}: ${e.value.join(', ')}', style: AppTypography.body(color: context.c.textSecondary, size: 11)),
-                );
+                return PateaCard(
+                         color: context.c.cardSurface,
+                         radius: AppRadii.cardAll,
+                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                         child: Text('${e.key}: ${e.value.join(', ')}', style: AppTypography.body(color: context.c.textSecondary, size: 11)),
+                       );
               }).toList(),
             ),
           ],
           const SizedBox(height: 20),
           if (player.isCurrentUser)
-            Container(
+            PateaCard(
+              borderColor: context.c.border,
+              radius: AppRadii.cardAll,
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(border: Border.all(color: context.c.border, style: BorderStyle.solid), borderRadius: AppRadii.cardAll),
               child: Text('Tu perfil de Pase Libre', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
             )
           else
@@ -665,9 +677,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
               },
             ),
             if (_suggestions.isNotEmpty)
-              Container(
+              PateaCard(
+                color: context.c.cardSurface,
+                radius: AppRadii.cardAll,
                 margin: const EdgeInsets.only(top: 4),
-                decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: _suggestions
                       .map((s) => ListTile(
@@ -796,9 +809,10 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
             ),
             const SizedBox(height: 14),
             if (filtered.isEmpty)
-              Container(
+              PateaCard(
+                color: context.c.card,
+                radius: AppRadii.cardAll,
                 padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll),
                 child: Column(
                   children: [
                     Icon(Icons.calendar_month_outlined, size: 40, color: context.c.textSecondary),
@@ -877,14 +891,12 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
     final spots = match.matchSize - match.playerUids.length;
     final needsApproval = match.needsApprovalFrom(widget.uid);
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.c.card,
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
-      ),
-      child: Column(
+    return PateaCard(
+             color: context.c.card,
+             radius: AppRadii.cardAll,
+             borderColor: theme.brandColor.withValues(alpha: 0.35),
+             padding: const EdgeInsets.all(14),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -984,7 +996,7 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
           ),
         ],
       ),
-    );
+           );
   }
 
   Widget _row(IconData icon, String text) {

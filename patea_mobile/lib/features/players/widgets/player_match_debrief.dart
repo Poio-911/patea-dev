@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_card.dart';
 import '../../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -174,14 +175,12 @@ class _MatchCard extends StatelessWidget {
     final deltas = feedback.attributeDeltas;
     final ovr = feedback.ovrUpdate;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.c.card,
-        borderRadius: AppRadii.surfaceAll,
-        border: Border.all(color: context.c.border.withValues(alpha: 0.5)),
-      ),
-      child: Column(
+    return PateaCard(
+             color: context.c.card,
+             radius: AppRadii.surfaceAll,
+             borderColor: context.c.border.withValues(alpha: 0.5),
+             padding: const EdgeInsets.all(16),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -239,7 +238,7 @@ class _MatchCard extends StatelessWidget {
           ],
         ],
       ),
-    );
+           );
   }
 }
 
@@ -252,14 +251,12 @@ class _OvrBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final up = ovr.change > 0;
     final color = up ? context.c.success : context.c.destructive;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Row(
+    return PateaCard(
+             color: color.withValues(alpha: 0.12),
+             radius: AppRadii.cardAll,
+             borderColor: color.withValues(alpha: 0.35),
+             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+             child: Row(
         children: [
           Icon(up ? Icons.trending_up : Icons.trending_down, size: 13, color: color),
           const SizedBox(width: 5),
@@ -269,7 +266,7 @@ class _OvrBadge extends StatelessWidget {
           ),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -321,18 +318,16 @@ class _AttributeDeltas extends StatelessWidget {
       children: entries.map((e) {
         final up = e.value > 0;
         final color = up ? context.c.success : context.c.destructive;
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: AppRadii.chipAll,
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-          ),
-          child: Text(
+        return PateaCard(
+                 color: color.withValues(alpha: 0.1),
+                 radius: AppRadii.chipAll,
+                 borderColor: color.withValues(alpha: 0.3),
+                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                 child: Text(
             '${_labels[e.key] ?? e.key.toUpperCase()} ${up ? '+' : ''}${e.value}',
             style: AppTypography.code(size: 10, color: color),
           ),
-        );
+               );
       }).toList(),
     );
   }
@@ -419,18 +414,16 @@ class _PeerEvalTile extends StatelessWidget {
                     children: evaluation.performanceTags.map((t) {
                       final positive = t.impact == 'positive';
                       final color = positive ? context.c.success : context.c.destructive;
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.1),
-                          borderRadius: AppRadii.chipAll,
-                          border: Border.all(color: color.withValues(alpha: 0.28)),
-                        ),
-                        child: Text(
+                      return PateaCard(
+                               color: color.withValues(alpha: 0.1),
+                               radius: AppRadii.chipAll,
+                               borderColor: color.withValues(alpha: 0.28),
+                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                               child: Text(
                           t.name,
                           style: AppTypography.body(size: 10, weight: FontWeight.w600, color: color),
                         ),
-                      );
+                             );
                     }).toList(),
                   ),
                 ],

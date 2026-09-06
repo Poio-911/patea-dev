@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 
 import 'package:flutter/material.dart';
@@ -100,13 +101,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        ),
-        child: SafeArea(
+      builder: (sheetContext) => PateaCard(
+                                   color: context.c.popover,
+                                   radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+                                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                                   child: SafeArea(
           top: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -150,7 +149,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ],
           ),
         ),
-      ),
+                                 ),
     );
   }
 
@@ -212,13 +211,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final chosen = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Container(
-        height: 320,
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        ),
-        child: Column(
+      builder: (sheetContext) => PateaCard(
+                                   color: context.c.popover,
+                                   radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+                                   height: 320,
+                                   child: Column(
           children: [
             const SizedBox(height: 14),
             Text('Año de nacimiento',
@@ -249,7 +246,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           ],
         ),
-      ),
+                                 ),
     );
 
     if (chosen != null) setState(() => _birthYear = chosen);
@@ -497,14 +494,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     InkWell(
                       onTap: _saving ? null : _openBirthYearPicker,
                       borderRadius: AppRadii.cardAll,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-                        decoration: BoxDecoration(
-                          color: context.c.card,
-                          borderRadius: AppRadii.cardAll,
-                          border: Border.all(color: context.c.overlayLine),
-                        ),
-                        child: Row(
+                      child: PateaCard(
+                               color: context.c.card,
+                               radius: AppRadii.cardAll,
+                               borderColor: context.c.overlayLine,
+                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+                               child: Row(
                           children: [
                             Icon(Icons.cake_outlined, size: 17, color: context.c.textSecondary),
                             const SizedBox(width: 10),
@@ -529,7 +524,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               Icon(Icons.chevron_right, size: 18, color: context.c.textSecondary),
                           ],
                         ),
-                      ),
+                             ),
                     ),
 
                     const SizedBox(height: 20),
@@ -560,13 +555,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     if (_error != null) ...[
                       const SizedBox(height: 16),
-                      Container(
+                      PateaCard(
+                        color: context.c.destructive.withValues(alpha: 0.1),
+                        radius: AppRadii.cardAll,
+                        borderColor: context.c.destructive.withValues(alpha: 0.3),
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: context.c.destructive.withValues(alpha: 0.1),
-                          borderRadius: AppRadii.cardAll,
-                          border: Border.all(color: context.c.destructive.withValues(alpha: 0.3)),
-                        ),
                         child: Row(
                           children: [
                             Icon(Icons.error_outline, size: 16, color: context.c.destructive),
@@ -655,13 +648,11 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.c.card,
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.overlayLine),
-      ),
-      child: TextField(
+    return PateaCard(
+             color: context.c.card,
+             radius: AppRadii.cardAll,
+             borderColor: context.c.overlayLine,
+             child: TextField(
         controller: controller,
         maxLines: maxLines,
         maxLength: maxLength,
@@ -675,7 +666,7 @@ class _Field extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
       ),
-    );
+           );
   }
 }
 

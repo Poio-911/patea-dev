@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -377,17 +378,13 @@ class _PositionChip extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? context.c.primary : Colors.transparent,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(
-            color: selected ? context.c.primary : context.c.overlayStrong,
-          ),
-        ),
-        child: Text(
+      child: PateaCard(
+               color: selected ? context.c.primary : Colors.transparent,
+               radius: AppRadii.cardAll,
+               borderColor: selected ? context.c.primary : context.c.overlayStrong,
+               padding: const EdgeInsets.symmetric(vertical: 11),
+               alignment: Alignment.center,
+               child: Text(
           label,
           style: AppTypography.headline(
             size: 12,
@@ -395,7 +392,7 @@ class _PositionChip extends StatelessWidget {
             color: selected ? context.c.onPrimary : context.c.textSecondary,
           ),
         ),
-      ),
+             ),
     );
   }
 }

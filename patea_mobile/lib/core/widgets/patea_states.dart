@@ -14,6 +14,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
@@ -148,12 +149,10 @@ class PateaError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
+            PateaCard(
+              color: context.c.destructive.withValues(alpha: 0.12),
+              radius: AppRadii.chipAll,
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: context.c.destructive.withValues(alpha: 0.12),
-                borderRadius: AppRadii.chipAll,
-              ),
               child: Icon(Icons.wifi_off_rounded,
                   size: compact ? 18 : 22, color: context.c.destructive),
             ),

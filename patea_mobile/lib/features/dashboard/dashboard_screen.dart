@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -659,13 +660,11 @@ class _CleanTunnelSide extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 // Sombra sutil y limpia de apoyo
-                Container(
+                PateaCard(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  radius: AppRadii.cardAll,
                   width: 50,
                   height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    borderRadius: AppRadii.cardAll,
-                  ),
                 ),
 
                 const SizedBox(height: 10),
@@ -691,13 +690,11 @@ class _CleanTunnelSide extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         // Barra deportiva mínima en el color de su camiseta
-                        Container(
+                        PateaCard(
+                          color: teamColor,
+                          radius: AppRadii.hairAll,
                           width: 22,
                           height: 2.5,
-                          decoration: BoxDecoration(
-                            color: teamColor,
-                            borderRadius: AppRadii.hairAll,
-                          ),
                         ),
                       ],
                     ),

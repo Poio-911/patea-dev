@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/constants/sections.dart';
 import 'package:flutter/services.dart';
@@ -86,13 +87,11 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
             ),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-              decoration: BoxDecoration(
-                color: context.c.popover,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-              ),
-              child: SafeArea(
+            child: PateaCard(
+                     color: context.c.popover,
+                     radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                     child: SafeArea(
                 top: false,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -209,7 +208,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                   ],
                 ),
               ),
-            ),
+                   ),
           );
         },
       ),

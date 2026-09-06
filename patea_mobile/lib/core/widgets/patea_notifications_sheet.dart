@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
@@ -264,13 +265,11 @@ class _NotificationRow extends StatelessWidget {
     return InkWell(
       onTap: open,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isRead ? Colors.transparent : context.c.brandVolt.withValues(alpha: 0.10),
-          borderRadius: AppRadii.cardAll,
-        ),
-        child: Row(
+      child: PateaCard(
+               color: isRead ? Colors.transparent : context.c.brandVolt.withValues(alpha: 0.10),
+               radius: AppRadii.cardAll,
+               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+               child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // La web pinta todos los íconos igual (`bg-card/70`, borde,
@@ -335,7 +334,7 @@ class _NotificationRow extends StatelessWidget {
               ),
           ],
         ),
-      ),
+             ),
     );
   }
 }

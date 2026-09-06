@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
@@ -424,13 +425,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             ),
           ),
           if (_locationSuggestions.isNotEmpty)
-            Container(
+            PateaCard(
+              color: context.c.cardSurface,
+              radius: AppRadii.cardAll,
+              borderColor: context.c.border,
               margin: const EdgeInsets.only(top: 4),
-              decoration: BoxDecoration(
-                color: context.c.cardSurface,
-                borderRadius: AppRadii.cardAll,
-                border: Border.all(color: context.c.border),
-              ),
               child: Column(
                 children: _locationSuggestions
                     .map((s) => ListTile(
@@ -444,13 +443,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             ),
 
           const SizedBox(height: 20),
-          Container(
+          PateaCard(
+            color: context.c.brandVolt.withValues(alpha: 0.08),
+            radius: AppRadii.cardAll,
+            borderColor: context.c.brandVolt.withValues(alpha: 0.3),
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.c.brandVolt.withValues(alpha: 0.08),
-              borderRadius: AppRadii.cardAll,
-              border: Border.all(color: context.c.brandVolt.withValues(alpha: 0.3)),
-            ),
             child: Row(
               children: [
                 Expanded(
@@ -605,13 +602,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           ),
           const SizedBox(height: 24),
 
-          Container(
+          PateaCard(
+            color: context.c.cardSurface,
+            radius: AppRadii.cardAll,
+            borderColor: context.c.border,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: context.c.cardSurface,
-              borderRadius: AppRadii.cardAll,
-              border: Border.all(color: context.c.border),
-            ),
             child: Row(
               children: [
                 Icon(Icons.public, color: context.c.textSecondary),
@@ -693,16 +688,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                               }
                             }),
                     borderRadius: AppRadii.cardAll,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        borderRadius: AppRadii.cardAll,
-                        border: Border.all(
-                          color: selected ? context.c.primary : context.c.overlayLine,
-                        ),
-                      ),
-                      child: Row(
+                    child: PateaCard(
+                             radius: AppRadii.cardAll,
+                             borderColor: selected ? context.c.primary : context.c.overlayLine,
+                             margin: const EdgeInsets.only(bottom: 10),
+                             padding: const EdgeInsets.all(12),
+                             child: Row(
                         children: [
                           JerseyWidget(jersey: team.jersey, size: 44),
                           const SizedBox(width: 14),
@@ -731,7 +722,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                                     letterSpacing: 1)),
                         ],
                       ),
-                    ),
+                           ),
                   ),
                 );
               }),
@@ -782,14 +773,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               ),
               if (_selectedPlayerIds.isNotEmpty && missingPositions.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Container(
+                PateaCard(
+                  color: context.c.warning.withValues(alpha: 0.1),
+                  radius: AppRadii.chipAll,
+                  borderColor: context.c.warning.withValues(alpha: 0.3),
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: context.c.warning.withValues(alpha: 0.1),
-                    borderRadius: AppRadii.chipAll,
-                    border: Border.all(color: context.c.warning.withValues(alpha: 0.3)),
-                  ),
                   child: Text(
                     '⚠️ Sin ${missingPositions.map((p) => p == 'POR' ? 'arqueros' : p == 'DEF' ? 'defensores' : p == 'MED' ? 'mediocampistas' : 'delanteros').join(', ')} seleccionados.',
                     style: AppTypography.body(size: 11, color: context.c.warning),
@@ -907,14 +896,12 @@ class _StepIndicator extends StatelessWidget {
         children: List.generate(totalSteps, (i) {
           final isActive = i < step;
           return Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: i < totalSteps - 1 ? 6 : 0),
-              height: 4,
-              decoration: BoxDecoration(
-                color: isActive ? context.c.primary : context.c.cardSurface,
-                borderRadius: AppRadii.hairAll,
-              ),
-            ),
+            child: PateaCard(
+                     color: isActive ? context.c.primary : context.c.cardSurface,
+                     radius: AppRadii.hairAll,
+                     margin: EdgeInsets.only(right: i < totalSteps - 1 ? 6 : 0),
+                     height: 4,
+                   ),
           );
         }),
       ),
@@ -940,14 +927,12 @@ class _TypeOption extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected ? context.c.primary.withValues(alpha: 0.12) : context.c.cardSurface,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? context.c.primary : context.c.border),
-        ),
-        child: Row(
+      child: PateaCard(
+               color: selected ? context.c.primary.withValues(alpha: 0.12) : context.c.cardSurface,
+               radius: AppRadii.cardAll,
+               borderColor: selected ? context.c.primary : context.c.border,
+               padding: const EdgeInsets.all(14),
+               child: Row(
           children: [
             Icon(icon, size: 20, color: selected ? context.c.primary : context.c.textSecondary),
             const SizedBox(width: 12),
@@ -956,7 +941,7 @@ class _TypeOption extends StatelessWidget {
             ),
           ],
         ),
-      ),
+             ),
     );
   }
 }
@@ -973,15 +958,13 @@ class _PlayerSelectRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(color: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4)),
-        ),
-        child: Row(
+      child: PateaCard(
+               color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
+               radius: AppRadii.cardAll,
+               borderColor: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4),
+               margin: const EdgeInsets.only(bottom: 6),
+               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+               child: Row(
           children: [
             PateaAvatar(
               photoUrl: player.photoUrl,
@@ -1019,7 +1002,7 @@ class _PlayerSelectRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
+             ),
     );
   }
 }

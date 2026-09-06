@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_card.dart';
 import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -278,14 +279,12 @@ class DuplicatePlayersAlert extends StatelessWidget {
     if (names.isEmpty) return const SizedBox.shrink();
 
     final isOne = names.length == 1;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: context.c.warning.withValues(alpha: 0.45)),
-      ),
-      child: Row(
+    return PateaCard(
+             radius: AppRadii.cardAll,
+             borderColor: context.c.warning.withValues(alpha: 0.45),
+             margin: const EdgeInsets.only(bottom: 16),
+             padding: const EdgeInsets.all(14),
+             child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.warning_amber_rounded, size: 20, color: context.c.warning),
@@ -325,6 +324,6 @@ class DuplicatePlayersAlert extends StatelessWidget {
           ),
         ],
       ),
-    );
+           );
   }
 }

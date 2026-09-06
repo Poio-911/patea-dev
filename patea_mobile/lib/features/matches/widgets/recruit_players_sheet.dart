@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_card.dart';
 import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -324,21 +325,17 @@ class _Tab extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.chipAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? context.c.primary : Colors.transparent,
-          borderRadius: AppRadii.chipAll,
-          border: Border.all(
-            color: selected ? context.c.primary : context.c.overlayStrong,
-          ),
-        ),
-        child: Text(label,
+      child: PateaCard(
+               color: selected ? context.c.primary : Colors.transparent,
+               radius: AppRadii.chipAll,
+               borderColor: selected ? context.c.primary : context.c.overlayStrong,
+               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+               child: Text(label,
             style: AppTypography.headline(
                 size: 12,
                 weight: FontWeight.w700,
                 color: selected ? context.c.background : context.c.textSecondary)),
-      ),
+             ),
     );
   }
 }

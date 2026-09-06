@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,14 +47,12 @@ class PushPermission {
     return showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: EdgeInsets.fromLTRB(
+      builder: (ctx) => PateaCard(
+                          color: context.c.popover,
+                          radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+                          padding: EdgeInsets.fromLTRB(
             22, 18, 22, 18 + MediaQuery.of(ctx).padding.bottom),
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        ),
-        child: Column(
+                          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -113,7 +112,7 @@ class PushPermission {
             ),
           ],
         ),
-      ),
+                        ),
     );
   }
 }

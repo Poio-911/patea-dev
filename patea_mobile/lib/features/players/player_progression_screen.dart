@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -53,13 +54,11 @@ class PlayerProgressionScreen extends ConsumerWidget {
                 style: AppTypography.body(size: 13, color: context.c.textSecondary),
               ),
               const SizedBox(height: 22),
-              Container(
+              PateaCard(
+                color: context.c.card,
+                radius: AppRadii.surfaceAll,
+                borderColor: context.c.border,
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.c.card,
-                  borderRadius: AppRadii.surfaceAll,
-                  border: Border.all(color: context.c.border),
-                ),
                 child: historyAsync.when(
                   loading: () => SizedBox(
                     height: 200,

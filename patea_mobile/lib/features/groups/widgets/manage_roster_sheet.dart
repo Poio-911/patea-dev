@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_card.dart';
 import '../../../core/theme/app_radii.dart';
 import 'package:flutter/services.dart';
 
@@ -112,13 +113,11 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
     final chosen = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: 300,
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        ),
-        child: Column(
+      builder: (ctx) => PateaCard(
+                          color: context.c.popover,
+                          radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+                          height: 300,
+                          child: Column(
           children: [
             const SizedBox(height: 14),
             Text('Número de ${entry.player.name}',
@@ -150,7 +149,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
             ),
           ],
         ),
-      ),
+                        ),
     );
     if (chosen != null) setState(() => entry.number = chosen);
   }
@@ -177,12 +176,10 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        ),
-        child: Column(
+      builder: (context, scrollController) => PateaCard(
+                                                color: context.c.popover,
+                                                radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+                                                child: Column(
           children: [
             const SizedBox(height: 12),
             Container(
@@ -281,7 +278,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
             ),
           ],
         ),
-      ),
+                                              ),
     );
   }
 }
@@ -308,13 +305,11 @@ class _RosterRow extends StatelessWidget {
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 150),
       opacity: inTeam ? 1 : 0.45,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: context.c.background,
-          borderRadius: AppRadii.cardAll,
-        ),
-        child: Row(
+      child: PateaCard(
+               color: context.c.background,
+               radius: AppRadii.cardAll,
+               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+               child: Row(
           children: [
             // Dentro / fuera del equipo.
             GestureDetector(
@@ -388,7 +383,7 @@ class _RosterRow extends StatelessWidget {
             ],
           ],
         ),
-      ),
+             ),
     );
   }
 }

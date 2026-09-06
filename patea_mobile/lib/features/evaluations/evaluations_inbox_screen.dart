@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
@@ -195,16 +196,18 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
-      child: Column(
+    return PateaCard(
+             color: context.c.card,
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.4),
+             padding: const EdgeInsets.symmetric(vertical: 10),
+             child: Column(
         children: [
           Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: color ?? context.c.textPrimary)),
           Text(label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w700, color: context.c.textSecondary)),
         ],
       ),
-    );
+           );
   }
 }
 
@@ -252,10 +255,12 @@ class _PendingList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         final urgency = _urgency(context, item.matchDate);
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
-          child: Column(
+        return PateaCard(
+                 color: context.c.card,
+                 radius: AppRadii.cardAll,
+                 borderColor: context.c.border.withValues(alpha: 0.4),
+                 padding: const EdgeInsets.all(14),
+                 child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -327,7 +332,7 @@ class _PendingList extends StatelessWidget {
               ),
             ],
           ),
-        );
+               );
       },
     );
   }
@@ -349,10 +354,12 @@ class _HistoryList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = items[index];
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.success.withValues(alpha: 0.2))),
-          child: Row(
+        return PateaCard(
+                 color: context.c.card,
+                 radius: AppRadii.cardAll,
+                 borderColor: context.c.success.withValues(alpha: 0.2),
+                 padding: const EdgeInsets.all(14),
+                 child: Row(
             children: [
               Icon(Icons.check_circle, color: context.c.success, size: 20),
               const SizedBox(width: 10),
@@ -371,7 +378,7 @@ class _HistoryList extends StatelessWidget {
               ),
             ],
           ),
-        );
+               );
       },
     );
   }
@@ -445,10 +452,12 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
   @override
   Widget build(BuildContext context) {
     final r = widget.request;
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
-      decoration: BoxDecoration(color: context.c.card, borderRadius: AppRadii.cardAll, border: Border.all(color: context.c.border.withValues(alpha: 0.4))),
-      child: Column(
+    return PateaCard(
+             color: context.c.card,
+             radius: AppRadii.cardAll,
+             borderColor: context.c.border.withValues(alpha: 0.4),
+             padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
+             child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -495,6 +504,6 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
           ),
         ],
       ),
-    );
+           );
   }
 }
