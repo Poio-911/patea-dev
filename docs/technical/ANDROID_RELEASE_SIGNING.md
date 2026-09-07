@@ -107,6 +107,22 @@ App Distribution acepta los dos; el APK es más cómodo porque se instala direct
 **Subir el `version:` de `pubspec.yaml` en cada build.** Si no, todas las
 entregas aparecen como "1.0.0 (1)" en la lista del tester y no se distinguen.
 
+**`gradlew assembleRelease` no lee el `pubspec.yaml`.** El plugin de Flutter
+toma `versionName`/`versionCode` de `android/local.properties`, y ese archivo
+lo escribe la herramienta de Flutter, no Gradle: si se llama a `gradlew`
+directo —que es justo lo que hay que hacer en esta máquina— sale un APK con la
+versión **vieja**, sin ningún aviso. Pasó de verdad: se subió a App
+Distribution una entrega etiquetada 1.0.2 (3) cuando el pubspec ya decía
+1.0.3+4. Antes de compilar, alinear el espejo a mano:
+
+```bash
+sed -i "s/^flutter.versionName=.*/flutter.versionName=1.0.3/; s/^flutter.versionCode=.*/flutter.versionCode=4/" \
+  /d/dev/patea_mobile/android/local.properties
+```
+
+o pasarle los valores a Gradle con `-Pversion-name=` y `-Pversion-code=`. En
+Codemagic no aparece porque ahí el build lo lanza `flutter build apk`.
+
 Verificar que un APK salió con la clave buena, no con la de debug:
 
 ```bash

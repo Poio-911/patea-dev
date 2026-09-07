@@ -207,6 +207,21 @@ en nombre de la cuenta. No va al repositorio: `.gitignore` bloquea `*.p8` y
 aparece uno en el árbol de trabajo, moverlo a un gestor de contraseñas y
 borrarlo de ahí.
 
+## Estado al 2026-09-07
+
+Versión **1.0.3** en las dos plataformas (39 commits desde la 1.0.2).
+
+- **Android: entregado.** APK firmado con la clave de subida (SHA-256
+  verificado con `apksigner`) y repartido por App Distribution al grupo
+  `test-patea` como **1.0.3 (4)**. Fue por la vía manual, porque el workflow de
+  Codemagic sigue comentado esperando los dos secretos de arriba. En esa misma
+  entrega salió primero un APK etiquetado 1.0.2 (3) por el `local.properties`
+  viejo — ver el gotcha en ANDROID_RELEASE_SIGNING.md.
+- **iOS: en CI.** El push a `feat/flutter-mobile-app` disparó el workflow
+  `ios-testflight`; el número de build lo calcula la corrida contra TestFlight.
+  Queda por confirmar en codemagic.io/app/6a9b3fecaea87264a4d6ae80 que la build
+  terminó y que la compilación aparece habilitada para los testers.
+
 ## Estado al 2026-09-04
 
 - iOS: primera build en TestFlight, **1.0.2 (1)**. Le falta contestar el
