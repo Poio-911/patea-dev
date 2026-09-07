@@ -64,10 +64,13 @@ async function upsertAvailabilityDocument(
   }
 
   const savedLocation = userSnap.data()?.savedLocation;
-  const lat = locationOverride?.lat ?? savedLocation?.lat;
-  const lng = locationOverride?.lng ?? savedLocation?.lng;
-  if (typeof lat !== 'number' || typeof lng !== 'number') {
-    throw new HttpsError('failed-precondition', 'Primero debes guardar una ubicación.');
+  let lat = locationOverride?.lat ?? savedLocation?.lat;
+  let lng = locationOverride?.lng ?? savedLocation?.lng;
+
+  // Si no hay coordenadas guardadas ni pasadas, usar ubicación por defecto (Montevideo)
+  if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+    lat = -34.9011;
+    lng = -56.1645;
   }
 
   const player = playerSnap.data()!;
@@ -93,14 +96,28 @@ async function upsertAvailabilityDocument(
 /** Port de enableAvailabilityAction. */
 export const enableAvailability = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
+  const rawAvailability = request.data?.availability as Record<string, TimeOfDay[]> | undefined;
   const days = (request.data?.days ?? []) as DayOfWeek[];
   const times = (request.data?.times ?? []) as TimeOfDay[];
   const lat = request.data?.lat != null ? Number(request.data.lat) : undefined;
   const lng = request.data?.lng != null ? Number(request.data.lng) : undefined;
+  const label = request.data?.label ? String(request.data.label) : undefined;
+
+  // Si viene ubicación nueva con etiqueta, guardarla también en users/{uid}
+  if (lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)) {
+    await admin.firestore().collection('users').doc(uid).set(
+      { savedLocation: { lat, lng, ...(label ? { label } : {}), savedAt: new Date().toISOString() } },
+      { merge: true }
+    );
+  }
+
+  const finalAvailability = (rawAvailability && Object.keys(rawAvailability).length > 0)
+    ? rawAvailability
+    : buildAvailability(days, times);
 
   await upsertAvailabilityDocument(
     uid,
-    buildAvailability(days, times),
+    finalAvailability,
     lat != null && lng != null ? { lat, lng } : undefined
   );
   return { ok: true };
@@ -116,10 +133,16 @@ export const disableAvailability = onCall({ region: 'us-central1' }, async (requ
 /** Port de updateAvailabilityPreferencesAction. */
 export const updateAvailabilityPreferences = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
+  const rawAvailability = request.data?.availability as Record<string, TimeOfDay[]> | undefined;
   const days = (request.data?.days ?? []) as DayOfWeek[];
   const times = (request.data?.times ?? []) as TimeOfDay[];
+
+  const finalAvailability = (rawAvailability && Object.keys(rawAvailability).length > 0)
+    ? rawAvailability
+    : buildAvailability(days, times);
+
   await admin.firestore().collection('availablePlayers').doc(uid).set(
-    { availability: buildAvailability(days, times) },
+    { availability: finalAvailability },
     { merge: true }
   );
   return { ok: true };
@@ -208,7 +231,28 @@ export const getAvailableLocalPlayers = onCall({ region: 'us-central1' }, async 
   });
   players = players.filter((p: any) => !excludedUids.has(p.uid));
 
+  // Traer perfiles frescos de `players` para no mostrar fotos ni stats desactualizados
+  const playerSnaps = await Promise.all(
+    players.map((p: any) => db.collection('players').doc(p.uid).get())
+  );
+  const playerMap = new Map<string, any>();
+  playerSnaps.forEach((snap) => {
+    if (snap.exists) playerMap.set(snap.id, snap.data());
+  });
+
   const scored = players.map((p: any) => {
+    const live = playerMap.get(p.uid);
+    const liveName = live?.name || live?.displayName || p.displayName || '';
+    const livePhoto = live?.photoURL || live?.photoUrl || p.photoURL || p.photoUrl || '';
+    const liveOvr = live?.ovr ?? p.ovr ?? 50;
+    const livePosition = live?.position || p.position || 'MED';
+    const livePac = live?.pac ?? liveOvr;
+    const liveSho = live?.sho ?? liveOvr;
+    const livePas = live?.pas ?? liveOvr;
+    const liveDri = live?.dri ?? liveOvr;
+    const liveDef = live?.def ?? liveOvr;
+    const livePhy = live?.phy ?? liveOvr;
+
     let score = 1;
     if (dayOfWeek || timeOfDay) {
       if (p.availability && Object.keys(p.availability).length > 0) {
@@ -226,7 +270,23 @@ export const getAvailableLocalPlayers = onCall({ region: 'us-central1' }, async 
       }
     }
     const distanceKm = p.location?.lat != null ? Math.round(haversineKm(lat, lng, p.location.lat, p.location.lng) * 10) / 10 : undefined;
-    return { ...p, matchScore: score, isCurrentUser: p.uid === uid, distanceKm };
+    return {
+      ...p,
+      displayName: liveName,
+      photoURL: livePhoto,
+      photoUrl: livePhoto,
+      ovr: liveOvr,
+      position: livePosition,
+      pac: livePac,
+      sho: liveSho,
+      pas: livePas,
+      dri: liveDri,
+      def: liveDef,
+      phy: livePhy,
+      matchScore: score,
+      isCurrentUser: p.uid === uid,
+      distanceKm,
+    };
   });
   scored.sort((a, b) => b.matchScore - a.matchScore);
 

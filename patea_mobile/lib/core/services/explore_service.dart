@@ -14,16 +14,23 @@ class ExploreService {
   }
 
   Future<void> enableAvailability({
-    required List<String> days,
-    required List<String> times,
+    List<String> days = const [],
+    List<String> times = const [],
+    Map<String, List<String>>? availability,
     double? lat,
     double? lng,
+    String? label,
   }) async {
     await callFunction('enableAvailability', {
-      'days': days,
-      'times': times,
+      if (availability != null && availability.isNotEmpty)
+        'availability': availability
+      else ...{
+        'days': days,
+        'times': times,
+      },
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
+      if (label != null) 'label': label,
     });
   }
 
@@ -31,8 +38,19 @@ class ExploreService {
     await callFunction('disableAvailability', {});
   }
 
-  Future<void> updateAvailabilityPreferences({required List<String> days, required List<String> times}) async {
-    await callFunction('updateAvailabilityPreferences', {'days': days, 'times': times});
+  Future<void> updateAvailabilityPreferences({
+    List<String> days = const [],
+    List<String> times = const [],
+    Map<String, List<String>>? availability,
+  }) async {
+    await callFunction('updateAvailabilityPreferences', {
+      if (availability != null && availability.isNotEmpty)
+        'availability': availability
+      else ...{
+        'days': days,
+        'times': times,
+      },
+    });
   }
 
   Future<List<AvailablePlayerModel>> getAvailableLocalPlayers({
