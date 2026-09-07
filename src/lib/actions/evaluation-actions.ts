@@ -113,6 +113,9 @@ export async function processPendingEvaluationSubmissionsAction(
           submission: {
             evaluatorGoals?: number;
             evaluatorAssists?: number;
+            evaluatorGoalsConceded?: number;
+            evaluatorSaves?: number;
+            personalChronicle?: string;
             mvpVote?: string;
             evaluations?: Array<Record<string, any>>;
           };
@@ -133,6 +136,9 @@ export async function processPendingEvaluationSubmissionsAction(
         if (
           (formData.evaluatorGoals || 0) > 0 ||
           (formData.evaluatorAssists || 0) > 0 ||
+          formData.evaluatorGoalsConceded !== undefined ||
+          formData.evaluatorSaves !== undefined ||
+          formData.personalChronicle ||
           formData.mvpVote
         ) {
           const selfEvalRef = db.collection(`matches/${matchId}/selfEvaluations`).doc();
@@ -141,6 +147,9 @@ export async function processPendingEvaluationSubmissionsAction(
             matchId,
             goals: formData.evaluatorGoals || 0,
             assists: formData.evaluatorAssists || 0,
+            goalsConceded: typeof formData.evaluatorGoalsConceded === 'number' ? formData.evaluatorGoalsConceded : undefined,
+            saves: typeof formData.evaluatorSaves === 'number' ? formData.evaluatorSaves : undefined,
+            personalChronicle: formData.personalChronicle || undefined,
             mvpVote: formData.mvpVote || undefined,
             reportedAt: submissionData.submittedAt,
           };

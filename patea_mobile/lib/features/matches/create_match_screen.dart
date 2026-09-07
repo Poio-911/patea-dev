@@ -1,7 +1,6 @@
 import 'dart:async';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_snack.dart';
-import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +15,7 @@ import '../../core/services/weather_service.dart';
 import '../../core/models/player_model.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/jersey_painter.dart';
+import '../../core/widgets/player_select_card.dart';
 
 /// Port de add-match-dialog.tsx (web): wizard de 3 pasos (2 si es
 /// colaborativo).
@@ -742,20 +742,25 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final selectedPlayers = allPlayers.where((p) => _selectedPlayerIds.contains(p.id)).toList();
     final missingPositions = _positions.where((pos) => !selectedPlayers.any((p) => p.position == pos)).toList();
 
+    final porCount = selectedPlayers.where((p) => p.position == 'POR').length;
+    final defCount = selectedPlayers.where((p) => p.position == 'DEF').length;
+    final medCount = selectedPlayers.where((p) => p.position == 'MED').length;
+    final delCount = selectedPlayers.where((p) => p.position == 'DEL').length;
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('JUGADORES', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
+                  Text('PLANTEL CONVOCADO', style: AppTypography.code(size: 11, weight: FontWeight.w800, color: context.c.textSecondary)),
                   Text(
                     '${_selectedPlayerIds.length} / $_matchSize',
-                    style: AppTypography.headline(
-                      size: 13,
+                    style: AppTypography.sportNumber(
+                      size: 16,
                       color: _selectedPlayerIds.length == _matchSize ? context.c.primary : context.c.textSecondary,
                     ),
                   ),
@@ -771,6 +776,21 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   color: context.c.primary,
                 ),
               ),
+              const SizedBox(height: 10),
+
+              // Balance de Posiciones Seleccionadas
+              Row(
+                children: [
+                  _PositionCountChip(label: 'POR', count: porCount, color: context.c.posPor),
+                  const SizedBox(width: 6),
+                  _PositionCountChip(label: 'DEF', count: defCount, color: context.c.posDef),
+                  const SizedBox(width: 6),
+                  _PositionCountChip(label: 'MED', count: medCount, color: context.c.posMed),
+                  const SizedBox(width: 6),
+                  _PositionCountChip(label: 'DEL', count: delCount, color: context.c.posDel),
+                ],
+              ),
+
               if (_selectedPlayerIds.isNotEmpty && missingPositions.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 PateaCard(
@@ -778,20 +798,20 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   radius: AppRadii.chipAll,
                   borderColor: context.c.warning.withValues(alpha: 0.3),
                   width: double.infinity,
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   child: Text(
-                    '⚠️ Sin ${missingPositions.map((p) => p == 'POR' ? 'arqueros' : p == 'DEF' ? 'defensores' : p == 'MED' ? 'mediocampistas' : 'delanteros').join(', ')} seleccionados.',
+                    '⚠️ Faltan arqueros o puestos clave en la convocatoria.',
                     style: AppTypography.body(size: 11, color: context.c.warning),
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               TextField(
                 onChanged: (v) => setState(() => _playerSearch = v),
-                style: AppTypography.body(color: context.c.textSecondary, size: 13),
+                style: AppTypography.body(color: context.c.textPrimary, size: 13),
                 decoration: const InputDecoration(
-                  hintText: 'Buscar jugador...',
-                  prefixIcon: Icon(Icons.search, size: 20),
+                  hintText: 'Buscar jugador por nombre...',
+                  prefixIcon: Icon(Icons.search, size: 18),
                   isDense: true,
                 ),
               ),
@@ -808,7 +828,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         selected: isSelected,
                         onSelected: (_) => setState(() => _positionFilter = pos),
                         selectedColor: context.c.primary.withValues(alpha: 0.25),
-                        labelStyle: AppTypography.body(color: context.c.textSecondary, size: 12),
+                        labelStyle: AppTypography.body(color: context.c.textPrimary, size: 12, weight: FontWeight.w600),
                       ),
                     );
                   }).toList(),
@@ -817,8 +837,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Selección rápida: ', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _selectedPlayerIds.length >= _matchSize
                         ? null
                         : () {
@@ -831,11 +850,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                               }
                             });
                           },
-                    child: const Text('Completar con mejores', style: TextStyle(fontSize: 12)),
+                    icon: const Icon(Icons.flash_on, size: 15),
+                    label: const Text('Completar con mejores', style: TextStyle(fontSize: 11)),
                   ),
-                  TextButton(
+                  const Spacer(),
+                  TextButton.icon(
                     onPressed: _selectedPlayerIds.isEmpty ? null : () => setState(() => _selectedPlayerIds.clear()),
-                    child: const Text('Limpiar', style: TextStyle(fontSize: 12)),
+                    icon: const Icon(Icons.clear_all, size: 15),
+                    label: const Text('Limpiar', style: TextStyle(fontSize: 11)),
                   ),
                 ],
               ),
@@ -847,17 +869,32 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           child: filtered.isEmpty
               ? Center(child: Text('No se encontraron jugadores.', style: AppTypography.body(color: context.c.textSecondary)))
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final p = filtered[index];
                     final isSelected = _selectedPlayerIds.contains(p.id);
-                    return _PlayerSelectRow(
-                      player: p,
+                    return PlayerSelectCard(
+                      name: p.name,
+                      photoUrl: p.photoUrl,
+                      position: p.position,
+                      ovr: p.ovr,
                       selected: isSelected,
+                      disabled: !isSelected && _selectedPlayerIds.length >= _matchSize,
+                      stats: {
+                        'pac': p.pac,
+                        'sho': p.sho,
+                        'pas': p.pas,
+                        'dri': p.dri,
+                        'def': p.def,
+                        'phy': p.phy,
+                        'ref': p.stats.saves > 0 ? 80 : p.pac,
+                        'est': p.def,
+                        'par': p.sho,
+                      },
                       onTap: () {
                         if (!isSelected && _selectedPlayerIds.length >= _matchSize) {
-                          PateaSnack.info(context, 'No podés seleccionar más de $_matchSize jugadores.');
+                          PateaSnack.info(context, 'Ya completaste los $_matchSize jugadores convocados.');
                           return;
                         }
                         setState(() {
@@ -946,63 +983,46 @@ class _TypeOption extends StatelessWidget {
   }
 }
 
-class _PlayerSelectRow extends StatelessWidget {
-  final PlayerModel player;
-  final bool selected;
-  final VoidCallback onTap;
+class _PositionCountChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
 
-  const _PlayerSelectRow({required this.player, required this.selected, required this.onTap});
+  const _PositionCountChip({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadii.cardAll,
-      child: PateaCard(
-               color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
-               radius: AppRadii.cardAll,
-               borderColor: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4),
-               margin: const EdgeInsets.only(bottom: 6),
-               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-               child: Row(
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          color: count > 0 ? color.withValues(alpha: 0.12) : context.c.cardSurface,
+          borderRadius: AppRadii.surfaceAll,
+          border: Border.all(
+            color: count > 0 ? color.withValues(alpha: 0.6) : context.c.border.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
           children: [
-            PateaAvatar(
-              photoUrl: player.photoUrl,
-              seed: player.name,
-              size: 32,
+            Text(
+              label,
+              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: color),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(player.name, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary), overflow: TextOverflow.ellipsis),
-                  Row(
-                    children: [
-                      Text(
-                        player.position,
-                        style: AppTypography.code(size: 11, weight: FontWeight.w700, color: context.c.positionColor(player.position)),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('OVR ${player.ovr}', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
-                    ],
-                  ),
-                ],
+            Text(
+              '$count',
+              style: AppTypography.sportNumber(
+                size: 13,
+                color: count > 0 ? context.c.textPrimary : context.c.textSecondary.withValues(alpha: 0.5),
               ),
-            ),
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: selected ? context.c.primary : Colors.transparent,
-                borderRadius: AppRadii.hairAll,
-                border: Border.all(color: selected ? context.c.primary : context.c.textSecondary),
-              ),
-              child: selected ? Icon(Icons.check, size: 16, color: context.c.onPrimary) : null,
             ),
           ],
         ),
-             ),
+      ),
     );
   }
 }

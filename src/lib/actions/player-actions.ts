@@ -4,6 +4,7 @@ import { getAdminDb } from '../../firebase/admin-init';
 import { requireAuth } from '../../lib/auth/get-server-session';
 import { logger } from '../../lib/logger';
 import { Player } from '../../lib/types';
+import { calculatePositionOvr } from '../ovr-utils';
 import { publishActivityAction } from './social-actions';
 
 /**
@@ -21,10 +22,8 @@ export async function createManualPlayerAction(
             throw new Error('Faltan campos obligatorios para crear el jugador.');
         }
 
-        // Calcular OVR si no viene (aunque AddPlayerDialog ya lo hace)
-        const ovr = playerData.ovr || Math.round(
-            ((playerData.pac || 0) + (playerData.sho || 0) + (playerData.pas || 0) + (playerData.dri || 0) + (playerData.def || 0) + (playerData.phy || 0)) / 6
-        );
+        // Calcular OVR según posición si no viene
+        const ovr = playerData.ovr || calculatePositionOvr(playerData, playerData.position);
 
         const newPlayer = {
             ...playerData,
@@ -98,9 +97,7 @@ export async function updatePlayerAction(
             return { success: false, message: 'No tienes permiso para editar este jugador.' };
         }
 
-        const ovr = Math.round(
-            (playerData.pac + playerData.sho + playerData.pas + playerData.dri + playerData.def + playerData.phy) / 6
-        );
+        const ovr = calculatePositionOvr(playerData, (playerData.position || existingPlayer.position));
 
         await playerRef.update({
             ...playerData,

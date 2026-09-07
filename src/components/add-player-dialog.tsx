@@ -35,6 +35,7 @@ import { ImageCropperDialog } from './image-cropper-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { createManualPlayerAction } from '@/lib/actions/player-actions';
+import { calculatePositionOvr } from '@/lib/ovr-utils';
 
 const playerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
@@ -90,11 +91,13 @@ export function AddPlayerDialog() {
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors },
   } = useForm<PlayerFormData>({
     resolver: zodResolver(playerSchema),
     defaultValues: {
       name: '',
+      position: 'DEL',
       pac: 60,
       sho: 60,
       pas: 60,
@@ -103,6 +106,9 @@ export function AddPlayerDialog() {
       phy: 60,
     },
   });
+
+  const position = watch('position') || 'DEL';
+  const isGk = position === 'POR';
 
   const onSubmit = async (data: PlayerFormData) => {
     if (!user || !user.activeGroupId) {
@@ -116,9 +122,7 @@ export function AddPlayerDialog() {
 
     setIsSaving(true);
 
-    const ovr = Math.round(
-      (data.pac + data.sho + data.pas + data.dri + data.def + data.phy) / 6
-    );
+    const ovr = calculatePositionOvr(data, data.position);
 
     try {
       const result = await createManualPlayerAction({
@@ -254,12 +258,25 @@ export function AddPlayerDialog() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <AttributeSlider label="Ritmo (RIT)" attributeKey="pac" control={control} />
-                  <AttributeSlider label="Tiro (TIR)" attributeKey="sho" control={control} />
-                  <AttributeSlider label="Pase (PAS)" attributeKey="pas" control={control} />
-                  <AttributeSlider label="Regate (REG)" attributeKey="dri" control={control} />
-                  <AttributeSlider label="Defensa (DEF)" attributeKey="def" control={control} />
-                  <AttributeSlider label="Físico (FIS)" attributeKey="phy" control={control} />
+                  {isGk ? (
+                    <>
+                      <AttributeSlider label="Reflejos (REF)" attributeKey="dri" control={control} />
+                      <AttributeSlider label="Estirada (EST)" attributeKey="def" control={control} />
+                      <AttributeSlider label="Parada (PAR)" attributeKey="sho" control={control} />
+                      <AttributeSlider label="Posicionamiento (POS)" attributeKey="phy" control={control} />
+                      <AttributeSlider label="Saque (SAQ)" attributeKey="pas" control={control} />
+                      <AttributeSlider label="Velocidad (VEL)" attributeKey="pac" control={control} />
+                    </>
+                  ) : (
+                    <>
+                      <AttributeSlider label="Ritmo (RIT)" attributeKey="pac" control={control} />
+                      <AttributeSlider label="Tiro (TIR)" attributeKey="sho" control={control} />
+                      <AttributeSlider label="Pase (PAS)" attributeKey="pas" control={control} />
+                      <AttributeSlider label="Regate (REG)" attributeKey="dri" control={control} />
+                      <AttributeSlider label="Defensa (DEF)" attributeKey="def" control={control} />
+                      <AttributeSlider label="Físico (FIS)" attributeKey="phy" control={control} />
+                    </>
+                  )}
                 </div>
               </div>
             </div>

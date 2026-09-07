@@ -4,6 +4,9 @@ class PlayerStats {
   final int assists;
   final double averageRating;
   final int mvpCount;
+  final int cleanSheets;
+  final int saves;
+  final int goalsConceded;
 
   PlayerStats({
     this.matchesPlayed = 0,
@@ -11,6 +14,9 @@ class PlayerStats {
     this.assists = 0,
     this.averageRating = 0.0,
     this.mvpCount = 0,
+    this.cleanSheets = 0,
+    this.saves = 0,
+    this.goalsConceded = 0,
   });
 
   factory PlayerStats.fromMap(Map<String, dynamic>? map) {
@@ -21,6 +27,9 @@ class PlayerStats {
       assists: (map['assists'] as num?)?.toInt() ?? 0,
       averageRating: (map['averageRating'] as num?)?.toDouble() ?? 0.0,
       mvpCount: (map['mvpCount'] as num?)?.toInt() ?? 0,
+      cleanSheets: (map['cleanSheets'] as num?)?.toInt() ?? 0,
+      saves: (map['saves'] as num?)?.toInt() ?? 0,
+      goalsConceded: (map['goalsConceded'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -31,6 +40,9 @@ class PlayerStats {
       'assists': assists,
       'averageRating': averageRating,
       'mvpCount': mvpCount,
+      'cleanSheets': cleanSheets,
+      'saves': saves,
+      'goalsConceded': goalsConceded,
     };
   }
 }

@@ -168,13 +168,14 @@ export function PlayerOvr({ value, size = 'standard', highlight, neutral = false
 }
 
 const attributeLabels: Record<AttributeKey, string> = { PAC: 'RIT', SHO: 'TIR', PAS: 'PAS', DRI: 'REG', DEF: 'DEF', PHY: 'FIS' };
+const gkAttributeLabels: Record<AttributeKey, string> = { PAC: 'VEL', SHO: 'PAR', PAS: 'SAQ', DRI: 'REF', DEF: 'EST', PHY: 'POS' };
 
 // Key attributes per position that get highlighted with position color
 const positionKeyStats: Record<PlayerPosition, AttributeKey[]> = {
   DEL: ['PAC', 'SHO'],
   MED: ['PAS', 'DRI'],
   DEF: ['DEF', 'PHY'],
-  POR: ['DEF', 'PHY'],
+  POR: ['DEF', 'DRI'], // EST (Estirada) y REF (Reflejos)
 };
 
 const positionBarColors: Record<PlayerPosition, string> = {
@@ -197,6 +198,7 @@ export function AttributesGrid({ player, className }: AttributesGridProps) {
   const primary = stats.reduce((m, s) => (s.value > m.value ? s : m), stats[0]);
   const keyStats = positionKeyStats[player.position] ?? [];
   const barColor = positionBarColors[player.position];
+  const labels = player.position === 'POR' ? gkAttributeLabels : attributeLabels;
 
   return (
     <div className={cn('grid grid-cols-2 gap-1', className)}>
@@ -213,7 +215,7 @@ export function AttributesGrid({ player, className }: AttributesGridProps) {
             )}
           >
             <span className={cn('w-6 shrink-0', isKey ? positionTextColors[player.position] : 'text-muted-foreground')}>
-              {attributeLabels[s.key]}
+              {labels[s.key]}
             </span>
             <div className="flex-1 h-1 rounded-full bg-muted-foreground/15 overflow-hidden">
               <div

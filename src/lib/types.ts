@@ -18,6 +18,9 @@ export type PlayerStats = {
   yellowCards?: number;
   redCards?: number;
   mvpVotes?: number; // Total de veces que fue elegido MVP por sus compañeros
+  cleanSheets?: number; // Vallas invictas (arqueros)
+  saves?: number; // Atajadas registradas (arqueros)
+  goalsConceded?: number; // Goles recibidos (arqueros)
 };
 
 export type OvrHistory = {
@@ -513,6 +516,8 @@ export type SelfEvaluation = {
   matchId: string;
   goals: number;
   assists: number;
+  goalsConceded?: number; // Goles recibidos (para arqueros)
+  saves?: number; // Atajadas clave realizadas (para arqueros)
   personalChronicle?: string;
   mvpVote?: string; // playerId of the voted MVP
   reportedAt: string;

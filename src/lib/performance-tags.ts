@@ -16,12 +16,20 @@ export type PerformanceTag = {
 export const performanceTagsDb: PerformanceTag[] = [
     // --- POSITIVE TAGS ---
 
-    // POR (3)
+    // POR (8)
     {
         id: 'el_pulpo',
         name: 'El Pulpo',
         description: 'Atajadón espectacular que salvó al equipo. El esfuerzo explosivo lo dejó a media máquina.',
         effects: [{ attribute: 'def', change: 3 }, { attribute: 'pac', change: 1 }, { attribute: 'phy', change: -1 }],
+        impact: 'positive',
+        positions: ['POR']
+    },
+    {
+        id: 'reflejos_felinos',
+        name: 'Reflejos Felinos',
+        description: 'Reacción felina a quemarropa en una fracción de segundo. Exigió el físico al límite.',
+        effects: [{ attribute: 'dri', change: 3 }, { attribute: 'def', change: 1 }, { attribute: 'pac', change: -1 }],
         impact: 'positive',
         positions: ['POR']
     },
@@ -34,10 +42,42 @@ export const performanceTagsDb: PerformanceTag[] = [
         positions: ['POR']
     },
     {
+        id: 'dueno_del_aire',
+        name: 'Dueño del Aire',
+        description: 'Descolgó todos los centros y córners con autoridad. Mucho desgaste en el salto.',
+        effects: [{ attribute: 'phy', change: 3 }, { attribute: 'def', change: 1 }, { attribute: 'pas', change: -1 }],
+        impact: 'positive',
+        positions: ['POR']
+    },
+    {
         id: 'distribucion_clave',
         name: 'Saque de Mariscal',
         description: 'Inició el ataque con un saque largo y preciso. Arriesgó al distribuir desde el fondo.',
-        effects: [{ attribute: 'pas', change: 2 }, { attribute: 'pac', change: 1 }, { attribute: 'def', change: -1 }],
+        effects: [{ attribute: 'pas', change: 3 }, { attribute: 'pac', change: 1 }, { attribute: 'def', change: -1 }],
+        impact: 'positive',
+        positions: ['POR']
+    },
+    {
+        id: 'atajapenales',
+        name: 'El Especialista',
+        description: 'Adivinó la intención y atajó un penal decisivo para el equipo.',
+        effects: [{ attribute: 'def', change: 3 }, { attribute: 'phy', change: 2 }, { attribute: 'pac', change: -1 }],
+        impact: 'positive',
+        positions: ['POR']
+    },
+    {
+        id: 'valla_invicta',
+        name: 'Candado Puesto',
+        description: 'Mantuvo el arco en cero con solvencia y máxima concentración durante todo el partido.',
+        effects: [{ attribute: 'def', change: 2 }, { attribute: 'phy', change: 2 }, { attribute: 'sho', change: -1 }],
+        impact: 'positive',
+        positions: ['POR']
+    },
+    {
+        id: 'lider_del_fondo',
+        name: 'Voz de Mando',
+        description: 'Ordenó a la defensa en cada pelota parada y transmitió calma total.',
+        effects: [{ attribute: 'phy', change: 2 }, { attribute: 'pas', change: 2 }, { attribute: 'pac', change: -1 }],
         impact: 'positive',
         positions: ['POR']
     },
@@ -172,11 +212,11 @@ export const performanceTagsDb: PerformanceTag[] = [
 
     // --- NEGATIVE TAGS ---
 
-    // POR (2)
+    // POR (5)
     {
         id: 'manos_manteca',
         name: 'Manos de Manteca',
-        description: 'Se le escapó una pelota fácil. Tuvo que correr a recuperar posición.',
+        description: 'Se le escapó una pelota accesible. Tuvo que correr a recuperar posición.',
         effects: [{ attribute: 'def', change: -3 }, { attribute: 'pac', change: 1 }],
         impact: 'negative',
         positions: ['POR']
@@ -184,8 +224,32 @@ export const performanceTagsDb: PerformanceTag[] = [
     {
         id: 'rebote_peligroso',
         name: 'Rebote al Medio',
-        description: 'Dejó un rebote peligroso en el área. Mala decisión pero al menos intentó algo.',
+        description: 'Dejó un rebote peligroso en el área chica. Mala decisión pero fue activo.',
         effects: [{ attribute: 'def', change: -2 }, { attribute: 'pac', change: -1 }, { attribute: 'pas', change: 1 }],
+        impact: 'negative',
+        positions: ['POR']
+    },
+    {
+        id: 'salio_en_falso',
+        name: 'Cazó Mariposas',
+        description: 'Salió a destiempo en un centro y quedó a mitad de camino.',
+        effects: [{ attribute: 'phy', change: -3 }, { attribute: 'def', change: -1 }, { attribute: 'pac', change: 1 }],
+        impact: 'negative',
+        positions: ['POR']
+    },
+    {
+        id: 'estatua',
+        name: 'Quedó Atornillado',
+        description: 'Hizo vista o tardó en reaccionar ante un disparo lejano.',
+        effects: [{ attribute: 'dri', change: -3 }, { attribute: 'def', change: -1 }, { attribute: 'phy', change: 1 }],
+        impact: 'negative',
+        positions: ['POR']
+    },
+    {
+        id: 'saque_descalibrado',
+        name: 'Saque al Lateral',
+        description: 'Regaló salidas claras por imprecisión en el saque desde el fondo.',
+        effects: [{ attribute: 'pas', change: -3 }, { attribute: 'sho', change: -1 }, { attribute: 'phy', change: 1 }],
         impact: 'negative',
         positions: ['POR']
     },

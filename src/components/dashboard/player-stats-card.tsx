@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Target, TrendingUp, Calendar } from 'lucide-react';
+import { Trophy, Target, TrendingUp, Calendar, ShieldCheck, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Player, OvrHistory } from '@/lib/types';
 import { useMemo } from 'react';
@@ -49,7 +49,42 @@ export function PlayerStatsCard({ player }: PlayerStatsCardProps) {
     };
   }, [player.stats, ovrHistory]);
 
-  const statCards = [
+  const isGoalkeeper = player.position === 'POR';
+
+  const statCards = isGoalkeeper ? [
+    {
+      title: 'Partidos Jugados',
+      value: stats.totalMatches,
+      icon: Calendar,
+      color: 'text-blue-500 text-blue-400',
+      bgColor: 'bg-blue-500/10',
+      valueColor: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      title: 'Vallas Invictas',
+      value: player.stats?.cleanSheets || 0,
+      icon: ShieldCheck,
+      color: 'text-emerald-500 dark:text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
+      valueColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      title: 'Atajadas Clave',
+      value: player.stats?.saves || 0,
+      icon: Shield,
+      color: 'text-amber-500 dark:text-amber-400',
+      bgColor: 'bg-amber-500/10',
+      valueColor: 'text-amber-600 dark:text-amber-400',
+    },
+    {
+      title: 'Tendencia OVR',
+      value: stats.ovrTrend > 0 ? `+${stats.ovrTrend}` : stats.ovrTrend || '0',
+      icon: TrendingUp,
+      color: stats.ovrTrend >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400',
+      bgColor: stats.ovrTrend >= 0 ? 'bg-green-500/10' : 'bg-red-500/10',
+      valueColor: stats.ovrTrend >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
+    },
+  ] : [
     {
       title: 'Partidos Jugados',
       value: stats.totalMatches,

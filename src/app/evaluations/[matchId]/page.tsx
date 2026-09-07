@@ -13,12 +13,13 @@ import {
   getDocs,
   doc,
 } from 'firebase/firestore'
-import { Loader2, Save, ShieldCheck, Goal, Plus, Minus, FileClock, Check, Award, MessageSquare } from 'lucide-react'
+import { Loader2, Save, ShieldCheck, ShieldAlert, Goal, Plus, Minus, FileClock, Check, Award, MessageSquare } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useFirestore, useUser, useCollection, useDoc } from '@/firebase'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -103,6 +104,8 @@ const playerEvaluationSchema = z.discriminatedUnion('evaluationType', [
 const evaluationSchema = z.object({
   evaluatorGoals: z.coerce.number().min(0).max(20).default(0),
   evaluatorAssists: z.coerce.number().min(0).max(20).default(0),
+  evaluatorGoalsConceded: z.coerce.number().min(0).max(30).default(0).optional(),
+  evaluatorSaves: z.coerce.number().min(0).max(50).default(0).optional(),
   personalChronicle: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
   mvpVote: z.string().optional(),
   evaluations: z.array(playerEvaluationSchema),
@@ -242,6 +245,12 @@ export default function PerformEvaluationPage() {
   const matchRef = useMemo(() => matchId ? doc(firestore!, 'matches', matchId as string) : null, [firestore, matchId])
   const { data: currentMatch } = useDoc<Match>(matchRef)
 
+  const isEvaluatorGoalkeeper = useMemo(() => {
+    if (!currentMatch?.players || !user?.uid) return false;
+    const myPlayer = currentMatch.players.find(p => p.uid === user.uid);
+    return myPlayer?.position === 'POR';
+  }, [currentMatch?.players, user?.uid]);
+
   // Function to analyze text with AI
   const analyzeTextForPlayer = async (playerIndex: number) => {
     const evaluation = form.getValues(`evaluations.${playerIndex}`) as any;
@@ -323,6 +332,8 @@ export default function PerformEvaluationPage() {
     defaultValues: {
       evaluatorGoals: 0,
       evaluatorAssists: 0,
+      evaluatorGoalsConceded: 0,
+      evaluatorSaves: 0,
       personalChronicle: '',
       mvpVote: '',
       evaluations: []
@@ -524,39 +535,96 @@ export default function PerformEvaluationPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="evaluatorGoals"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
-                      <CounterDial
-                        value={field.value}
-                        onChange={field.onChange}
-                        label="GOLES MARCADOS"
-                        icon={<Goal className="h-8 w-8" />}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {isEvaluatorGoalkeeper ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                  <FormField
+                    control={form.control}
+                    name="evaluatorGoalsConceded"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
+                        <CounterDial
+                          value={field.value ?? 0}
+                          onChange={field.onChange}
+                          label="GOLES RECIBIDOS"
+                          icon={<ShieldAlert className="h-8 w-8 text-rose-500" />}
+                        />
+                        {(field.value ?? 0) === 0 && (
+                          <Badge variant="outline" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[11px] font-bold tracking-wide animate-pulse">
+                            ¡VALLA INVICTA! 🧤
+                          </Badge>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="evaluatorAssists"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
-                      <CounterDial
-                        value={field.value}
-                        onChange={field.onChange}
-                        label="ASISTENCIAS"
-                        icon={<Award className="h-8 w-8" />}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                  <FormField
+                    control={form.control}
+                    name="evaluatorSaves"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
+                        <CounterDial
+                          value={field.value ?? 0}
+                          onChange={field.onChange}
+                          label="ATAJADAS CLAVE"
+                          icon={<ShieldCheck className="h-8 w-8 text-emerald-400" />}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="evaluatorAssists"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
+                        <CounterDial
+                          value={field.value}
+                          onChange={field.onChange}
+                          label="ASISTENCIAS / SAQUE"
+                          icon={<Award className="h-8 w-8" />}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="evaluatorGoals"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
+                        <CounterDial
+                          value={field.value}
+                          onChange={field.onChange}
+                          label="GOLES MARCADOS"
+                          icon={<Goal className="h-8 w-8" />}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="evaluatorAssists"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-border bg-muted/30 p-6 backdrop-blur-sm game:border-white/10 game:bg-background">
+                        <CounterDial
+                          value={field.value}
+                          onChange={field.onChange}
+                          label="ASISTENCIAS"
+                          icon={<Award className="h-8 w-8" />}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               {/* MVP Selection - Placeholder for Carousel, using Styled Select for now */}
               <FormField

@@ -215,33 +215,79 @@ class _TeamColumn extends StatelessWidget {
                   itemBuilder: (context, i) {
                     final p = players[i];
                     final photo = p.photoURL ?? '';
-                    return InkWell(
-                      onTap: () => onTap(p.uid),
-                      borderRadius: AppRadii.chipAll,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
-                        child: Row(
-                          children: [
-                            PateaAvatar(
-                              photoUrl: photo,
-                              seed: p.displayName,
-                              size: 30,
+                    final tierCol = p.ovr >= 85
+                        ? context.c.eliteBorder
+                        : p.ovr >= 75
+                            ? context.c.goldBorder
+                            : p.ovr >= 60
+                                ? context.c.silverBorder
+                                : context.c.bronzeBorder;
+                    final posCol = context.c.positionColor(p.position);
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      child: InkWell(
+                        onTap: () => onTap(p.uid),
+                        borderRadius: AppRadii.cardAll,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: context.c.cardSurface.withValues(alpha: 0.6),
+                            borderRadius: AppRadii.cardAll,
+                            border: Border.all(
+                              color: context.c.border.withValues(alpha: 0.3),
+                              width: 1,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(p.displayName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style:
-                                      AppTypography.headline(size: 12, weight: FontWeight.w600)),
-                            ),
-                            if (p.ovr > 0)
-                              Text('${p.ovr}',
-                                  style: AppTypography.code(
-                                      size: 11,
-                                      weight: FontWeight.w800,
-                                      color: context.c.textSecondary)),
-                          ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: tierCol.withValues(alpha: 0.12),
+                                  borderRadius: AppRadii.surfaceAll,
+                                  border: Border.all(color: tierCol.withValues(alpha: 0.5), width: 1),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  p.ovr > 0 ? '${p.ovr}' : '—',
+                                  style: AppTypography.sportNumber(size: 11, color: tierCol),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              PateaAvatar(
+                                photoUrl: photo,
+                                seed: p.displayName,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      p.displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.headline(size: 11.5, weight: FontWeight.w700),
+                                    ),
+                                    if (p.position.isNotEmpty)
+                                      Text(
+                                        p.position,
+                                        style: AppTypography.code(size: 8.5, weight: FontWeight.w800, color: posCol),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.swap_horiz,
+                                size: 15,
+                                color: context.c.textSecondary.withValues(alpha: 0.6),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

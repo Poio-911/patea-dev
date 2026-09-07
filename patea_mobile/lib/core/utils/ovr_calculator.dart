@@ -42,12 +42,12 @@ class OvrCalculator {
     return rawDelta.clamp(-maxStep, maxStep);
   }
 
-  /// Distribución de puntos a los 6 atributos según la posición
+  /// Distribución de puntos a los 6 atributos según la posición (coincide con src/lib/ovr-utils.ts)
   static const Map<String, Map<String, double>> positionWeights = {
-    'DEL': {'pac': 0.25, 'sho': 0.35, 'pas': 0.15, 'dri': 0.15, 'def': 0.05, 'phy': 0.05},
-    'MED': {'pac': 0.15, 'sho': 0.15, 'pas': 0.30, 'dri': 0.20, 'def': 0.10, 'phy': 0.10},
-    'DEF': {'pac': 0.15, 'sho': 0.05, 'pas': 0.15, 'dri': 0.05, 'def': 0.40, 'phy': 0.20},
-    'POR': {'pac': 0.10, 'sho': 0.05, 'pas': 0.10, 'dri': 0.05, 'def': 0.50, 'phy': 0.20},
+    'DEL': {'sho': 0.35, 'dri': 0.25, 'pac': 0.20, 'pas': 0.10, 'phy': 0.05, 'def': 0.05},
+    'MED': {'pas': 0.30, 'dri': 0.25, 'def': 0.15, 'sho': 0.15, 'pac': 0.10, 'phy': 0.05},
+    'DEF': {'def': 0.40, 'phy': 0.25, 'pac': 0.15, 'pas': 0.10, 'dri': 0.05, 'sho': 0.05},
+    'POR': {'dri': 0.30, 'def': 0.30, 'sho': 0.15, 'phy': 0.15, 'pas': 0.05, 'pac': 0.05},
   };
 
   static const Map<String, double> defaultWeights = {
@@ -147,14 +147,13 @@ class OvrCalculator {
     return updated;
   }
 
-  /// Calcula el OVR final a partir de los 6 atributos
-  static int computeOvr(Map<String, int> attrs) {
-    final sum = (attrs['pac'] ?? 50) +
-        (attrs['sho'] ?? 50) +
-        (attrs['pas'] ?? 50) +
-        (attrs['dri'] ?? 50) +
-        (attrs['def'] ?? 50) +
-        (attrs['phy'] ?? 50);
-    return (sum / 6.0).round().clamp(minOvr, maxOvr);
+  /// Calcula el OVR final a partir de los 6 atributos ponderados por posición
+  static int computeOvr(Map<String, int> attrs, [String position = 'MED']) {
+    final weights = positionWeights[position.toUpperCase()] ?? defaultWeights;
+    double weightedSum = 0.0;
+    weights.forEach((attr, weight) {
+      weightedSum += (attrs[attr] ?? 50) * weight;
+    });
+    return weightedSum.round().clamp(minOvr, maxOvr);
   }
 }

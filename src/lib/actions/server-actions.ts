@@ -27,6 +27,8 @@ import { publishMatchPlayedActivity, publishOvrChangeActivity } from './social-a
 import { notifyMatchUpdatedAction } from './notification-actions';
 import { CREDITS } from '../constants';
 import { getServerSession } from '@/lib/auth/get-server-session';
+import { POSITION_WEIGHTS, DEFAULT_WEIGHTS, calculatePositionOvr } from '../ovr-utils';
+export { POSITION_WEIGHTS, DEFAULT_WEIGHTS, calculatePositionOvr };
 
 // --- Server Actions ---
 
@@ -53,14 +55,6 @@ const calculateOvrChange = (currentOvr: number, avgRating: number): number => {
     let rawDelta = ratingDelta * scale;
     return Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta));
 };
-
-const POSITION_WEIGHTS: Record<string, Record<keyof Player, number>> = {
-    'DEL': { pac: 0.25, sho: 0.35, pas: 0.15, dri: 0.15, def: 0.05, phy: 0.05 },
-    'MED': { pac: 0.15, sho: 0.15, pas: 0.30, dri: 0.20, def: 0.10, phy: 0.10 },
-    'DEF': { pac: 0.15, sho: 0.05, pas: 0.15, dri: 0.05, def: 0.40, phy: 0.20 },
-    'POR': { pac: 0.10, sho: 0.05, pas: 0.10, dri: 0.05, def: 0.50, phy: 0.20 },
-};
-const DEFAULT_WEIGHTS = { pac: 0.166, sho: 0.166, pas: 0.166, dri: 0.166, def: 0.166, phy: 0.166 };
 
 const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: number, position: string) => {
     if (ovrChange === 0) return currentAttrs;
@@ -4356,6 +4350,8 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                 const playerSelfEval = selfEvalsByPlayerId.get(playerId);
                 const goalsInMatch = playerSelfEval?.goals || 0;
                 const assistsInMatch = playerSelfEval?.assists || 0;
+                const savesInMatch = playerSelfEval?.saves || 0;
+                const goalsConcededInMatch = playerSelfEval?.goalsConceded;
                 let avgRating = 5;
 
                 if (pointBasedEvals.length > 0) {
@@ -4363,9 +4359,16 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                     avgRating = totalRating / pointBasedEvals.length;
                     ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
                 } else {
-                    if (goalsInMatch >= 2 || assistsInMatch >= 2 || (goalsInMatch + assistsInMatch >= 3)) avgRating = 8;
-                    else if (goalsInMatch === 1 || assistsInMatch === 1) avgRating = 7;
-                    else avgRating = 5;
+                    if (player.position === 'POR') {
+                        if (goalsConcededInMatch === 0 || savesInMatch >= 5) avgRating = 8;
+                        else if (goalsConcededInMatch === 1 || savesInMatch >= 3) avgRating = 7;
+                        else if (goalsConcededInMatch !== undefined && goalsConcededInMatch >= 4) avgRating = 4;
+                        else avgRating = 5;
+                    } else {
+                        if (goalsInMatch >= 2 || assistsInMatch >= 2 || (goalsInMatch + assistsInMatch >= 3)) avgRating = 8;
+                        else if (goalsInMatch === 1 || assistsInMatch === 1) avgRating = 7;
+                        else avgRating = 5;
+                    }
                     ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
                 }
 
@@ -4373,7 +4376,7 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                     updatedAttributes = calculateAttributeChangesFromPoints(updatedAttributes, ovrChangeFromPoints, player.position || 'MED');
                 }
 
-                let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
+                let newOvr = calculatePositionOvr(updatedAttributes, player.position || 'MED');
                 newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.MAX_OVR, newOvr));
 
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
@@ -4388,6 +4391,11 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
 
                 const newAvgRating = ((player.stats.averageRating || 0) * (player.stats.matchesPlayed || 0) + avgRating) / newMatchesPlayed;
 
+                const isCleanSheet = player.position === 'POR' && goalsConcededInMatch === 0;
+                const newCleanSheets = (player.stats.cleanSheets || 0) + (isCleanSheet ? 1 : 0);
+                const newSaves = (player.stats.saves || 0) + savesInMatch;
+                const newGoalsConceded = (player.stats.goalsConceded || 0) + (goalsConcededInMatch || 0);
+
                 transaction.update(db.doc(`players/${playerId}`), {
                     ...updatedAttributes,
                     ovr: newOvr,
@@ -4397,6 +4405,11 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                         assists: newTotalAssists,
                         averageRating: newAvgRating,
                         mvpVotes: (player.stats.mvpVotes || 0) + (playerId === matchMvpId ? 1 : 0),
+                        ...(player.position === 'POR' ? {
+                            cleanSheets: newCleanSheets,
+                            saves: newSaves,
+                            goalsConceded: newGoalsConceded,
+                        } : {}),
                     },
                 });
 

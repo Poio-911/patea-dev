@@ -132,14 +132,24 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget>
     final tier = _getOvrTier(player.ovr);
     final posColor = c.positionColor(player.position);
 
-    final statsList = [
-      {'key': 'PAC', 'label': 'RIT', 'val': player.pac},
-      {'key': 'SHO', 'label': 'TIR', 'val': player.sho},
-      {'key': 'PAS', 'label': 'PAS', 'val': player.pas},
-      {'key': 'DRI', 'label': 'REG', 'val': player.dri},
-      {'key': 'DEF', 'label': 'DEF', 'val': player.def},
-      {'key': 'PHY', 'label': 'FIS', 'val': player.phy},
-    ];
+    final isGk = player.position.toUpperCase() == 'POR';
+    final statsList = isGk
+        ? [
+            {'key': 'DEF', 'label': 'EST', 'val': player.def},
+            {'key': 'DRI', 'label': 'REF', 'val': player.dri},
+            {'key': 'SHO', 'label': 'PAR', 'val': player.sho},
+            {'key': 'PAC', 'label': 'VEL', 'val': player.pac},
+            {'key': 'PAS', 'label': 'SAQ', 'val': player.pas},
+            {'key': 'PHY', 'label': 'POS', 'val': player.phy},
+          ]
+        : [
+            {'key': 'PAC', 'label': 'RIT', 'val': player.pac},
+            {'key': 'SHO', 'label': 'TIR', 'val': player.sho},
+            {'key': 'PAS', 'label': 'PAS', 'val': player.pas},
+            {'key': 'DRI', 'label': 'REG', 'val': player.dri},
+            {'key': 'DEF', 'label': 'DEF', 'val': player.def},
+            {'key': 'PHY', 'label': 'FIS', 'val': player.phy},
+          ];
 
     // Configuración visual por tier (OVR)
     Alignment auraAlignment;

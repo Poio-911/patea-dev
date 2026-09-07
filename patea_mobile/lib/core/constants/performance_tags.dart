@@ -26,7 +26,7 @@ class PerformanceTagsData {
   static const List<PerformanceTagItem> allTags = [
     // --- POSITIVOS ---
 
-    // POR (3)
+    // POR (8)
     PerformanceTagItem(
       id: 'el_pulpo',
       name: 'El Pulpo',
@@ -34,6 +34,14 @@ class PerformanceTagsData {
       impact: 'positive',
       positions: ['POR'],
       effects: {'def': 3, 'pac': 1, 'phy': -1},
+    ),
+    PerformanceTagItem(
+      id: 'reflejos_felinos',
+      name: 'Reflejos Felinos',
+      description: 'Reacción felina a quemarropa en una fracción de segundo. Exigió el físico al límite.',
+      impact: 'positive',
+      positions: ['POR'],
+      effects: {'dri': 3, 'def': 1, 'pac': -1},
     ),
     PerformanceTagItem(
       id: 'achique_dominante',
@@ -44,12 +52,44 @@ class PerformanceTagsData {
       effects: {'pac': 2, 'def': 2, 'dri': -1},
     ),
     PerformanceTagItem(
+      id: 'dueno_del_aire',
+      name: 'Dueño del Aire',
+      description: 'Descolgó todos los centros y córners con autoridad. Mucho desgaste en el salto.',
+      impact: 'positive',
+      positions: ['POR'],
+      effects: {'phy': 3, 'def': 1, 'pas': -1},
+    ),
+    PerformanceTagItem(
       id: 'distribucion_clave',
       name: 'Saque de Mariscal',
       description: 'Inició el ataque con un saque largo y preciso. Arriesgó al distribuir desde el fondo.',
       impact: 'positive',
       positions: ['POR'],
-      effects: {'pas': 2, 'pac': 1, 'def': -1},
+      effects: {'pas': 3, 'pac': 1, 'def': -1},
+    ),
+    PerformanceTagItem(
+      id: 'atajapenales',
+      name: 'El Especialista',
+      description: 'Adivinó la intención y atajó un penal decisivo para el equipo.',
+      impact: 'positive',
+      positions: ['POR'],
+      effects: {'def': 3, 'phy': 2, 'pac': -1},
+    ),
+    PerformanceTagItem(
+      id: 'valla_invicta',
+      name: 'Candado Puesto',
+      description: 'Mantuvo el arco en cero con solvencia y máxima concentración durante todo el partido.',
+      impact: 'positive',
+      positions: ['POR'],
+      effects: {'def': 2, 'phy': 2, 'sho': -1},
+    ),
+    PerformanceTagItem(
+      id: 'lider_del_fondo',
+      name: 'Voz de Mando',
+      description: 'Ordenó a la defensa en cada pelota parada y transmitió calma total.',
+      impact: 'positive',
+      positions: ['POR'],
+      effects: {'phy': 2, 'pas': 2, 'pac': -1},
     ),
 
     // DEF (4)
@@ -182,11 +222,11 @@ class PerformanceTagsData {
 
     // --- NEGATIVOS ---
 
-    // POR (2)
+    // POR (5)
     PerformanceTagItem(
       id: 'manos_manteca',
       name: 'Manos de Manteca',
-      description: 'Se le escapó una pelota fácil. Tuvo que correr a recuperar posición.',
+      description: 'Se le escapó una pelota accesible. Tuvo que correr a recuperar posición.',
       impact: 'negative',
       positions: ['POR'],
       effects: {'def': -3, 'pac': 1},
@@ -194,10 +234,34 @@ class PerformanceTagsData {
     PerformanceTagItem(
       id: 'rebote_peligroso',
       name: 'Rebote al Medio',
-      description: 'Dejó un rebote peligroso en el área. Mala decisión pero al menos intentó algo.',
+      description: 'Dejó un rebote peligroso en el área chica. Mala decisión pero fue activo.',
       impact: 'negative',
       positions: ['POR'],
       effects: {'def': -2, 'pac': -1, 'pas': 1},
+    ),
+    PerformanceTagItem(
+      id: 'salio_en_falso',
+      name: 'Cazó Mariposas',
+      description: 'Salió a destiempo en un centro y quedó a mitad de camino.',
+      impact: 'negative',
+      positions: ['POR'],
+      effects: {'phy': -3, 'def': -1, 'pac': 1},
+    ),
+    PerformanceTagItem(
+      id: 'estatua',
+      name: 'Quedó Atornillado',
+      description: 'Hizo vista o tardó en reaccionar ante un disparo lejano.',
+      impact: 'negative',
+      positions: ['POR'],
+      effects: {'dri': -3, 'def': -1, 'phy': 1},
+    ),
+    PerformanceTagItem(
+      id: 'saque_descalibrado',
+      name: 'Saque al Lateral',
+      description: 'Regaló salidas claras por imprecisión en el saque desde el fondo.',
+      impact: 'negative',
+      positions: ['POR'],
+      effects: {'pas': -3, 'sho': -1, 'phy': 1},
     ),
 
     // DEF (4)

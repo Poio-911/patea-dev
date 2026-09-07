@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Loader2, Goal, Star, Calendar, Quote, Lock, MessageSquare,
   ChevronDown, CheckCircle2, Clock, Brain, Zap, Target,
-  TrendingUp, TrendingDown, ChevronRight,
+  TrendingUp, TrendingDown, ChevronRight, ShieldCheck, ShieldAlert, Shield,
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -42,6 +42,9 @@ type MatchFeedbackContext = {
     goals: number;
     assists: number;
     avgRating: number;
+    cleanSheets?: number;
+    saves?: number;
+    goalsConceded?: number;
   };
   ovrUpdate?: {
     change: number;
@@ -108,11 +111,14 @@ function buildAttributeDeltas(peerEvaluations: Evaluation[]): Record<string, num
 function computeStats(
   peerEvaluations: Evaluation[],
   selfEval?: SelfEvaluation,
-): { goals: number; assists: number; avgRating: number } {
+): { goals: number; assists: number; avgRating: number; cleanSheets?: number; saves?: number; goalsConceded?: number } {
   const ratingEvals = peerEvaluations.filter(e => e.rating !== undefined);
   return {
     goals: selfEval?.goals ?? 0,
     assists: selfEval?.assists ?? 0,
+    cleanSheets: selfEval?.cleanSheets,
+    saves: selfEval?.saves,
+    goalsConceded: selfEval?.goalsConceded,
     avgRating: ratingEvals.length > 0
       ? ratingEvals.reduce((sum, e) => sum + e.rating!, 0) / ratingEvals.length
       : 0,
@@ -362,10 +368,32 @@ function MatchCard({
             {ctx.stats.avgRating.toFixed(1)}
           </span>
         )}
-        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-muted/60 font-medium">
-          <Goal className="h-3.5 w-3.5 text-primary" />
-          {ctx.stats.goals} {ctx.stats.goals === 1 ? 'gol' : 'goles'}
-        </span>
+        {typeof ctx.stats.goalsConceded === 'number' ? (
+          <>
+            {ctx.stats.goalsConceded === 0 ? (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Valla Invicta 🧤
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-muted/60 font-medium">
+                <ShieldAlert className="h-3.5 w-3.5 text-rose-500" />
+                {ctx.stats.goalsConceded} {ctx.stats.goalsConceded === 1 ? 'gol rec.' : 'goles rec.'}
+              </span>
+            )}
+            {(ctx.stats.saves ?? 0) > 0 && (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-muted/60 font-medium">
+                <Shield className="h-3.5 w-3.5 text-blue-500" />
+                {ctx.stats.saves} {ctx.stats.saves === 1 ? 'atajada' : 'atajadas'}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-muted/60 font-medium">
+            <Goal className="h-3.5 w-3.5 text-primary" />
+            {ctx.stats.goals} {ctx.stats.goals === 1 ? 'gol' : 'goles'}
+          </span>
+        )}
         {ctx.stats.assists > 0 && (
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-muted/60 font-medium">
             <Target className="h-3.5 w-3.5 text-primary" />
@@ -630,8 +658,15 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
   // ── Hero Stats ────────────────────────────────────────────────────────────────
   const heroStats = useMemo(() => {
     const withRating = activities.filter(a => a.stats.avgRating > 0);
+    const totalSaves = activities.reduce((s, a) => s + (a.stats.saves ?? 0), 0);
+    const totalCleanSheets = activities.filter(a => a.stats.goalsConceded === 0 && typeof a.stats.goalsConceded === 'number').length;
+    const isGkProfile = totalSaves > 0 || activities.some(a => typeof a.stats.goalsConceded === 'number');
+
     return {
       totalGoals: activities.reduce((s, a) => s + a.stats.goals, 0),
+      totalSaves,
+      totalCleanSheets,
+      isGkProfile,
       avgRating: withRating.length > 0
         ? withRating.reduce((s, a) => s + a.stats.avgRating, 0) / withRating.length
         : 0,
@@ -651,7 +686,11 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
         {/* Hero stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-1">
           <HeroStat label="Rating Promedio" value={heroStats.avgRating > 0 ? heroStats.avgRating.toFixed(1) : '─'} icon={Star} />
-          <HeroStat label="Goles Totales" value={heroStats.totalGoals} icon={Goal} />
+          {heroStats.isGkProfile ? (
+            <HeroStat label="Vallas Invictas" value={heroStats.totalCleanSheets} icon={ShieldCheck} />
+          ) : (
+            <HeroStat label="Goles Totales" value={heroStats.totalGoals} icon={Goal} />
+          )}
           <HeroStat label="Partidos" value={heroStats.matchCount} icon={Calendar} />
           {heroStats.totalOvrChange !== 0 && (
             <div className="flex flex-col gap-0.5">
@@ -714,7 +753,11 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
       {/* ── Hero Stats Row ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-1">
         <HeroStat label="Rating Promedio" value={heroStats.avgRating > 0 ? heroStats.avgRating.toFixed(1) : '─'} icon={Star} />
-        <HeroStat label="Goles Totales" value={heroStats.totalGoals} icon={Goal} />
+        {heroStats.isGkProfile ? (
+          <HeroStat label="Vallas Invictas" value={heroStats.totalCleanSheets} icon={ShieldCheck} />
+        ) : (
+          <HeroStat label="Goles Totales" value={heroStats.totalGoals} icon={Goal} />
+        )}
         <HeroStat label="Partidos" value={heroStats.matchCount} icon={Calendar} />
         {heroStats.totalOvrChange !== 0 && (
           <div className="flex flex-col gap-0.5">

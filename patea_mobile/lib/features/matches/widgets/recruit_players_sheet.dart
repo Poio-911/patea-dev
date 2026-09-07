@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/patea_card.dart';
 import '../../../core/widgets/patea_snack.dart';
-import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/available_player_model.dart';
@@ -11,6 +10,7 @@ import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/player_select_card.dart';
 
 /// Conseguir gente para un partido al que le faltan jugadores.
 ///
@@ -215,15 +215,16 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: candidates.length,
           itemBuilder: (context, i) {
             final p = candidates[i];
-            return _PlayerRow(
+            return PlayerSelectCard(
               name: p.name,
               photoUrl: p.photoUrl,
               position: p.position,
               ovr: p.ovr,
+              dense: true,
               selected: _selected.contains(p.id),
               onTap: () => setState(() =>
                   _selected.contains(p.id) ? _selected.remove(p.id) : _selected.add(p.id)),
@@ -279,18 +280,19 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
     return Stack(
       children: [
         ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: players.length,
           itemBuilder: (context, i) {
             final p = players[i];
-            return _PlayerRow(
+            return PlayerSelectCard(
               name: p.displayName,
               photoUrl: p.photoUrl,
               position: p.position,
               ovr: p.ovr,
-              trailing: p.distanceKm == null
+              dense: true,
+              subtitle: p.distanceKm == null
                   ? null
-                  : '${p.distanceKm!.toStringAsFixed(p.distanceKm! < 10 ? 1 : 0)} km',
+                  : '${p.distanceKm!.toStringAsFixed(p.distanceKm! < 10 ? 1 : 0)} km de distancia',
               selected: _selected.contains(p.uid),
               onTap: () => setState(() =>
                   _selected.contains(p.uid) ? _selected.remove(p.uid) : _selected.add(p.uid)),
@@ -338,65 +340,6 @@ class _Tab extends StatelessWidget {
   }
 }
 
-class _PlayerRow extends StatelessWidget {
-  final String name;
-  final String? photoUrl;
-  final String position;
-  final int ovr;
-  final String? trailing;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _PlayerRow({
-    required this.name,
-    required this.photoUrl,
-    required this.position,
-    required this.ovr,
-    this.trailing,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final photo = photoUrl ?? '';
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        child: Row(
-          children: [
-            PateaAvatar(photoUrl: photo, seed: name, size: 40),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.headline(size: 14, weight: FontWeight.w700)),
-                  const SizedBox(height: 2),
-                  Text(
-                    [position, if (ovr > 0) 'OVR $ovr', if (trailing != null) trailing!]
-                        .where((s) => s.isNotEmpty)
-                        .join('  ·  '),
-                    style: AppTypography.body(size: 11, color: context.c.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-              size: 22,
-              color: selected ? context.c.primary : context.c.textSecondary.withValues(alpha: 0.5),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _Empty extends StatelessWidget {
   final String text;
