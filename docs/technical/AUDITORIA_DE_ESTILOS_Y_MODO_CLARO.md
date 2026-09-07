@@ -245,8 +245,9 @@ sólo que ahí se disimulan. Quedan abiertos:
 - [ ] Opcional, ofrecido y sin responder: preparar la **foto desenfocada** y la
       **mancha más marcada** para una segunda vuelta de comparación.
 - [x] **Implementar la carta oscura en los dos temas** (decisión tomada
-      arriba). Regenerar los goldens de `plantel`, `jugador_detalle` y
-      `partido_detalle` en claro.
+      arriba). Borde metálico continuo (4.5 a 5.5px) idéntico a OVR con CardFoil,
+      sin sangrado en esquinas. Regenerados los goldens (`plantel` y `jugador_detalle`
+      en `game` y `claro`), 88/88 tests en verde.
 - [x] Los tres defectos de la carta que sobreviven a la decisión: los seis
       `Colors.transparent`, el borde de la caja de atributo, y el contraste de
       la barra de progreso.
