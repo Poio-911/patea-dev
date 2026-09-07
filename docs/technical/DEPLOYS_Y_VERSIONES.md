@@ -209,11 +209,12 @@ borrarlo de ahí.
 
 ## Estado al 2026-09-07
 
-Versión **1.0.3** en las dos plataformas (39 commits desde la 1.0.2).
+Versión **1.0.4** en las dos plataformas. Ese día salieron dos entregas: la
+1.0.3 (39 commits desde la 1.0.2) y la 1.0.4 con el detalle de partido.
 
 - **Android: entregado.** APK firmado con la clave de subida (SHA-256
   verificado con `apksigner`) y repartido por App Distribution al grupo
-  `test-patea` como **1.0.3 (4)**. Fue por la vía manual, porque el workflow de
+  `test-patea`; la última es **1.0.4 (5)**. Fue por la vía manual, porque el workflow de
   Codemagic sigue comentado esperando los dos secretos de arriba. En esa misma
   entrega salió primero un APK etiquetado 1.0.2 (3) por el `local.properties`
   viejo — ver el gotcha en ANDROID_RELEASE_SIGNING.md.
