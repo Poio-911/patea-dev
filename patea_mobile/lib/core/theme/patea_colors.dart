@@ -254,14 +254,22 @@ class PateaColors extends ThemeExtension<PateaColors> {
   );
 
   Color positionColor(String position) {
-    switch (position.toUpperCase()) {
+    switch (position.toUpperCase().trim()) {
       case 'DEL':
+      case 'DELANTERO':
         return posDel;
       case 'MED':
+      case 'VOLANTE':
+      case 'MEDIO':
+      case 'MEDIOCAMPISTA':
         return posMed;
       case 'DEF':
+      case 'DEFENSOR':
+      case 'DEFENSA':
         return posDef;
       case 'POR':
+      case 'ARQUERO':
+      case 'PORTERO':
         return posPor;
       default:
         return textSecondary;

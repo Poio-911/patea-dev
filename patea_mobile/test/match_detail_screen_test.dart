@@ -58,7 +58,9 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('CLÁSICO DEL BARRIO'), findsOneWidget);
+    // El título va dos veces: en el hero y en el AppBar, que lo revela al
+    // hacer scroll. Sin scroll el del AppBar está montado con opacidad 0.
+    expect(find.text('CLÁSICO DEL BARRIO'), findsNWidgets(2));
     expect(find.text('AMISTOSO'), findsOneWidget);
     expect(find.text('Cancha 5 Prado'), findsOneWidget);
     expect(find.text('LOS GALÁCTICOS'), findsWidgets);
@@ -106,7 +108,9 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('FINAL DE COPA'), findsOneWidget);
+    // El título va dos veces: en el hero y en el AppBar, que lo revela al
+    // hacer scroll. Sin scroll el del AppBar está montado con opacidad 0.
+    expect(find.text('FINAL DE COPA'), findsNWidgets(2));
     expect(find.text('Complejo Central'), findsOneWidget);
     expect(find.text('EVALUAR PARTIDO'), findsOneWidget);
   });

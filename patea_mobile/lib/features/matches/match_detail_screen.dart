@@ -55,6 +55,27 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   bool _isJoining = false;
   bool _isFinishing = false;
   bool _isShuffling = false;
+  late final ScrollController _scrollController;
+  bool _showCollapsedTitle = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final show = _scrollController.hasClients && _scrollController.offset > 110;
+    if (show != _showCollapsedTitle) {
+      setState(() => _showCollapsedTitle = show);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleJoinLeave(MatchModel match, String uid, bool isUserInMatch) async {
     setState(() => _isJoining = true);
@@ -342,12 +363,39 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           backgroundColor: Colors.transparent,
           extendBodyBehindAppBar: true,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: BackButton(color: context.c.textPrimary),
+            backgroundColor: _showCollapsedTitle
+                ? context.c.background.withValues(alpha: 0.96)
+                : Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            elevation: _showCollapsedTitle ? 1 : 0,
+            shape: _showCollapsedTitle
+                ? Border(bottom: BorderSide(color: context.c.border.withValues(alpha: 0.35)))
+                : null,
+            centerTitle: false,
+            title: AnimatedOpacity(
+              opacity: _showCollapsedTitle ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 180),
+              child: Text(
+                match.title.toUpperCase(),
+                style: AppTypography.jersey(
+                  size: 18,
+                  color: context.c.textPrimary,
+                  letterSpacing: 0.8,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            leading: BackButton(
+              color: _showCollapsedTitle ? context.c.textPrimary : context.c.onPhoto,
+            ),
             actions: [
               IconButton(
-                icon: Icon(Icons.share_outlined, size: 20, color: context.c.textPrimary),
+                icon: Icon(
+                  Icons.share_outlined,
+                  size: 20,
+                  color: _showCollapsedTitle ? context.c.textPrimary : context.c.onPhoto,
+                ),
                 tooltip: 'Compartir partido',
                 onPressed: () {
                   SharePlus.instance.share(
@@ -359,7 +407,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
               if (isOwner)
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded),
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    color: _showCollapsedTitle ? context.c.textPrimary : context.c.onPhoto,
+                  ),
                   color: context.c.card,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppRadii.cardAll,
@@ -432,6 +483,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             onFinish: () => _handleFinish(match),
           ),
           body: ListView(
+            controller: _scrollController,
             padding: EdgeInsets.only(bottom: bottomInset(context) + 80),
             children: [
               _HeroCard(
@@ -527,7 +579,6 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = getMatchTypeTheme(match.type);
     final isLive = match.status == 'active';
-    final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
     // Resumen de la sede: nombre del local o primera parte de la dirección
     final hasVenue = match.location != null && match.location!.trim().isNotEmpty;
@@ -546,10 +597,10 @@ class _HeroCard extends StatelessWidget {
 
     return Stack(
       children: [
-        // Foto de fondo de estadio con viñeta cinematográfica
+        // Foto de fondo de estadio con viñeta cinematográfica (fondo fijo: la reja)
         Positioned.fill(
           child: Image.asset(
-            'assets/backgrounds/fondo_$photoIndex.jpg',
+            'assets/backgrounds/fondo_7.jpg',
             fit: BoxFit.cover,
             opacity: AlwaysStoppedAnimation(isLive ? 0.90 : 0.72),
           ),
@@ -588,7 +639,9 @@ class _HeroCard extends StatelessWidget {
                   style: AppTypography.code(
                     size: 11,
                     weight: FontWeight.w800,
-                    color: isLive ? context.c.destructive : context.c.primary,
+                    color: isLive
+                        ? context.c.destructive
+                        : (context.c.isDarkSurface ? context.c.primary : context.c.onPhoto),
                   ).copyWith(letterSpacing: 2.0),
                 ),
                 const SizedBox(height: 8),
@@ -611,7 +664,11 @@ class _HeroCard extends StatelessWidget {
                 // Fecha y hora protagonista
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 16, color: context.c.primary),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: context.c.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -637,7 +694,9 @@ class _HeroCard extends StatelessWidget {
                       Icon(
                         Icons.place_outlined,
                         size: 17,
-                        color: hasVenue ? context.c.primary : context.c.onPhotoMuted,
+                        color: hasVenue
+                            ? context.c.primary
+                            : (context.c.isDarkSurface ? context.c.onPhotoMuted : context.c.textSecondary),
                       ),
                       const SizedBox(width: 7),
                       Flexible(
@@ -648,13 +707,19 @@ class _HeroCard extends StatelessWidget {
                           style: AppTypography.body(
                             size: 14.5,
                             weight: FontWeight.w600,
-                            color: hasVenue ? context.c.onPhoto : context.c.onPhotoMuted,
+                            color: hasVenue
+                                ? (context.c.isDarkSurface ? context.c.onPhoto : context.c.primary)
+                                : (context.c.isDarkSurface ? context.c.onPhotoMuted : context.c.textSecondary),
                           ),
                         ),
                       ),
                       if (hasVenue) ...[
                         const SizedBox(width: 5),
-                        Icon(Icons.arrow_outward_rounded, size: 12, color: context.c.primary),
+                        Icon(
+                          Icons.arrow_outward_rounded,
+                          size: 12,
+                          color: context.c.primary,
+                        ),
                       ],
                     ],
                   ),
@@ -807,9 +872,9 @@ class _TeamBlock extends ConsumerWidget {
                           ),
                           if (avgOvr != null) ...[
                             PateaCard(
-                              color: context.c.brandVolt.withValues(alpha: 0.12),
+                              color: context.c.primary.withValues(alpha: 0.12),
                               radius: AppRadii.hairAll,
-                              borderColor: context.c.brandVolt.withValues(alpha: 0.3),
+                              borderColor: context.c.primary.withValues(alpha: 0.3),
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               child: Text(
                                 'OVR PROM. ${avgOvr.toStringAsFixed(1)}',
@@ -832,7 +897,7 @@ class _TeamBlock extends ConsumerWidget {
             // Mosaico 2 columnas
             for (var i = 0; i < players.length; i += 2)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -844,7 +909,7 @@ class _TeamBlock extends ConsumerWidget {
                         onTap: () => _showPlayerCardModal(context, ref, players[i], photo: _photoOf(players[i])),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: i + 1 < players.length
                           ? _MosaicPlayer(
@@ -878,6 +943,29 @@ class _MosaicPlayer extends StatelessWidget {
     required this.onTap,
   });
 
+  String _formatPosition(String pos) {
+    switch (pos.toUpperCase().trim()) {
+      case 'POR':
+      case 'ARQUERO':
+      case 'PORTERO':
+        return 'ARQUERO';
+      case 'DEF':
+      case 'DEFENSOR':
+      case 'DEFENSA':
+        return 'DEFENSOR';
+      case 'MED':
+      case 'VOLANTE':
+      case 'MEDIO':
+      case 'MEDIOCAMPISTA':
+        return 'VOLANTE';
+      case 'DEL':
+      case 'DELANTERO':
+        return 'DELANTERO';
+      default:
+        return pos.isNotEmpty ? pos.toUpperCase() : 'JUGADOR';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -890,8 +978,8 @@ class _MosaicPlayer extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(
-                width: 36,
-                height: 36,
+                width: 46,
+                height: 46,
                 child: ClipOval(
                   child: (photo == null || photo!.isEmpty)
                       ? PlayerAvatarFallback(seed: player.uid.isNotEmpty ? player.uid : player.displayName)
@@ -913,23 +1001,28 @@ class _MosaicPlayer extends StatelessWidget {
                       player.displayName.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.condensed(size: 13.5, weight: FontWeight.w600, letterSpacing: 0.3),
+                      style: AppTypography.condensed(size: 15, weight: FontWeight.w700, letterSpacing: 0.3),
                     ),
+                    const SizedBox(height: 2),
                     Row(
                       children: [
-                        Text(
-                          player.position.isNotEmpty ? player.position : 'JUG',
-                          style: AppTypography.code(
-                            size: 8.5,
-                            weight: FontWeight.w700,
-                            color: context.c.positionColor(player.position),
+                        Flexible(
+                          child: Text(
+                            _formatPosition(player.position),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.code(
+                              size: 10,
+                              weight: FontWeight.w800,
+                              color: context.c.positionColor(player.position),
+                            ),
                           ),
                         ),
                         if (player.ovr > 0) ...[
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 5),
                           Text(
                             '${player.ovr}',
-                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: context.c.textSecondary),
+                            style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.textSecondary),
                           ),
                         ],
                       ],
@@ -1156,7 +1249,7 @@ class _OrganizerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFinished = match.status == 'completed' || match.status == 'evaluated';
+    final canEvaluate = match.status == 'completed';
 
     return PateaCard(
              color: context.c.card.withValues(alpha: 0.55),
@@ -1171,7 +1264,7 @@ class _OrganizerPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: context.c.brandVolt.withValues(alpha: 0.15),
+                  color: context.c.primary.withValues(alpha: 0.12),
                   borderRadius: AppRadii.chipAll,
                 ),
                 child: Icon(Icons.admin_panel_settings_rounded, size: 16, color: context.c.primary),
@@ -1225,7 +1318,7 @@ class _OrganizerPanel extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
                     foregroundColor: context.c.primary,
-                    side: BorderSide(color: context.c.brandVolt.withValues(alpha: 0.4)),
+                    side: BorderSide(color: context.c.primary.withValues(alpha: 0.4)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
@@ -1269,7 +1362,7 @@ class _OrganizerPanel extends StatelessWidget {
                     ),
                   ),
               ],
-              if (isFinished) ...[
+              if (canEvaluate) ...[
                 ElevatedButton.icon(
                   onPressed: () => context.push('/matches/${match.id}/evaluate'),
                   icon: Icon(Icons.fact_check_rounded, size: 15, color: context.c.onPrimary),
@@ -1368,22 +1461,6 @@ class _StickyActionBar extends StatelessWidget {
           style: AppTypography.jersey(size: 16, color: context.c.onPrimary, letterSpacing: 1.2),
         ),
       );
-    } else if (match.status == 'evaluated') {
-      actionWidget = ElevatedButton.icon(
-        onPressed: () => context.push('/matches/${match.id}/evaluate'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: context.c.primary,
-          foregroundColor: context.c.onPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-        ),
-        icon: Icon(Icons.insights_rounded, size: 20, color: context.c.onPrimary),
-        label: Text(
-          'VER EVALUACIONES',
-          style: AppTypography.jersey(size: 16, color: context.c.onPrimary, letterSpacing: 1.2),
-        ),
-      );
     } else if (match.status == 'upcoming' && !isCompetition) {
       if (isOwner) {
         final canFinalize = match.players.length >= 2;
@@ -1430,7 +1507,7 @@ class _StickyActionBar extends StatelessWidget {
               PateaCard(
                 color: context.c.cardSurface,
                 radius: AppRadii.cardAll,
-                borderColor: context.c.brandVolt.withValues(alpha: 0.35),
+                borderColor: context.c.primary.withValues(alpha: 0.35),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1470,7 +1547,7 @@ class _StickyActionBar extends StatelessWidget {
           actionWidget = PateaCard(
                            color: context.c.cardSurface,
                            radius: AppRadii.cardAll,
-                           borderColor: context.c.brandVolt.withValues(alpha: 0.3),
+                           borderColor: context.c.primary.withValues(alpha: 0.3),
                            padding: const EdgeInsets.symmetric(vertical: 13),
                            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1587,7 +1664,7 @@ class _ChatPreviewCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: context.c.brandVolt.withValues(alpha: 0.12),
+                        color: context.c.primary.withValues(alpha: 0.12),
                         borderRadius: AppRadii.cardAll,
                       ),
                       child: Text(
@@ -1814,10 +1891,10 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                         constraints: const BoxConstraints(maxWidth: 270),
                         decoration: BoxDecoration(
-                          color: isMine ? context.c.brandVolt.withValues(alpha: 0.18) : context.c.cardSurface,
+                          color: isMine ? context.c.primary.withValues(alpha: 0.15) : context.c.cardSurface,
                           borderRadius: AppRadii.cardAll,
                           border: Border.all(
-                            color: isMine ? context.c.brandVolt.withValues(alpha: 0.35) : context.c.border.withValues(alpha: 0.25),
+                            color: isMine ? context.c.primary.withValues(alpha: 0.35) : context.c.border.withValues(alpha: 0.25),
                           ),
                         ),
                         child: Column(
