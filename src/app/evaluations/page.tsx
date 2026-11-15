@@ -274,7 +274,10 @@ export default function EvaluationsPage() {
             const unsubscribers: Unsubscribe[] = validItems
                 .filter(item => !item.submission)
                 .map(item => {
-                    const assignmentsCollectionRef = collection(firestore, 'matches', item.match.id, 'assignments');
+                    const assignmentsCollectionRef = query(
+                        collection(firestore, 'matches', item.match.id, 'assignments'),
+                        where('evaluatorId', '==', user.uid),
+                    );
                     return onSnapshot(assignmentsCollectionRef, (snapshot) => {
                         const total = snapshot.size;
                         const completed = snapshot.docs.filter(d => d.data().status === 'completed').length;

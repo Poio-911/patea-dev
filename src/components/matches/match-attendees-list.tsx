@@ -6,10 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle2, XCircle, HelpCircle, Clock, Users } from 'lucide-react';
-import { getMatchInvitationsAction } from '@/lib/actions/match-invitation-actions';
-import { collection, doc, onSnapshot, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
-import type { MatchInvitation, MatchInvitationResponse } from '@/lib/types';
+import { collection, doc, onSnapshot, getDoc, query, where } from 'firebase/firestore';
+import { db, useUser } from '@/firebase';
+import type { MatchInvitationResponse } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type MatchAttendeesListProps = {
@@ -56,84 +55,54 @@ export function MatchAttendeesList({
   matchId,
   showTitle = true,
 }: MatchAttendeesListProps) {
+  const { user } = useUser();
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     let unsubscribe: (() => void) | undefined;
-
+    setPlayers([]);
+    setIsLoading(true);
     const loadPlayers = async () => {
+      if (!user?.uid) { setIsLoading(false); return; }
       try {
-        // Cargar invitaciones
-        const result = await getMatchInvitationsAction(matchId);
-
-        if (!result.success || !result.invitations) {
-          setIsLoading(false);
-          return;
-        }
-
-        const invitations = result.invitations;
-
-        // Cargar información de los jugadores desde Firestore
-        const playerPromises = invitations.map(async (invitation) => {
-          const playerDoc = await getDoc(doc(db, 'players', invitation.userId));
-          const playerData = playerDoc.data();
-
-          return {
-            id: invitation.userId,
-            name: playerData?.name || 'Jugador',
-            photoUrl: playerData?.photoUrl,
-            response: invitation.response,
-            respondedAt: invitation.respondedAt,
-          };
-        });
-
-        const playersData = await Promise.all(playerPromises);
-        setPlayers(playersData);
-
-        // Suscribirse a cambios en tiempo real
-        unsubscribe = onSnapshot(
-          collection(db, 'matches', matchId, 'invitations'),
-          async (snapshot) => {
-            const updatedInvitations: MatchInvitation[] = snapshot.docs.map(doc => ({
-              ...doc.data(),
-              id: doc.id,
-            })) as MatchInvitation[];
-
-            // Recargar información de jugadores
-            const updatedPlayerPromises = updatedInvitations.map(async (invitation) => {
-              const playerDoc = await getDoc(doc(db, 'players', invitation.userId));
-              const playerData = playerDoc.data();
-
-              return {
-                id: invitation.userId,
-                name: playerData?.name || 'Jugador',
-                photoUrl: playerData?.photoUrl,
-                response: invitation.response,
-                respondedAt: invitation.respondedAt,
-              };
-            });
-
-            const updatedPlayers = await Promise.all(updatedPlayerPromises);
-            setPlayers(updatedPlayers);
+        const match = await getDoc(doc(db, 'matches', matchId));
+        if (!active) return;
+        const isOwner = match.data()?.ownerUid === user.uid;
+        const invitations = collection(db, 'matches', matchId, 'invitations');
+        const visibleInvitations = isOwner ? invitations : query(invitations, where('playerId', '==', user.uid));
+        unsubscribe = onSnapshot(visibleInvitations, async snapshot => {
+          try {
+            const rows = await Promise.all(snapshot.docs.map(async invitationDoc => {
+              const invitation = invitationDoc.data();
+              const playerId = invitation.playerId ?? invitation.userId;
+              if (typeof playerId !== 'string' || !playerId) return null;
+              const player = (await getDoc(doc(db, 'players', playerId))).data();
+              const status = invitation.response ?? invitation.status ?? 'pending';
+              const response: MatchInvitationResponse = status === 'accepted' ? 'confirmed'
+                : ['confirmed', 'declined', 'maybe', 'pending'].includes(status) ? status : 'pending';
+              return { id: playerId, name: player?.name || 'Jugador',
+                photoUrl: player?.photoUrl ?? player?.photoURL, response,
+                respondedAt: invitation.respondedAt } as PlayerInfo;
+            }));
+            if (active) {
+              setPlayers(rows.filter((row): row is PlayerInfo => row !== null));
+              setIsLoading(false);
+            }
+          } catch (error) {
+            if (active) { setPlayers([]); setIsLoading(false); }
           }
-        );
-
-        setIsLoading(false);
+        }, () => {
+          if (active) { setPlayers([]); setIsLoading(false); }
+        });
       } catch (error) {
-        console.error('Error loading match attendees:', error);
-        setIsLoading(false);
+        if (active) { setPlayers([]); setIsLoading(false); }
       }
     };
-
-    loadPlayers();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [matchId]);
+    void loadPlayers();
+    return () => { active = false; unsubscribe?.(); };
+  }, [matchId, user?.uid]);
 
   // Agrupar por respuesta
   const confirmed = players.filter(p => p.response === 'confirmed');
@@ -152,6 +121,9 @@ export function MatchAttendeesList({
       </Card>
     );
   }
+
+  // No exponer estados de invitaciones ajenas a espectadores.
+  if (players.length === 0) return null;
 
   return (
     <Card>

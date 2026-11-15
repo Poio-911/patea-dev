@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useDoc, useFirestore, useUser, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useUser, useCollection, useAuth } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import type { Match, Player, EvaluationAssignment, Evaluation, OvrHistory, SelfEvaluation, PerformanceTag } from '@/lib/types';
@@ -35,6 +35,7 @@ export default function EvaluateMatchPage() {
     const params = useParams<{ id: string }>();
     const matchId = params?.id;
     const firestore = useFirestore();
+    const auth = useAuth();
     const { user } = useUser();
     const router = useRouter();
     const { toast } = useToast();
@@ -71,7 +72,9 @@ export default function EvaluateMatchPage() {
         setIsProcessingSubmissions(true);
 
         try {
-            const result = await processPendingEvaluationSubmissionsAction(matchId);
+            const token = await auth?.currentUser?.getIdToken();
+            if (!token) throw new Error('Debés iniciar sesión.');
+            const result = await processPendingEvaluationSubmissionsAction(matchId, token);
             if (!result.success) {
                 throw new Error(result.error || 'No se pudieron procesar las evaluaciones pendientes.');
             }
@@ -161,7 +164,9 @@ export default function EvaluateMatchPage() {
 
             // Llamada atómica y segura al Backend (Server Action)
             const { finalizeMatchEvaluationAction } = await import('@/lib/actions/server-actions');
-            const result = await finalizeMatchEvaluationAction(match.id);
+            const token = await auth?.currentUser?.getIdToken();
+            if (!token) throw new Error('Debés iniciar sesión.');
+            const result = await finalizeMatchEvaluationAction(match.id, token);
 
             if (!result || isErrorResponse(result) || !result.success) {
                 throw new Error(isErrorResponse(result) ? result.error : ((result as any)?.error || 'Ocurrió un error inesperado al finalizar el partido.'));

@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { submissionKey, validateEvaluationSubmission } from '../lib/evaluation-submission';
 
 /**
  * Callables de Evaluaciones — port de src/lib/actions/evaluation-actions.ts.
@@ -159,13 +160,6 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
     throw new HttpsError('permission-denied', 'Solo el organizador puede finalizar la evaluación.');
   }
 
-  const assignmentsSnapshot = await assignmentsCol.get();
-  const assignments = assignmentsSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as any);
-  const completedAssignmentIds = assignments.filter((a) => a.status === 'completed').map((a) => a.id);
-  if (completedAssignmentIds.length === 0) {
-    throw new HttpsError('failed-precondition', 'No hay evaluaciones completadas para procesar.');
-  }
-
   const playerOvrChanges = new Map<string, { oldOvr: number; newOvr: number }>();
 
   await db.runTransaction(async (transaction) => {
@@ -174,6 +168,21 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
       throw new HttpsError('failed-precondition', 'Este partido ya fue evaluado o no existe.');
     }
     const match = matchDoc.data()!;
+    if (match.ownerUid !== uid) {
+      throw new HttpsError('permission-denied', 'Solo el organizador puede finalizar la evaluación.');
+    }
+    if (match.status !== 'completed') {
+      throw new HttpsError('failed-precondition', 'El partido aún no terminó.');
+    }
+    // El callback puede reintentarse: todas las lecturas y el resultado
+    // devuelto pertenecen al intento que finalmente confirma Firestore.
+    playerOvrChanges.clear();
+    const assignmentsSnapshot = await transaction.get(assignmentsCol);
+    const assignments = assignmentsSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as any);
+    const completedAssignmentIds = assignments.filter((a) => a.status === 'completed').map((a) => a.id);
+    if (completedAssignmentIds.length === 0) {
+      throw new HttpsError('failed-precondition', 'No hay evaluaciones completadas para procesar.');
+    }
 
     const pendingSubmissionsSnap = await transaction.get(
       db.collection('evaluationSubmissions').where('matchId', '==', matchId)
@@ -218,13 +227,23 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
         ? allCompletedPointEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / allCompletedPointEvals.length
         : 5;
 
+    const playerIdsToUpdate: string[] = [...new Set<string>(match.playerUids || [])];
+    const playerRefs = playerIdsToUpdate.map((id) => db.collection('players').doc(id));
+    // Leer jugadores DENTRO de la transacción y antes de cualquier escritura:
+    // dos partidos del mismo jugador no pueden pisar su progresión.
+    const playerDocsSnaps = playerRefs.length ? await transaction.getAll(...playerRefs) : [];
+    const playerDocsMap = new Map<string, any>();
+    playerDocsSnaps.forEach((d) => {
+      if (d.exists) playerDocsMap.set(d.id, { id: d.id, ...d.data() });
+    });
+
     const pendingAssignments = assignments.filter((a) => a.status === 'pending');
     for (const assignment of pendingAssignments) {
       const synthEvalRef = db.collection('evaluations').doc();
       const synthEval = {
         assignmentId: assignment.id,
         playerId: assignment.subjectId,
-        evaluatorId: assignment.evaluatorId,
+        evaluatorId: 'AI',
         matchId,
         rating: Math.round(matchAvgRating * 10) / 10,
         goals: 0,
@@ -243,18 +262,10 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
     let team1CalculatedScore = 0;
     let team2CalculatedScore = 0;
 
-    const playerIdsToUpdate: string[] = match.playerUids || [];
     if (playerIdsToUpdate.length === 0) {
       transaction.update(matchRef, { status: 'evaluated', finalizedAt: new Date().toISOString() });
       return;
     }
-
-    const playerRefs = playerIdsToUpdate.map((id) => db.collection('players').doc(id));
-    const playerDocsSnaps = await db.getAll(...playerRefs);
-    const playerDocsMap = new Map<string, any>();
-    playerDocsSnaps.forEach((d) => {
-      if (d.exists) playerDocsMap.set(d.id, { id: d.id, ...d.data() });
-    });
 
     for (const playerId of playerIdsToUpdate) {
       const player = playerDocsMap.get(playerId);
@@ -323,13 +334,11 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
       transaction.update(db.doc(`players/${playerId}`), {
         ...updatedAttributes,
         ovr: newOvr,
-        stats: {
-          matchesPlayed: newMatchesPlayed,
-          goals: newTotalGoals,
-          assists: newTotalAssists,
-          averageRating: newAvgRating,
-          mvpVotes: (player.stats?.mvpVotes || 0) + (playerId === matchMvpId ? 1 : 0),
-        },
+        'stats.matchesPlayed': newMatchesPlayed,
+        'stats.goals': newTotalGoals,
+        'stats.assists': newTotalAssists,
+        'stats.averageRating': newAvgRating,
+        'stats.mvpCount': (player.stats?.mvpCount || 0) + (playerId === matchMvpId ? 1 : 0),
       });
 
       const attributeDeltas: Record<Attr, number> = {
@@ -355,7 +364,11 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
 
     transaction.update(matchRef, {
       status: 'evaluated',
-      finalScore: { team1: team1CalculatedScore, team2: team2CalculatedScore },
+      finalScore: match.finalScore ?? (
+        match.teams?.length >= 2 && match.teams.every((team: any) => Number.isInteger(team.score) && team.score >= 0)
+          ? { team1: match.teams[0].score, team2: match.teams[1].score }
+          : { team1: team1CalculatedScore, team2: team2CalculatedScore }
+      ),
       finalizedAt: new Date().toISOString(),
       // El más votado del partido. Se calculaba más arriba para sumarle el
       // voto al jugador y después se perdía; sin esto no hay forma de saber
@@ -373,32 +386,35 @@ export const submitEvaluationSubmission = onCall({ region: 'us-central1' }, asyn
   const matchId = String(request.data?.matchId ?? '');
   const submission = request.data?.submission;
 
-  if (!matchId) throw new HttpsError('invalid-argument', 'Partido no válido.');
+  if (!matchId || matchId.includes('/')) throw new HttpsError('invalid-argument', 'Partido no válido.');
   if (!submission || typeof submission !== 'object') {
     throw new HttpsError('invalid-argument', 'Datos de evaluación inválidos.');
   }
 
   const db = admin.firestore();
 
-  const existing = await db
-    .collection('evaluationSubmissions')
-    .where('matchId', '==', matchId)
-    .where('evaluatorId', '==', evaluatorId)
-    .limit(1)
-    .get();
-
-  if (!existing.empty) {
-    return { ok: true, alreadySubmitted: true };
-  }
-
-  await db.collection('evaluationSubmissions').add({
-    evaluatorId,
-    matchId,
-    submittedAt: new Date().toISOString(),
-    submission,
+  const key = submissionKey(matchId, evaluatorId);
+  const pendingRef = db.collection('evaluationSubmissions').doc(key);
+  const processedRef = db.doc(`matches/${matchId}/processedSubmissions/${key}`);
+  const alreadySubmitted = await db.runTransaction(async (transaction) => {
+    const existing = await transaction.getAll(pendingRef, processedRef);
+    if (existing.some((doc) => doc.exists)) return true;
+    // También cubre envíos antiguos de la web que tenían un ID aleatorio.
+    const legacy = await transaction.get(
+      db.collection(`matches/${matchId}/processedSubmissions`).where('evaluatorId', '==', evaluatorId).limit(1)
+    );
+    if (!legacy.empty) return true;
+    const normalized = await validateEvaluationSubmission(db, transaction, matchId, evaluatorId, submission);
+    transaction.create(pendingRef, {
+      evaluatorId,
+      matchId,
+      submittedAt: new Date().toISOString(),
+      submission: normalized,
+    });
+    return false;
   });
 
-  return { ok: true, alreadySubmitted: false };
+  return { ok: true, alreadySubmitted };
 });
 
 /** Port de respondToIdentityRevealAction. Sin el envío push (FCM), ver header. */

@@ -297,6 +297,8 @@ export type TeamFormation = {
 // Duplicate Match definition removed
 
 export type Team = {
+  /** Marcador registrado durante el partido; puede faltar en partidos antiguos. */
+  score?: number;
   id?: string;
   name: string;
   players: {

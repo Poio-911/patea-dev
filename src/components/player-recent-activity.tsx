@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useAuth } from '@/firebase';
 import { collection, query, where, orderBy, getDocs, doc, getDoc, limit, Timestamp } from 'firebase/firestore';
 import type { Evaluation, Match, OvrHistory } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { requestIdentityRevelation } from '@/lib/actions/evaluation-actions';
+import { getPlayerEvaluationsAction, requestIdentityRevelation } from '@/lib/actions/evaluation-actions';
 import {
   ResponsiveTooltip as Tooltip,
   ResponsiveTooltipContent as TooltipContent,
@@ -44,6 +44,8 @@ type MatchFeedbackContext = {
 
 export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
   const firestore = useFirestore();
+  const auth = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
   const [activities, setActivities] = useState<MatchFeedbackContext[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,8 +75,10 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
   };
 
   useEffect(() => {
+    let active = true;
+    setActivities([]);
     async function fetchActivity() {
-      if (!firestore || !playerId) {
+      if (!firestore || !playerId || !user?.uid || !auth?.currentUser) {
         setIsLoading(false);
         return;
       };
@@ -82,14 +86,10 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
 
       try {
         // 1. Fetch recent evaluations
-        const evalsQuery = query(
-          collection(firestore, 'evaluations'),
-          where('playerId', '==', playerId),
-          orderBy('evaluatedAt', 'desc'),
-          limit(20)
-        );
-        const evalsSnapshot = await getDocs(evalsQuery);
-        const allEvals = evalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Evaluation));
+        const result = await getPlayerEvaluationsAction(playerId, undefined, await auth?.currentUser?.getIdToken());
+        if (!active) return;
+        if (result.error) throw new Error(result.error);
+        const allEvals = result.evaluations as Evaluation[];
 
         if (allEvals.length === 0) {
           setActivities([]);
@@ -163,17 +163,18 @@ export function PlayerRecentActivity({ playerId }: PlayerRecentActivityProps) {
           return dateB - dateA;
         });
 
-        setActivities(contexts);
+        if (active) setActivities(contexts);
 
       } catch (error: any) {
         logger.error('Failed to fetch player activity', error, { playerId });
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     }
 
     fetchActivity();
-  }, [firestore, playerId]);
+    return () => { active = false; };
+  }, [firestore, playerId, auth, user?.uid]);
 
   if (isLoading) {
     return (

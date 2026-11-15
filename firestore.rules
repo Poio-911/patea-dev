@@ -92,6 +92,11 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /evaluationSubmissionErrors/{submissionId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
       // Integraciones de salud (Google Fit): privadas del dueño.
       match /healthConnections/{connectionId} {
         allow read: if isOwner(userId);
@@ -223,8 +228,22 @@ service cloud.firestore {
       }
 
       // Asignaciones de evaluación, submissions procesadas, performance, etc.
+      match /assignments/{assignmentId} {
+        allow read: if isAuthenticated() && (
+          resource.data.evaluatorId == request.auth.uid || isMatchOwner(matchId)
+        );
+        allow write: if false;
+      }
+
+      match /processedSubmissions/{submissionId} {
+        allow read: if isAuthenticated() && resource.data.evaluatorId == request.auth.uid;
+        allow write: if false;
+      }
+
       match /{subcollection}/{docId} {
-        allow read: if isAuthenticated();
+        // Reglas aditivas: no volver a abrir las rutas privadas de arriba.
+        allow read: if isAuthenticated()
+          && !(subcollection in ['messages', 'invitations', 'assignments', 'processedSubmissions']);
         allow write: if false;
       }
     }
@@ -242,13 +261,13 @@ service cloud.firestore {
 
     // Bandeja de invitaciones y badge del header (matches/ y teams/).
     match /{path=**}/invitations/{invitationId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && resource.data.playerId == request.auth.uid;
       allow write: if false;
     }
 
     // Bandeja de evaluaciones: `where evaluatorId == uid and status == pending`.
     match /{path=**}/assignments/{assignmentId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && resource.data.evaluatorId == request.auth.uid;
       allow write: if false;
     }
 
@@ -281,7 +300,13 @@ service cloud.firestore {
     // privada `private/` de abajo, denegada a todo cliente, y se copia al
     // documento público sólo cuando el evaluador acepta revelar su identidad.
     match /evaluations/{evaluationId} {
-      allow read: if isAuthenticated();
+      // El perfil obtiene la versión enmascarada mediante el servidor.
+      // Restringir sólo campos es imposible en Firestore: el documento crudo
+      // incluye la identidad del evaluador, también en registros antiguos.
+      allow read: if isAuthenticated() && (
+        resource.data.evaluatorId == request.auth.uid
+        || resource.data.get('identityRevealed', false) == true
+      );
       allow write: if false;
 
       // Identidad del evaluador — jamás legible desde un cliente.

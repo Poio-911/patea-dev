@@ -3,7 +3,8 @@
 import { analyzeTextPerformance } from '@/ai/flows/analyze-text-performance';
 import { getAdminDb } from '@/firebase/admin-init';
 import { requireAuth } from '@/lib/auth/get-server-session';
-import type { Evaluation, Match, SelfEvaluation } from '@/lib/types';
+import type { Evaluation } from '@/lib/types';
+import { maskEvaluation } from '../evaluation-privacy';
 
 export type AttributeChange = {
   attribute: 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy';
@@ -38,166 +39,33 @@ export async function analyzeEvaluationTextAction(input: {
   }
 }
 
-export async function submitEvaluationSubmissionAction(
-  matchId: string,
-  submission: Record<string, unknown>
-): Promise<{ success: boolean; alreadySubmitted?: boolean; error?: string }> {
-  try {
-    const evaluatorId = await requireAuth();
-    const db = getAdminDb();
-
-    if (!matchId) {
-      return { success: false, error: 'Partido no válido.' };
-    }
-
-    const existingSubmission = await db
-      .collection('evaluationSubmissions')
-      .where('matchId', '==', matchId)
-      .where('evaluatorId', '==', evaluatorId)
-      .limit(1)
-      .get();
-
-    if (!existingSubmission.empty) {
-      return { success: true, alreadySubmitted: true };
-    }
-
-    await db.collection('evaluationSubmissions').add({
-      evaluatorId,
-      matchId,
-      submittedAt: new Date().toISOString(),
-      submission,
-    });
-
-    return { success: true };
-  } catch (error: any) {
-    console.error('Error submitting evaluation submission:', error);
-    return { success: false, error: error.message || 'No se pudieron enviar las evaluaciones.' };
-  }
-}
-
+/**
+ * Legacy refresh hook for the organizer. Processing belongs exclusively to the
+ * validated, idempotent Cloud Function; a Server Action must not create peer
+ * evaluations or advance assignments through the Admin SDK.
+ */
 export async function processPendingEvaluationSubmissionsAction(
-  matchId: string
+  matchId: string,
+  idToken?: string
 ): Promise<{ success: boolean; processedCount?: number; error?: string }> {
   try {
-    const callerId = await requireAuth();
+    const { requireEvaluationReader } = await import('../auth/evaluation-reader');
+    const callerId = await requireEvaluationReader(idToken);
+    if (!matchId || matchId.includes('/')) return { success: false, error: 'Partido no válido.' };
     const db = getAdminDb();
-    const matchRef = db.collection('matches').doc(matchId);
-    const matchSnap = await matchRef.get();
-
-    if (!matchSnap.exists) {
-      return { success: false, error: 'Partido no encontrado.' };
+    const matchSnap = await db.collection('matches').doc(matchId).get();
+    if (!matchSnap.exists) return { success: false, error: 'Partido no encontrado.' };
+    if (matchSnap.data()?.ownerUid !== callerId) {
+      return { success: false, error: 'Solo el organizador puede consultar los envíos pendientes.' };
     }
-
-    const match = matchSnap.data() as Match;
-    if (match.ownerUid !== callerId) {
-      return { success: false, error: 'Solo el organizador puede procesar evaluaciones.' };
+    const pending = await db.collection('evaluationSubmissions').where('matchId', '==', matchId).limit(1).get();
+    if (!pending.empty) {
+      return { success: false, error: 'Las evaluaciones se están procesando automáticamente. Esperá un momento y reintentá.' };
     }
-
-    let processedCount = 0;
-
-    await db.runTransaction(async (transaction) => {
-      const submissionsQuery = db.collection('evaluationSubmissions').where('matchId', '==', matchId);
-      const snapshot = await transaction.get(submissionsQuery);
-
-      if (snapshot.empty) {
-        processedCount = 0;
-        return;
-      }
-
-      processedCount = snapshot.size;
-
-      for (const submissionDoc of snapshot.docs) {
-        const submissionData = submissionDoc.data() as {
-          evaluatorId: string;
-          submittedAt: string;
-          submission: {
-            evaluatorGoals?: number;
-            evaluatorAssists?: number;
-            evaluatorGoalsConceded?: number;
-            evaluatorSaves?: number;
-            personalChronicle?: string;
-            mvpVote?: string;
-            evaluations?: Array<Record<string, any>>;
-          };
-        };
-
-        const processedRef = db.collection(`matches/${matchId}/processedSubmissions`).doc();
-        transaction.set(processedRef, {
-          ...submissionData,
-          processedAt: new Date().toISOString(),
-          originalSubmissionId: submissionDoc.id,
-          processingStatus: 'completed',
-        });
-
-        transaction.delete(submissionDoc.ref);
-
-        const { evaluatorId, submission: formData } = submissionData;
-
-        if (
-          (formData.evaluatorGoals || 0) > 0 ||
-          (formData.evaluatorAssists || 0) > 0 ||
-          formData.evaluatorGoalsConceded !== undefined ||
-          formData.evaluatorSaves !== undefined ||
-          formData.personalChronicle ||
-          formData.mvpVote
-        ) {
-          const selfEvalRef = db.collection(`matches/${matchId}/selfEvaluations`).doc();
-          const selfEvaluation: Omit<SelfEvaluation, 'id'> = {
-            playerId: evaluatorId,
-            matchId,
-            goals: formData.evaluatorGoals || 0,
-            assists: formData.evaluatorAssists || 0,
-            goalsConceded: typeof formData.evaluatorGoalsConceded === 'number' ? formData.evaluatorGoalsConceded : undefined,
-            saves: typeof formData.evaluatorSaves === 'number' ? formData.evaluatorSaves : undefined,
-            personalChronicle: formData.personalChronicle || undefined,
-            mvpVote: formData.mvpVote || undefined,
-            reportedAt: submissionData.submittedAt,
-          };
-          transaction.set(selfEvalRef, selfEvaluation);
-        }
-
-        for (const evaluation of formData.evaluations || []) {
-          const evalRef = db.collection('evaluations').doc();
-          const newEvaluation: Omit<Evaluation, 'id'> = {
-            assignmentId: evaluation.assignmentId,
-            playerId: evaluation.subjectId,
-            evaluatorId,
-            matchId,
-            goals: 0,
-            evaluatedAt: submissionData.submittedAt,
-          };
-
-          if (evaluation.evaluationType === 'points') {
-            newEvaluation.rating = evaluation.rating;
-          } else if (evaluation.evaluationType === 'tags') {
-            newEvaluation.performanceTags = evaluation.performanceTags;
-          } else if (evaluation.evaluationType === 'text') {
-            if (evaluation.aiAttributeChanges) {
-              newEvaluation.aiAttributeChanges = evaluation.aiAttributeChanges;
-            }
-            if (evaluation.aiConfidence) {
-              newEvaluation.aiConfidence = evaluation.aiConfidence;
-            }
-            newEvaluation.textDescription = evaluation.textDescription || '';
-            if (evaluation.aiSummary) {
-              newEvaluation.aiSummary = evaluation.aiSummary;
-            }
-          }
-
-          transaction.set(evalRef, newEvaluation);
-
-          if (evaluation.assignmentId) {
-            const assignmentRef = db.collection(`matches/${matchId}/assignments`).doc(evaluation.assignmentId);
-            transaction.update(assignmentRef, { status: 'completed', evaluationId: evalRef.id });
-          }
-        }
-      }
-    });
-
-    return { success: true, processedCount };
+    return { success: true, processedCount: 0 };
   } catch (error: any) {
-    console.error('Error processing pending submissions:', error);
-    return { success: false, error: error.message || 'No se pudieron procesar las evaluaciones pendientes.' };
+    console.error('Error checking pending submissions:', error);
+    return { success: false, error: error.message || 'No se pudo comprobar el estado de las evaluaciones.' };
   }
 }
 
@@ -286,6 +154,8 @@ export async function respondToIdentityRevealAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { getAdminDb } = await import('@/firebase/admin-init');
+    const { requireAuth } = await import('../auth/get-server-session');
+    const callerId = await requireAuth();
 
     const evalRef = getAdminDb().collection('evaluations').doc(evaluationId);
     const evalSnap = await evalRef.get();
@@ -297,7 +167,7 @@ export async function respondToIdentityRevealAction(
     const evaluation = evalSnap.data() as any;
 
     // Verify the responder is the evaluator
-    if (evaluation.evaluatorId !== evaluatorId) {
+    if (evaluation.evaluatorId !== callerId || evaluatorId !== callerId) {
       return { success: false, error: 'No tienes permiso para responder esta solicitud.' };
     }
 
@@ -364,9 +234,12 @@ export async function respondToIdentityRevealAction(
 /**
  * Fetches evaluations for a player, masking the evaluator ID if it hasn't been revealed.
  */
-export async function getPlayerEvaluationsAction(playerId: string, requesterId?: string): Promise<{ evaluations: any[]; error?: string }> {
+export async function getPlayerEvaluationsAction(playerId: string, requesterId?: string, idToken?: string): Promise<{ evaluations: any[]; error?: string }> {
   try {
     const { getAdminDb } = await import('@/firebase/admin-init');
+    const { requireEvaluationReader } = await import('../auth/evaluation-reader');
+    // El argumento legado requesterId nunca determina la identidad del lector.
+    requesterId = await requireEvaluationReader(idToken);
     const db = getAdminDb();
 
     const evalsSnap = await db.collection('evaluations')
@@ -378,24 +251,7 @@ export async function getPlayerEvaluationsAction(playerId: string, requesterId?:
     const rawEvals = evalsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     // Masking logic
-    const maskedEvals = rawEvals.map((ev: any) => {
-      // If identity is already revealed, we show everything
-      if (ev.identityRevealed) return ev;
-
-      // If the requester is the evaluator themselves, they can see their own evaluation
-      if (requesterId && ev.evaluatorId === requesterId) return ev;
-
-      // If the evaluation is auto-generated or by AI, it's not private
-      if (ev.autoGenerated || ev.evaluatorId === 'AI') return ev;
-
-      // MASK: If identity is NOT revealed, we hide the evaluatorId
-      const { evaluatorId, evaluatorDisplayName, evaluatorPhotoUrl, ...rest } = ev;
-      return {
-        ...rest,
-        evaluatorId: 'anonymous', // Masked
-        isAnonymous: true
-      };
-    });
+    const maskedEvals = rawEvals.map((ev: any) => maskEvaluation(ev, requesterId!));
 
     return { evaluations: maskedEvals };
   } catch (error: any) {

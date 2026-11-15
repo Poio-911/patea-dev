@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useAuth } from '@/firebase';
 import {
   collection, query, where, orderBy, getDocs,
   doc, getDoc, limit,
@@ -514,6 +514,7 @@ function CompactSkeleton() {
 
 export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebriefViewProps) {
   const firestore = useFirestore();
+  const auth = useAuth();
   const { user } = useUser();
   const { toast } = useToast();
   const [activities, setActivities] = useState<MatchFeedbackContext[]>([]);
@@ -541,13 +542,16 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
   };
 
   useEffect(() => {
+    let active = true;
+    setActivities([]);
     async function fetchActivity() {
-      if (!firestore || !playerId) { setIsLoading(false); return; }
+      if (!firestore || !playerId || !user?.uid || !auth?.currentUser) { setIsLoading(false); return; }
       setIsLoading(true);
       try {
         // 1. Fetch evaluations via Secure Server Action
-        const { evaluations: allEvals, error: fetchError } = await getPlayerEvaluationsAction(playerId, user?.uid);
+        const { evaluations: allEvals, error: fetchError } = await getPlayerEvaluationsAction(playerId, undefined, await auth?.currentUser?.getIdToken());
 
+        if (!active) return;
         if (fetchError) throw new Error(fetchError);
 
         if (allEvals.length === 0) { setActivities([]); setIsLoading(false); return; }
@@ -645,15 +649,16 @@ export function PlayerMatchDebriefView({ playerId, compact }: PlayerMatchDebrief
           return toMs(b.match.date || 0) - toMs(a.match.date || 0);
         });
 
-        setActivities(contexts);
+        if (active) setActivities(contexts);
       } catch (error: any) {
         logger.error('Failed to fetch player match debrief', error, { playerId });
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     }
     fetchActivity();
-  }, [firestore, playerId, user?.uid]);
+    return () => { active = false; };
+  }, [firestore, playerId, auth, user?.uid]);
 
   // ── Hero Stats ────────────────────────────────────────────────────────────────
   const heroStats = useMemo(() => {

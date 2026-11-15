@@ -1,5 +1,6 @@
 'use client'
 
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -32,7 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sparkles } from 'lucide-react'
-import { analyzeEvaluationTextAction, submitEvaluationSubmissionAction } from '@/lib/actions/evaluation-actions'
+import { analyzeEvaluationTextAction } from '@/lib/actions/evaluation-actions'
 import { TagSelector } from '@/components/ui/tag-selector'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
@@ -406,10 +407,12 @@ export default function PerformEvaluationPage() {
 
     setIsSubmitting(true)
     try {
-      const result = await submitEvaluationSubmissionAction(matchId, data as unknown as Record<string, unknown>);
-      if (!result.success) {
-        throw new Error(result.error || 'No se pudieron enviar las evaluaciones.');
-      }
+      const submit = httpsCallable<
+        { matchId: string; submission: EvaluationFormData },
+        { ok: boolean; alreadySubmitted: boolean }
+      >(getFunctions(firestore.app, 'us-central1'), 'submitEvaluationSubmission');
+      const { data: result } = await submit({ matchId, submission: data });
+      if (!result.ok) throw new Error('No se pudieron enviar las evaluaciones.');
 
       hapticSuccess();
       toast({

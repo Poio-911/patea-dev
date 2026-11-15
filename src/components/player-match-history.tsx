@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useAuth, useUser } from '@/firebase';
 import { collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import type { Evaluation, Match, OvrHistory, Player } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { requestIdentityRevelation } from '@/lib/actions/evaluation-actions';
+import { getPlayerEvaluationsAction, requestIdentityRevelation } from '@/lib/actions/evaluation-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
@@ -133,6 +133,8 @@ function TagIcon({ tag }: { tag: string }) {
 
 export function PlayerMatchHistory({ playerId, player }: PlayerMatchHistoryProps) {
   const firestore = useFirestore();
+  const auth = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
   const [activities, setActivities] = useState<MatchFeedbackContext[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -157,18 +159,16 @@ export function PlayerMatchHistory({ playerId, player }: PlayerMatchHistoryProps
   };
 
   useEffect(() => {
+    let active = true;
+    setActivities([]);
     async function fetchActivity() {
-      if (!firestore || !playerId) { setIsLoading(false); return; }
+      if (!firestore || !playerId || !user?.uid || !auth?.currentUser) { setIsLoading(false); return; }
       setIsLoading(true);
       try {
-        const evalsQuery = query(
-          collection(firestore, 'evaluations'),
-          where('playerId', '==', playerId),
-          orderBy('evaluatedAt', 'desc'),
-          limit(20),
-        );
-        const evalsSnapshot = await getDocs(evalsQuery);
-        const allEvals = evalsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Evaluation));
+        const result = await getPlayerEvaluationsAction(playerId, undefined, await auth?.currentUser?.getIdToken());
+        if (!active) return;
+        if (result.error) throw new Error(result.error);
+        const allEvals = result.evaluations as Evaluation[];
 
         if (allEvals.length === 0) { setActivities([]); setIsLoading(false); return; }
 
@@ -233,15 +233,16 @@ export function PlayerMatchHistory({ playerId, player }: PlayerMatchHistoryProps
           return getTs(b.match.date || 0) - getTs(a.match.date || 0);
         });
 
-        setActivities(contexts);
+        if (active) setActivities(contexts);
       } catch (error: any) {
         logger.error('Failed to fetch player match history', error, { playerId });
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     }
     fetchActivity();
-  }, [firestore, playerId]);
+    return () => { active = false; };
+  }, [firestore, playerId, auth, user?.uid]);
 
   // ── Hero Stats ───────────────────────────────────────────────────────────────
   const heroStats = useMemo(() => {

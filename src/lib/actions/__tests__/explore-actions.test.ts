@@ -1,37 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getPublicMatchesAction } from '../explore-actions';
 
-// Mock Firebase Admin SDK
-const mockCollection = vi.fn();
-const mockWhere = vi.fn();
-const mockLimit = vi.fn();
-const mockOrderBy = vi.fn();
-const mockGet = vi.fn();
+// Match the actual src/firebase module, not src/lib/firebase. Hoisted mocks
+// keep this suite isolated from real credentials and Admin initialization.
+const { mockCollection, mockGet, mockWhere, mockOrderBy, mockLimit } = vi.hoisted(() => ({
+    mockCollection: vi.fn(),
+    mockGet: vi.fn(),
+    mockWhere: vi.fn(),
+    mockOrderBy: vi.fn(),
+    mockLimit: vi.fn(),
+}));
 
-vi.mock('../../firebase/admin-init', () => ({
-    getAdminDb: () => ({
-        collection: mockCollection,
-    }),
+vi.mock('@/firebase/admin-init', () => ({
+    getAdminDb: () => ({ collection: mockCollection }),
 }));
 
 describe('explore-actions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
 
-        // Setup chainable mocks
-        mockCollection.mockReturnValue({ where: mockWhere });
-        mockWhere.mockReturnValue({ where: mockWhere }); // Allow chaining multiple .where()
-        mockWhere.mockReturnValue({ orderBy: mockOrderBy });
-        mockOrderBy.mockReturnValue({ limit: mockLimit });
-        mockLimit.mockReturnValue({ get: mockGet });
-
-        // Handle variations in chaining order if needed by implementation
-        // For getPublicMatchesAction: collection -> where -> where -> orderBy -> limit -> get
-        // So we need to ensure the chain holds up.
         const queryMock = {
-            where: vi.fn().mockReturnThis(),
-            orderBy: vi.fn().mockReturnThis(),
-            limit: vi.fn().mockReturnThis(),
+            where: mockWhere.mockReturnThis(),
+            orderBy: mockOrderBy.mockReturnThis(),
+            limit: mockLimit.mockReturnThis(),
             get: mockGet,
         };
         mockCollection.mockReturnValue(queryMock);
@@ -59,7 +50,10 @@ describe('explore-actions', () => {
 
             // Verify Firestore query structure (status + isPublic logic)
             expect(mockCollection).toHaveBeenCalledWith('matches');
-            // Check that it's using the new optimized query (we can inspect the mocks calls if we want specifically)
+            expect(mockWhere).toHaveBeenCalledWith('status', '==', 'upcoming');
+            expect(mockWhere).toHaveBeenCalledWith('isPublic', '==', true);
+            expect(mockOrderBy).toHaveBeenCalledWith('date', 'asc');
+            expect(mockLimit).toHaveBeenCalledWith(50);
         });
 
         it('should filter out full matches', async () => {

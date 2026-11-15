@@ -27,8 +27,8 @@ import { publishMatchPlayedActivity, publishOvrChangeActivity } from './social-a
 import { notifyMatchUpdatedAction } from './notification-actions';
 import { CREDITS } from '../constants';
 import { getServerSession } from '@/lib/auth/get-server-session';
-import { POSITION_WEIGHTS, DEFAULT_WEIGHTS, calculatePositionOvr } from '../ovr-utils';
-export { POSITION_WEIGHTS, DEFAULT_WEIGHTS, calculatePositionOvr };
+import { DEFAULT_WEIGHTS } from '../ovr-utils';
+import { maskEvaluation } from '../evaluation-privacy';
 
 // --- Server Actions ---
 
@@ -60,7 +60,15 @@ const calculateAttributeChangesFromPoints = (currentAttrs: Player, ovrChange: nu
     if (ovrChange === 0) return currentAttrs;
     const newAttributes = { ...currentAttrs };
     const attributes: Array<keyof Player> = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
-    const weights = POSITION_WEIGHTS[position as keyof typeof POSITION_WEIGHTS] || DEFAULT_WEIGHTS;
+    // Evaluation progression must match the deployed callable and Flutter.
+    // The positional card weights serve a different purpose elsewhere.
+    const evaluationWeights: Record<string, Record<string, number>> = {
+        DEL: { pac: 0.25, sho: 0.35, pas: 0.15, dri: 0.15, def: 0.05, phy: 0.05 },
+        MED: { pac: 0.15, sho: 0.15, pas: 0.30, dri: 0.20, def: 0.10, phy: 0.10 },
+        DEF: { pac: 0.15, sho: 0.05, pas: 0.15, dri: 0.05, def: 0.40, phy: 0.20 },
+        POR: { pac: 0.10, sho: 0.05, pas: 0.10, dri: 0.05, def: 0.50, phy: 0.20 },
+    };
+    const weights = evaluationWeights[position] || DEFAULT_WEIGHTS;
     const totalPointsToAdd = ovrChange * 6;
     let accumulatedError = 0;
 
@@ -230,7 +238,9 @@ export async function generateTeamsAction(players: Array<Pick<Player, 'id' | 'na
     }
 }
 
-export async function getPlayerEvaluationsAction(playerId: string, groupId: string): Promise<Partial<Evaluation>[]> {
+export async function getPlayerEvaluationsAction(playerId: string, groupId: string, idToken?: string): Promise<Partial<Evaluation>[]> {
+    const { requireEvaluationReader } = await import('../auth/evaluation-reader');
+    const requesterId = await requireEvaluationReader(idToken);
     // 1. Fetch recent evaluations for the player (Limit 50 to avoid reading thousands)
     const evalsSnapshot = await getAdminDb()
         .collection('evaluations')
@@ -266,7 +276,7 @@ export async function getPlayerEvaluationsAction(playerId: string, groupId: stri
     });
 
     // 3. Filter evaluations that belong to the group
-    return evaluations.filter(e => validMatchIds.has(e.matchId));
+    return evaluations.filter(e => validMatchIds.has(e.matchId)).map(e => maskEvaluation(e, requesterId));
 }
 
 
@@ -4212,22 +4222,16 @@ export async function getUserPreferencesAction(
 }
 
 // --- SECURE OVR AGGREGATION & MATCH FINALIZATION ---
-export async function finalizeMatchEvaluationAction(matchId: string) {
+export async function finalizeMatchEvaluationAction(matchId: string, idToken?: string) {
     logger.info('Starting finalizeMatchEvaluationAction', { matchId });
 
     try {
+        const { requireEvaluationReader } = await import('../auth/evaluation-reader');
+        const callerId = await requireEvaluationReader(idToken);
+        if (!matchId || matchId.includes('/')) throw new Error('Partido no válido.');
         const db = getAdminDb();
         const matchRef = db.doc(`matches/${matchId}`);
         const assignmentsQuery = db.collection(`matches/${matchId}/assignments`);
-
-        // Fetch assignments first to ensure we have something to process
-        const assignmentsSnapshot = await assignmentsQuery.get();
-        const assignments = assignmentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvaluationAssignment));
-        const completedAssignmentIds = assignments.filter(a => a.status === 'completed').map(a => a.id);
-
-        if (completedAssignmentIds.length === 0) {
-            throw new Error("No hay evaluaciones completadas para procesar.");
-        }
 
         let playerIdsToUpdate: string[] = [];
         const playerOvrChanges = new Map<string, { player: Player; oldOvr: number; newOvr: number; change: number }>();
@@ -4239,6 +4243,16 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                 throw new Error("Este partido ya ha sido evaluado o no existe.");
             }
             const match = { id: matchDoc.id, ...matchDoc.data() } as Match;
+            if (match.ownerUid !== callerId) throw new Error('Solo el organizador puede finalizar la evaluación.');
+            if (match.status !== 'completed') throw new Error('El partido aún no terminó.');
+            // Firestore may retry this callback after another match updates a
+            // shared player; only the committed attempt may publish followups.
+            playerOvrChanges.clear();
+            uniqueUsers.clear();
+            const assignmentsSnapshot = await transaction.get(assignmentsQuery);
+            const assignments = assignmentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvaluationAssignment));
+            const completedAssignmentIds = assignments.filter(a => a.status === 'completed').map(a => a.id);
+            if (completedAssignmentIds.length === 0) throw new Error('No hay evaluaciones completadas para procesar.');
 
             const pendingSubmissionsQuery = db.collection('evaluationSubmissions').where('matchId', '==', matchId);
             const pendingSubmissionsSnapshot = await transaction.get(pendingSubmissionsQuery);
@@ -4285,6 +4299,16 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                 ? allCompletedPointEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / allCompletedPointEvals.length
                 : 5;
 
+            playerIdsToUpdate = [...new Set(match.playerUids || [])];
+            const playerDocsMap = new Map<string, Player>();
+            const playerRefs = playerIdsToUpdate.map(id => db.collection('players').doc(id));
+            // These reads participate in conflict detection and precede every
+            // write, so concurrent matches cannot overwrite player progression.
+            const playerDocsSnaps = playerRefs.length ? await transaction.getAll(...playerRefs) : [];
+            playerDocsSnaps.forEach(doc => {
+                if (doc.exists) playerDocsMap.set(doc.id, { id: doc.id, ...doc.data() } as Player);
+            });
+
             const pendingAssignments = assignments.filter(a => a.status === 'pending');
 
             for (const assignment of pendingAssignments) {
@@ -4292,7 +4316,7 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                 const synthEval: Omit<Evaluation, 'id'> = {
                     assignmentId: assignment.id,
                     playerId: assignment.subjectId,
-                    evaluatorId: assignment.evaluatorId,
+                    evaluatorId: 'AI',
                     matchId: match.id,
                     rating: Math.round(matchAvgRating * 10) / 10,
                     goals: 0,
@@ -4310,19 +4334,6 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
 
             let team1CalculatedScore = 0;
             let team2CalculatedScore = 0;
-
-            playerIdsToUpdate = match.playerUids || [];
-            if (playerIdsToUpdate.length === 0) return;
-
-            const playerDocsMap = new Map<string, Player>();
-            const playerRefs = playerIdsToUpdate.map(id => db.collection('players').doc(id));
-            const playerDocsSnaps = await db.getAll(...playerRefs);
-
-            playerDocsSnaps.forEach(doc => {
-                if (doc.exists) {
-                    playerDocsMap.set(doc.id, { id: doc.id, ...doc.data() } as Player);
-                }
-            });
 
             for (const playerId of playerIdsToUpdate) {
                 const player = playerDocsMap.get(playerId);
@@ -4376,7 +4387,8 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                     updatedAttributes = calculateAttributeChangesFromPoints(updatedAttributes, ovrChangeFromPoints, player.position || 'MED');
                 }
 
-                let newOvr = calculatePositionOvr(updatedAttributes, player.position || 'MED');
+                let newOvr = Math.round((updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas
+                    + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6);
                 newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.MAX_OVR, newOvr));
 
                 const newMatchesPlayed = (player.stats.matchesPlayed || 0) + 1;
@@ -4397,20 +4409,23 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
                 const newGoalsConceded = (player.stats.goalsConceded || 0) + (goalsConcededInMatch || 0);
 
                 transaction.update(db.doc(`players/${playerId}`), {
-                    ...updatedAttributes,
+                    pac: updatedAttributes.pac,
+                    sho: updatedAttributes.sho,
+                    pas: updatedAttributes.pas,
+                    dri: updatedAttributes.dri,
+                    def: updatedAttributes.def,
+                    phy: updatedAttributes.phy,
                     ovr: newOvr,
-                    stats: {
-                        matchesPlayed: newMatchesPlayed,
-                        goals: newTotalGoals,
-                        assists: newTotalAssists,
-                        averageRating: newAvgRating,
-                        mvpVotes: (player.stats.mvpVotes || 0) + (playerId === matchMvpId ? 1 : 0),
-                        ...(player.position === 'POR' ? {
-                            cleanSheets: newCleanSheets,
-                            saves: newSaves,
-                            goalsConceded: newGoalsConceded,
-                        } : {}),
-                    },
+                    'stats.matchesPlayed': newMatchesPlayed,
+                    'stats.goals': newTotalGoals,
+                    'stats.assists': newTotalAssists,
+                    'stats.averageRating': newAvgRating,
+                    'stats.mvpCount': ((player.stats as { mvpCount?: number }).mvpCount || 0) + (playerId === matchMvpId ? 1 : 0),
+                    ...(player.position === 'POR' ? {
+                        'stats.cleanSheets': newCleanSheets,
+                        'stats.saves': newSaves,
+                        'stats.goalsConceded': newGoalsConceded,
+                    } : {}),
                 });
 
                 // Calculate Certera Attribute Variation
@@ -4439,7 +4454,12 @@ export async function finalizeMatchEvaluationAction(matchId: string) {
 
             transaction.update(matchRef, {
                 status: 'evaluated',
-                finalScore: { team1: team1CalculatedScore, team2: team2CalculatedScore },
+                finalScore: match.finalScore ?? (
+                    match.teams?.length === 2 && match.teams.every(team => Number.isInteger(team.score) && (team.score ?? -1) >= 0)
+                        ? { team1: match.teams[0].score, team2: match.teams[1].score }
+                        : { team1: team1CalculatedScore, team2: team2CalculatedScore }
+                ),
+                ...(matchMvpId ? { bestPlayerId: matchMvpId } : {}),
                 finalizedAt: new Date().toISOString()
             });
         });

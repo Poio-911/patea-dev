@@ -1,5 +1,6 @@
 'use client'
 
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -30,7 +31,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { PerformanceTag, performanceTagsDb } from '@/lib/performance-tags'
 import { cn } from '@/lib/utils'
 import type { Player, EvaluationAssignment, PlayerEvaluationFormData } from '@/lib/types'
-import { submitEvaluationSubmissionAction } from '@/lib/actions/evaluation-actions'
 
 // --- Zod Validation (CORREGIDO Y REFORZADO) ---
 const pointsEvaluationSchema = z.object({
@@ -249,10 +249,12 @@ export default function PerformEvaluationView({ matchId }: { matchId: string }) 
 
     setIsSubmitting(true)
     try {
-      const result = await submitEvaluationSubmissionAction(matchId, data as unknown as Record<string, unknown>);
-      if (!result.success) {
-        throw new Error(result.error || 'No se pudieron enviar las evaluaciones.');
-      }
+      const submit = httpsCallable<
+        { matchId: string; submission: EvaluationFormData },
+        { ok: boolean; alreadySubmitted: boolean }
+      >(getFunctions(firestore.app, 'us-central1'), 'submitEvaluationSubmission');
+      const { data: result } = await submit({ matchId, submission: data });
+      if (!result.ok) throw new Error('No se pudieron enviar las evaluaciones.');
 
       toast({
         title: '¡Evaluaciones en camino!',
