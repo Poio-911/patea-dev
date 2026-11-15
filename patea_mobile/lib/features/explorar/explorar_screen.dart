@@ -151,7 +151,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         dayOfWeek = map[dt.weekday - 1];
       }
       final hour = int.tryParse((match.time ?? '').split(':').first) ?? 12;
-      final timeOfDay = hour < 12 ? 'mañana' : (hour >= 18 ? 'noche' : 'tarde');
+      final timeOfDay = hour < 13 ? 'mañana' : (hour >= 19 ? 'noche' : 'tarde');
 
       final players = await ref.read(exploreServiceProvider).getAvailableLocalPlayers(
             lat: lat,

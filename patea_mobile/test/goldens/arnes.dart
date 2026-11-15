@@ -8,8 +8,8 @@
 ///
 /// **Los datos son deterministas a propósito.** Nada de `DateTime.now()` ni
 /// nombres al azar: un golden que cambia con el reloj no es un golden. Las
-/// fechas están puestas en 2026 y el "hoy" de las pantallas no las mueve
-/// porque ninguna las compara contra el reloj para decidir qué dibujar.
+/// fechas y el reloj de las pantallas se fijan en septiembre de 2026 para
+/// que los partidos próximos no pasen al historial al cambiar el día real.
 ///
 /// **Hay un nombre largo y un OVR de tres cifras a propósito.** El arnés no
 /// sirve sólo para sacar la foto: la pasada a 1,3× de escala de texto es la
@@ -39,6 +39,7 @@ import 'package:patea_mobile/core/services/firestore_service.dart';
 import 'package:patea_mobile/core/services/group_service.dart';
 import 'package:patea_mobile/core/services/match_clips_service.dart';
 import 'package:patea_mobile/core/widgets/patea_background.dart';
+import 'package:patea_mobile/core/utils/clock.dart';
 import 'package:patea_mobile/features/matches/widgets/join_requests_section.dart';
 
 const String uidYo = 'uid-yo';
@@ -499,6 +500,7 @@ List<Override> overridesDelArnes() {
     // El fondo elige una foto al azar: fijarla es lo que hace comparable la
     // imagen entre corridas.
     backgroundIndexProvider.overrideWithValue(3),
+    clockProvider.overrideWithValue(() => DateTime(2026, 9, 6, 12)),
   ];
 }
 

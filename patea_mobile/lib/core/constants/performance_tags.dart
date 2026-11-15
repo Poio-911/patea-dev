@@ -1,9 +1,6 @@
-/// Port 1:1 de src/lib/performance-tags.ts — 34 tags (18 positivos, 16
-/// negativos). El listado anterior tenía solo 16 tags inventados/incompletos
-/// (bug preexistente, encontrado al portar la Sección 8 Evaluaciones); esto
-/// importa porque `getRandomTagsForPosition` en la web arma el pool mostrado
-/// al evaluador tomando 6 positivos + 4 negativos al azar por posición, y con
-/// menos de 6/4 disponibles ese muestreo quedaba corto o repetido.
+/// Catálogo móvil: 42 etiquetas (23 positivas y 19 negativas).
+/// Incluye etiquetas específicas para POR/DEF/MED/DEL y etiquetas comunes ALL.
+/// Los IDs forman parte del contrato de envío de evaluaciones al servidor.
 class PerformanceTagItem {
   final String id;
   final String name;

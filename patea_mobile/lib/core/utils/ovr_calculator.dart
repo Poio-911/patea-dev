@@ -44,10 +44,38 @@ class OvrCalculator {
 
   /// Distribución de puntos a los 6 atributos según la posición (coincide con src/lib/ovr-utils.ts)
   static const Map<String, Map<String, double>> positionWeights = {
-    'DEL': {'sho': 0.35, 'dri': 0.25, 'pac': 0.20, 'pas': 0.10, 'phy': 0.05, 'def': 0.05},
-    'MED': {'pas': 0.30, 'dri': 0.25, 'def': 0.15, 'sho': 0.15, 'pac': 0.10, 'phy': 0.05},
-    'DEF': {'def': 0.40, 'phy': 0.25, 'pac': 0.15, 'pas': 0.10, 'dri': 0.05, 'sho': 0.05},
-    'POR': {'dri': 0.30, 'def': 0.30, 'sho': 0.15, 'phy': 0.15, 'pas': 0.05, 'pac': 0.05},
+    'DEL': {
+      'pac': 0.25,
+      'sho': 0.35,
+      'pas': 0.15,
+      'dri': 0.15,
+      'def': 0.05,
+      'phy': 0.05,
+    },
+    'MED': {
+      'pac': 0.15,
+      'sho': 0.15,
+      'pas': 0.30,
+      'dri': 0.20,
+      'def': 0.10,
+      'phy': 0.10,
+    },
+    'DEF': {
+      'pac': 0.15,
+      'sho': 0.05,
+      'pas': 0.15,
+      'dri': 0.05,
+      'def': 0.40,
+      'phy': 0.20,
+    },
+    'POR': {
+      'pac': 0.10,
+      'sho': 0.05,
+      'pas': 0.10,
+      'dri': 0.05,
+      'def': 0.50,
+      'phy': 0.20,
+    },
   };
 
   static const Map<String, double> defaultWeights = {
@@ -74,7 +102,8 @@ class OvrCalculator {
       };
     }
 
-    final weights = positionWeights[player.position.toUpperCase()] ?? defaultWeights;
+    final weights =
+        positionWeights[player.position.toUpperCase()] ?? defaultWeights;
     final double totalPointsToAdd = ovrChange * 6.0;
     double accumulatedError = 0.0;
 
@@ -104,12 +133,19 @@ class OvrCalculator {
         multiplier = 0.7;
       }
 
-      final effectiveShare = targetShare > 0 ? targetShare * multiplier : targetShare;
+      final effectiveShare = targetShare > 0
+          ? targetShare * multiplier
+          : targetShare;
       final pointWithDecimal = effectiveShare + accumulatedError;
-      final int pointRounded = effectiveShare > 0 ? pointWithDecimal.ceil() : pointWithDecimal.floor();
+      final int pointRounded = effectiveShare > 0
+          ? pointWithDecimal.ceil()
+          : pointWithDecimal.floor();
       accumulatedError = pointWithDecimal - pointRounded;
 
-      final newVal = (currentVal + pointRounded).clamp(minAttribute, maxAttribute);
+      final newVal = (currentVal + pointRounded).clamp(
+        minAttribute,
+        maxAttribute,
+      );
       resultMap[attr] = newVal;
     }
 
@@ -125,7 +161,8 @@ class OvrCalculator {
 
     for (final tag in tags) {
       tag.effects.forEach((attr, change) {
-        final currentVal = updated[attr] ?? 50;
+        final currentVal = updated[attr];
+        if (currentVal == null) return;
         double multiplier = 1.0;
         if (currentVal >= 92) {
           multiplier = 0.1;
@@ -138,22 +175,33 @@ class OvrCalculator {
         }
 
         final double rawChange = change * multiplier;
-        final int integerChange = rawChange > 0 ? rawChange.ceil() : rawChange.floor();
-        final newVal = (currentVal + integerChange).clamp(minAttribute, maxAttribute);
+        final int integerChange = rawChange > 0
+            ? rawChange.ceil()
+            : rawChange.floor();
+        final newVal = (currentVal + integerChange).clamp(
+          minAttribute,
+          maxAttribute,
+        );
         updated[attr] = newVal;
       });
     }
 
+    // El servidor aplica el tope al efecto neto de todas las etiquetas juntas.
+    for (final attr in currentAttributes.keys) {
+      final initial = currentAttributes[attr]!;
+      updated[attr] = initial + (updated[attr]! - initial).clamp(-5, 5);
+    }
     return updated;
   }
 
-  /// Calcula el OVR final a partir de los 6 atributos ponderados por posición
+  /// Media simple usada por finalizeMatchEvaluation. La posición sólo afecta
+  /// la distribución de puntos, no el cálculo final de OVR.
   static int computeOvr(Map<String, int> attrs, [String position = 'MED']) {
-    final weights = positionWeights[position.toUpperCase()] ?? defaultWeights;
-    double weightedSum = 0.0;
-    weights.forEach((attr, weight) {
-      weightedSum += (attrs[attr] ?? 50) * weight;
-    });
-    return weightedSum.round().clamp(minOvr, maxOvr);
+    const attributes = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
+    final total = attributes.fold<int>(
+      0,
+      (sum, attr) => sum + (attrs[attr] ?? 50),
+    );
+    return (total / attributes.length).round().clamp(minOvr, maxOvr);
   }
 }

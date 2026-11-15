@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'callable_functions.dart';
+import 'notifications_service.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(FirebaseAuth.instance);
@@ -88,6 +89,8 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid != null) await NotificationsService.unregister(uid);
     await _auth.signOut();
   }
 }

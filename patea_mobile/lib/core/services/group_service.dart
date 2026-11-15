@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../models/group_permissions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,7 +22,9 @@ class GroupService {
   }
 
   Future<String> joinGroupByInviteCode(String inviteCode) async {
-    final result = await callFunction('joinGroupByInviteCode', {'inviteCode': inviteCode});
+    final result = await callFunction('joinGroupByInviteCode', {
+      'inviteCode': inviteCode,
+    });
     return result['groupId'] as String;
   }
 
@@ -43,12 +47,26 @@ class GroupService {
     return result['id'] as String;
   }
 
-  Future<void> updateTeam({required String teamId, required String name, required Map<String, dynamic> jersey}) async {
-    await callFunction('updateTeam', {'teamId': teamId, 'name': name, 'jersey': jersey});
+  Future<void> updateTeam({
+    required String teamId,
+    required String name,
+    required Map<String, dynamic> jersey,
+  }) async {
+    await callFunction('updateTeam', {
+      'teamId': teamId,
+      'name': name,
+      'jersey': jersey,
+    });
   }
 
-  Future<void> updateTeamMembers({required String teamId, required List<Map<String, dynamic>> members}) async {
-    await callFunction('updateTeamMembers', {'teamId': teamId, 'members': members});
+  Future<void> updateTeamMembers({
+    required String teamId,
+    required List<Map<String, dynamic>> members,
+  }) async {
+    await callFunction('updateTeamMembers', {
+      'teamId': teamId,
+      'members': members,
+    });
   }
 
   Future<void> deleteTeam(String teamId) async {
@@ -61,8 +79,10 @@ class GroupService {
 /// Lee el documento crudo porque `GroupModel` no mapea `memberRoles`, y el rol
 /// sale de ahí. Sirve para decidir qué botones mostrar; el permiso real lo
 /// valida la Cloud Function antes de escribir.
-final myGroupRoleProvider =
-    StreamProvider.family<GroupRole?, String>((ref, groupId) {
+final myGroupRoleProvider = StreamProvider.family<GroupRole?, String>((
+  ref,
+  groupId,
+) {
   // Sin sesión no se abre nada: un listener que sale sin token queda
   // muerto para siempre. Ver firestoreServiceProvider.
   if (ref.watch(currentUidProvider) == null) return const Stream.empty();
@@ -87,8 +107,10 @@ class TeamTrophy {
   const TeamTrophy({required this.name, required this.isCup});
 }
 
-final teamTrophiesProvider =
-    StreamProvider.family<List<TeamTrophy>, String>((ref, teamId) {
+final teamTrophiesProvider = StreamProvider.family<List<TeamTrophy>, String>((
+  ref,
+  teamId,
+) {
   // Sin sesión no se abre nada: un listener que sale sin token queda
   // muerto para siempre. Ver firestoreServiceProvider.
   if (ref.watch(currentUidProvider) == null) return const Stream.empty();
@@ -101,14 +123,75 @@ final teamTrophiesProvider =
       .where('championTeamId', isEqualTo: teamId)
       .where('status', isEqualTo: 'completed')
       .snapshots()
-      .map((s) => s.docs
-          .map((d) => TeamTrophy(
+      .map(
+        (s) => s.docs
+            .map(
+              (d) => TeamTrophy(
                 name: (d.data()['name'] ?? '').toString(),
                 isCup: isCup,
-              ))
-          .toList());
+              ),
+            )
+            .toList(),
+      );
 
-  return champions('cups', true).asyncExpand(
-    (cups) => champions('leagues', false).map((leagues) => [...cups, ...leagues]),
+  return combineTeamTrophies(
+    champions('cups', true),
+    champions('leagues', false),
   );
 });
+
+/// Conserva el último valor de ambas consultas y escucha cambios de cualquiera.
+Stream<List<TeamTrophy>> combineTeamTrophies(
+  Stream<List<TeamTrophy>> cupsStream,
+  Stream<List<TeamTrophy>> leaguesStream,
+) {
+  late StreamController<List<TeamTrophy>> controller;
+  StreamSubscription<List<TeamTrophy>>? cupsSub;
+  StreamSubscription<List<TeamTrophy>>? leaguesSub;
+  List<TeamTrophy>? cups;
+  List<TeamTrophy>? leagues;
+  var completed = 0;
+  void emit() {
+    if (cups != null && leagues != null) {
+      controller.add([...cups!, ...leagues!]);
+    }
+  }
+
+  void done() {
+    if (++completed == 2) controller.close();
+  }
+
+  controller = StreamController<List<TeamTrophy>>(
+    onListen: () {
+      cupsSub = cupsStream.listen(
+        (value) {
+          cups = value;
+          emit();
+        },
+        onError: controller.addError,
+        onDone: done,
+      );
+      leaguesSub = leaguesStream.listen(
+        (value) {
+          leagues = value;
+          emit();
+        },
+        onError: controller.addError,
+        onDone: done,
+      );
+    },
+    onPause: () {
+      cupsSub?.pause();
+      leaguesSub?.pause();
+    },
+    onResume: () {
+      cupsSub?.resume();
+      leaguesSub?.resume();
+    },
+    onCancel: () async {
+      await cupsSub?.cancel();
+      await leaguesSub?.cancel();
+    },
+  );
+  return controller.stream;
+}

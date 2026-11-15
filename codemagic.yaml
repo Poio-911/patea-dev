@@ -75,7 +75,7 @@ workflows:
     environment:
       groups:
         - patea_ios
-      flutter: stable
+      flutter: 3.41.4
       xcode: latest
       cocoapods: default
 

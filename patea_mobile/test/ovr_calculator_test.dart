@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:patea_mobile/core/constants/performance_tags.dart';
+import 'package:patea_mobile/core/models/player_model.dart';
 import 'package:patea_mobile/core/utils/ovr_calculator.dart';
 
 /// La progresión de OVR es el corazón del producto y está implementada por
@@ -15,7 +17,11 @@ void main() {
     test('coinciden con OVR_PROGRESSION de evaluations.ts', () {
       expect(OvrCalculator.minOvr, 40);
       expect(OvrCalculator.maxOvr, 99);
-      expect(OvrCalculator.minAttribute, 20, reason: 'el servidor usa 20, no 30');
+      expect(
+        OvrCalculator.minAttribute,
+        20,
+        reason: 'el servidor usa 20, no 30',
+      );
       expect(OvrCalculator.maxAttribute, 99);
       expect(OvrCalculator.maxStep, 1.5);
     });
@@ -30,12 +36,30 @@ void main() {
 
     test('cuanto más alto el OVR, menos se mueve con el mismo rating', () {
       // rating 8.0 => delta 3.0, multiplicado por la escala del tramo.
-      expect(OvrCalculator.calculateOvrChange(45, 8.0), closeTo(1.5, 0.001)); // 3.0*0.50 = 1.5
-      expect(OvrCalculator.calculateOvrChange(55, 8.0), closeTo(1.2, 0.001)); // 3.0*0.40
-      expect(OvrCalculator.calculateOvrChange(65, 8.0), closeTo(0.9, 0.001)); // 3.0*0.30
-      expect(OvrCalculator.calculateOvrChange(75, 8.0), closeTo(0.6, 0.001)); // 3.0*0.20
-      expect(OvrCalculator.calculateOvrChange(85, 8.0), closeTo(0.3, 0.001)); // 3.0*0.10
-      expect(OvrCalculator.calculateOvrChange(95, 8.0), closeTo(0.15, 0.001)); // 3.0*0.05
+      expect(
+        OvrCalculator.calculateOvrChange(45, 8.0),
+        closeTo(1.5, 0.001),
+      ); // 3.0*0.50 = 1.5
+      expect(
+        OvrCalculator.calculateOvrChange(55, 8.0),
+        closeTo(1.2, 0.001),
+      ); // 3.0*0.40
+      expect(
+        OvrCalculator.calculateOvrChange(65, 8.0),
+        closeTo(0.9, 0.001),
+      ); // 3.0*0.30
+      expect(
+        OvrCalculator.calculateOvrChange(75, 8.0),
+        closeTo(0.6, 0.001),
+      ); // 3.0*0.20
+      expect(
+        OvrCalculator.calculateOvrChange(85, 8.0),
+        closeTo(0.3, 0.001),
+      ); // 3.0*0.10
+      expect(
+        OvrCalculator.calculateOvrChange(95, 8.0),
+        closeTo(0.15, 0.001),
+      ); // 3.0*0.05
     });
 
     test('el tope de ±1.5 por partido se respeta', () {
@@ -63,24 +87,140 @@ void main() {
     test('cada posición reparte exactamente 1.0', () {
       OvrCalculator.positionWeights.forEach((position, weights) {
         final total = weights.values.fold<double>(0, (a, b) => a + b);
-        expect(total, closeTo(1.0, 0.0001), reason: 'la posición $position no suma 1.0');
+        expect(
+          total,
+          closeTo(1.0, 0.0001),
+          reason: 'la posición $position no suma 1.0',
+        );
       });
     });
 
     test('están las 4 posiciones con los 6 atributos', () {
-      expect(OvrCalculator.positionWeights.keys.toSet(), {'DEL', 'MED', 'DEF', 'POR'});
+      expect(OvrCalculator.positionWeights.keys.toSet(), {
+        'DEL',
+        'MED',
+        'DEF',
+        'POR',
+      });
       for (final weights in OvrCalculator.positionWeights.values) {
-        expect(weights.keys.toSet(), {'pac', 'sho', 'pas', 'dri', 'def', 'phy'});
+        expect(weights.keys.toSet(), {
+          'pac',
+          'sho',
+          'pas',
+          'dri',
+          'def',
+          'phy',
+        });
       }
     });
 
     test('cada posición prioriza su atributo característico', () {
-      double w(String pos, String attr) => OvrCalculator.positionWeights[pos]![attr]!;
+      double w(String pos, String attr) =>
+          OvrCalculator.positionWeights[pos]![attr]!;
       // El delantero define por tiro; el defensor y el arquero, por defensa.
       expect(w('DEL', 'sho'), greaterThan(w('DEL', 'def')));
       expect(w('MED', 'pas'), greaterThan(w('MED', 'sho')));
       expect(w('DEF', 'def'), greaterThan(w('DEF', 'sho')));
       expect(w('POR', 'def'), greaterThan(w('POR', 'dri')));
     });
+  });
+  test('OVR final es media simple en todas las posiciones', () {
+    final attrs = {
+      'pac': 40,
+      'sho': 90,
+      'pas': 60,
+      'dri': 70,
+      'def': 20,
+      'phy': 80,
+    };
+    for (final position in ['DEL', 'MED', 'DEF', 'POR']) {
+      expect(OvrCalculator.computeOvr(attrs, position), 60);
+    }
+  });
+
+  test(
+    'pesos coinciden exactamente con finalizeMatchEvaluation desplegada',
+    () {
+      expect(OvrCalculator.positionWeights['DEL'], {
+        'pac': .25,
+        'sho': .35,
+        'pas': .15,
+        'dri': .15,
+        'def': .05,
+        'phy': .05,
+      });
+      expect(OvrCalculator.positionWeights['POR'], {
+        'pac': .10,
+        'sho': .05,
+        'pas': .10,
+        'dri': .05,
+        'def': .50,
+        'phy': .20,
+      });
+    },
+  );
+
+  test('puntos amortiguan aumentos pero no penalizaciones', () {
+    final player = PlayerModel(
+      id: 'p',
+      name: 'P',
+      position: 'POR',
+      ovr: 85,
+      pac: 85,
+      sho: 85,
+      pas: 85,
+      dri: 85,
+      def: 85,
+      phy: 85,
+    );
+    expect(
+      OvrCalculator.calculateAttributeChangesFromPoints(
+        player: player,
+        ovrChange: 1,
+      ),
+      {'pac': 86, 'sho': 85, 'pas': 85, 'dri': 85, 'def': 85, 'phy': 86},
+    );
+    expect(
+      OvrCalculator.calculateAttributeChangesFromPoints(
+        player: player,
+        ovrChange: -1,
+      ),
+      {'pac': 84, 'sho': 85, 'pas': 84, 'dri': 85, 'def': 82, 'phy': 83},
+    );
+  });
+
+  test('etiquetas amortiguan secuencialmente y limitan el neto a cinco', () {
+    PerformanceTagItem tag(Map<String, int> effects) => PerformanceTagItem(
+      id: 't',
+      name: 'T',
+      description: '',
+      impact: 'positive',
+      positions: ['ALL'],
+      effects: effects,
+    );
+    final current = {
+      'pac': 50,
+      'sho': 50,
+      'pas': 92,
+      'dri': 50,
+      'def': 50,
+      'phy': 50,
+    };
+    final result = OvrCalculator.calculateAttributeChangesFromTags(
+      currentAttributes: current,
+      tags: [
+        tag({'pac': 20, 'sho': -20, 'pas': -3, 'unknown': 10}),
+        tag({'pac': -2}),
+      ],
+    );
+    expect(result, {
+      'pac': 55,
+      'sho': 45,
+      'pas': 91,
+      'dri': 50,
+      'def': 50,
+      'phy': 50,
+    });
+    expect(current['pac'], 50);
   });
 }

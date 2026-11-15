@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/patea_colors.dart';
+import '../../core/theme/match_theme.dart' show fallbackTeamAColor, fallbackTeamBColor;
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_tabs.dart';
@@ -418,11 +419,11 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
     final b = match.teamB;
 
     final aColor = a != null
-        ? _parseHexColor(a.jersey?.primaryColor ?? a.color, const Color(0xFF2563EB))
-        : const Color(0xFF2563EB);
+        ? _parseHexColor(a.jersey?.primaryColor ?? a.color, fallbackTeamAColor)
+        : fallbackTeamAColor;
     final bColor = b != null
-        ? _parseHexColor(b.jersey?.primaryColor ?? b.color, const Color(0xFFEA580C))
-        : const Color(0xFFEA580C);
+        ? _parseHexColor(b.jersey?.primaryColor ?? b.color, fallbackTeamBColor)
+        : fallbackTeamBColor;
 
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),

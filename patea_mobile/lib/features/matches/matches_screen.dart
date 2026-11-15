@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/dates.dart';
+import '../../core/utils/clock.dart';
 import '../../core/theme/match_theme.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/match_service.dart';
@@ -265,7 +266,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
       backgroundColor: Colors.transparent,
       body: matchesAsync.when(
         data: (allMatches) {
-          final now = DateTime.now();
+          final now = ref.watch(clockProvider)();
           final today = DateTime(now.year, now.month, now.day);
           final weekEnd = today.add(const Duration(days: 7));
 

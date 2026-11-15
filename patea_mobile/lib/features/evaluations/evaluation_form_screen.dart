@@ -48,6 +48,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _alreadySubmitted = false;
+  String? _loadError;
   List<PlayerEvaluationDraft> _drafts = [];
   int _evaluatorGoals = 0;
   int _evaluatorAssists = 0;
@@ -67,43 +68,63 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
     final uid = ref.read(authServiceProvider).currentUser?.uid;
-    if (uid == null) return;
-    final service = ref.read(evaluationServiceProvider);
-
-    final alreadySubmitted = await service.hasSubmittedFor(widget.matchId, uid);
-    if (alreadySubmitted) {
+    if (uid == null) {
       setState(() {
-        _alreadySubmitted = true;
         _isLoading = false;
+        _loadError = 'Debés iniciar sesión para cargar tus evaluaciones.';
       });
       return;
     }
+    try {
+      final service = ref.read(evaluationServiceProvider);
 
-    final assignments = await service.getPendingAssignmentsForMatch(widget.matchId, uid);
-    final players = await service.getPlayersByIds(assignments.map((a) => a.subjectId).toList());
-    final playersById = {for (final p in players) p.id: p};
+      final alreadySubmitted = await service.hasSubmittedFor(widget.matchId, uid);
+      if (!mounted) return;
+      if (alreadySubmitted) {
+        setState(() {
+          _alreadySubmitted = true;
+          _isLoading = false;
+        });
+        return;
+      }
 
-    final drafts = assignments
-        .map((a) {
-          final p = playersById[a.subjectId];
-          if (p == null) return null;
-          return PlayerEvaluationDraft(
-            assignmentId: a.id,
-            subjectId: a.subjectId,
-            displayName: p.name,
-            photoURL: p.photoUrl ?? '',
-            position: p.position,
-            tagPool: _randomTagPool(p.position),
-          );
-        })
-        .whereType<PlayerEvaluationDraft>()
-        .toList();
+      final assignments = await service.getPendingAssignmentsForMatch(widget.matchId, uid);
+      if (!mounted) return;
+      final players = await service.getPlayersByIds(assignments.map((a) => a.subjectId).toList());
+      final playersById = {for (final p in players) p.id: p};
 
-    if (mounted) {
+      final drafts = assignments
+          .map((a) {
+            final p = playersById[a.subjectId];
+            if (p == null) return null;
+            return PlayerEvaluationDraft(
+              assignmentId: a.id,
+              subjectId: a.subjectId,
+              displayName: p.name,
+              photoURL: p.photoUrl ?? '',
+              position: p.position,
+              tagPool: _randomTagPool(p.position),
+            );
+          })
+          .whereType<PlayerEvaluationDraft>()
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _drafts = drafts;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
-        _drafts = drafts;
         _isLoading = false;
+        _loadError = 'No se pudieron cargar tus evaluaciones. Probá de nuevo.';
       });
     }
   }
@@ -149,7 +170,14 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
       appBar: AppBar(title: Text('EVALUAR PARTIDO', style: AppTypography.headline(size: 16, weight: FontWeight.w800))),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _alreadySubmitted
+          : _loadError != null
+              ? _MessageState(
+                  icon: Icons.error_outline,
+                  title: 'No se pudo cargar',
+                  description: _loadError!,
+                  onRetry: _load,
+                )
+              : _alreadySubmitted
               ? _MessageState(
                   icon: Icons.hourglass_top_outlined,
                   title: 'Evaluación en proceso',
@@ -247,8 +275,9 @@ class _MessageState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
+  final VoidCallback? onRetry;
 
-  const _MessageState({required this.icon, required this.title, required this.description});
+  const _MessageState({required this.icon, required this.title, required this.description, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -263,6 +292,10 @@ class _MessageState extends StatelessWidget {
             Text(title, style: AppTypography.headline(size: 16)),
             const SizedBox(height: 6),
             Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
+            ],
           ],
         ),
       ),

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Identidad de los dos equipos cuando todavía no tienen camiseta elegida.
+/// Se conserva en ambos temas, igual que los colores propios de una camiseta.
+const fallbackTeamAColor = Color(0xFF2563EB);
+const fallbackTeamBColor = Color(0xFFEA580C);
+
 /// Port de src/lib/match-theme.ts (web): identidad visual por tipo de partido.
 /// Los colores son los mismos "brand colors" de Tailwind que usa la web
 /// (blue-500, teal-500, indigo-500, amber-500, red-500, green-500).

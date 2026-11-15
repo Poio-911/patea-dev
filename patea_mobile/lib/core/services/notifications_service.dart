@@ -24,6 +24,8 @@ class NotificationsService {
   static final _messaging = FirebaseMessaging.instance;
   static StreamSubscription<String>? _tokenRefreshSub;
   static StreamSubscription<User?>? _authSub;
+  static String? _unregisteringUid;
+  static Future<void> _tokenWrites = Future<void>.value();
 
   static Future<void> initialize() async {
     try {
@@ -33,6 +35,7 @@ class NotificationsService {
       // volver a guardarlo cuando cambia de usuario.
       _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
         if (user != null) {
+          _unregisteringUid = null;
           _registerFor(user.uid);
         }
       });
@@ -94,26 +97,37 @@ class NotificationsService {
   /// El id del documento es el token mismo: guardar dos veces el mismo token
   /// no crea duplicados, y borrarlo cuando el servidor lo marca inválido es
   /// un delete directo sin tener que leer un array entero.
-  static Future<void> _saveToken(String uid, String token) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('fcmTokens')
-          .doc(token)
-          .set({
-        'token': token,
-        'platform': defaultTargetPlatform.name,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e, s) {
-      FirebaseCrashlytics.instance.recordError(e, s, reason: 'saveFcmToken');
-    }
+  static Future<void> _saveToken(String uid, String token) {
+    // Serializar escrituras permite esperar las que ya estaban en curso antes
+    // de borrar; las que llegan durante el cierre no pueden recrear el token.
+    _tokenWrites = _tokenWrites.then((_) async {
+      if (_unregisteringUid == uid ||
+          FirebaseAuth.instance.currentUser?.uid != uid) {
+        return;
+      }
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('fcmTokens')
+            .doc(token)
+            .set({
+          'token': token,
+          'platform': defaultTargetPlatform.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e, s) {
+        FirebaseCrashlytics.instance.recordError(e, s, reason: 'saveFcmToken');
+      }
+    });
+    return _tokenWrites;
   }
 
   /// Al cerrar sesión hay que sacar el token de este dispositivo o el usuario
   /// sigue recibiendo notificaciones de una cuenta que ya no está abierta.
   static Future<void> unregister(String uid) async {
+    _unregisteringUid = uid;
+    await _tokenWrites;
     try {
       final token = await _messaging.getToken();
       if (token == null) return;

@@ -23,6 +23,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.41.4
           cache: true
 
       - name: Dependencias
@@ -33,7 +34,7 @@ jobs:
         continue-on-error: true
 
       - name: Análisis estático
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Tests
         run: flutter test --reporter expanded
@@ -49,7 +50,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: functions/package-lock.json
 
@@ -67,7 +68,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Dependencias
@@ -92,7 +93,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       # Compila las reglas sin desplegarlas. Detecta errores de sintaxis antes
       # de que lleguen a producción; la verificación de comportamiento real

@@ -41,7 +41,7 @@ El sistema de progresión de OVR implementa un modelo **anti-inflación** y amor
                                       │
                                       ▼
              ┌────────────────────────────────────────────────┐
-             │ Efectos Directos de 45 Tags de Rendimiento     │
+             │ Efectos del catálogo de tags de rendimiento    │
              │ OVR Final = Media(PAC, SHO, PAS, DRI, DEF, PHY)│
              └────────────────────────────────────────────────┘
 ```
@@ -100,7 +100,15 @@ Cuando se registra el resultado de un partido de copa:
 ```
 
 ### Servicios de Mutación:
-- **`EvaluationService`**: Ejecuta `batch` atómico en Firestore escribiendo la evaluación, actualizando los 6 atributos en `/players/{id}`, creando el historial en `/players/{id}/ovrHistory/` y publicando la entrada en `/feedActivities/`.
+- **`EvaluationService`**: Invoca `submitEvaluationSubmission` y `finalizeMatchEvaluation`. Las evaluaciones, los atributos y el historial de OVR los escribe el servidor; Flutter no publica esos documentos directamente. La copia Dart del cálculo sirve para previsualizar y debe mantener los pesos y la media simple del backend.
 - **`MatchService`**: Controla el inicio de partido, cronómetro, eventos en vivo (goles con autor y asistencia) y cierre de partido.
 - **`GroupService`**: Crea grupos con código de 6 caracteres, asocia jugadores manuales y actualiza indumentarias.
 - **`TournamentService`**: Administra llaves y fixture de torneos.
+
+## 4. Validación de las correcciones de noviembre de 2026
+
+El código del backend está en `Poio-911/patea-dev`, separado de este cliente. Para recuperar su implementación se contrastaron las fuentes de cada función desplegada: un ZIP de una función no representa necesariamente la versión desplegada de las demás.
+
+Las correcciones locales incluyen aislamiento de sesión del historial, desregistro FCM al salir, manejo de errores y reintento de evaluaciones, franjas de disponibilidad coherentes, cálculo OVR alineado y transacciones de resultados de copas. Los goldens usan un reloj fijo para que no cambien cuando los partidos de prueba pasan a ser históricos.
+
+Los cambios del servidor preparados en paralelo validan las asignaciones y los efectos autorizados de etiquetas, deduplican submissions y conservan estadísticas y marcador al finalizar. Las reglas de privacidad y los consumidores web se deben publicar coordinadamente. Estos cambios de código no significan que ya se hayan desplegado en producción.

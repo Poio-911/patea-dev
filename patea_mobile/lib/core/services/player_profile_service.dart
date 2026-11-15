@@ -13,7 +13,9 @@ import 'firestore_service.dart';
 /// oculte. La función aplica el mismo enmascarado que la web
 /// (`getPlayerEvaluationsAction`) antes de devolver nada.
 final playerActivityProvider =
-    FutureProvider.family<List<MatchFeedback>, String>((ref, playerId) async {
+    FutureProvider.autoDispose.family<List<MatchFeedback>, String>((ref, playerId) async {
+  // El anonimato de la respuesta depende de quién consulta.
+  if (ref.watch(currentUidProvider) == null) return const <MatchFeedback>[];
   final result = await callFunction(
     'getPlayerEvaluations',
     {'playerId': playerId},

@@ -13,12 +13,20 @@ class CupBracketScreen extends ConsumerWidget {
 
   const CupBracketScreen({super.key, required this.cupId});
 
-  Future<void> _showRecordResultDialog(BuildContext context, WidgetRef ref, BracketMatchModel match) async {
+  Future<void> _showRecordResultDialog(
+    BuildContext context,
+    WidgetRef ref,
+    BracketMatchModel match,
+  ) async {
     if (match.team1Id == null || match.team2Id == null) {
-      PateaSnack.info(context, 'Este partido aún no tiene ambos equipos definidos.');
+      PateaSnack.info(
+        context,
+        'Este partido aún no tiene ambos equipos definidos.',
+      );
       return;
     }
 
+    bool saving = false;
     int score1 = match.scoreTeam1 ?? 0;
     int score2 = match.scoreTeam2 ?? 0;
 
@@ -29,7 +37,10 @@ class CupBracketScreen extends ConsumerWidget {
           builder: (context, setModalState) {
             return AlertDialog(
               backgroundColor: context.c.card,
-              title: Text('CARGAR RESULTADO', style: AppTypography.headline(size: 16)),
+              title: Text(
+                'CARGAR RESULTADO',
+                style: AppTypography.headline(size: 16),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -46,9 +57,14 @@ class CupBracketScreen extends ConsumerWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline),
-                            onPressed: score1 > 0 ? () => setModalState(() => score1--) : null,
+                            onPressed: score1 > 0
+                                ? () => setModalState(() => score1--)
+                                : null,
                           ),
-                          Text('$score1', style: AppTypography.sportNumber(size: 18)),
+                          Text(
+                            '$score1',
+                            style: AppTypography.sportNumber(size: 18),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline),
                             onPressed: () => setModalState(() => score1++),
@@ -71,9 +87,14 @@ class CupBracketScreen extends ConsumerWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline),
-                            onPressed: score2 > 0 ? () => setModalState(() => score2--) : null,
+                            onPressed: score2 > 0
+                                ? () => setModalState(() => score2--)
+                                : null,
                           ),
-                          Text('$score2', style: AppTypography.sportNumber(size: 18)),
+                          Text(
+                            '$score2',
+                            style: AppTypography.sportNumber(size: 18),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline),
                             onPressed: () => setModalState(() => score2++),
@@ -86,27 +107,40 @@ class CupBracketScreen extends ConsumerWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: saving ? null : () => Navigator.pop(context),
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
-                  onPressed: score1 == score2
+                  onPressed: saving || score1 == score2
                       ? null // No hay empates en eliminación directa
                       : () async {
                           final isTeam1Winner = score1 > score2;
-                          final winnerId = isTeam1Winner ? match.team1Id! : match.team2Id!;
-                          final winnerName = isTeam1Winner ? match.team1Name! : match.team2Name!;
+                          final winnerId = isTeam1Winner
+                              ? match.team1Id!
+                              : match.team2Id!;
+                          final winnerName = isTeam1Winner
+                              ? (match.team1Name ?? 'Equipo 1')
+                              : (match.team2Name ?? 'Equipo 2');
+                          setModalState(() => saving = true);
+                          try {
+                            await ref
+                                .read(tournamentServiceProvider)
+                                .saveBracketMatchResult(
+                                  cupId: cupId,
+                                  matchId: match.id,
+                                  winnerId: winnerId,
+                                  winnerName: winnerName,
+                                  scoreTeam1: score1,
+                                  scoreTeam2: score2,
+                                );
 
-                          await ref.read(tournamentServiceProvider).saveBracketMatchResult(
-                            cupId: cupId,
-                            matchId: match.id,
-                            winnerId: winnerId,
-                            winnerName: winnerName,
-                            scoreTeam1: score1,
-                            scoreTeam2: score2,
-                          );
-
-                          if (context.mounted) Navigator.pop(context);
+                            if (context.mounted) Navigator.pop(context);
+                          } catch (error) {
+                            if (context.mounted) {
+                              setModalState(() => saving = false);
+                              PateaSnack.error(context, error.toString());
+                            }
+                          }
                         },
                   child: const Text('GUARDAR Y AVANZAR'),
                 ),
@@ -120,10 +154,10 @@ class CupBracketScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cupStream = ref.watch(firestoreServiceProvider).getSingleCompetitionStream(
-      id: cupId,
-      collection: 'cups',
-    );
+    final uid = ref.watch(currentUidProvider);
+    final cupStream = ref
+        .watch(firestoreServiceProvider)
+        .getSingleCompetitionStream(id: cupId, collection: 'cups');
 
     return Scaffold(
       // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
@@ -149,15 +183,25 @@ class CupBracketScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.emoji_events_outlined, size: 56, color: context.c.textSecondary),
+                  Icon(
+                    Icons.emoji_events_outlined,
+                    size: 56,
+                    color: context.c.textSecondary,
+                  ),
                   const SizedBox(height: 14),
                   Text(
                     'Bracket no generado aún',
-                    style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+                    style: AppTypography.headline(
+                      size: 16,
+                      weight: FontWeight.w700,
+                    ),
                   ),
                   Text(
                     'Iniciá la copa desde el panel para sortear las llaves',
-                    style: AppTypography.body(size: 13, color: context.c.textSecondary),
+                    style: AppTypography.body(
+                      size: 13,
+                      color: context.c.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -173,7 +217,12 @@ class CupBracketScreen extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(24),
               child: Row(
-                children: _buildBracketColumns(context, ref, cup.bracket),
+                children: _buildBracketColumns(
+                  context,
+                  ref,
+                  cup.bracket,
+                  canEdit: uid != null && uid == cup.ownerUid,
+                ),
               ),
             ),
           );
@@ -182,14 +231,27 @@ class CupBracketScreen extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildBracketColumns(BuildContext context, WidgetRef ref, List<BracketMatchModel> matches) {
+  List<Widget> _buildBracketColumns(
+    BuildContext context,
+    WidgetRef ref,
+    List<BracketMatchModel> matches, {
+    required bool canEdit,
+  }) {
     final rounds = <String, List<BracketMatchModel>>{};
     for (final m in matches) {
       rounds.putIfAbsent(m.round, () => []).add(m);
     }
 
-    final roundOrder = ['round_of_32', 'round_of_16', 'round_of_8', 'semifinals', 'final'];
-    final activeRounds = roundOrder.where((r) => rounds.containsKey(r)).toList();
+    final roundOrder = [
+      'round_of_32',
+      'round_of_16',
+      'round_of_8',
+      'semifinals',
+      'final',
+    ];
+    final activeRounds = roundOrder
+        .where((r) => rounds.containsKey(r))
+        .toList();
 
     return activeRounds.map((round) {
       final roundMatches = rounds[round]!;
@@ -203,12 +265,17 @@ class CupBracketScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
                 _getRoundLabel(round).toUpperCase(),
-                style: AppTypography.headline(size: 13, color: context.c.primary),
+                style: AppTypography.headline(
+                  size: 13,
+                  color: context.c.primary,
+                ),
               ),
             ),
             ...roundMatches.map(
               (m) => InkWell(
-                onTap: () => _showRecordResultDialog(context, ref, m),
+                onTap: canEdit && m.winnerId == null
+                    ? () => _showRecordResultDialog(context, ref, m)
+                    : null,
                 borderRadius: AppRadii.cardAll,
                 child: _BracketMatchCard(match: m),
               ),
@@ -253,7 +320,9 @@ class _BracketMatchCard extends StatelessWidget {
         color: context.c.card,
         borderRadius: AppRadii.cardAll,
         border: Border.all(
-          color: hasWinner ? context.c.goldBorder.withValues(alpha: 0.8) : context.c.border,
+          color: hasWinner
+              ? context.c.goldBorder.withValues(alpha: 0.8)
+              : context.c.border,
           width: hasWinner ? 1.5 : 1.0,
         ),
         boxShadow: hasWinner
@@ -261,7 +330,7 @@ class _BracketMatchCard extends StatelessWidget {
                 BoxShadow(
                   color: context.c.goldBorder.withValues(alpha: 0.2),
                   blurRadius: 10,
-                )
+                ),
               ]
             : null,
       ),
@@ -289,11 +358,7 @@ class _TeamRow extends StatelessWidget {
   final int? score;
   final bool isWinner;
 
-  const _TeamRow({
-    required this.name,
-    this.score,
-    required this.isWinner,
-  });
+  const _TeamRow({required this.name, this.score, required this.isWinner});
 
   @override
   Widget build(BuildContext context) {
