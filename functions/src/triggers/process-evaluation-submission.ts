@@ -75,7 +75,10 @@ export async function processSubmission(
     }
 
     for (const evaluation of form.evaluations) {
-      const evaluationRef = db.collection('evaluations').doc(submissionKey(matchId, evaluation.assignmentId));
+      // The public assignment is visible to the organizer. Its ID must not
+      // predict the ID returned by the anonymous player-history endpoint.
+      // The transactional processing marker provides idempotency independently.
+      const evaluationRef = db.collection('evaluations').doc();
       const data: Record<string, unknown> = {
         assignmentId: evaluation.assignmentId,
         playerId: evaluation.subjectId,
@@ -88,9 +91,14 @@ export async function processSubmission(
       if (evaluation.evaluationType === 'tags') data.performanceTags = evaluation.performanceTags;
       if (evaluation.evaluationType === 'text') data.textDescription = evaluation.textDescription;
       transaction.set(evaluationRef, data);
-      transaction.update(db.doc(`matches/${matchId}/assignments/${evaluation.assignmentId}`), {
-        status: 'completed',
+      const assignmentRef = db.doc(`matches/${matchId}/assignments/${evaluation.assignmentId}`);
+      transaction.set(db.doc(`${assignmentRef.path}/private/evaluation`), {
         evaluationId: evaluationRef.id,
+        boundAt: new Date().toISOString(),
+      });
+      transaction.update(assignmentRef, {
+        status: 'completed',
+        evaluationId: admin.firestore.FieldValue.delete(),
       });
     }
 

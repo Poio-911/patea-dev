@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
+const { FieldValue } = require('firebase-admin/firestore');
 const { normalizeSubmission, validateEvaluationSubmission, submissionKey } = require('../lib/lib/evaluation-submission');
 const { processSubmission } = require('../lib/triggers/process-evaluation-submission');
 
@@ -27,7 +29,7 @@ function database(extra = {}) {
   const doc = path => ({ path, id: path.split('/').at(-1) });
   const query = (path, filters = [], limit = Infinity) => ({
     path, filters, count: limit,
-    doc: id => doc(`${path}/${id}`),
+    doc: (id = randomUUID()) => doc(`${path}/${id}`),
     where: (field, op, value) => { assert.equal(op, '=='); return query(path, [...filters, [field, value]], limit); },
     limit: size => query(path, filters, size),
   });
@@ -65,7 +67,11 @@ function database(extra = {}) {
           else if (operation === 'set') state.set(path, data);
           else {
             assert.ok(state.has(path), `Updating nonexistent doc ${path}`);
-            state.set(path, { ...state.get(path), ...data });
+            const updated = { ...state.get(path), ...data };
+            for (const [key, value] of Object.entries(data)) {
+              if (value && typeof value.isEqual === 'function' && value.isEqual(FieldValue.delete())) delete updated[key];
+            }
+            state.set(path, updated);
           }
           writes.push({ operation, path, data });
         }
@@ -189,4 +195,27 @@ test('invalid legacy documents are consumed and expose an error only under the a
   assert.equal(fixture.state.has('users/evaluator/evaluationSubmissionErrors/invalid'), true);
   assert.equal(fixture.state.get('users/evaluator/evaluationSubmissionErrors/invalid').submission, undefined);
   assert.equal([...fixture.state.keys()].filter(path => path.startsWith('evaluations/')).length, 0);
+});
+
+
+test('organizer-visible assignments cannot reveal or predict anonymous evaluation IDs', async () => {
+  const fixture = database({
+    'matches/match/assignments/assignment': {
+      matchId: 'match', evaluatorId: 'evaluator', subjectId: 'subject', status: 'pending',
+      evaluationId: 'old-public-binding',
+    },
+    'evaluationSubmissions/privacy': {
+      matchId: 'match', evaluatorId: 'evaluator', submission: submission(),
+    },
+  });
+  assert.equal(await processSubmission(fixture.db, 'privacy'), 'processed');
+  const assignment = fixture.state.get('matches/match/assignments/assignment');
+  assert.equal(Object.hasOwn(assignment, 'evaluationId'), false);
+  const binding = fixture.state.get('matches/match/assignments/assignment/private/evaluation');
+  assert.ok(binding?.evaluationId);
+  assert.notEqual(binding.evaluationId, submissionKey('match', 'assignment'));
+  assert.ok(fixture.state.has(`evaluations/${binding.evaluationId}`));
+  const beforeRetry = [...fixture.state.keys()].filter(path => path.startsWith('evaluations/'));
+  assert.equal(await processSubmission(fixture.db, 'privacy'), 'missing');
+  assert.deepEqual([...fixture.state.keys()].filter(path => path.startsWith('evaluations/')), beforeRetry);
 });

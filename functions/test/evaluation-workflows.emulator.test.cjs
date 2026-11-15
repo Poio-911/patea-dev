@@ -128,6 +128,11 @@ test('real Firestore: concurrent callable and trigger retries apply exactly one 
       db.doc(`players/${f.subjectId}`).get(),
     ]);
     assert.equal(evaluations.size, 1);
+    const assignment = await db.doc(`matches/${f.matchId}/assignments/${f.assignmentId}`).get();
+    const binding = await db.doc(`matches/${f.matchId}/assignments/${f.assignmentId}/private/evaluation`).get();
+    assert.equal(Object.hasOwn(assignment.data(), 'evaluationId'), false);
+    assert.equal(binding.data().evaluationId, evaluations.docs[0].id);
+    assert.notEqual(evaluations.docs[0].id, submissionKey(f.matchId, f.assignmentId));
     assert.equal(selfReports.size, 1);
     assert.equal(selfReports.docs[0].data().goals, 0);
     assert.equal(processed.size, 1);
@@ -150,6 +155,11 @@ test('real Firestore: concurrent callable and trigger retries apply exactly one 
 
 test('real Firestore: finalization preserves keeper stats, separates MVP awards and keeps live score', options, async () => {
   const f = await fixture({ completed: true });
+  const pendingId = `pending_${suffix()}`;
+  await db.doc(`matches/${f.matchId}/assignments/${pendingId}`).set({
+    matchId: f.matchId, evaluatorId: f.subjectId, subjectId: f.evaluatorId,
+    status: 'pending', evaluationId: 'stale-public-binding',
+  });
   try {
     const result = await finalizeMatchEvaluation.run(request(f.ownerUid, { matchId: f.matchId }));
     assert.equal(result.ok, true);
@@ -158,6 +168,12 @@ test('real Firestore: finalization preserves keeper stats, separates MVP awards 
       db.doc(`matches/${f.matchId}`).get(), db.doc(`players/${f.subjectId}`).get(), db.doc(`players/${f.evaluatorId}`).get(),
     ]);
     assert.equal(match.data().status, 'evaluated');
+    const syntheticAssignment = await db.doc(`matches/${f.matchId}/assignments/${pendingId}`).get();
+    const syntheticBinding = await db.doc(`matches/${f.matchId}/assignments/${pendingId}/private/evaluation`).get();
+    assert.equal(Object.hasOwn(syntheticAssignment.data(), 'evaluationId'), false);
+    assert.equal(syntheticAssignment.data().autoCompleted, true);
+    assert.ok(syntheticBinding.data().evaluationId);
+    assert.equal((await db.doc(`evaluations/${syntheticBinding.data().evaluationId}`).get()).exists, true);
     assert.deepEqual(match.data().finalScore, { team1: 9, team2: 8 });
     assert.equal(match.data().bestPlayerId, f.subjectId);
     for (const player of [subject, evaluator]) {

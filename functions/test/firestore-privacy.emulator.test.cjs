@@ -1,5 +1,6 @@
 const { describe, it, before, after } = require('node:test');
 const fs = require('node:fs');
+const assert = require('node:assert/strict');
 const path = require('node:path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 const { doc, setDoc, getDoc, getDocs, collection, query, where } = require('firebase/firestore');
@@ -17,7 +18,8 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
         'matches/match': { ownerUid: 'organizer', playerUids: ['alice', 'bob'] },
         'evaluations/private-eval': { evaluatorId: 'alice', playerId: 'bob', matchId: 'match', rating: 7 },
         'evaluations/revealed-eval': { evaluatorId: 'alice', playerId: 'bob', identityRevealed: true },
-        'matches/match/assignments/assignment': { evaluatorId: 'alice', subjectId: 'bob', matchId: 'match', evaluationId: 'private-eval' },
+        'matches/match/assignments/assignment': { evaluatorId: 'alice', subjectId: 'bob', matchId: 'match', status: 'completed' },
+        'matches/match/assignments/assignment/private/evaluation': { evaluationId: 'private-eval' },
         'matches/match/processedSubmissions/submission': { evaluatorId: 'alice', submission: {} },
         'matches/match/messages/message': { senderId: 'alice', text: 'Hola' },
         'matches/match/invitations/invite': { playerId: 'bob' },
@@ -44,6 +46,16 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
     await assertSucceeds(getDocs(query(collection(aliceDb, 'matches/match/assignments'), where('evaluatorId', '==', 'alice'))));
     await assertSucceeds(getDocs(query(collection(aliceDb, 'matches/match/processedSubmissions'), where('evaluatorId', '==', 'alice'))));
     await assertSucceeds(getDocs(collection(env.authenticatedContext('organizer').firestore(), 'matches/match/assignments')));
+  });
+
+  it('el organizador ve progreso sin vínculo a evaluación y nadie lee la auditoría privada', async () => {
+    const organizer = env.authenticatedContext('organizer').firestore();
+    const assignment = await assertSucceeds(getDoc(doc(organizer, 'matches/match/assignments/assignment')));
+    assert.equal(assignment.data().status, 'completed');
+    assert.equal(Object.hasOwn(assignment.data(), 'evaluationId'), false);
+    for (const uid of ['organizer', 'alice', 'bob', 'stranger']) {
+      await assertFails(getDoc(doc(env.authenticatedContext(uid).firestore(), 'matches/match/assignments/assignment/private/evaluation')));
+    }
   });
 
   it('las reglas genéricas no reabren mensajes ni invitaciones', async () => {

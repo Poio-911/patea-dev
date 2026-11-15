@@ -4326,7 +4326,13 @@ export async function finalizeMatchEvaluationAction(matchId: string, idToken?: s
                 transaction.set(synthEvalRef, synthEval);
 
                 const assignRef = db.doc(`matches/${match.id}/assignments/${assignment.id}`);
-                transaction.update(assignRef, { status: 'completed', autoCompleted: true, evaluationId: synthEvalRef.id });
+                transaction.set(db.doc(`${assignRef.path}/private/evaluation`), {
+                    evaluationId: synthEvalRef.id,
+                    boundAt: new Date().toISOString(),
+                });
+                transaction.update(assignRef, {
+                    status: 'completed', autoCompleted: true, evaluationId: FieldValue.delete(),
+                });
 
                 peerEvalsByPlayer[assignment.subjectId] = peerEvalsByPlayer[assignment.subjectId] || [];
                 peerEvalsByPlayer[assignment.subjectId].push({ ...synthEval, id: synthEvalRef.id } as Evaluation);
