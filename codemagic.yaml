@@ -128,13 +128,8 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        # Sin `beta_groups`: la build queda para los testers internos. Los
-        # externos pasan por revisión de Apple.
-      <<: *email_notification
+    # Distribución suspendida a pedido del usuario: revisar primero en Android.
+    # Este workflow sólo conserva el IPA como artefacto; no lo envía a Apple.
 
   # ──────────────────────────────────────────────────────────────────────────
   # Android → Firebase App Distribution
