@@ -20,9 +20,14 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [{
-      "source": "**",
-      "run": { "serviceId": "patea-dev-1", "region": "us-central1", "pinTag": true }
+    "redirects": [{
+      "source": "/",
+      "destination": "https://patea-dev-1--mil-disculpis.us-central1.hosted.app/",
+      "type": 302
+    }, {
+      "source": "/:path*",
+      "destination": "https://patea-dev-1--mil-disculpis.us-central1.hosted.app/:path",
+      "type": 302
     }],
     "headers": [{
       "source": "/release.json",
