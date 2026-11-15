@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import Link from 'next/link';
 import type { Player, UserProfile } from '@/lib/types';
 import { Logo } from '@/components/logo';
@@ -21,43 +20,13 @@ type HeaderProps = {
 };
 
 export function Header({ user, player, onLogout, onRequestPermission }: HeaderProps) {
-    const [showMobilePlayerInfo, setShowMobilePlayerInfo] = useState(true);
-
-    useEffect(() => {
-        // En mobile: Mostrar por 4s, ocultar por 15s, loop.
-        const showDurationMs = 4000;
-        const hiddenDurationMs = 15000;
-
-        let timeoutId: NodeJS.Timeout;
-
-        const cycleVisibility = () => {
-            setShowMobilePlayerInfo(true);
-            timeoutId = setTimeout(() => {
-                setShowMobilePlayerInfo(false);
-                timeoutId = setTimeout(cycleVisibility, hiddenDurationMs);
-            }, showDurationMs);
-        };
-
-        // Iniciar el primer cilco de ocultamiento
-        timeoutId = setTimeout(() => {
-            setShowMobilePlayerInfo(false);
-            timeoutId = setTimeout(cycleVisibility, hiddenDurationMs);
-        }, showDurationMs);
-
-        return () => clearTimeout(timeoutId);
-    }, []);
-
     return (
         <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-card/40 backdrop-blur-xl shadow-sm h-16">
             <div className="max-w-7xl mx-auto h-full px-2 sm:px-6 flex items-center justify-between">
                 {/* Left section: Logo + Desktop Nav */}
                 <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
                     <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-                        {/* 
-                            Optimization: On medium screens (md/lg), show only the icon part of the logo 
-                            to make room for the navigation items.
-                        */}
-                        <Logo className="md:max-lg:w-10 overflow-hidden" showWordmark={true} />
+                        <Logo className="shrink-0" showWordmark={true} />
                     </Link>
                     <DesktopNav />
                 </div>
@@ -72,7 +41,7 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
                     </div>
 
                     {player && (
-                        <div className="flex items-center gap-2 md:gap-3 ml-1 lg:ml-2">
+                        <div className="hidden xl:flex items-center gap-2 md:gap-3 ml-1 lg:ml-2">
                             {/* Desktop: nombre + posición (oculto en mobile) */}
                             <div className="text-right hidden sm:block shrink-0">
                                 <p className="font-bold text-sm truncate max-w-[100px] xl:max-w-[150px]">{player.name}</p>
@@ -80,26 +49,6 @@ export function Header({ user, player, onLogout, onRequestPermission }: HeaderPr
                                     <PlayerPositionBadge position={player.position} size="sm" showIcon={false} showFullName={true} textOnly={true} className="text-[10px]" />
                                 </div>
                             </div>
-
-                            {/* Mobile: Animación periódica del nombre + posición */}
-                            <AnimatePresence>
-                                {showMobilePlayerInfo && (
-                                    <motion.div
-                                        initial={{ width: 0, opacity: 0, scale: 0.9 }}
-                                        animate={{ width: 'auto', opacity: 1, scale: 1 }}
-                                        exit={{ width: 0, opacity: 0, scale: 0.9 }}
-                                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                                        className="text-right sm:hidden block overflow-hidden whitespace-nowrap origin-right"
-                                    >
-                                        <div className="pr-1">
-                                            <p className="font-bold text-sm truncate max-w-[80px]">{player.name.split(' ')[0]}</p>
-                                            <div className="flex justify-end">
-                                                <PlayerPositionBadge position={player.position} size="sm" showIcon={false} showFullName={false} textOnly={true} className="text-[10px]" />
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
 
                             {/* OVR overlaid on desktop only — badge in corner of avatar-equivalent circle */}
                             <div className="relative hidden sm:flex items-center justify-center h-9 w-9 md:h-10 md:w-10 shrink-0">

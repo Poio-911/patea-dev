@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
 import '../../../core/services/match_service.dart';
+import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
@@ -41,6 +42,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
   late Map<String, int> _side;
   late Map<String, MatchPlayerEntry> _byUid;
   bool _saving = false;
+  bool _recoveredPlayers = false;
 
   @override
   void initState() {
@@ -58,9 +60,18 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
         _byUid.putIfAbsent(p.uid, () => p);
       }
     }
+    for (final player in widget.match.players) {
+      if (_side.containsKey(player.uid)) continue;
+      final a = _side.values.where((side) => side == 0).length;
+      final b = _side.length - a;
+      _side[player.uid] = a <= b ? 0 : 1;
+      _byUid[player.uid] = player;
+      _recoveredPlayers = true;
+    }
   }
 
   bool get _dirty {
+    if (_recoveredPlayers) return true;
     final teams = [widget.match.teamA, widget.match.teamB];
     for (var i = 0; i < teams.length; i++) {
       for (final p in teams[i]?.players ?? const <MatchPlayerEntry>[]) {
@@ -71,12 +82,23 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving || _playersOf(0).isEmpty || _playersOf(1).isEmpty) return;
+    if (ref.read(currentUidProvider) != widget.match.ownerUid) {
+      PateaSnack.error(
+        context,
+        'Sólo el organizador puede cambiar los equipos.',
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
-      await ref.read(matchServiceProvider).updateMatchTeams(widget.match.id, _side);
+      await ref
+          .read(matchServiceProvider)
+          .updateMatchTeams(widget.match.id, _side);
       if (!mounted) return;
+      final snack = PateaSnack.of(context);
       Navigator.pop(context);
-      PateaSnack.info(context, 'Equipos actualizados.');
+      snack.info('Equipos actualizados.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -97,6 +119,13 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final canEdit = ref.watch(currentUidProvider) == widget.match.ownerUid;
+    final aPlayers = _playersOf(0);
+    final bPlayers = _playersOf(1);
+    double avg(List<MatchPlayerEntry> players) => players.isEmpty
+        ? 0
+        : players.fold<int>(0, (sum, p) => sum + p.ovr) / players.length;
+    final difference = (avg(aPlayers) - avg(bPlayers)).abs();
     final teamA = widget.match.teamA;
     final teamB = widget.match.teamB;
     if (teamA == null || teamB == null) return const SizedBox.shrink();
@@ -111,15 +140,46 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('ARMAR LOS EQUIPOS',
-                    style: AppTypography.headline(
-                        size: 12,
-                        weight: FontWeight.w800,
-                        color: context.c.textSecondary,
-                        letterSpacing: 1.2)),
+                Text(
+                  'ARMAR LOS EQUIPOS',
+                  style: AppTypography.headline(
+                    size: 12,
+                    weight: FontWeight.w800,
+                    color: context.c.textSecondary,
+                    letterSpacing: 1.2,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('Tocá a un jugador para pasarlo al otro equipo.',
-                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                Text(
+                  'Diferencia de nivel medio: ${difference.toStringAsFixed(1)} OVR',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+                if ((aPlayers.length - bPlayers.length).abs() > 1)
+                  Text(
+                    'Los equipos tienen distinta cantidad de jugadores.',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.warning,
+                    ),
+                  ),
+                if (!canEdit)
+                  Text(
+                    'Sólo el organizador puede guardar cambios.',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.warning,
+                    ),
+                  ),
+                Text(
+                  'Tocá a un jugador para pasarlo al otro equipo.',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -127,9 +187,21 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _TeamColumn(team: teamA, players: _playersOf(0), onTap: _move)),
+                Expanded(
+                  child: _TeamColumn(
+                    team: teamA,
+                    players: _playersOf(0),
+                    onTap: _move,
+                  ),
+                ),
                 Container(width: 1, color: context.c.overlaySubtle),
-                Expanded(child: _TeamColumn(team: teamB, players: _playersOf(1), onTap: _move)),
+                Expanded(
+                  child: _TeamColumn(
+                    team: teamB,
+                    players: _playersOf(1),
+                    onTap: _move,
+                  ),
+                ),
               ],
             ),
           ),
@@ -138,22 +210,39 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: FilledButton(
-                onPressed: !_dirty || _saving ? null : _save,
+                onPressed:
+                    !_dirty ||
+                        _saving ||
+                        !canEdit ||
+                        aPlayers.isEmpty ||
+                        bPlayers.isEmpty
+                    ? null
+                    : _save,
                 style: FilledButton.styleFrom(
                   backgroundColor: context.c.primary,
                   foregroundColor: context.c.background,
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadii.cardAll,
+                  ),
                 ),
                 child: _saving
                     ? SizedBox(
                         width: 18,
                         height: 18,
-                        child:
-                            CircularProgressIndicator(strokeWidth: 2, color: context.c.background))
-                    : Text(_dirty ? 'Guardar equipos' : 'Sin cambios',
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: context.c.background,
+                        ),
+                      )
+                    : Text(
+                        _dirty ? 'Guardar equipos' : 'Sin cambios',
                         style: AppTypography.headline(
-                            size: 14, weight: FontWeight.w800, color: context.c.background)),
+                          size: 14,
+                          weight: FontWeight.w800,
+                          color: context.c.background,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -163,6 +252,9 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
   }
 
   void _move(String uid) {
+    if (_saving || ref.read(currentUidProvider) != widget.match.ownerUid) {
+      return;
+    }
     setState(() => _side[uid] = _side[uid] == 0 ? 1 : 0);
   }
 }
@@ -172,7 +264,11 @@ class _TeamColumn extends StatelessWidget {
   final List<MatchPlayerEntry> players;
   final void Function(String uid) onTap;
 
-  const _TeamColumn({required this.team, required this.players, required this.onTap});
+  const _TeamColumn({
+    required this.team,
+    required this.players,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -186,16 +282,27 @@ class _TeamColumn extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
           child: Column(
             children: [
-              if (team.jersey != null) JerseyWidget(jersey: team.jersey!, size: 38),
+              if (team.jersey != null)
+                JerseyWidget(jersey: team.jersey!, size: 38),
               const SizedBox(height: 6),
-              Text(team.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.headline(size: 13, weight: FontWeight.w800)),
+              Text(
+                team.name,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.headline(
+                  size: 13,
+                  weight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text('${players.length} · media $avg',
-                  style: AppTypography.body(size: 10, color: context.c.textSecondary)),
+              Text(
+                '${players.length} · media $avg',
+                style: AppTypography.body(
+                  size: 10,
+                  color: context.c.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
@@ -204,9 +311,14 @@ class _TeamColumn extends StatelessWidget {
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text('Sin jugadores',
-                        textAlign: TextAlign.center,
-                        style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                    child: Text(
+                      'Sin jugadores',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.body(
+                        size: 11,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                   ),
                 )
               : ListView.builder(
@@ -218,10 +330,10 @@ class _TeamColumn extends StatelessWidget {
                     final tierCol = p.ovr >= 85
                         ? context.c.eliteBorder
                         : p.ovr >= 75
-                            ? context.c.goldBorder
-                            : p.ovr >= 60
-                                ? context.c.silverBorder
-                                : context.c.bronzeBorder;
+                        ? context.c.goldBorder
+                        : p.ovr >= 60
+                        ? context.c.silverBorder
+                        : context.c.bronzeBorder;
                     final posCol = context.c.positionColor(p.position);
 
                     return Container(
@@ -230,7 +342,10 @@ class _TeamColumn extends StatelessWidget {
                         onTap: () => onTap(p.uid),
                         borderRadius: AppRadii.cardAll,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: context.c.cardSurface.withValues(alpha: 0.6),
                             borderRadius: AppRadii.cardAll,
@@ -247,12 +362,18 @@ class _TeamColumn extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: tierCol.withValues(alpha: 0.12),
                                   borderRadius: AppRadii.surfaceAll,
-                                  border: Border.all(color: tierCol.withValues(alpha: 0.5), width: 1),
+                                  border: Border.all(
+                                    color: tierCol.withValues(alpha: 0.5),
+                                    width: 1,
+                                  ),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
                                   p.ovr > 0 ? '${p.ovr}' : '—',
-                                  style: AppTypography.sportNumber(size: 11, color: tierCol),
+                                  style: AppTypography.sportNumber(
+                                    size: 11,
+                                    color: tierCol,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -271,12 +392,19 @@ class _TeamColumn extends StatelessWidget {
                                       p.displayName,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: AppTypography.headline(size: 11.5, weight: FontWeight.w700),
+                                      style: AppTypography.headline(
+                                        size: 11.5,
+                                        weight: FontWeight.w700,
+                                      ),
                                     ),
                                     if (p.position.isNotEmpty)
                                       Text(
                                         p.position,
-                                        style: AppTypography.code(size: 8.5, weight: FontWeight.w800, color: posCol),
+                                        style: AppTypography.code(
+                                          size: 8.5,
+                                          weight: FontWeight.w800,
+                                          color: posCol,
+                                        ),
                                       ),
                                   ],
                                 ),
@@ -284,7 +412,9 @@ class _TeamColumn extends StatelessWidget {
                               Icon(
                                 Icons.swap_horiz,
                                 size: 15,
-                                color: context.c.textSecondary.withValues(alpha: 0.6),
+                                color: context.c.textSecondary.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                             ],
                           ),
@@ -315,7 +445,10 @@ class DuplicatePlayersAlert extends StatelessWidget {
     final b = match.teamB;
     if (a == null || b == null) return const [];
     final inA = a.players.map((p) => p.uid).toSet();
-    return b.players.where((p) => inA.contains(p.uid)).map((p) => p.displayName).toList();
+    return b.players
+        .where((p) => inA.contains(p.uid))
+        .map((p) => p.displayName)
+        .toList();
   }
 
   @override
@@ -325,11 +458,11 @@ class DuplicatePlayersAlert extends StatelessWidget {
 
     final isOne = names.length == 1;
     return PateaCard(
-             radius: AppRadii.cardAll,
-             borderColor: context.c.warning.withValues(alpha: 0.45),
-             margin: const EdgeInsets.only(bottom: 16),
-             padding: const EdgeInsets.all(14),
-             child: Row(
+      radius: AppRadii.cardAll,
+      borderColor: context.c.warning.withValues(alpha: 0.45),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.warning_amber_rounded, size: 20, color: context.c.warning),
@@ -342,14 +475,20 @@ class DuplicatePlayersAlert extends StatelessWidget {
                   isOne
                       ? '${names.first} está en los dos equipos'
                       : '${names.length} jugadores están en los dos equipos',
-                  style: AppTypography.headline(size: 13, weight: FontWeight.w800),
+                  style: AppTypography.headline(
+                    size: 13,
+                    weight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   isOne
                       ? 'Va a evaluarse a sí mismo y los puntajes van a salir mal.'
                       : '${names.join(', ')}. Las evaluaciones van a salir mal.',
-                  style: AppTypography.body(size: 11.5, color: context.c.textSecondary),
+                  style: AppTypography.body(
+                    size: 11.5,
+                    color: context.c.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 TextButton(
@@ -360,15 +499,20 @@ class DuplicatePlayersAlert extends StatelessWidget {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text('Revisar equipos',
-                      style: AppTypography.headline(
-                          size: 12, weight: FontWeight.w800, color: context.c.warning)),
+                  child: Text(
+                    'Revisar equipos',
+                    style: AppTypography.headline(
+                      size: 12,
+                      weight: FontWeight.w800,
+                      color: context.c.warning,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
-           );
+    );
   }
 }

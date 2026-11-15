@@ -1,5 +1,3 @@
-
-
 /// Cargando, vacío y error. Los tres estados que toda pantalla tiene y que
 /// nadie había escrito una sola vez.
 ///
@@ -29,12 +27,49 @@ class PateaLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const spinner = Center(
-      child: SizedBox(
-        width: 26,
-        height: 26,
-        child: CircularProgressIndicator(strokeWidth: 2.4),
-      ),
+    final spinner = LayoutBuilder(
+      builder: (context, constraints) {
+        final style = AppTypography.body(
+          size: 13,
+          color: context.c.textSecondary,
+        );
+        final painter = TextPainter(
+          text: TextSpan(text: 'Cargando…', style: style),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          maxLines: 1,
+        )..layout();
+        final showLabel =
+            constraints.maxHeight >= 26 + 14 + painter.height + 4 &&
+            constraints.maxWidth >= painter.width;
+        painter.dispose();
+        final size = constraints.maxHeight
+            .clamp(0.0, 26.0)
+            .clamp(0.0, constraints.maxWidth.clamp(0.0, 26.0));
+        return Semantics(
+          liveRegion: true,
+          label: 'Cargando',
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: size,
+                  height: size,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    value: MediaQuery.disableAnimationsOf(context) ? 0.5 : null,
+                  ),
+                ),
+                if (showLabel) ...[
+                  const SizedBox(height: 14),
+                  Text('Cargando…', style: style),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
     if (height == null) return spinner;
     return SizedBox(height: height, child: spinner);
@@ -69,43 +104,56 @@ class PateaEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: compact ? 18 : 40,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                size: compact ? 26 : 38, color: context.c.textSecondary),
-            SizedBox(height: compact ? 8 : 14),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTypography.headline(
-                size: compact ? 14 : 16,
-                weight: FontWeight.w700,
-                color: context.c.textPrimary,
-              ),
-            ),
-            if (hint != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                hint!,
-                textAlign: TextAlign.center,
-                style: AppTypography.body(
-                  size: 13,
-                  height: 1.4,
-                  color: context.c.textSecondary,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: compact ? 18 : 40,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(compact ? 10 : 16),
+                decoration: BoxDecoration(
+                  color: context.c.overlaySubtle,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: compact ? 24 : 34,
+                  color: context.c.primary,
                 ),
               ),
+              SizedBox(height: compact ? 8 : 14),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: AppTypography.headline(
+                  size: compact ? 15 : 22,
+                  weight: FontWeight.w700,
+                  color: context.c.textPrimary,
+                ),
+              ),
+              if (hint != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  hint!,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.body(
+                    size: 13,
+                    height: 1.4,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+              ],
+              if (action != null) ...[
+                SizedBox(height: compact ? 12 : 20),
+                action!,
+              ],
             ],
-            if (action != null) ...[
-              SizedBox(height: compact ? 12 : 20),
-              action!,
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -153,8 +201,11 @@ class PateaError extends StatelessWidget {
               color: context.c.destructive.withValues(alpha: 0.12),
               radius: AppRadii.chipAll,
               padding: const EdgeInsets.all(10),
-              child: Icon(Icons.wifi_off_rounded,
-                  size: compact ? 18 : 22, color: context.c.destructive),
+              child: Icon(
+                Icons.wifi_off_rounded,
+                size: compact ? 18 : 22,
+                color: context.c.destructive,
+              ),
             ),
             SizedBox(height: compact ? 8 : 14),
             Text(

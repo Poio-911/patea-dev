@@ -1,6 +1,7 @@
+import { isGeneratingTeams, matchRosterIds, regenerateMatchTeams } from './match-management';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
-import { generateBalancedTeamsCore, GOOGLE_GENAI_API_KEY } from './generate-balanced-teams';
+import { generateBalancedTeamsCore } from './generate-balanced-teams';
 
 /**
  * Callables para el ciclo de vida de un partido (iniciar, sumarse/bajarse,
@@ -26,20 +27,27 @@ function requireAuth(request: { auth?: { uid: string } | null }): string {
 export const startMatch = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
-  const { ref, data } = await getMatchOrThrow(matchId);
-  if (data.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Solo el organizador puede iniciar el partido.');
-  }
-  await ref.update({
-    status: 'active',
-    liveStatus: 'first_half',
-    // `currentMinute` es el minuto BASE del período, no el minuto que se
-    // muestra: el reloj real es `currentMinute + (ahora - periodStartTs)`.
-    // Arranca en 0, igual que `handleStatusChange('first_half')` en la web.
-    currentMinute: 0,
-    periodStartTs: admin.firestore.FieldValue.serverTimestamp(),
-    timerPaused: false,
-    startedAt: admin.firestore.FieldValue.serverTimestamp(),
+  const db = admin.firestore();
+  const ref = db.collection('matches').doc(matchId);
+  await db.runTransaction(async tx => {
+    const data = (await tx.get(ref)).data();
+    if (!data) throw new HttpsError('not-found', 'El partido no existe.');
+    if (data.ownerUid !== uid) throw new HttpsError('permission-denied', 'Sólo el organizador puede iniciar el partido.');
+    if (data.status === 'active') return;
+    if (data.status !== 'upcoming') throw new HttpsError('failed-precondition', 'Confirmá fecha y equipos antes de iniciar.');
+    if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
+    if (!Array.isArray(data.teams) || data.teams.length !== 2 || data.teams.some((team: any) => !team.players?.length)) {
+      throw new HttpsError('failed-precondition', 'Armá los dos equipos antes de iniciar el partido.');
+    }
+    const roster = matchRosterIds(data);
+    const assigned = data.teams.flatMap((team: any) => team.players.map((p: any) => p?.uid));
+    if (assigned.length !== roster.length || new Set(assigned).size !== assigned.length ||
+        roster.some(id => !assigned.includes(id))) {
+      throw new HttpsError('failed-precondition', 'El plantel cambió o hay jugadores repetidos. Tocá Equilibrar equipos antes de iniciar el partido.');
+    }
+    tx.update(ref, { status: 'active', liveStatus: 'first_half', currentMinute: 0,
+      periodStartTs: admin.firestore.FieldValue.serverTimestamp(), timerPaused: false,
+      startedAt: admin.firestore.FieldValue.serverTimestamp() });
   });
   return { ok: true };
 });
@@ -136,41 +144,7 @@ export const updateLiveState = onCall({ region: 'us-central1' }, async (request)
  * concurrentes disparen la generación dos veces.
  */
 async function maybeGenerateTeamsIfFull(matchId: string) {
-  const db = admin.firestore();
-  const ref = db.collection('matches').doc(matchId);
-
-  const matchData = await db.runTransaction(async (transaction) => {
-    const snap = await transaction.get(ref);
-    if (!snap.exists) return null;
-    const match = snap.data()!;
-    if (match.teamsGenerated) return null;
-
-    const currentPlayers: Array<Record<string, unknown>> = Array.isArray(match.players) ? match.players : [];
-    const matchSize = Number(match.matchSize ?? 0);
-    if (matchSize <= 0 || currentPlayers.length < matchSize) return null;
-
-    transaction.update(ref, { teamsGenerated: true });
-    return match;
-  });
-
-  if (!matchData) return;
-
-  const currentPlayers: Array<Record<string, unknown>> = Array.isArray(matchData.players) ? matchData.players : [];
-  const aiInput = currentPlayers.map((p) => ({
-    uid: String(p.uid ?? ''),
-    displayName: String(p.displayName ?? ''),
-    ovr: Number(p.ovr ?? 50),
-    position: String(p.position ?? 'MED'),
-  }));
-
-  try {
-    const result = await generateBalancedTeamsCore(aiInput, 2);
-    await ref.update({ status: 'upcoming', teams: (result.teams ?? []).slice(0, 2) });
-  } catch (error) {
-    // Revertir el lock para permitir reintentar si la generación falla.
-    await ref.update({ teamsGenerated: false });
-    throw error;
-  }
+  return regenerateMatchTeams(admin.firestore(), matchId, undefined, true);
 }
 
 /**
@@ -181,7 +155,7 @@ async function maybeGenerateTeamsIfFull(matchId: string) {
  * concurrentes, notifica al organizador, y dispara la generación
  * automática de equipos si el partido queda completo.
  */
-export const joinMatch = onCall({ region: 'us-central1', secrets: [GOOGLE_GENAI_API_KEY] }, async (request) => {
+export const joinMatch = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
   const db = admin.firestore();
@@ -191,6 +165,8 @@ export const joinMatch = onCall({ region: 'us-central1', secrets: [GOOGLE_GENAI_
     const snap = await transaction.get(ref);
     if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
     const match = snap.data()!;
+    if (!['planning', 'upcoming'].includes(match.status)) throw new HttpsError('failed-precondition', 'La convocatoria ya está cerrada.');
+    if (isGeneratingTeams(match)) throw new HttpsError('aborted', 'Se están armando los equipos. Reintentá en unos segundos.');
 
     const playerUids: string[] = Array.isArray(match.playerUids) ? match.playerUids : [];
     if (playerUids.includes(uid)) return; // idempotente, igual que la web
@@ -254,6 +230,8 @@ export const leaveMatch = onCall({ region: 'us-central1' }, async (request) => {
     const snap = await transaction.get(ref);
     if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
     const match = snap.data()!;
+    if (!['planning', 'upcoming'].includes(match.status)) throw new HttpsError('failed-precondition', 'La convocatoria ya está cerrada.');
+    if (isGeneratingTeams(match)) throw new HttpsError('aborted', 'Se están armando los equipos. Reintentá en unos segundos.');
 
     const playerUids: string[] = Array.isArray(match.playerUids) ? match.playerUids : [];
     if (!playerUids.includes(uid)) return; // idempotente
@@ -262,6 +240,12 @@ export const leaveMatch = onCall({ region: 'us-central1' }, async (request) => {
     transaction.update(ref, {
       players: players.filter((p) => p.uid !== uid),
       playerUids: playerUids.filter((id) => id !== uid),
+      teamsGenerated: false,
+      teams: (Array.isArray(match.teams) ? match.teams : []).map((team: any) => {
+        const remaining = (Array.isArray(team.players) ? team.players : []).filter((p: any) => p.uid !== uid);
+        const totalOVR = remaining.reduce((sum: number, p: any) => sum + Number(p.ovr ?? 0), 0);
+        return { ...team, players: remaining, totalOVR, averageOVR: remaining.length ? totalOVR / remaining.length : 0 };
+      }),
     });
   });
 
@@ -300,6 +284,8 @@ export const recordLiveEvent = onCall({ region: 'us-central1' }, async (request)
 
 type LifecyclePlayer = {
   id: string;
+  photoURL?: string;
+  photoUrl?: string;
   name?: string;
   displayName?: string;
   ovr?: number;
@@ -392,7 +378,7 @@ function generateEvaluationAssignments(
  *     web) queda fuera: la infraestructura de push notifications todavía
  *     no está portada a Flutter (dominio 0% del plan de migración).
  */
-export const finishMatch = onCall({ region: 'us-central1', secrets: [GOOGLE_GENAI_API_KEY] }, async (request) => {
+export const finishMatch = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
 
@@ -401,6 +387,8 @@ export const finishMatch = onCall({ region: 'us-central1', secrets: [GOOGLE_GENA
   if (data.ownerUid !== uid) {
     throw new HttpsError('permission-denied', 'Solo el organizador puede finalizar el partido.');
   }
+  if (data.status === 'completed' || data.status === 'evaluated') return { ok: true, assignmentsCount: 0 };
+  if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
 
   const playerUids: string[] = Array.isArray(data.playerUids) ? data.playerUids : [];
   const playerRefs = playerUids.map((playerId) => db.collection('players').doc(playerId));
@@ -409,6 +397,7 @@ export const finishMatch = onCall({ region: 'us-central1', secrets: [GOOGLE_GENA
     .filter((doc) => doc.exists)
     .map((doc) => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) }));
 
+  if (allPlayers.length !== new Set(playerUids).size) throw new HttpsError('failed-precondition', 'Falta un perfil del plantel. Revisá la convocatoria antes de finalizar.');
   const matchSize = Number(data.matchSize ?? 0);
   let finalTeams = Array.isArray(data.teams) ? (data.teams as LifecycleTeam[]) : undefined;
   const matchUpdateData: Record<string, unknown> = { status: 'completed' };
@@ -421,6 +410,7 @@ export const finishMatch = onCall({ region: 'us-central1', secrets: [GOOGLE_GENA
         displayName: player.displayName || player.name || '',
         position: player.position || '',
         ovr: player.ovr || 0,
+        photoURL: String(player.photoURL ?? player.photoUrl ?? ''),
       }));
     const teamGenerationResult = await generateBalancedTeamsCore(playersToBalance, 2);
     finalTeams = teamGenerationResult.teams as unknown as LifecycleTeam[];
@@ -430,29 +420,35 @@ export const finishMatch = onCall({ region: 'us-central1', secrets: [GOOGLE_GENA
   const matchForAssignments = { id: matchId, playerUids, teams: finalTeams };
   const assignments = generateEvaluationAssignments(matchForAssignments, allPlayers);
 
-  const batch = db.batch();
-  batch.update(ref, matchUpdateData);
+  await db.runTransaction(async batch => {
+    const fresh = (await batch.get(ref)).data();
+    if (!fresh) throw new HttpsError('not-found', 'El partido no existe.');
+    if (fresh.ownerUid !== uid) throw new HttpsError('permission-denied', 'Sólo el organizador puede finalizar.');
+    if (fresh.status === 'completed' || fresh.status === 'evaluated') return;
+    if (isGeneratingTeams(fresh) || JSON.stringify(fresh.playerUids ?? []) !== JSON.stringify(playerUids) || JSON.stringify(fresh.teams ?? []) !== JSON.stringify(data.teams ?? [])) {
+      throw new HttpsError('aborted', 'El plantel cambió. Actualizá el partido antes de finalizar.');
+    }
+    batch.update(ref, matchUpdateData);
 
-  assignments.forEach((assignment) => {
-    const assignmentRef = db.collection(`matches/${matchId}/assignments`).doc();
-    batch.set(assignmentRef, assignment);
-  });
+    assignments.forEach((assignment) => {
+      const assignmentRef = db.collection(`matches/${matchId}/assignments`).doc();
+      batch.set(assignmentRef, assignment);
+    });
 
-  const uniqueEvaluatorIds = [...new Set(assignments.map((assignment) => assignment.evaluatorId))];
-  uniqueEvaluatorIds.forEach((evaluatorId) => {
-    const notificationRef = db.collection(`users/${evaluatorId}/notifications`).doc();
-    batch.set(notificationRef, {
-      type: 'evaluation_pending',
-      title: '¡Evaluación pendiente!',
-      message: `Es hora de evaluar a tus compañeros del partido "${data.title ?? ''}".`,
-      link: `/evaluations/${matchId}`,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-      metadata: { fromUserId: uid },
+    const uniqueEvaluatorIds = [...new Set(assignments.map((assignment) => assignment.evaluatorId))];
+    uniqueEvaluatorIds.forEach((evaluatorId) => {
+      const notificationRef = db.collection(`users/${evaluatorId}/notifications`).doc();
+      batch.set(notificationRef, {
+        type: 'evaluation_pending',
+        title: '¡Evaluación pendiente!',
+        message: `Es hora de evaluar a tus compañeros del partido "${data.title ?? ''}".`,
+        link: `/evaluations/${matchId}`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        metadata: { fromUserId: uid },
+      });
     });
   });
-
-  await batch.commit();
 
   return { ok: true, assignmentsCount: assignments.length };
 });

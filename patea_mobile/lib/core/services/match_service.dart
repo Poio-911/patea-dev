@@ -14,6 +14,7 @@ class MatchService {
   /// siempre pasa por su API route con el Admin SDK) — ver
   /// functions/src/callable/create-match.ts.
   Future<String> createMatch({
+    String? requestId,
     required String title,
     required String type,
     required String ownerUid,
@@ -34,6 +35,7 @@ class MatchService {
     Map<String, dynamic>? weather,
   }) async {
     final result = await callFunction('createMatch', {
+      'requestId': ?requestId,
       'title': title,
       'type': type,
       'matchSize': matchSize,
@@ -53,8 +55,8 @@ class MatchService {
       // Sólo para 'by_teams'. Los planteles los resuelve el servidor desde
       // `teams/`: no se manda nada armado desde el cliente.
       if (selectedTeams.isNotEmpty) 'selectedTeams': selectedTeams,
-      if (weather != null) 'weather': weather,
-    });
+      'weather': ?weather,
+    }, timeout: const Duration(seconds: 60));
 
     return result['matchId'] as String;
   }
@@ -99,8 +101,8 @@ class MatchService {
     await callFunction('recordLiveEvent', {
       'matchId': matchId,
       'event': event.toMap(),
-      if (teamAScore != null) 'teamAScore': teamAScore,
-      if (teamBScore != null) 'teamBScore': teamBScore,
+      'teamAScore': ?teamAScore,
+      'teamBScore': ?teamBScore,
     });
   }
 
@@ -118,7 +120,10 @@ class MatchService {
   /// La función guarda el resultado en el propio partido, así que la pantalla
   /// no necesita el valor de vuelta: lo va a recibir por el stream. Si ya
   /// estaba escrita la devuelve sin volver a gastar una llamada a la IA.
-  Future<void> generateMatchChronicle(String matchId, {bool force = false}) async {
+  Future<void> generateMatchChronicle(
+    String matchId, {
+    bool force = false,
+  }) async {
     await callFunction('generateMatchChronicle', {
       'matchId': matchId,
       if (force) 'force': true,
@@ -128,7 +133,9 @@ class MatchService {
   /// Finaliza en lote partidos vencidos que quedaron en 'upcoming'
   /// (PendingFinalizationDialog en la web).
   Future<int> finalizePendingMatches(List<String> matchIds) async {
-    final result = await callFunction('finalizePendingMatches', {'matchIds': matchIds});
+    final result = await callFunction('finalizePendingMatches', {
+      'matchIds': matchIds,
+    });
     return (result['finalizedCount'] as num?)?.toInt() ?? 0;
   }
 
@@ -143,39 +150,71 @@ class MatchService {
   // El móvil ya podía crearlo con el switch "definir después", pero no tenía
   // con qué votarlo: quedaba esperando que alguien entrara por la web.
 
-  Future<void> proposeMatchDate(String matchId, String dateIso, String time) async {
-    await callFunction('proposeMatchDate', {'matchId': matchId, 'date': dateIso, 'time': time});
+  Future<void> proposeMatchDate(
+    String matchId,
+    String dateIso,
+    String time,
+  ) async {
+    await callFunction('proposeMatchDate', {
+      'matchId': matchId,
+      'date': dateIso,
+      'time': time,
+    });
   }
 
   /// Toggle. La fecha admite votar varias opciones a la vez.
   Future<void> voteMatchDate(String matchId, String proposalId) async {
-    await callFunction('voteMatchDate', {'matchId': matchId, 'proposalId': proposalId});
+    await callFunction('voteMatchDate', {
+      'matchId': matchId,
+      'proposalId': proposalId,
+    });
   }
 
   /// Cierra la votación y deja el partido en 'upcoming' con esa fecha.
   Future<void> confirmMatchDate(String matchId, String proposalId) async {
-    await callFunction('confirmMatchDate', {'matchId': matchId, 'proposalId': proposalId});
+    await callFunction('confirmMatchDate', {
+      'matchId': matchId,
+      'proposalId': proposalId,
+    });
   }
 
-  Future<void> proposeMatchLocation(String matchId, Map<String, dynamic> location) async {
-    await callFunction('proposeMatchLocation', {'matchId': matchId, 'location': location});
+  Future<void> proposeMatchLocation(
+    String matchId,
+    Map<String, dynamic> location,
+  ) async {
+    await callFunction('proposeMatchLocation', {
+      'matchId': matchId,
+      'location': location,
+    });
   }
 
   /// Voto único: votar una cancha borra tu voto de las otras.
   Future<void> voteMatchLocation(String matchId, String proposalId) async {
-    await callFunction('voteMatchLocation', {'matchId': matchId, 'proposalId': proposalId});
+    await callFunction('voteMatchLocation', {
+      'matchId': matchId,
+      'proposalId': proposalId,
+    });
   }
 
   Future<void> confirmMatchLocation(String matchId, String proposalId) async {
-    await callFunction('confirmMatchLocation', {'matchId': matchId, 'proposalId': proposalId});
+    await callFunction('confirmMatchLocation', {
+      'matchId': matchId,
+      'proposalId': proposalId,
+    });
   }
 
   /// Mueve jugadores entre los dos equipos.
   ///
   /// Se manda sólo `{uid: 0|1}`: el servidor reconstruye los equipos desde el
   /// plantel del partido, así que desde acá no se puede inventar un jugador.
-  Future<void> updateMatchTeams(String matchId, Map<String, int> assignments) async {
-    await callFunction('updateMatchTeams', {'matchId': matchId, 'assignments': assignments});
+  Future<void> updateMatchTeams(
+    String matchId,
+    Map<String, int> assignments,
+  ) async {
+    await callFunction('updateMatchTeams', {
+      'matchId': matchId,
+      'assignments': assignments,
+    });
   }
 
   /// Entra al partido, o pide permiso si el partido lo requiere.
@@ -207,7 +246,11 @@ class MatchService {
   }
 
   /// El organizador acepta o rechaza una solicitud.
-  Future<void> respondJoinRequest(String matchId, String requesterId, bool accepted) async {
+  Future<void> respondJoinRequest(
+    String matchId,
+    String requesterId,
+    bool accepted,
+  ) async {
     await callFunction('respondJoinRequest', {
       'matchId': matchId,
       'requesterId': requesterId,
@@ -227,7 +270,11 @@ class MatchService {
 
   /// Reprograma fecha/hora (solo el organizador). Port de updateMatchDateAction.
   Future<void> updateMatchDate(String matchId, String date, String time) async {
-    await callFunction('updateMatchDate', {'matchId': matchId, 'date': date, 'time': time});
+    await callFunction('updateMatchDate', {
+      'matchId': matchId,
+      'date': date,
+      'time': time,
+    });
   }
 
   /// Cambia la cancha (solo el organizador). Port de updateMatchLocationAction.
@@ -249,10 +296,9 @@ class MatchService {
     });
   }
 
-  /// Vuelve a sortear los equipos con IA (solo el organizador). Port de
-  /// shuffleMatchTeamsAction. Gemini en frío puede tardar 30s+, igual que
-  /// generateBalancedTeams — mismo timeout ampliado.
-  Future<void> shuffleTeams(String matchId) async {
-    await callFunction('shuffleTeams', {'matchId': matchId}, timeout: const Duration(seconds: 60));
+  /// Recalcula el equilibrio de nivel y puestos usando el plantel actual.
+  Future<bool> shuffleTeams(String matchId) async {
+    final result = await callFunction('shuffleTeams', {'matchId': matchId});
+    return result['changed'] as bool? ?? true;
   }
 }

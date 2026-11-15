@@ -4,5 +4,5 @@
      nada de lib/. Si cambia la paleta, hay que cambiarlos acá también. -->
 <resources>
     <color name="volt_neon">#FFCCFF33</color>
-    <color name="patea_background">#FF0C1017</color>
+    <color name="patea_background">#FF0B0E13</color>
 </resources>

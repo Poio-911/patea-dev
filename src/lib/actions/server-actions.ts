@@ -8,7 +8,6 @@
 import { getAdminDb, getAdminStorage } from '../../firebase/admin-init';
 import { FieldValue } from 'firebase-admin/firestore';
 // AI flow types (type-only imports don't execute code)
-import type { GenerateBalancedTeamsInput } from '../../ai/flows/generate-balanced-teams';
 import type { SuggestPlayerImprovementsInput } from '../../ai/flows/suggest-player-improvements';
 import type { GetMatchDayForecastInput } from '../../ai/flows/get-match-day-forecast';
 import type { FindBestFitPlayerInput } from '../../ai/flows/find-best-fit-player';
@@ -156,85 +155,52 @@ const calculateAttributeChangesFromAI = (currentAttrs: Player, aiChanges: { attr
     return newAttributes;
 };
 
-export async function generateTeamsAction(players: Array<Pick<Player, 'id' | 'name' | 'ovr' | 'position'>>) {
-    if (!players || players.length < 2) {
-        return { error: 'Se necesitan al menos 2 jugadores para generar equipos.' };
-    }
-
-    // Validar y loguear datos de entrada para diagnóstico
-    const invalidPlayers = players.filter(p => !p.id || !p.name || p.ovr === undefined || !p.position);
-    if (invalidPlayers.length > 0) {
-        logger.error('Jugadores con datos incompletos:', invalidPlayers.map(p => ({
-            id: p.id,
-            name: p.name,
-            ovr: p.ovr,
-            position: p.position,
-        })));
-        return { error: `Hay ${invalidPlayers.length} jugador(es) con datos incompletos. Verifica que todos tengan nombre, posición y OVR.` };
-    }
-
-    logger.info('generateTeamsAction - Entrada:', {
-        playerCount: players.length,
-        players: players.map(p => ({ id: p.id, name: p.name, ovr: p.ovr, position: p.position })),
-    });
-
-    const input: GenerateBalancedTeamsInput = {
-        players: players.map(p => ({
-            uid: p.id,
-            displayName: p.name,
-            ovr: p.ovr,
-            position: p.position,
-        })),
-        teamCount: 2,
-    };
-
+export async function generateTeamsAction(
+    players: Array<Pick<Player, 'id' | 'name' | 'ovr' | 'position'>>,
+    idToken?: string,
+) {
     try {
+        // Firebase can remain signed in after the server cookie expires.
+        // Explicit credentials are verified without falling back to another
+        // account's cookie; older server-side callers keep the session path.
+        const { requireEvaluationReader } = await import('../auth/evaluation-reader');
+        const callerId = await requireEvaluationReader(idToken);
+        if (!Array.isArray(players) || players.length < 2 || players.length > 100) {
+            throw new Error('Seleccioná entre 2 y 100 jugadores.');
+        }
+        const ids = players.map(player => player?.id);
+        if (ids.some(id => typeof id !== 'string' || !id || id.length > 128 || id.includes('/') || id === '.' || id === '..')
+            || new Set(ids).size !== ids.length) {
+            throw new Error('El plantel contiene identificadores inválidos o repetidos.');
+        }
+        const db = getAdminDb();
+        const user = (await db.doc(`users/${callerId}`).get()).data();
+        const groupId = user?.activeGroupId;
+        if (typeof groupId !== 'string' || !groupId || groupId.includes('/')) throw new Error('Elegí un grupo activo para armar los equipos.');
+        const group = (await db.doc(`groups/${groupId}`).get()).data();
+        const members: string[] = Array.isArray(group?.members) ? group.members : [];
+        if (!group || (group.ownerUid !== callerId && !members.includes(callerId))) throw new Error('No pertenecés al grupo activo.');
+        const documents = await db.getAll(...ids.map(id => db.doc(`players/${id}`)));
+        const canonicalPlayers = documents.map(doc => {
+            const player = doc.data();
+            if (!player) throw new Error('Un jugador seleccionado ya no existe. Actualizá el plantel.');
+            if (player.groupId !== groupId && !members.includes(doc.id) && player.ownerUid !== callerId) {
+                throw new Error('Seleccioná jugadores de tu grupo.');
+            }
+            return {
+                uid: doc.id,
+                displayName: player.name ?? player.displayName ?? 'Jugador',
+                position: player.position ?? 'MED',
+                ovr: player.ovr ?? 50,
+                photoURL: player.photoUrl ?? player.photoURL ?? '',
+            };
+        });
         const { generateBalancedTeams } = await import('../../ai/flows/generate-balanced-teams');
-        const result = await generateBalancedTeams(input);
-        if ('error' in result) {
-            throw new Error(String(result.error) || 'La IA no pudo generar los equipos.');
-        }
-        if (!result || !result.teams) {
-            throw new Error('La respuesta de la IA no contiene equipos.');
-        }
-
-        // Fetch photo URLs for all players
-        const playerIds = players.map(p => p.id).filter(Boolean);
-        const photoMap = new Map<string, string>();
-        if (playerIds.length > 0) {
-            const playerRefs = playerIds.map(id => getAdminDb().collection('players').doc(id));
-            const playerDocs = await getAdminDb().getAll(...playerRefs);
-            playerDocs.forEach(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    photoMap.set(doc.id, data?.photoUrl || data?.photoURL || '');
-                }
-            });
-        }
-
-        result.teams.forEach(team => {
-            team.players.forEach(player => {
-                const originalPlayer = players.find(p => p.name === player.displayName && p.position === player.position)
-                    || players.find(p => p.name === player.displayName);
-                if (originalPlayer) {
-                    player.uid = originalPlayer.id;
-                    (player as any).photoURL = photoMap.get(originalPlayer.id) || '';
-                }
-            });
-        });
-
-        logger.info('generateTeamsAction - Éxito:', {
-            teams: result.teams.map(t => ({ name: t.name, playerCount: t.players.length, avgOvr: t.averageOVR })),
-        });
-
-        return result;
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : undefined;
+        return await generateBalancedTeams({ players: canonicalPlayers, teamCount: 2 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'No se pudieron armar los equipos.';
         logger.error('Error generating teams', error);
-        console.error('[generateTeamsAction] Full error:', errorMessage);
-        if (errorStack) console.error('[generateTeamsAction] Stack:', errorStack);
-        return { error: `La IA no pudo generar los equipos: ${errorMessage}` };
+        return { error: message };
     }
 }
 

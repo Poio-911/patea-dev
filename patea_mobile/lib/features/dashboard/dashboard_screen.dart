@@ -2,18 +2,18 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
-import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import '../../core/widgets/patea_states.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/patea_colors.dart';
-import '../../core/theme/match_theme.dart' show fallbackTeamAColor, fallbackTeamBColor;
+import '../../core/theme/match_theme.dart'
+    show fallbackTeamAColor, fallbackTeamBColor;
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_tabs.dart';
@@ -21,20 +21,20 @@ import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/match_model.dart';
+import '../../core/models/group_model.dart';
 import '../../core/widgets/match_countdown.dart';
 import '../../core/models/player_model.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/patea_help_dialog.dart';
 
-
-
-
-
 DateTime? _matchDateTime(MatchModel m) {
   final d = DateTime.tryParse(m.date);
   if (d == null) return null;
   final local = d.toLocal();
-  final clean = (m.time ?? '').replaceAll(' hs', '').replaceAll('hs', '').trim();
+  final clean = (m.time ?? '')
+      .replaceAll(' hs', '')
+      .replaceAll('hs', '')
+      .trim();
   final parts = clean.split(':');
   final hh = parts.isNotEmpty ? int.tryParse(parts[0]) ?? 0 : 0;
   final mm = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
@@ -82,7 +82,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // la pantalla y aparece a medias.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      showDialog<void>(context: context, builder: (_) => const PateaHelpDialog());
+      showDialog<void>(
+        context: context,
+        builder: (_) => const PateaHelpDialog(),
+      );
     });
   }
 
@@ -95,54 +98,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Future<void> _saveTab(int index) async {
     setState(() => _tab = index);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('dashboardActiveTab', index == 1 ? 'grupo' : 'resumen');
+    await prefs.setString(
+      'dashboardActiveTab',
+      index == 1 ? 'grupo' : 'resumen',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(authServiceProvider).currentUser;
     final uid = currentUser?.uid;
-    final playerAsync = uid != null ? ref.watch(singlePlayerStreamProvider(uid)) : null;
+    final playerAsync = uid != null
+        ? ref.watch(singlePlayerStreamProvider(uid))
+        : null;
     final player = playerAsync?.value;
+    final hasGroup = ref.watch(activeGroupIdProvider).value != null;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
-          // Cabecera: Mate Oficial + EL VESTUARIO en Italic + Dorsal Pill
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 14, 20, 0),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.paddingOf(context).top + 18,
+              20,
+              0,
+            ),
             sliver: SliverToBoxAdapter(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SvgPicture.asset(
-                    'assets/icons/mate.svg',
-                    width: 34,
-                    height: 34,
-                    colorFilter: ColorFilter.mode(context.c.primary, BlendMode.srcIn),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          spec(Section.panel).title.toUpperCase(),
-                          style: AppTypography.headline(
-                            size: 26,
-                            weight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Text(
-                          spec(Section.panel).description!,
-                          style: AppTypography.body(size: 11, color: context.c.textSecondary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  Text(
+                    player == null
+                        ? 'Tu fútbol, acá.'
+                        : 'Dale, ${player.name.split(' ').first}.',
+                    style: AppTypography.headline(
+                      size: 30,
+                      weight: FontWeight.w700,
+                      letterSpacing: -1,
                     ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Hay equipo cuando hay ganas de encontrarse.',
+                    style: AppTypography.body(
+                      size: 14,
+                      height: 1.4,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () => context.push(
+                          hasGroup ? '/matches/create' : '/groups',
+                        ),
+                        icon: Icon(
+                          hasGroup
+                              ? Icons.add_rounded
+                              : Icons.group_add_outlined,
+                          size: 19,
+                        ),
+                        label: Text(
+                          hasGroup ? 'Armar partido' : 'Crear mi grupo',
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -154,7 +179,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             sliver: SliverToBoxAdapter(
               child: PateaTabs(
-                tabs: const [PateaTab('Mi Resumen'), PateaTab('Mi Grupo')],
+                tabs: const [PateaTab('Mi fútbol'), PateaTab('El grupo')],
                 active: _tab,
                 onChanged: _saveTab,
               ),
@@ -163,13 +188,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // Contenido dinámico según Tab
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(20, 14, 20, 28 + MediaQuery.of(context).padding.bottom),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              14,
+              20,
+              28 + MediaQuery.of(context).padding.bottom,
+            ),
             sliver: SliverToBoxAdapter(
               child: uid == null
                   ? const SizedBox.shrink()
                   : (_tab == 0
-                      ? _ResumenTab(uid: uid, player: player)
-                      : _GrupoTab(uid: uid)),
+                        ? _ResumenTab(uid: uid, player: player)
+                        : _GrupoTab(uid: uid)),
             ),
           ),
         ],
@@ -202,10 +232,14 @@ class _ResumenTab extends ConsumerWidget {
       },
       loading: () => Padding(
         padding: EdgeInsets.all(40),
-        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
+        child: Center(
+          child: CircularProgressIndicator(color: context.c.primary),
+        ),
       ),
-      error: (e, _) => Center(
-        child: Text('Error: $e', style: AppTypography.body(color: context.c.destructive)),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No pudimos cargar tu grupo.',
+        onRetry: () => ref.invalidate(activeGroupIdStreamProvider(uid)),
       ),
     );
   }
@@ -216,7 +250,11 @@ class _ResumenTabBody extends ConsumerWidget {
   final String? groupId;
   final PlayerModel? player;
 
-  const _ResumenTabBody({required this.uid, required this.groupId, required this.player});
+  const _ResumenTabBody({
+    required this.uid,
+    required this.groupId,
+    required this.player,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -226,12 +264,16 @@ class _ResumenTabBody extends ConsumerWidget {
     return matchesAsync.when(
       loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
+        child: Center(
+          child: CircularProgressIndicator(color: context.c.primary),
+        ),
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Text('No se pudo cargar tu panel.',
-            style: AppTypography.body(size: 13, color: context.c.textSecondary)),
+        child: Text(
+          'No se pudo cargar tu panel.',
+          style: AppTypography.body(size: 13, color: context.c.textSecondary),
+        ),
       ),
       data: (allMatches) {
         final now = DateTime.now();
@@ -253,30 +295,41 @@ class _ResumenTabBody extends ConsumerWidget {
         final matches = allMatches.where(imIn).toList();
 
         final live = matches.where((m) => m.status == 'active').toList();
-        final upcoming = matches.where((m) {
-          if (m.status != 'upcoming') return false;
-          final dt = _matchDateTime(m);
-          return dt != null && !dt.isBefore(now);
-        }).toList()
-          ..sort((a, b) => (_matchDateTime(a) ?? DateTime(9999))
-              .compareTo(_matchDateTime(b) ?? DateTime(9999)));
+        final upcoming =
+            matches.where((m) {
+              if (m.status != 'upcoming') return false;
+              final dt = _matchDateTime(m);
+              return dt != null && !dt.isBefore(now);
+            }).toList()..sort(
+              (a, b) => (_matchDateTime(a) ?? DateTime(9999)).compareTo(
+                _matchDateTime(b) ?? DateTime(9999),
+              ),
+            );
 
         final next = live.isNotEmpty
             ? live.first
             : (upcoming.isNotEmpty ? upcoming.first : null);
 
-        final played = matches
-            .where((m) =>
-                (m.status == 'completed' || m.status == 'evaluated') &&
-                m.teamA != null &&
-                m.teamB != null)
-            .toList()
-          ..sort((a, b) => (DateTime.tryParse(b.date) ?? DateTime(0))
-              .compareTo(DateTime.tryParse(a.date) ?? DateTime(0)));
+        final played =
+            matches
+                .where(
+                  (m) =>
+                      (m.status == 'completed' || m.status == 'evaluated') &&
+                      m.teamA != null &&
+                      m.teamB != null,
+                )
+                .toList()
+              ..sort(
+                (a, b) => (DateTime.tryParse(b.date) ?? DateTime(0)).compareTo(
+                  DateTime.tryParse(a.date) ?? DateTime(0),
+                ),
+              );
         final lastPlayed = played.isNotEmpty ? played.first : null;
 
         final history = ovrHistoryAsync.value ?? const <OvrHistoryEntry>[];
-        final trend = history.isEmpty ? 0 : history.last.newOVR - history.first.oldOVR;
+        final trend = history.isEmpty
+            ? 0
+            : history.last.newOVR - history.first.oldOVR;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -286,10 +339,10 @@ class _ResumenTabBody extends ConsumerWidget {
               _TunnelMatchHero(match: next, isLive: live.isNotEmpty)
             else
               _EmptyMural(
-                label: 'SIN PARTIDOS AGENDADOS',
-                message: 'No estás anotada en ningún partido todavía.',
-                actionLabel: 'Crear partido',
-                onAction: () => context.push('/matches'),
+                label: 'La próxima juntada',
+                message: 'La cancha está esperando.',
+                actionLabel: 'Armar un partido',
+                onAction: () => context.push('/matches/create'),
               ),
 
             const SizedBox(height: 16),
@@ -302,8 +355,13 @@ class _ResumenTabBody extends ConsumerWidget {
             else
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Text('Cargando ficha del jugador...',
-                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                child: Text(
+                  'Cargando ficha del jugador...',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
               ),
 
             const SizedBox(height: 16),
@@ -316,8 +374,13 @@ class _ResumenTabBody extends ConsumerWidget {
             else
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text('Todavía no disputaste ningún partido evaluado.',
-                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                child: Text(
+                  'Todavía no disputaste ningún partido evaluado.',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
               ),
           ],
         );
@@ -385,9 +448,13 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
     super.didChangeDependencies();
     // Arranca acá y no en initState porque necesita saber si el sistema pide
     // menos movimiento, y eso sale del MediaQuery.
-    if (_started) return;
-    _started = true;
-    if (!MediaQuery.disableAnimationsOf(context)) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    if (reduced) {
+      _entrance.value = 1;
+      _ambient.stop();
+      _started = false;
+    } else if (!_started) {
+      _started = true;
       _entrance.forward();
       _ambient.repeat();
     }
@@ -411,7 +478,112 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Theme(
+    data: Theme.of(context).copyWith(
+      extensions: [
+        ...Theme.of(
+          context,
+        ).extensions.values.where((extension) => extension is! PateaColors),
+        PateaColors.game,
+      ],
+    ),
+    child: Builder(
+      builder: (context) => ClipRRect(
+        borderRadius: AppRadii.surfaceAll,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/brand/patea_matchday.webp',
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
+                errorBuilder: (_, _, _) => Image.asset(
+                  'assets/backgrounds/fondo_1.jpg',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      context.c.background.withValues(alpha: 0.83),
+                      context.c.background.withValues(alpha: 0.64),
+                      context.c.background.withValues(alpha: 0.97),
+                    ],
+                    stops: const [0, 0.35, 1],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        widget.isLive
+                            ? Icons.sensors_rounded
+                            : Icons.calendar_today_outlined,
+                        size: 16,
+                        color: widget.isLive
+                            ? context.c.destructive
+                            : context.c.brandVolt,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.isLive
+                              ? 'La pelota está rodando'
+                              : 'Tu próximo partido',
+                          style: AppTypography.body(
+                            size: 13,
+                            weight: FontWeight.w600,
+                            color: context.c.onPhoto,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildHero(context),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: () => context.push(
+                      widget.isLive
+                          ? '/matches/${widget.match.id}/live'
+                          : '/matches/${widget.match.id}',
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.c.brandVolt,
+                      foregroundColor: context.c.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    icon: Icon(
+                      widget.isLive
+                          ? Icons.play_arrow_rounded
+                          : Icons.arrow_forward_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      widget.isLive ? 'Seguir en vivo' : 'Ver convocatoria',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildHero(BuildContext context) {
     final match = widget.match;
     final isLive = widget.isLive;
     final kickoff = _kickoffOf(match);
@@ -432,72 +604,50 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Fila Superior: Reloj Countdown + Fecha & Hora
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isLive
-                          ? 'EN VIVO · MINUTO ${match.currentMinute ?? 1}\''
-                          : 'ARRANCA EN',
-                      style: AppTypography.code(
-                        size: 9,
-                        weight: FontWeight.w800,
-                        color: isLive ? context.c.destructive : context.c.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    if (isLive && a != null && b != null)
-                      _LivePulse(
-                        listenable: _ambient,
-                        child: Text(
-                          '${a.score} — ${b.score}',
-                          style: AppTypography.sportNumber(
-                                  size: 42, color: context.c.primary)
-                              .copyWith(fontStyle: FontStyle.italic),
-                        ),
-                      )
-                    else if (kickoff != null)
-                      MatchCountdown(
-                        kickoff: kickoff,
-                        size: 42,
-                        color: context.c.primary,
-                        isItalic: true,
-                      )
-                    else
-                      Text(
-                        match.title,
-                        style: AppTypography.headline(size: 22, weight: FontWeight.w900)
-                            .copyWith(fontStyle: FontStyle.italic),
-                      ),
-                  ],
+          Text(
+            isLive
+                ? 'En vivo · minuto ${match.currentMinute ?? 1}'
+                : match.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.headline(
+              size: 19,
+              weight: FontWeight.w700,
+              color: context.c.onPhoto,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (isLive && a != null && b != null)
+            _LivePulse(
+              listenable: _ambient,
+              child: Text(
+                '${a.score} — ${b.score}',
+                style: AppTypography.sportNumber(
+                  size: 42,
+                  color: context.c.brandVolt,
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    match.time == null
-                        ? fmtDate(match.date).toUpperCase()
-                        : '${fmtDate(match.date).toUpperCase()} · ${match.time}',
-                    style: AppTypography.code(
-                        size: 10, weight: FontWeight.w800, color: context.c.primary),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'DÍA DE PARTIDO',
-                    style: AppTypography.code(size: 9, color: context.c.textSecondary),
-                  ),
-                ],
+            )
+          else if (kickoff != null)
+            MatchCountdown(
+              kickoff: kickoff,
+              size: 34,
+              color: context.c.brandVolt,
+            )
+          else
+            Text(
+              'Se define entre todos',
+              style: AppTypography.body(
+                size: 15,
+                color: context.c.onPhotoMuted,
               ),
-            ],
+            ),
+          const SizedBox(height: 8),
+          Text(
+            '${fmtDate(match.date)}${match.time == null ? '' : ' · ${match.time}'}',
+            style: AppTypography.body(size: 13, color: context.c.onPhoto),
           ),
-
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
           // Choque de Camisetas y Nombres jugando con sus colores
           if (a != null && b != null)
@@ -514,10 +664,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                     fromLeft: true,
                   ),
                 ),
-                _CleanVsDivider(
-                  entrance: _entrance,
-                  live: isLive,
-                ),
+                _CleanVsDivider(entrance: _entrance, live: isLive),
                 Flexible(
                   child: _CleanTunnelSide(
                     entrance: _entrance,
@@ -543,7 +690,11 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.stadium_outlined, size: 14, color: context.c.textSecondary),
+                    Icon(
+                      Icons.stadium_outlined,
+                      size: 14,
+                      color: context.c.textSecondary,
+                    ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
@@ -564,7 +715,11 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.groups_outlined, size: 14, color: context.c.textSecondary),
+                  Icon(
+                    Icons.groups_outlined,
+                    size: 14,
+                    color: context.c.textSecondary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     '${match.playerUids.length}/${match.matchSize > 0 ? match.matchSize : 14} CONVOCADOS',
@@ -659,10 +814,17 @@ class _CleanTunnelSide extends StatelessWidget {
                   angle: angle,
                   child: Transform.scale(
                     scale: scale,
-                    child: team.jersey != null
-                        ? JerseyWidget(jersey: team.jersey!, size: 82)
-                        : Icon(Icons.checkroom,
-                            size: 64, color: context.c.textSecondary),
+                    child: JerseyWidget(
+                      jersey:
+                          team.jersey ??
+                          JerseyModel(
+                            primaryColor:
+                                '#${teamColor.toARGB32().toRadixString(16).substring(2)}',
+                            secondaryColor:
+                                '#${context.c.onPhoto.toARGB32().toRadixString(16).substring(2)}',
+                          ),
+                      size: 82,
+                    ),
                   ),
                 ),
 
@@ -723,10 +885,7 @@ class _CleanVsDivider extends StatelessWidget {
   final Animation<double> entrance;
   final bool live;
 
-  const _CleanVsDivider({
-    required this.entrance,
-    required this.live,
-  });
+  const _CleanVsDivider({required this.entrance, required this.live});
 
   @override
   Widget build(BuildContext context) {
@@ -812,7 +971,11 @@ class _PlayerPerformanceMural extends StatelessWidget {
             children: [
               Text(
                 'TU OVR ACTUAL',
-                style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
+                style: AppTypography.code(
+                  size: 9,
+                  weight: FontWeight.w800,
+                  color: context.c.textSecondary,
+                ),
               ),
               const SizedBox(height: 2),
               Row(
@@ -821,8 +984,10 @@ class _PlayerPerformanceMural extends StatelessWidget {
                 children: [
                   Text(
                     '${player.ovr}',
-                    style: AppTypography.sportNumber(size: 68, color: context.c.textPrimary)
-                        .copyWith(fontStyle: FontStyle.italic, letterSpacing: -2),
+                    style: AppTypography.sportNumber(
+                      size: 68,
+                      color: context.c.textPrimary,
+                    ).copyWith(fontStyle: FontStyle.italic, letterSpacing: -2),
                   ),
                   if (trend != 0) ...[
                     const SizedBox(width: 4),
@@ -856,18 +1021,28 @@ class _PlayerPerformanceMural extends StatelessWidget {
             children: [
               Text(
                 '$goals GOLES',
-                style: AppTypography.sportNumber(size: 30, color: context.c.primary)
-                    .copyWith(fontStyle: FontStyle.italic),
+                style: AppTypography.sportNumber(
+                  size: 30,
+                  color: context.c.primary,
+                ).copyWith(fontStyle: FontStyle.italic),
               ),
               const SizedBox(height: 2),
               Text(
                 '$matches PARTIDOS JUGADOS',
-                style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textSecondary),
+                style: AppTypography.body(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  color: context.c.textSecondary,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 'PROMEDIO: $avg G/PJ',
-                style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textPrimary),
+                style: AppTypography.code(
+                  size: 10,
+                  weight: FontWeight.w700,
+                  color: context.c.textPrimary,
+                ),
               ),
             ],
           ),
@@ -889,7 +1064,9 @@ class _LastResultMural extends StatelessWidget {
     final b = match.teamB!;
     final diff = a.score - b.score;
     final stamp = diff > 0 ? 'W' : (diff < 0 ? 'L' : 'D');
-    final stampColor = diff > 0 ? context.c.primary : (diff < 0 ? context.c.destructive : context.c.textSecondary);
+    final stampColor = diff > 0
+        ? context.c.primary
+        : (diff < 0 ? context.c.destructive : context.c.textSecondary);
 
     return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
@@ -904,26 +1081,39 @@ class _LastResultMural extends StatelessWidget {
               children: [
                 Text(
                   'ÚLTIMO JUGADO · ${fmtDate(match.date).toUpperCase()}',
-                  style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
+                  style: AppTypography.code(
+                    size: 9,
+                    weight: FontWeight.w800,
+                    color: context.c.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${a.name} ${a.score} — ${b.score} ${b.name}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w800),
+                  style: AppTypography.body(
+                    color: context.c.textSecondary,
+                    size: 14,
+                    weight: FontWeight.w800,
+                  ),
                 ),
                 Text(
                   'Toque para ver crónica y calificaciones',
-                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                  style: AppTypography.body(
+                    size: 11,
+                    color: context.c.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
           Text(
             stamp,
-            style: AppTypography.sportNumber(size: 28, color: stampColor)
-                .copyWith(fontStyle: FontStyle.italic),
+            style: AppTypography.sportNumber(
+              size: 28,
+              color: stampColor,
+            ).copyWith(fontStyle: FontStyle.italic),
           ),
         ],
       ),
@@ -948,7 +1138,8 @@ class _GrupoTab extends ConsumerWidget {
         if (groupId == null) {
           return _EmptyMural(
             label: 'SIN GRUPO ACTIVO',
-            message: 'Unite o creá tu grupo para ver las estadísticas del cuadro.',
+            message:
+                'Unite o creá tu grupo para ver las estadísticas del cuadro.',
             actionLabel: 'Ir a Mis Grupos',
             onAction: () => context.push('/groups'),
           );
@@ -957,10 +1148,14 @@ class _GrupoTab extends ConsumerWidget {
       },
       loading: () => Padding(
         padding: EdgeInsets.all(40),
-        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
+        child: Center(
+          child: CircularProgressIndicator(color: context.c.primary),
+        ),
       ),
-      error: (e, _) => Center(
-        child: Text('Error: $e', style: AppTypography.body(color: context.c.destructive)),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No pudimos cargar tu grupo.',
+        onRetry: () => ref.invalidate(activeGroupIdStreamProvider(uid)),
       ),
     );
   }
@@ -980,12 +1175,16 @@ class _GrupoTabBody extends ConsumerWidget {
     return groupAsync.when(
       loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
+        child: Center(
+          child: CircularProgressIndicator(color: context.c.primary),
+        ),
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Text('No se pudo cargar el grupo.',
-            style: AppTypography.body(size: 13, color: context.c.textSecondary)),
+        child: Text(
+          'No se pudo cargar el grupo.',
+          style: AppTypography.body(size: 13, color: context.c.textSecondary),
+        ),
       ),
       data: (group) {
         if (group == null) {
@@ -999,20 +1198,29 @@ class _GrupoTabBody extends ConsumerWidget {
 
         final players = playersAsync.value ?? const [];
         final matches = matchesAsync.value ?? const [];
-        final played = matches.where((m) => m.status == 'completed' || m.status == 'evaluated').toList();
+        final played = matches
+            .where((m) => m.status == 'completed' || m.status == 'evaluated')
+            .toList();
 
-        final byGoals = [...players]..sort((a, b) => b.stats.goals.compareTo(a.stats.goals));
+        final byGoals = [...players]
+          ..sort((a, b) => b.stats.goals.compareTo(a.stats.goals));
         final byOvr = [...players]..sort((a, b) => b.ovr.compareTo(a.ovr));
-        final topScorer = byGoals.isNotEmpty && byGoals.first.stats.goals > 0 ? byGoals.first : null;
+        final topScorer = byGoals.isNotEmpty && byGoals.first.stats.goals > 0
+            ? byGoals.first
+            : null;
         final topOvr = byOvr.isNotEmpty ? byOvr.first : null;
 
         final now = DateTime.now();
-        final agenda = matches.where((m) {
-          if (m.status != 'upcoming') return false;
-          final dt = _matchDateTime(m);
-          return dt != null && !dt.isBefore(now);
-        }).toList()
-          ..sort((a, b) => (_matchDateTime(a) ?? DateTime(9999)).compareTo(_matchDateTime(b) ?? DateTime(9999)));
+        final agenda =
+            matches.where((m) {
+              if (m.status != 'upcoming') return false;
+              final dt = _matchDateTime(m);
+              return dt != null && !dt.isBefore(now);
+            }).toList()..sort(
+              (a, b) => (_matchDateTime(a) ?? DateTime(9999)).compareTo(
+                _matchDateTime(b) ?? DateTime(9999),
+              ),
+            );
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1028,36 +1236,62 @@ class _GrupoTabBody extends ConsumerWidget {
                     children: [
                       Text(
                         'TU CUADRO',
-                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
+                        style: AppTypography.code(
+                          size: 9,
+                          weight: FontWeight.w800,
+                          color: context.c.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         group.name.toUpperCase(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.headline(size: 32, weight: FontWeight.w900)
-                            .copyWith(fontStyle: FontStyle.italic, letterSpacing: -1),
+                        style:
+                            AppTypography.headline(
+                              size: 32,
+                              weight: FontWeight.w900,
+                            ).copyWith(
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: -1,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       InkWell(
                         onTap: () {
-                          Clipboard.setData(ClipboardData(text: group.inviteCode));
+                          Clipboard.setData(
+                            ClipboardData(text: group.inviteCode),
+                          );
                           HapticFeedback.selectionClick();
-                          PateaSnack.info(context, 'Código copiado: ${group.inviteCode}');
+                          PateaSnack.info(
+                            context,
+                            'Código copiado: ${group.inviteCode}',
+                          );
                         },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'CÓDIGO: ',
-                              style: AppTypography.code(size: 11, color: context.c.textSecondary),
+                              style: AppTypography.code(
+                                size: 11,
+                                color: context.c.textSecondary,
+                              ),
                             ),
                             Text(
                               group.inviteCode,
-                              style: AppTypography.code(size: 12, weight: FontWeight.w800, color: context.c.primary),
+                              style: AppTypography.code(
+                                size: 12,
+                                weight: FontWeight.w800,
+                                color: context.c.primary,
+                              ),
                             ),
                             const SizedBox(width: 4),
-                            Icon(Icons.copy_rounded, size: 12, color: context.c.primary),
+                            Icon(
+                              Icons.copy_rounded,
+                              size: 12,
+                              color: context.c.primary,
+                            ),
                           ],
                         ),
                       ),
@@ -1079,17 +1313,52 @@ class _GrupoTabBody extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PLANTEL TOTAL', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
-                    Text('${players.length}', style: AppTypography.sportNumber(size: 38)),
-                    Text('jugadores registrados', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                    Text(
+                      'PLANTEL TOTAL',
+                      style: AppTypography.code(
+                        size: 9,
+                        weight: FontWeight.w800,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '${players.length}',
+                      style: AppTypography.sportNumber(size: 38),
+                    ),
+                    Text(
+                      'jugadores registrados',
+                      style: AppTypography.body(
+                        size: 11,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('PARTIDOS JUGADOS', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
-                    Text('${played.length}', style: AppTypography.sportNumber(size: 38, color: context.c.primary)),
-                    Text('en el historial', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                    Text(
+                      'PARTIDOS JUGADOS',
+                      style: AppTypography.code(
+                        size: 9,
+                        weight: FontWeight.w800,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '${played.length}',
+                      style: AppTypography.sportNumber(
+                        size: 38,
+                        color: context.c.primary,
+                      ),
+                    ),
+                    Text(
+                      'en el historial',
+                      style: AppTypography.body(
+                        size: 11,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1102,7 +1371,11 @@ class _GrupoTabBody extends ConsumerWidget {
             // ── 3. DESTACADOS DEL PLANTEL (MEJOR OVR Y GOLEADOR) ────────
             Text(
               'FIGURAS DEL PLANTEL',
-              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
+              style: AppTypography.code(
+                size: 9,
+                weight: FontWeight.w800,
+                color: context.c.textSecondary,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -1135,18 +1408,29 @@ class _GrupoTabBody extends ConsumerWidget {
             // ── 4. EN AGENDA (LISTA ABIERTA) ─────────────────────────────
             Text(
               'EN AGENDA',
-              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary),
+              style: AppTypography.code(
+                size: 9,
+                weight: FontWeight.w800,
+                color: context.c.textSecondary,
+              ),
             ),
             const SizedBox(height: 8),
 
             if (agenda.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text('Nada agendado todavía.',
-                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                child: Text(
+                  'Nada agendado todavía.',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
               )
             else
-              ...agenda.take(4).map(
+              ...agenda
+                  .take(4)
+                  .map(
                     (m) => InkWell(
                       onTap: () => context.push('/matches/${m.id}'),
                       child: Padding(
@@ -1159,12 +1443,22 @@ class _GrupoTabBody extends ConsumerWidget {
                                 m.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w800),
+                                style: AppTypography.body(
+                                  color: context.c.textSecondary,
+                                  size: 13,
+                                  weight: FontWeight.w800,
+                                ),
                               ),
                             ),
                             Text(
-                              m.time == null ? fmtDate(m.date) : '${fmtDate(m.date)} · ${m.time}',
-                              style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.primary),
+                              m.time == null
+                                  ? fmtDate(m.date)
+                                  : '${fmtDate(m.date)} · ${m.time}',
+                              style: AppTypography.code(
+                                size: 10,
+                                weight: FontWeight.w800,
+                                color: context.c.primary,
+                              ),
                             ),
                           ],
                         ),
@@ -1175,7 +1469,10 @@ class _GrupoTabBody extends ConsumerWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => SharePlus.instance.share(
-                ShareParams(text: '¡Sumate a "${group.name}" en Pateá! Código: ${group.inviteCode}'),
+                ShareParams(
+                  text:
+                      '¡Sumate a "${group.name}" en Pateá! Código: ${group.inviteCode}',
+                ),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: context.c.primary,
@@ -1184,7 +1481,13 @@ class _GrupoTabBody extends ConsumerWidget {
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
               ),
               icon: const Icon(Icons.share_rounded, size: 16),
-              label: Text('Invitar al cuadro', style: AppTypography.headline(size: 13, weight: FontWeight.w800)),
+              label: Text(
+                'Invitar al cuadro',
+                style: AppTypography.headline(
+                  size: 13,
+                  weight: FontWeight.w800,
+                ),
+              ),
             ),
           ],
         );
@@ -1206,15 +1509,19 @@ class _TeamJerseyStack extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final teams = ref.watch(groupTeamsStreamProvider(groupId)).value ?? const [];
+    final teams =
+        ref.watch(groupTeamsStreamProvider(groupId)).value ?? const [];
 
     if (teams.isEmpty) {
       return SizedBox(
         width: 72,
         height: 72,
         child: Center(
-          child: Icon(Icons.checkroom_rounded,
-              size: 34, color: context.c.textSecondary.withValues(alpha: 0.4)),
+          child: Icon(
+            Icons.checkroom_rounded,
+            size: 34,
+            color: context.c.textSecondary.withValues(alpha: 0.4),
+          ),
         ),
       );
     }
@@ -1236,7 +1543,10 @@ class _TeamJerseyStack extends ConsumerWidget {
                 angle: i * -0.09,
                 child: Opacity(
                   opacity: i == 0 ? 1 : 0.55 - (i - 1) * 0.15,
-                  child: JerseyWidget(jersey: shown[i].jersey, size: 58 - i * 4.0),
+                  child: JerseyWidget(
+                    jersey: shown[i].jersey,
+                    size: 58 - i * 4.0,
+                  ),
                 ),
               ),
             ),
@@ -1278,7 +1588,12 @@ class _GroupFigureRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: tierColor,
                   shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: tierColor.withValues(alpha: 0.5), blurRadius: 6)],
+                  boxShadow: [
+                    BoxShadow(
+                      color: tierColor.withValues(alpha: 0.5),
+                      blurRadius: 6,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 10),
@@ -1287,11 +1602,17 @@ class _GroupFigureRow extends StatelessWidget {
                 children: [
                   Text(
                     name.toUpperCase(),
-                    style: AppTypography.headline(size: 14, weight: FontWeight.w800),
+                    style: AppTypography.headline(
+                      size: 14,
+                      weight: FontWeight.w800,
+                    ),
                   ),
                   Text(
                     label,
-                    style: AppTypography.code(size: 9, color: context.c.textSecondary),
+                    style: AppTypography.code(
+                      size: 9,
+                      color: context.c.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -1299,8 +1620,10 @@ class _GroupFigureRow extends StatelessWidget {
           ),
           Text(
             value,
-            style: AppTypography.sportNumber(size: 26, color: valueColor)
-                .copyWith(fontStyle: FontStyle.italic),
+            style: AppTypography.sportNumber(
+              size: 26,
+              color: valueColor,
+            ).copyWith(fontStyle: FontStyle.italic),
           ),
         ],
       ),
@@ -1328,9 +1651,19 @@ class _EmptyMural extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
+          Text(
+            label,
+            style: AppTypography.code(
+              size: 9,
+              weight: FontWeight.w800,
+              color: context.c.textSecondary,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(message, style: AppTypography.headline(size: 16, weight: FontWeight.w800)),
+          Text(
+            message,
+            style: AppTypography.headline(size: 16, weight: FontWeight.w800),
+          ),
           const SizedBox(height: 12),
           ElevatedButton(
             onPressed: onAction,
@@ -1339,7 +1672,10 @@ class _EmptyMural extends StatelessWidget {
               foregroundColor: context.c.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
             ),
-            child: Text(actionLabel, style: AppTypography.headline(size: 12, weight: FontWeight.w800)),
+            child: Text(
+              actionLabel,
+              style: AppTypography.headline(size: 12, weight: FontWeight.w800),
+            ),
           ),
         ],
       ),
@@ -1362,34 +1698,66 @@ class _WelcomeEmptyState extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('PRIMER PASO',
-              style: AppTypography.headline(
-                  size: 11,
-                  weight: FontWeight.w800,
-                  color: context.c.textSecondary,
-                  letterSpacing: 1.2)),
+          ClipRRect(
+            borderRadius: AppRadii.surfaceAll,
+            child: AspectRatio(
+              aspectRatio: 1.65,
+              child: Image.asset(
+                'assets/brand/patea_matchday.webp',
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
+                errorBuilder: (_, _, _) => Image.asset(
+                  'assets/backgrounds/fondo_1.jpg',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Tu cuadro empieza acá',
+            style: AppTypography.headline(
+              size: 11,
+              weight: FontWeight.w800,
+              color: context.c.textSecondary,
+              letterSpacing: 1.2,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Todavía no estás en ningún grupo',
-              style: AppTypography.headline(size: 22, weight: FontWeight.w900)),
+          Text(
+            'Primero, juntá a tu gente.',
+            style: AppTypography.headline(size: 22, weight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
           Text(
             'Un grupo es tu cuadro: ahí viven los jugadores, los partidos y las '
             'evaluaciones. Armá el tuyo o entrá al de un amigo con su código.',
-            style: AppTypography.body(size: 13, color: context.c.textSecondary, height: 1.5),
+            style: AppTypography.body(
+              size: 13,
+              color: context.c.textSecondary,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 22),
           FilledButton.icon(
             onPressed: () => context.push('/groups'),
             style: FilledButton.styleFrom(
               backgroundColor: context.c.primary,
-              foregroundColor: context.c.background,
+              foregroundColor: context.c.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+              shape: const RoundedRectangleBorder(
+                borderRadius: AppRadii.cardAll,
+              ),
             ),
             icon: const Icon(Icons.group_add_rounded, size: 18),
-            label: Text('Crear mi grupo',
-                style: AppTypography.headline(
-                    size: 14, weight: FontWeight.w800, color: context.c.background)),
+            label: Text(
+              'Crear mi grupo',
+              style: AppTypography.headline(
+                size: 14,
+                weight: FontWeight.w800,
+                color: context.c.onPrimary,
+              ),
+            ),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
@@ -1409,7 +1777,9 @@ class _WelcomeEmptyState extends StatelessWidget {
               ),
               icon: const Icon(Icons.help_outline, size: 16),
               label: const Text('Cómo funciona Pateá'),
-              style: TextButton.styleFrom(foregroundColor: context.c.textSecondary),
+              style: TextButton.styleFrom(
+                foregroundColor: context.c.textSecondary,
+              ),
             ),
           ),
         ],

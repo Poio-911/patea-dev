@@ -19,39 +19,39 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
   static const List<_TutorialStep> _steps = [
     _TutorialStep(
       icon: Icons.groups_2_rounded,
-      title: 'Paso 1: El Corazón del Club',
+      title: 'Tu grupo, tu punto de encuentro',
       content:
-          'Todo empieza en tu Grupo. Es el punto de encuentro donde podés chatear, ver la actividad reciente y organizar la próxima juntada. Creá tu propio grupo o unite a uno con un código.',
+          'Creá un grupo o unite con su código. Ahí encontrás al plantel y organizás los partidos con tu gente.',
     ),
     _TutorialStep(
       icon: Icons.checkroom_rounded,
-      title: 'Paso 2: Locker Room',
+      title: 'Equipos con identidad',
       content:
-          'Diseñá la camiseta de tu equipo y armá planteles fijos. Los equipos tienen memoria: seguí su historial de victorias y la evolución de cada jugador a lo largo del tiempo.',
+          'Diseñá la camiseta y elegí el plantel de tu equipo. Podés usarlo para organizar partidos por equipos sin volver a elegir a cada jugador.',
     ),
     _TutorialStep(
       icon: Icons.sports_soccer_rounded,
-      title: 'Paso 3: Modos de Juego',
+      title: 'Elegí cómo se arma el partido',
       content:
           'Elegí cómo jugar: Manual (invitación directa), Colaborativo (inscripción abierta para el grupo) o Por Equipos (duelos clásicos con plantillas cerradas).',
     ),
     _TutorialStep(
       icon: Icons.lock_clock_rounded,
-      title: 'Paso 4: Subí de Nivel',
+      title: 'Jugá, evaluá y seguí tu progreso',
       content:
           'Después de jugar, puntuá a tus amigos para que su OVR y atributos evolucionen. ¡Tranquilo! Las evaluaciones son anónimas y seguras hasta que decidas revelar tu identidad.',
     ),
     _TutorialStep(
       icon: Icons.travel_explore_rounded,
-      title: 'Paso 5: Mercado de Fichajes',
+      title: 'Encontrá a quien falta',
       content:
           'Encontrá jugadores libres para completar tu equipo o anotarte en partidos públicos compatibles con tu nivel. ¡Hacete ver y dejá tu huella en la cancha!',
     ),
     _TutorialStep(
       icon: Icons.emoji_events_rounded,
-      title: 'Paso 6: Alcanzá la Cima',
+      title: 'Volvé a ver cómo jugaste',
       content:
-          'Desbloqueá logros por tu constancia y talento. Compará tu nivel con la comunidad en los Rankings globales y convertite en una leyenda de Pateá.',
+          'En tu perfil tenés el historial de partidos, las evaluaciones y la evolución de tu OVR. La tabla de tu grupo te permite comparar el progreso con tus compañeros.',
     ),
   ];
 

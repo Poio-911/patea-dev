@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -23,11 +26,8 @@ import 'package:patea_mobile/core/widgets/player_position_badge.dart';
 /// que encuentra los `height:` fijos que recortan cuando alguien agranda la
 /// letra del sistema — el pendiente 0.7 de la Fase 0.
 ///
-/// **Dos límites, dichos de frente.** Los íconos de Material salen como
-/// cuadraditos: su fuente no se carga en un test de widgets, y no se arregla
-/// desde acá. Y el 1,3× cubre los componentes compartidos, no las 545 alturas
-/// fijas repartidas por las pantallas — para eso harían falta goldens de
-/// pantalla, que necesitan un arnés de providers por cada una.
+/// Se precargan las fuentes, los iconos y los avatares antes del primer
+/// caso: una captura de placeholders no verifica la interfaz que se entrega.
 ///
 /// Aun así atrapan lo que este trabajo tocó: si alguien cambia un token, una
 /// fuente, un radio o un espaciado del sistema, estas cuatro imágenes cambian.
@@ -41,10 +41,61 @@ void main() {
   // cualquier test, y `google_fonts` necesita el binding para leer el asset.
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
+  setUpAll(() async {
     // Las fuentes están empaquetadas; esto impide que un test sin red las
     // busque igual y termine comparando un golden dibujado en Roboto.
     GoogleFonts.config.allowRuntimeFetching = false;
+    for (final weight in [
+      FontWeight.w400,
+      FontWeight.w500,
+      FontWeight.w600,
+      FontWeight.w700,
+    ]) {
+      AppTypography.headline(weight: weight);
+      AppTypography.editorial(weight: weight);
+    }
+    for (final weight in [
+      FontWeight.w300,
+      FontWeight.w400,
+      FontWeight.w500,
+      FontWeight.w600,
+      FontWeight.w700,
+      FontWeight.w800,
+      FontWeight.w900,
+    ]) {
+      AppTypography.body(weight: weight);
+    }
+    for (final weight in [
+      FontWeight.w400,
+      FontWeight.w500,
+      FontWeight.w600,
+      FontWeight.w700,
+      FontWeight.w800,
+    ]) {
+      AppTypography.code(weight: weight);
+      AppTypography.condensed(weight: weight);
+    }
+    AppTypography.jersey();
+    await GoogleFonts.pendingFonts();
+    final icons = FontLoader('MaterialIcons')
+      ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+    await icons.load();
+    for (var number = 1; number <= 4; number++) {
+      final ready = Completer<void>();
+      void complete() {
+        if (!ready.isCompleted) ready.complete();
+      }
+
+      AssetImage('assets/avatars/player$number.png')
+          .resolve(ImageConfiguration.empty)
+          .addListener(
+            ImageStreamListener(
+              (_, _) => complete(),
+              onError: (_, _) => complete(),
+            ),
+          );
+      await ready.future;
+    }
   });
 
   for (final (tema, nombre) in [
@@ -112,29 +163,40 @@ class _Muestrario extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('El zaguero la tiró afuera',
-                      style: AppTypography.headline(color: c.textPrimary)),
-                  Text('Y el arquero no la vio pasar',
-                      style: AppTypography.body(color: c.textSecondary)),
+                  Text(
+                    'El zaguero la tiró afuera',
+                    style: AppTypography.headline(color: c.textPrimary),
+                  ),
+                  Text(
+                    'Y el arquero no la vio pasar',
+                    style: AppTypography.body(color: c.textSecondary),
+                  ),
                 ],
               ),
             ),
 
             _Titulo('Tipografía'),
             Text('Pateá 3-6', style: AppTypography.jersey(size: 30)),
-            Text('Barlow Condensed 16', style: AppTypography.condensed(size: 16)),
+            Text(
+              'Barlow Condensed 16',
+              style: AppTypography.condensed(size: 16),
+            ),
             Text('Lora editorial 15', style: AppTypography.editorial(size: 15)),
             Text('Source Code Pro 12', style: AppTypography.code(size: 12)),
             const Text('Text sin style — tiene que heredar Outfit'),
 
             _Titulo('Botones'),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              ElevatedButton(onPressed: () {}, child: const Text('Elevated')),
-              FilledButton(onPressed: () {}, child: const Text('Filled')),
-              OutlinedButton(onPressed: () {}, child: const Text('Outlined')),
-              TextButton(onPressed: () {}, child: const Text('Text')),
-              const ElevatedButton(onPressed: null, child: Text('Off')),
-            ]),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ElevatedButton(onPressed: () {}, child: const Text('Elevated')),
+                FilledButton(onPressed: () {}, child: const Text('Filled')),
+                OutlinedButton(onPressed: () {}, child: const Text('Outlined')),
+                TextButton(onPressed: () {}, child: const Text('Text')),
+                const ElevatedButton(onPressed: null, child: Text('Off')),
+              ],
+            ),
 
             _Titulo('Pestañas'),
             PateaTabs(
@@ -148,21 +210,27 @@ class _Muestrario extends StatelessWidget {
             ),
 
             _Titulo('Puestos'),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final p in ['DEL', 'MED', 'DEF', 'POR'])
-                PlayerPositionBadge(position: p),
-              for (final p in ['DEL', 'MED'])
-                PlayerPositionBadge(position: p, dense: true),
-            ]),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final p in ['DEL', 'MED', 'DEF', 'POR'])
+                  PlayerPositionBadge(position: p),
+                for (final p in ['DEL', 'MED'])
+                  PlayerPositionBadge(position: p, dense: true),
+              ],
+            ),
 
             _Titulo('Avatares'),
-            Row(children: [
-              for (final s in ['uno', 'dos', 'tres', 'cuatro'])
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: PateaAvatar(photoUrl: null, seed: s, size: 44),
-                ),
-            ]),
+            Row(
+              children: [
+                for (final s in ['uno', 'dos', 'tres', 'cuatro'])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: PateaAvatar(photoUrl: null, seed: s, size: 44),
+                  ),
+              ],
+            ),
 
             _Titulo('Campo y chips'),
             const TextField(
@@ -172,15 +240,19 @@ class _Muestrario extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Wrap(spacing: 8, children: [
-              const Chip(label: Text('Chip')),
-              FilterChip(
+            Wrap(
+              spacing: 8,
+              children: [
+                const Chip(label: Text('Chip')),
+                FilterChip(
                   label: const Text('Elegido'),
                   selected: true,
-                  onSelected: (_) {}),
-              Switch(value: true, onChanged: (_) {}),
-              Checkbox(value: true, onChanged: (_) {}),
-            ]),
+                  onSelected: (_) {},
+                ),
+                Switch(value: true, onChanged: (_) {}),
+                Checkbox(value: true, onChanged: (_) {}),
+              ],
+            ),
 
             _Titulo('Estados'),
             const PateaLoading(height: 60),
@@ -204,15 +276,15 @@ class _Titulo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 20, bottom: 8),
-        child: Text(
-          texto.toUpperCase(),
-          style: AppTypography.headline(
-            size: 12,
-            weight: FontWeight.w800,
-            letterSpacing: 1.3,
-            color: context.c.primary,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(top: 20, bottom: 8),
+    child: Text(
+      texto.toUpperCase(),
+      style: AppTypography.headline(
+        size: 12,
+        weight: FontWeight.w800,
+        letterSpacing: 1.3,
+        color: context.c.primary,
+      ),
+    ),
+  );
 }

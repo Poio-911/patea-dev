@@ -120,10 +120,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 
   Future<void> _handleShuffle(MatchModel match) async {
+    if (_isShuffling) return;
     setState(() => _isShuffling = true);
     try {
-      await ref.read(matchServiceProvider).shuffleTeams(match.id);
-      if (mounted) _showSnack('¡Equipos sorteados!');
+      final changed = await ref.read(matchServiceProvider).shuffleTeams(match.id);
+      if (mounted) _showSnack(changed ? 'Equipos equilibrados por nivel y posiciones.' : 'Los equipos ya están equilibrados.');
     } catch (e) {
       if (mounted) _showError('$e');
     } finally {
@@ -1298,7 +1299,7 @@ class _OrganizerPanel extends StatelessWidget {
                   ),
                 if (hasTeams)
                   OutlinedButton.icon(
-                    onPressed: () => EditTeamsSheet.show(context, match),
+                    onPressed: isShuffling ? null : () => EditTeamsSheet.show(context, match),
                     icon: const Icon(Icons.swap_horiz_rounded, size: 15),
                     label: const Text('Armar equipos'),
                     style: OutlinedButton.styleFrom(
@@ -1314,7 +1315,7 @@ class _OrganizerPanel extends StatelessWidget {
                   icon: isShuffling
                       ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary))
                       : const Icon(Icons.shuffle_rounded, size: 15),
-                  label: Text(hasTeams ? 'Sortear' : 'Generar'),
+                  label: Text(hasTeams ? 'Recalcular equilibrio' : 'Equilibrar equipos'),
                   style: OutlinedButton.styleFrom(
                     backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
                     foregroundColor: context.c.primary,

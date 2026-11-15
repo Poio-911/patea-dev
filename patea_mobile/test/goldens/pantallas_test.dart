@@ -32,6 +32,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -93,7 +94,12 @@ void main() {
     // Grotesk llega hasta 700 y Anton tiene un solo peso; los w800/w900 que
     // la app le pide a `headline` los resuelve el paquete contra el catálogo,
     // no contra el bundle.
-    const hasta700 = [FontWeight.w400, FontWeight.w500, FontWeight.w600, FontWeight.w700];
+    const hasta700 = [
+      FontWeight.w400,
+      FontWeight.w500,
+      FontWeight.w600,
+      FontWeight.w700,
+    ];
     const hasta800 = [...hasta700, FontWeight.w800];
     for (final p in hasta700) {
       AppTypography.headline(weight: p);
@@ -125,13 +131,18 @@ void main() {
 
     final manifiesto = await AssetManifest.loadFromAssetBundle(rootBundle);
     for (final clave in manifiesto.listAssets()) {
-      if (!clave.endsWith('.jpg') && !clave.endsWith('.png')) continue;
+      if (!clave.endsWith('.jpg') &&
+          !clave.endsWith('.png') &&
+          !clave.endsWith('.webp'))
+        continue;
       final listo = Completer<void>();
       void terminar() {
         if (!listo.isCompleted) listo.complete();
       }
 
-      AssetImage(clave).resolve(ImageConfiguration.empty).addListener(
+      AssetImage(clave)
+          .resolve(ImageConfiguration.empty)
+          .addListener(
             ImageStreamListener(
               (_, _) => terminar(),
               onError: (_, _) => terminar(),
@@ -143,17 +154,37 @@ void main() {
 
   setUp(() {
     // El Panel guarda la pestaña elegida en preferencias apenas se monta.
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'welcomeShown': true});
   });
 
   for (final (nombre, construir) in _pantallas) {
+    Widget construirParaPrueba() => nombre == 'panel'
+        ? Builder(builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: construir(),
+          ))
+        : construir();
     for (final (tema, sufijo) in [
       (AppTheme.darkTheme, 'game'),
       (AppTheme.lightTheme, 'claro'),
     ]) {
       testWidgets('$nombre · $sufijo', (tester) async {
-        final errores = await montarPantalla(tester, construir(), tema: tema);
+        final errores = await montarPantalla(tester, construirParaPrueba(), tema: tema);
 
+        if (nombre == 'panel') {
+          // Bundle → SVG bytes → vector decode son etapas asincrónicas separadas.
+          // Avanzar cada etapa antes de la captura evita camisetas intermitentes.
+          for (var frame = 0; frame < 3; frame++) {
+            await tester.runAsync(() async {
+              for (final element in find.byType(SvgPicture).evaluate()) {
+                await (element.widget as SvgPicture).bytesLoader.loadBytes(element);
+              }
+              await vg.waitForPendingDecodes();
+            });
+            await tester.pump();
+          }
+          await tester.pumpAndSettle();
+        }
         expect(errores, isEmpty, reason: '\n${resumirErrores(errores)}\n');
         await expectLater(
           find.byType(MaterialApp),
@@ -167,10 +198,17 @@ void main() {
         (AppTheme.darkTheme, 'game'),
         (AppTheme.lightTheme, 'claro'),
       ]) {
-        final errores =
-            await montarPantalla(tester, construir(), tema: tema, escala: 1.3);
-        expect(errores, isEmpty,
-            reason: '\n$nombre · $cual · 1,3×\n${resumirErrores(errores)}\n');
+        final errores = await montarPantalla(
+          tester,
+          construir(),
+          tema: tema,
+          escala: 1.3,
+        );
+        expect(
+          errores,
+          isEmpty,
+          reason: '\n$nombre · $cual · 1,3×\n${resumirErrores(errores)}\n',
+        );
       }
     });
   }

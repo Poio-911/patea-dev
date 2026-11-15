@@ -8,7 +8,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
-import 'soccer_runner_icon.dart';
+import 'patea_brand.dart';
 import 'patea_help_dialog.dart';
 import 'patea_user_menu_sheet.dart';
 import 'patea_notifications_sheet.dart';
@@ -57,17 +57,19 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
     // nombre de la cuenta de prueba: cualquier usuario veía ese nombre
     // mientras su documento no había llegado. Ahora, sin jugador, no se
     // dibuja nada — queda el avatar, que es el disparador del menú.
-    final firstName = overrideUserName ??
+    final firstName =
+        overrideUserName ??
         player?.name.split(' ').first ??
         currentUser?.displayName?.split(' ').first;
 
     final userPosition = overrideUserPosition ?? player?.position;
-    final userPhotoUrl = overrideUserPhotoUrl ?? player?.photoUrl ?? currentUser?.photoURL;
+    final userPhotoUrl =
+        overrideUserPhotoUrl ?? player?.photoUrl ?? currentUser?.photoURL;
     final initial = (firstName != null && firstName.isNotEmpty)
         ? firstName[0].toUpperCase()
         : 'P';
 
-    final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+    final unread = ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
 
     return ClipRect(
       child: BackdropFilter(
@@ -78,12 +80,9 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
             // y por eso el desenfoque no se notaba: el vidrio tapaba lo que
             // tenía que dejar pasar. El blur se ve cuando baja la opacidad,
             // no cuando sube el sigma.
-            color: context.c.card.withValues(alpha: 0.40),
+            color: context.c.card.withValues(alpha: 0.84),
             border: Border(
-              bottom: BorderSide(
-                color: context.c.overlayLine,
-                width: 1,
-              ),
+              bottom: BorderSide(color: context.c.overlayLine, width: 1),
             ),
           ),
           child: SafeArea(
@@ -96,12 +95,16 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Logo
-                    InkWell(
-                      onTap: () => context.go('/'),
-                      borderRadius: AppRadii.chipAll,
-                      child: Padding(
-                        padding: EdgeInsets.all(4.0),
-                        child: SoccerRunnerIcon(size: 28, color: context.c.primary),
+                    Semantics(
+                      label: 'Pateá, ir al inicio',
+                      button: true,
+                      child: InkWell(
+                        onTap: () => context.go('/'),
+                        borderRadius: AppRadii.chipAll,
+                        child: Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: const PateaBrand(width: 88, height: 32),
+                        ),
                       ),
                     ),
 
@@ -109,12 +112,14 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                       children: [
                         // Ayuda
                         IconButton(
+                          tooltip: 'Cómo funciona Pateá',
                           icon: Icon(
                             Icons.help_outline_rounded,
                             size: 20,
                             color: context.c.textSecondary,
                           ),
-                          onPressed: onHelpTap ??
+                          onPressed:
+                              onHelpTap ??
                               () {
                                 showDialog(
                                   context: context,
@@ -139,18 +144,23 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                           clipBehavior: Clip.none,
                           children: [
                             IconButton(
+                              tooltip: unread > 0
+                                  ? '$unread notificaciones sin leer'
+                                  : 'Notificaciones',
                               icon: Icon(
                                 Icons.notifications_none_rounded,
                                 size: 20,
                                 color: context.c.textSecondary,
                               ),
-                              onPressed: onNotificationsTap ??
+                              onPressed:
+                                  onNotificationsTap ??
                                   () {
                                     showModalBottomSheet(
                                       context: context,
                                       backgroundColor: Colors.transparent,
                                       isScrollControlled: true,
-                                      builder: (_) => const PateaNotificationsSheet(),
+                                      builder: (_) =>
+                                          const PateaNotificationsSheet(),
                                     );
                                   },
                               visualDensity: VisualDensity.compact,
@@ -182,7 +192,8 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
 
                         // Identidad -> abre el menú de usuario
                         InkWell(
-                          onTap: onProfileTap ??
+                          onTap:
+                              onProfileTap ??
                               () {
                                 showModalBottomSheet(
                                   context: context,
@@ -193,20 +204,31 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                               },
                           borderRadius: AppRadii.surfaceAll,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
                             child: Row(
                               children: [
-                                if (firstName != null) ...[
+                                if (firstName != null &&
+                                    MediaQuery.sizeOf(context).width > 390) ...[
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Text(
-                                        firstName,
-                                        style: AppTypography.headline(
-                                          size: 13,
-                                          weight: FontWeight.w800,
-                                          color: context.c.textPrimary,
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 92,
+                                        ),
+                                        child: Text(
+                                          firstName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTypography.headline(
+                                            size: 13,
+                                            weight: FontWeight.w800,
+                                            color: context.c.textPrimary,
+                                          ),
                                         ),
                                       ),
                                       // La web usa `PlayerPositionBadge` con
@@ -217,7 +239,9 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                           style: AppTypography.headline(
                                             size: 10,
                                             weight: FontWeight.w800,
-                                            color: context.c.positionColor(userPosition),
+                                            color: context.c.positionColor(
+                                              userPosition,
+                                            ),
                                           ),
                                         ),
                                     ],

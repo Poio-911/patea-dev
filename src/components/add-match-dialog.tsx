@@ -713,12 +713,13 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
 
         let finalTeams: Team[] = [];
         if (selectedPlayersData.length === selectedMatchSize) {
-            const teamGenerationResult = await generateTeamsAction(selectedPlayersData);
+            const idToken = await auth?.currentUser?.getIdToken();
+            const teamGenerationResult = await generateTeamsAction(selectedPlayersData, idToken);
             if ('error' in teamGenerationResult) {
                 throw new Error(teamGenerationResult.error || 'No se pudieron generar los equipos.');
             }
             if (!teamGenerationResult.teams) {
-                throw new Error('La respuesta de la IA no contiene equipos.');
+                throw new Error('No se pudieron armar los equipos. Revisá el plantel e intentá de nuevo.');
             }
             finalTeams = teamGenerationResult.teams;
         }
@@ -964,7 +965,7 @@ export function AddMatchDialog({ allPlayers, disabled }: AddMatchDialogProps) {
                                             <Tooltip>
                                                 <TooltipTrigger asChild><button type="button"><HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" /></button></TooltipTrigger>
                                                 <TooltipContent className="max-w-xs">
-                                                    <p><b>Manual:</b> El DT elige, la IA arma equipos.</p>
+                                                    <p><b>Manual:</b> Elegís el plantel y se equilibran los equipos por nivel y posición.</p>
                                                     <p><b>Colaborativo:</b> Los jugadores se apuntan.</p>
                                                     <p><b>Por Equipos:</b> Duelo de equipos creados.</p>
                                                 </TooltipContent>

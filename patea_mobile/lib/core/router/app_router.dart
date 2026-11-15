@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/sections.dart';
@@ -75,7 +76,9 @@ class AuthRouterState extends ChangeNotifier {
 }
 
 final authRouterStateProvider = Provider<AuthRouterState>((ref) {
-  final notifier = AuthRouterState(ref.watch(authServiceProvider).authStateChanges);
+  final notifier = AuthRouterState(
+    ref.watch(authServiceProvider).authStateChanges,
+  );
   ref.onDispose(notifier.dispose);
   return notifier;
 });
@@ -109,10 +112,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
       // `StatefulShellRoute.indexedStack` en vez de `ShellRoute`: cada
       // pestaña conserva su estado, su scroll y su pila de navegación al
@@ -123,27 +123,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, navigationShell) =>
             _ScaffoldWithNavBar(navigationShell: navigationShell),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/players', builder: (context, state) => const PlayersListScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/matches', builder: (context, state) => const MatchesScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/competitions', builder: (context, state) => const CompetitionsScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/social', builder: (context, state) => const SocialFeedScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/explorar', builder: (context, state) => const ExplorarScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/evaluations', builder: (context, state) => const EvaluationsInboxScreen()),
-          ]),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/players',
+                builder: (context, state) => const PlayersListScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/matches',
+                builder: (context, state) => const MatchesScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/competitions',
+                builder: (context, state) => const CompetitionsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/social',
+                builder: (context, state) => const SocialFeedScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/explorar',
+                builder: (context, state) => const ExplorarScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/evaluations',
+                builder: (context, state) => const EvaluationsInboxScreen(),
+              ),
+            ],
+          ),
         ],
       ),
 
@@ -205,7 +240,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         builder: (context, state) {
           final uid = auth.user?.uid ?? '';
-          return _withBackground(PlayerDetailScreen(playerId: uid, asOwnProfile: true));
+          return _withBackground(
+            PlayerDetailScreen(playerId: uid, asOwnProfile: true),
+          );
         },
       ),
       GoRoute(
@@ -310,12 +347,21 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => PateaCard(
-                                   color: context.c.popover,
-                                   radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-                                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-                                   child: Column(
+        color: context.c.popover,
+        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                context.push('/matches/create');
+              },
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Armar un partido'),
+            ),
+            const SizedBox(height: 18),
             Container(
               width: 48,
               height: 5,
@@ -346,14 +392,15 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
             ),
           ],
         ),
-                                 ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = navigationShell.currentIndex;
-    final isMatchesActive = current == _Branch.matches || current == _Branch.competitions;
+    final isMatchesActive =
+        current == _Branch.matches || current == _Branch.competitions;
 
     return Scaffold(
       extendBody: true,
@@ -370,17 +417,14 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             decoration: BoxDecoration(
-              color: context.c.card.withValues(alpha: 0.40), // bg-card/40
+              color: context.c.card.withValues(alpha: 0.94),
               border: Border(
-                top: BorderSide(
-                  color: context.c.overlayLine,
-                  width: 1.0,
-                ),
+                top: BorderSide(color: context.c.overlayLine, width: 1.0),
               ),
               boxShadow: [
                 BoxShadow(
                   // Una sombra es negra en los dos temas.
-color: Colors.black.withValues(alpha: 0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   blurRadius: 16,
                   offset: const Offset(0, -4),
                 ),
@@ -456,38 +500,64 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              size: 22,
-              color: isSelected ? context.c.primary : context.c.textSecondary,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: AppTypography.headline(
-                size: 10,
-                weight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected ? context.c.primary : context.c.textSecondary,
+      child: Semantics(
+        selected: isSelected,
+        button: true,
+        label: label,
+        child: Tooltip(
+          message: label,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: reduced
+                        ? Duration.zero
+                        : const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadii.chipAll,
+                      color: isSelected
+                          ? context.c.primary.withValues(alpha: 0.13)
+                          : Colors.transparent,
+                    ),
+                    child: Icon(
+                      isSelected ? activeIcon : icon,
+                      size: 21,
+                      color: isSelected
+                          ? context.c.primary
+                          : context.c.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      size: 10,
+                      weight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? context.c.textPrimary
+                          : context.c.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 2),
-            Container(
-              width: 4,
-              height: 4,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected ? context.c.primary : Colors.transparent,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -513,10 +583,12 @@ class _PartidosSheetItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
       child: PateaCard(
-               color: isActive ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
-               radius: AppRadii.cardAll,
-               padding: const EdgeInsets.all(14),
-               child: Row(
+        color: isActive
+            ? context.c.primary.withValues(alpha: 0.1)
+            : Colors.transparent,
+        radius: AppRadii.cardAll,
+        padding: const EdgeInsets.all(14),
+        child: Row(
           children: [
             Container(
               width: 40,
@@ -525,16 +597,23 @@ class _PartidosSheetItem extends StatelessWidget {
                 color: isActive ? context.c.primary : context.c.cardSurface,
                 borderRadius: AppRadii.cardAll,
               ),
-              child: Icon(icon, size: 20, color: isActive ? context.c.onPrimary : context.c.textSecondary),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isActive ? context.c.onPrimary : context.c.textSecondary,
+              ),
             ),
             const SizedBox(width: 14),
             Text(
               label,
-              style: AppTypography.headline(size: 15, color: isActive ? context.c.primary : context.c.textPrimary),
+              style: AppTypography.headline(
+                size: 15,
+                color: isActive ? context.c.primary : context.c.textPrimary,
+              ),
             ),
           ],
         ),
-             ),
+      ),
     );
   }
 }

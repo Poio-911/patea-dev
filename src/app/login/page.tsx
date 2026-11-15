@@ -15,6 +15,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Logo } from '@/components/logo';
 import { SoccerPlayerIcon } from '@/components/icons/soccer-player-icon';
 import { Mail } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
@@ -89,17 +91,24 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-            <div className="mx-auto flex w-full max-w-sm flex-grow flex-col items-center justify-center space-y-6 text-center">
-                <Card className="w-full">
+        <div className="min-h-screen bg-background lg:grid lg:grid-cols-[1.1fr_1fr]">
+            <section className="relative flex min-h-[290px] flex-col justify-between overflow-hidden px-6 py-7 text-white sm:px-10 lg:min-h-screen lg:px-14 lg:py-12" aria-label="Bienvenido a Pateá">
+                <Image src="/brand/patea_matchday.webp" alt="" fill priority sizes="(min-width: 1024px) 55vw, 100vw" className="object-cover object-[72%_center]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/35" />
+                <div className="relative"><Logo onPhoto /></div>
+                <div className="relative mt-12 max-w-md pb-1 lg:pb-10">
+                    <h1 className="font-headline text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">El próximo partido empieza acá.</h1>
+                    <p className="mt-4 max-w-sm text-base leading-relaxed text-white/85 lg:text-lg">Organizá la juntada y llegá a la cancha con los equipos listos.</p>
+                </div>
+            </section>
+            <main className="flex min-w-0 flex-col px-5 py-8 sm:px-10 lg:justify-center lg:py-12">
+            <div className="mx-auto flex w-full max-w-sm flex-grow flex-col items-center justify-center space-y-6 text-left">
+                <Card className="w-full border-0 bg-transparent shadow-none">
                     <CardHeader className="text-center">
                         <div className="flex w-full flex-col items-center justify-center gap-2">
-                            <div className="flex items-center gap-3">
-                                <SoccerPlayerIcon className="h-10 w-10 text-primary" />
-                                <h1 className="text-4xl font-bold font-headline">Pateá</h1>
-                            </div>
+                            <CardTitle className="text-2xl font-headline tracking-tight">Entrá a tu cuenta</CardTitle>
                             <p className="text-muted-foreground text-center text-sm">
-                                Inicia sesión para organizar los partidos con tus amigos.
+                                Tus partidos y tu grupo, en un solo lugar.
                             </p>
                         </div>
                     </CardHeader>
@@ -111,7 +120,7 @@ export default function LoginPage() {
                                     name="email"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Correo Electrónico</FormLabel>
+                                            <FormLabel>Correo electrónico</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="tu@email.com" autoComplete="email" {...field} />
                                             </FormControl>
@@ -133,7 +142,7 @@ export default function LoginPage() {
                                     )}
                                 />
                                 <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                                    {form.formState.isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                                    {form.formState.isSubmitting ? 'Ingresando…' : 'Ingresar'}
                                 </Button>
                             </form>
                         </Form>
@@ -145,9 +154,9 @@ export default function LoginPage() {
                         </div>
 
                         <p className="mt-6 text-center text-sm text-muted-foreground">
-                            ¿No tienes una cuenta?{' '}
+                            ¿Todavía no tenés cuenta?{' '}
                             <Link href="/register" className="font-semibold text-primary hover:underline">
-                                Regístrate
+                                Crear cuenta
                             </Link>
                         </p>
                     </CardContent>
@@ -165,8 +174,9 @@ export default function LoginPage() {
                         <span>+598 92 443 585</span>
                     </a>
                 </div>
-                <p className="mt-3 text-muted-foreground/80">© 2024 Pateá. Todos los derechos reservados.</p>
+                <p className="mt-3 text-muted-foreground/80">Pateá. Fútbol entre amigos.</p>
             </footer>
+            </main>
         </div>
     );
 }

@@ -25,10 +25,10 @@ export function DesktopNav() {
             </div>
 
             {/* Separator for secondary items on large screens */}
-            <div className="hidden lg:block w-[1px] h-4 bg-border/30 mx-2" />
+            <div className="hidden 2xl:block w-[1px] h-4 bg-border/30 mx-2" />
 
             {/* Secondary Items - only shown on large screens to avoid congestion */}
-            <div className="hidden lg:flex items-center">
+            <div className="hidden 2xl:flex items-center">
                 {secondaryNavItems.map((item) => (
                     <NavItem
                         key={item.href}

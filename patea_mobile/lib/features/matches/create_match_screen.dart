@@ -1,3 +1,4 @@
+import 'package:uuid/uuid.dart';
 import 'dart:async';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_snack.dart';
@@ -9,7 +10,6 @@ import '../../core/theme/app_typography.dart';
 import '../../core/services/match_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
-import '../../core/services/ai_service.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/weather_service.dart';
 import '../../core/models/player_model.dart';
@@ -20,7 +20,7 @@ import '../../core/widgets/player_select_card.dart';
 /// Port de add-match-dialog.tsx (web): wizard de 3 pasos (2 si es
 /// colaborativo).
 ///
-/// Los tres tipos de amistoso andan: 'manual' (elegís el plantel y la IA parte
+/// Los tres tipos de amistoso andan: 'manual' (elegís el plantel y el sistema equilibra
 /// los equipos), 'collaborative' (arranca vacío y la gente se anota) y
 /// 'by_teams' (dos equipos ya armados del grupo). Este último estuvo mucho
 /// tiempo en gris con un "Próximamente" porque todavía no existían
@@ -90,6 +90,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   final List<String> _selectedTeamIds = [];
 
   bool _isSubmitting = false;
+  final String _createRequestId = const Uuid().v4();
   String? _aiStatus;
 
   final _locationService = LocationService();
@@ -132,7 +133,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   void _scheduleWeatherFetch() {
     _weatherDebounce?.cancel();
-    if (_isPlanning || _selectedLocation == null || _selectedDate == null || _selectedTime == null) {
+    if (_isPlanning ||
+        _selectedLocation == null ||
+        _selectedDate == null ||
+        _selectedTime == null) {
       setState(() => _weather = null);
       return;
     }
@@ -179,7 +183,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(context: context, initialTime: _selectedTime ?? const TimeOfDay(hour: 21, minute: 0));
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? const TimeOfDay(hour: 21, minute: 0),
+    );
     if (picked != null) {
       setState(() => _selectedTime = picked);
       _scheduleWeatherFetch();
@@ -189,7 +196,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   bool get _canGoToStep2 {
     if (_titleController.text.trim().length < 3) return false;
     if (_selectedLocation == null) return false;
-    if (!_isPlanning && (_selectedDate == null || _selectedTime == null)) return false;
+    if (!_isPlanning && (_selectedDate == null || _selectedTime == null)) {
+      return false;
+    }
     return true;
   }
 
@@ -203,8 +212,45 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   }
 
   Future<void> _handleCreate(List<PlayerModel> allPlayers) async {
+    if (_isSubmitting) return;
     final user = ref.read(authServiceProvider).currentUser;
     if (user == null) return;
+    if (!_canGoToStep2) {
+      PateaSnack.error(
+        context,
+        'Completá el nombre, la cancha y la fecha del partido.',
+      );
+      return;
+    }
+    if (!_isPlanning) {
+      final kickoff = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+      if (!kickoff.isAfter(DateTime.now())) {
+        PateaSnack.error(context, 'Elegí una fecha y hora futuras.');
+        return;
+      }
+    }
+    if (_selectedType == 'manual' &&
+        (_selectedPlayerIds.length < (_matchSize / 2).ceil() ||
+            _selectedPlayerIds.length > _matchSize ||
+            _selectedPlayerIds.any(
+              (id) => !allPlayers.any((p) => p.id == id),
+            ))) {
+      PateaSnack.error(
+        context,
+        'Revisá el plantel: elegí jugadores disponibles entre medio cupo y el cupo completo.',
+      );
+      return;
+    }
+    if (_selectedType == 'by_teams' && _selectedTeamIds.toSet().length != 2) {
+      PateaSnack.error(context, 'Elegí dos equipos diferentes.');
+      return;
+    }
 
     setState(() {
       _isSubmitting = true;
@@ -212,7 +258,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     });
 
     try {
-      final dateIso = _isPlanning || _selectedDate == null ? '' : _selectedDate!.toIso8601String();
+      final dateIso = _isPlanning || _selectedDate == null
+          ? ''
+          : _selectedDate!.toIso8601String();
       final timeStr = _isPlanning || _selectedTime == null
           ? ''
           : '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
@@ -222,30 +270,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       List<dynamic> teams = const [];
 
       if (_selectedType == 'manual') {
-        final selected = allPlayers.where((p) => _selectedPlayerIds.contains(p.id)).toList();
+        final selected = allPlayers
+            .where((p) => _selectedPlayerIds.contains(p.id))
+            .toList();
         players = selected
-            .map((p) => {
-                  'uid': p.id,
-                  'displayName': p.name,
-                  'ovr': p.ovr,
-                  'position': p.position,
-                  'photoURL': p.photoUrl ?? '',
-                })
+            .map(
+              (p) => {
+                'uid': p.id,
+                'displayName': p.name,
+                'ovr': p.ovr,
+                'position': p.position,
+                'photoURL': p.photoUrl ?? '',
+              },
+            )
             .toList();
         playerUids = selected.map((p) => p.id).toList();
 
-        // Igual que la web: solo se arman equipos por IA si el plantel
-        // elegido completa exactamente el tamaño del partido.
         if (selected.length == _matchSize) {
-          setState(() => _aiStatus = 'Armando equipos parejos con IA...');
-          try {
-            final result = await ref.read(aiServiceProvider).generateBalancedTeams(selected);
-            teams = result['teams'] as List<dynamic>? ?? const [];
-          } catch (e) {
-            if (!mounted) return;
-            setState(() => _aiStatus = 'La IA no pudo armar los equipos, se crea sin equipos.');
-            await Future.delayed(const Duration(seconds: 2));
-          }
+          setState(
+            () => _aiStatus = 'Equilibrando equipos por nivel y posiciones…',
+          );
         }
       }
       // 'collaborative': arranca sin jugadores, se suman después con joinMatch.
@@ -256,13 +300,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       await ref
           .read(matchServiceProvider)
           .createMatch(
+            requestId: _createRequestId,
             title: _titleController.text.trim(),
             type: _selectedType,
             ownerUid: user.uid,
             matchSize: _matchSize,
             date: dateIso,
             time: timeStr,
-            locationName: _selectedLocation?.label ?? _locationController.text.trim(),
+            locationName:
+                _selectedLocation?.label ?? _locationController.text.trim(),
             locationAddress: _selectedLocation?.label ?? '',
             locationLat: _selectedLocation?.lat ?? 0,
             locationLng: _selectedLocation?.lng ?? 0,
@@ -271,7 +317,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             players: players,
             playerUids: playerUids,
             teams: teams,
-            selectedTeams: _selectedType == 'by_teams' ? _selectedTeamIds : const [],
+            selectedTeams: _selectedType == 'by_teams'
+                ? _selectedTeamIds
+                : const [],
             // El pronóstico se consultaba para mostrarlo en el wizard y se
             // perdía al crear: el partido nacía sin clima.
             weather: _weather == null
@@ -286,8 +334,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     'precipitation': _weather!.precipitation,
                     'uvIndex': _weather!.uvIndex,
                   },
-          )
-          .timeout(const Duration(seconds: 20));
+          );
 
       if (mounted) {
         PateaSnack.ok(context, '¡Partido creado!');
@@ -298,7 +345,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         PateaSnack.error(context, 'Error al crear partido: $e');
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _aiStatus = null;
+        });
+      }
     }
   }
 
@@ -306,29 +358,46 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   Widget build(BuildContext context) {
     final playersAsync = ref.watch(activeGroupPlayersProvider);
 
-    return Scaffold(
-      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
-      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
+    return PopScope(
+      canPop: !_isSubmitting,
+      child: Scaffold(
+        // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+        // Scaffold pinta su color opaco encima y tapa la foto de cancha.
         backgroundColor: Colors.transparent,
-        title: Text('ARMAR PARTIDO', style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
-        leading: _step > 1
-            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() => _step -= 1))
-            : null,
-      ),
-      body: Column(
-        children: [
-          _StepIndicator(step: _step, totalSteps: _selectedType == 'collaborative' ? 2 : 3),
-          Expanded(
-            child: playersAsync.when(
-              data: (allPlayers) => _buildStepBody(allPlayers),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => PateaError(error: e),
-            ),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text(
+            'ARMAR PARTIDO',
+            style: AppTypography.headline(size: 18, weight: FontWeight.w800),
           ),
-          _buildFooter(playersAsync.value ?? const []),
-        ],
+          leading: _step > 1
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => setState(() => _step -= 1),
+                )
+              : null,
+        ),
+        body: Column(
+          children: [
+            _StepIndicator(
+              step: _step,
+              totalSteps: _selectedType == 'collaborative' ? 2 : 3,
+            ),
+            Expanded(
+              child: playersAsync.when(
+                data: (allPlayers) => AbsorbPointer(
+                  absorbing: _isSubmitting,
+                  child: _buildStepBody(allPlayers),
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => PateaError(error: e),
+              ),
+            ),
+            _buildFooter(playersAsync.value ?? const []),
+          ],
+        ),
       ),
     );
   }
@@ -340,7 +409,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       case 2:
         return _buildStep2();
       default:
-        return _selectedType == 'by_teams' ? _buildTeamPicker() : _buildStep3(allPlayers);
+        return _selectedType == 'by_teams'
+            ? _buildTeamPicker()
+            : _buildStep3(allPlayers);
     }
   }
 
@@ -352,14 +423,20 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.border.withValues(alpha: 0.3)))),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: context.c.border.withValues(alpha: 0.3)),
+        ),
+      ),
       child: Row(
         children: [
           if (_step > 1)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: OutlinedButton(
-                onPressed: _isSubmitting ? null : () => setState(() => _step -= 1),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => setState(() => _step -= 1),
                 child: const Text('Atrás'),
               ),
             ),
@@ -368,13 +445,23 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               onPressed: _isSubmitting
                   ? null
                   : _step < 3
-                      ? (_step == 1 ? (_canGoToStep2 ? _goNext : null) : _goNext)
-                      : (canSubmitStep3 ? () => _handleCreate(allPlayers) : null),
+                  ? (_step == 1 ? (_canGoToStep2 ? _goNext : null) : _goNext)
+                  : (canSubmitStep3 ? () => _handleCreate(allPlayers) : null),
               child: _isSubmitting
-                  ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: context.c.onPrimary, strokeWidth: 2))
-                  : Text(_step < 3 && !(_step == 2 && _selectedType == 'collaborative')
-                      ? 'Siguiente'
-                      : 'CREAR PARTIDO'),
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: context.c.onPrimary,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      _step < 3 &&
+                              !(_step == 2 && _selectedType == 'collaborative')
+                          ? 'Siguiente'
+                          : 'CREAR PARTIDO',
+                    ),
             ),
           ),
         ],
@@ -402,7 +489,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           ),
           const SizedBox(height: 16),
 
-          Text('UBICACIÓN', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
+          Text(
+            'UBICACIÓN',
+            style: AppTypography.headline(
+              size: 13,
+              color: context.c.textSecondary,
+            ),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _locationController,
@@ -419,9 +512,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               suffixIcon: _searchingLocation
                   ? const Padding(
                       padding: EdgeInsets.all(14),
-                      child: SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      child: SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     )
-                  : (_selectedLocation != null ? Icon(Icons.check_circle, color: context.c.success) : null),
+                  : (_selectedLocation != null
+                        ? Icon(Icons.check_circle, color: context.c.success)
+                        : null),
             ),
           ),
           if (_locationSuggestions.isNotEmpty)
@@ -432,12 +531,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               margin: const EdgeInsets.only(top: 4),
               child: Column(
                 children: _locationSuggestions
-                    .map((s) => ListTile(
-                          dense: true,
-                          leading: Icon(Icons.place_outlined, size: 18, color: context.c.textSecondary),
-                          title: Text(s.label, style: AppTypography.body(color: context.c.textSecondary, size: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
-                          onTap: () => _selectLocation(s),
-                        ))
+                    .map(
+                      (s) => ListTile(
+                        dense: true,
+                        leading: Icon(
+                          Icons.place_outlined,
+                          size: 18,
+                          color: context.c.textSecondary,
+                        ),
+                        title: Text(
+                          s.label,
+                          style: AppTypography.body(
+                            color: context.c.textSecondary,
+                            size: 13,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => _selectLocation(s),
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -454,8 +567,21 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Definir horario por votación', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary)),
-                      Text('Elegí esta opción si todavía no saben la fecha u hora.', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                      Text(
+                        'Definir horario por votación',
+                        style: AppTypography.body(
+                          size: 13,
+                          weight: FontWeight.w700,
+                          color: context.c.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Elegí esta opción si todavía no saben la fecha u hora.',
+                        style: AppTypography.body(
+                          size: 11,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -482,9 +608,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _pickDate,
                       icon: const Icon(Icons.calendar_today, size: 16),
-                      label: Text(_selectedDate == null
-                          ? 'Fecha'
-                          : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+                      label: Text(
+                        _selectedDate == null
+                            ? 'Fecha'
+                            : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -492,7 +620,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _pickTime,
                       icon: const Icon(Icons.access_time, size: 16),
-                      label: Text(_selectedTime == null ? 'Hora' : _selectedTime!.format(context)),
+                      label: Text(
+                        _selectedTime == null
+                            ? 'Hora'
+                            : _selectedTime!.format(context),
+                      ),
                     ),
                   ),
                 ],
@@ -505,33 +637,64 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               constraints: const BoxConstraints(minHeight: 60),
-              decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.cardAll),
+              decoration: BoxDecoration(
+                color: context.c.cardSurface,
+                borderRadius: AppRadii.cardAll,
+              ),
               child: Center(
                 child: _loadingWeather
                     ? Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                          const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
                           const SizedBox(width: 10),
-                          Text('Viendo el pronóstico...', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                          Text(
+                            'Viendo el pronóstico...',
+                            style: AppTypography.body(
+                              size: 12,
+                              color: context.c.textSecondary,
+                            ),
+                          ),
                         ],
                       )
                     : _weather != null
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(_weatherIcon(_weather!.icon), color: context.c.primary, size: 26),
-                              const SizedBox(width: 10),
-                              Text('${_weather!.temperature}°C', style: AppTypography.sportNumber(size: 18)),
-                              const SizedBox(width: 10),
-                              Flexible(child: Text(_weather!.description, style: AppTypography.body(color: context.c.textSecondary, size: 12))),
-                            ],
-                          )
-                        : Text(
-                            'Poné fecha y lugar para ver el pronóstico.',
-                            style: AppTypography.body(size: 12, color: context.c.textSecondary),
-                            textAlign: TextAlign.center,
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _weatherIcon(_weather!.icon),
+                            color: context.c.primary,
+                            size: 26,
                           ),
+                          const SizedBox(width: 10),
+                          Text(
+                            '${_weather!.temperature}°C',
+                            style: AppTypography.sportNumber(size: 18),
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              _weather!.description,
+                              style: AppTypography.body(
+                                color: context.c.textSecondary,
+                                size: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        'Poné fecha y lugar para ver el pronóstico.',
+                        style: AppTypography.body(
+                          size: 12,
+                          color: context.c.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
               ),
             ),
           ],
@@ -549,7 +712,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('TAMAÑO DEL PARTIDO', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
+          Text(
+            'TAMAÑO DEL PARTIDO',
+            style: AppTypography.headline(
+              size: 13,
+              color: context.c.textSecondary,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: _matchSizes.map((size) {
@@ -572,17 +741,23 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           ),
           const SizedBox(height: 24),
 
-          Text('TIPO DE PARTIDO', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
+          Text(
+            'TIPO DE PARTIDO',
+            style: AppTypography.headline(
+              size: 13,
+              color: context.c.textSecondary,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
-            'Manual: elegís vos, la IA arma los equipos. Colaborativo: los jugadores se apuntan solos. '
+            'Manual: elegís el plantel y equilibramos nivel, posiciones y arqueros. Colaborativo: los jugadores se apuntan solos. '
             'Por Equipos: se enfrentan dos equipos del grupo, con su plantel y su camiseta.',
             style: AppTypography.body(size: 11, color: context.c.textSecondary),
           ),
           const SizedBox(height: 8),
           _TypeOption(
             icon: Icons.how_to_reg,
-            label: 'Manual (con IA)',
+            label: 'Manual (equilibrado)',
             selected: _selectedType == 'manual',
             onTap: () => setState(() => _selectedType = 'manual'),
           ),
@@ -615,12 +790,29 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Hacer Partido Público', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary)),
-                      Text('Permite que jugadores de afuera se sumen.', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                      Text(
+                        'Hacer Partido Público',
+                        style: AppTypography.body(
+                          size: 13,
+                          weight: FontWeight.w700,
+                          color: context.c.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Permite que jugadores de afuera se sumen.',
+                        style: AppTypography.body(
+                          size: 11,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                Switch(value: _isPublic, activeTrackColor: context.c.primary, onChanged: (v) => setState(() => _isPublic = v)),
+                Switch(
+                  value: _isPublic,
+                  activeTrackColor: context.c.primary,
+                  onChanged: (v) => setState(() => _isPublic = v),
+                ),
               ],
             ),
           ),
@@ -646,8 +838,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final teamsAsync = ref.watch(groupTeamsStreamProvider(groupId));
 
     return teamsAsync.when(
-      loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
-      error: (e, _) => _EmptyHint(icon: Icons.error_outline, text: 'No se pudieron cargar los equipos.\n$e'),
+      loading: () =>
+          Center(child: CircularProgressIndicator(color: context.c.primary)),
+      error: (e, _) => _EmptyHint(
+        icon: Icons.error_outline,
+        text: 'No se pudieron cargar los equipos.\n$e',
+      ),
       data: (teams) {
         if (teams.length < 2) {
           return _EmptyHint(
@@ -661,71 +857,94 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('QUIÉN JUEGA CONTRA QUIÉN',
-                style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
+            Text(
+              'QUIÉN JUEGA CONTRA QUIÉN',
+              style: AppTypography.headline(
+                size: 13,
+                color: context.c.textSecondary,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               'Elegí dos equipos. El primero que toques es el local.',
-              style: AppTypography.body(size: 11, color: context.c.textSecondary),
+              style: AppTypography.body(
+                size: 11,
+                color: context.c.textSecondary,
+              ),
             ),
             const SizedBox(height: 16),
             for (final team in teams)
-              Builder(builder: (context) {
-                final index = _selectedTeamIds.indexOf(team.id);
-                final selected = index >= 0;
-                final full = _selectedTeamIds.length >= 2 && !selected;
+              Builder(
+                builder: (context) {
+                  final index = _selectedTeamIds.indexOf(team.id);
+                  final selected = index >= 0;
+                  final full = _selectedTeamIds.length >= 2 && !selected;
 
-                return Opacity(
-                  opacity: full ? 0.4 : 1,
-                  child: InkWell(
-                    onTap: full
-                        ? null
-                        : () => setState(() {
+                  return Opacity(
+                    opacity: full ? 0.4 : 1,
+                    child: InkWell(
+                      onTap: full
+                          ? null
+                          : () => setState(() {
                               if (selected) {
                                 _selectedTeamIds.remove(team.id);
                               } else {
                                 _selectedTeamIds.add(team.id);
                               }
                             }),
-                    borderRadius: AppRadii.cardAll,
-                    child: PateaCard(
-                             radius: AppRadii.cardAll,
-                             borderColor: selected ? context.c.primary : context.c.overlayLine,
-                             margin: const EdgeInsets.only(bottom: 10),
-                             padding: const EdgeInsets.all(12),
-                             child: Row(
-                        children: [
-                          JerseyWidget(jersey: team.jersey, size: 44),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(team.name,
-                                    style: AppTypography.headline(size: 15, weight: FontWeight.w800)),
-                                const SizedBox(height: 2),
-                                Text(
-                                  team.members.isEmpty
-                                      ? 'Sin jugadores'
-                                      : '${team.members.length} jugadores',
-                                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
-                                ),
-                              ],
+                      borderRadius: AppRadii.cardAll,
+                      child: PateaCard(
+                        radius: AppRadii.cardAll,
+                        borderColor: selected
+                            ? context.c.primary
+                            : context.c.overlayLine,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            JerseyWidget(jersey: team.jersey, size: 44),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    team.name,
+                                    style: AppTypography.headline(
+                                      size: 15,
+                                      weight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    team.members.isEmpty
+                                        ? 'Sin jugadores'
+                                        : '${team.members.length} jugadores',
+                                    style: AppTypography.body(
+                                      size: 11,
+                                      color: context.c.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          if (selected)
-                            Text(index == 0 ? 'LOCAL' : 'VISITANTE',
+                            if (selected)
+                              Text(
+                                index == 0 ? 'LOCAL' : 'VISITANTE',
                                 style: AppTypography.headline(
-                                    size: 10,
-                                    weight: FontWeight.w800,
-                                    color: context.c.primary,
-                                    letterSpacing: 1)),
-                        ],
+                                  size: 10,
+                                  weight: FontWeight.w800,
+                                  color: context.c.primary,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                           ),
-                  ),
-                );
-              }),
+                    ),
+                  );
+                },
+              ),
           ],
         );
       },
@@ -734,13 +953,20 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   Widget _buildStep3(List<PlayerModel> allPlayers) {
     final filtered = allPlayers.where((p) {
-      final matchesName = p.name.toLowerCase().contains(_playerSearch.toLowerCase());
-      final matchesPosition = _positionFilter == 'all' || p.position == _positionFilter;
+      final matchesName = p.name.toLowerCase().contains(
+        _playerSearch.toLowerCase(),
+      );
+      final matchesPosition =
+          _positionFilter == 'all' || p.position == _positionFilter;
       return matchesName && matchesPosition;
     }).toList();
 
-    final selectedPlayers = allPlayers.where((p) => _selectedPlayerIds.contains(p.id)).toList();
-    final missingPositions = _positions.where((pos) => !selectedPlayers.any((p) => p.position == pos)).toList();
+    final selectedPlayers = allPlayers
+        .where((p) => _selectedPlayerIds.contains(p.id))
+        .toList();
+    final missingPositions = _positions
+        .where((pos) => !selectedPlayers.any((p) => p.position == pos))
+        .toList();
 
     final porCount = selectedPlayers.where((p) => p.position == 'POR').length;
     final defCount = selectedPlayers.where((p) => p.position == 'DEF').length;
@@ -756,12 +982,21 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('PLANTEL CONVOCADO', style: AppTypography.code(size: 11, weight: FontWeight.w800, color: context.c.textSecondary)),
+                  Text(
+                    'PLANTEL CONVOCADO',
+                    style: AppTypography.code(
+                      size: 11,
+                      weight: FontWeight.w800,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
                   Text(
                     '${_selectedPlayerIds.length} / $_matchSize',
                     style: AppTypography.sportNumber(
                       size: 16,
-                      color: _selectedPlayerIds.length == _matchSize ? context.c.primary : context.c.textSecondary,
+                      color: _selectedPlayerIds.length == _matchSize
+                          ? context.c.primary
+                          : context.c.textSecondary,
                     ),
                   ),
                 ],
@@ -781,34 +1016,60 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               // Balance de Posiciones Seleccionadas
               Row(
                 children: [
-                  _PositionCountChip(label: 'POR', count: porCount, color: context.c.posPor),
+                  _PositionCountChip(
+                    label: 'POR',
+                    count: porCount,
+                    color: context.c.posPor,
+                  ),
                   const SizedBox(width: 6),
-                  _PositionCountChip(label: 'DEF', count: defCount, color: context.c.posDef),
+                  _PositionCountChip(
+                    label: 'DEF',
+                    count: defCount,
+                    color: context.c.posDef,
+                  ),
                   const SizedBox(width: 6),
-                  _PositionCountChip(label: 'MED', count: medCount, color: context.c.posMed),
+                  _PositionCountChip(
+                    label: 'MED',
+                    count: medCount,
+                    color: context.c.posMed,
+                  ),
                   const SizedBox(width: 6),
-                  _PositionCountChip(label: 'DEL', count: delCount, color: context.c.posDel),
+                  _PositionCountChip(
+                    label: 'DEL',
+                    count: delCount,
+                    color: context.c.posDel,
+                  ),
                 ],
               ),
 
-              if (_selectedPlayerIds.isNotEmpty && missingPositions.isNotEmpty) ...[
+              if (_selectedPlayerIds.isNotEmpty &&
+                  missingPositions.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 PateaCard(
                   color: context.c.warning.withValues(alpha: 0.1),
                   radius: AppRadii.chipAll,
                   borderColor: context.c.warning.withValues(alpha: 0.3),
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   child: Text(
                     '⚠️ Faltan arqueros o puestos clave en la convocatoria.',
-                    style: AppTypography.body(size: 11, color: context.c.warning),
+                    style: AppTypography.body(
+                      size: 11,
+                      color: context.c.warning,
+                    ),
                   ),
                 ),
               ],
               const SizedBox(height: 10),
               TextField(
                 onChanged: (v) => setState(() => _playerSearch = v),
-                style: AppTypography.body(color: context.c.textPrimary, size: 13),
+                style: AppTypography.body(
+                  color: context.c.textPrimary,
+                  size: 13,
+                ),
                 decoration: const InputDecoration(
                   hintText: 'Buscar jugador por nombre...',
                   prefixIcon: Icon(Icons.search, size: 18),
@@ -826,9 +1087,16 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       child: ChoiceChip(
                         label: Text(pos == 'all' ? 'Todos' : pos),
                         selected: isSelected,
-                        onSelected: (_) => setState(() => _positionFilter = pos),
-                        selectedColor: context.c.primary.withValues(alpha: 0.25),
-                        labelStyle: AppTypography.body(color: context.c.textPrimary, size: 12, weight: FontWeight.w600),
+                        onSelected: (_) =>
+                            setState(() => _positionFilter = pos),
+                        selectedColor: context.c.primary.withValues(
+                          alpha: 0.25,
+                        ),
+                        labelStyle: AppTypography.body(
+                          color: context.c.textPrimary,
+                          size: 12,
+                          weight: FontWeight.w600,
+                        ),
                       ),
                     );
                   }).toList(),
@@ -841,9 +1109,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     onPressed: _selectedPlayerIds.length >= _matchSize
                         ? null
                         : () {
-                            final needed = _matchSize - _selectedPlayerIds.length;
-                            final available = allPlayers.where((p) => !_selectedPlayerIds.contains(p.id)).toList()
-                              ..sort((a, b) => b.ovr.compareTo(a.ovr));
+                            final needed =
+                                _matchSize - _selectedPlayerIds.length;
+                            final available =
+                                allPlayers
+                                    .where(
+                                      (p) => !_selectedPlayerIds.contains(p.id),
+                                    )
+                                    .toList()
+                                  ..sort((a, b) => b.ovr.compareTo(a.ovr));
                             setState(() {
                               for (final p in available.take(needed)) {
                                 _selectedPlayerIds.add(p.id);
@@ -851,13 +1125,21 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                             });
                           },
                     icon: const Icon(Icons.flash_on, size: 15),
-                    label: const Text('Completar con mejores', style: TextStyle(fontSize: 11)),
+                    label: const Text(
+                      'Completar con mejores',
+                      style: TextStyle(fontSize: 11),
+                    ),
                   ),
                   const Spacer(),
                   TextButton.icon(
-                    onPressed: _selectedPlayerIds.isEmpty ? null : () => setState(() => _selectedPlayerIds.clear()),
+                    onPressed: _selectedPlayerIds.isEmpty
+                        ? null
+                        : () => setState(() => _selectedPlayerIds.clear()),
                     icon: const Icon(Icons.clear_all, size: 15),
-                    label: const Text('Limpiar', style: TextStyle(fontSize: 11)),
+                    label: const Text(
+                      'Limpiar',
+                      style: TextStyle(fontSize: 11),
+                    ),
                   ),
                 ],
               ),
@@ -867,9 +1149,17 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         const Divider(height: 1),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text('No se encontraron jugadores.', style: AppTypography.body(color: context.c.textSecondary)))
+              ? Center(
+                  child: Text(
+                    'No se encontraron jugadores.',
+                    style: AppTypography.body(color: context.c.textSecondary),
+                  ),
+                )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final p = filtered[index];
@@ -880,7 +1170,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       position: p.position,
                       ovr: p.ovr,
                       selected: isSelected,
-                      disabled: !isSelected && _selectedPlayerIds.length >= _matchSize,
+                      disabled:
+                          !isSelected &&
+                          _selectedPlayerIds.length >= _matchSize,
                       stats: {
                         'pac': p.pac,
                         'sho': p.sho,
@@ -893,8 +1185,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         'par': p.sho,
                       },
                       onTap: () {
-                        if (!isSelected && _selectedPlayerIds.length >= _matchSize) {
-                          PateaSnack.info(context, 'Ya completaste los $_matchSize jugadores convocados.');
+                        if (!isSelected &&
+                            _selectedPlayerIds.length >= _matchSize) {
+                          PateaSnack.info(
+                            context,
+                            'Ya completaste los $_matchSize jugadores convocados.',
+                          );
                           return;
                         }
                         setState(() {
@@ -912,7 +1208,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         if (_aiStatus != null)
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Text(_aiStatus!, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.primary)),
+            child: Text(
+              _aiStatus!,
+              textAlign: TextAlign.center,
+              style: AppTypography.body(size: 12, color: context.c.primary),
+            ),
           ),
       ],
     );
@@ -934,11 +1234,11 @@ class _StepIndicator extends StatelessWidget {
           final isActive = i < step;
           return Expanded(
             child: PateaCard(
-                     color: isActive ? context.c.primary : context.c.cardSurface,
-                     radius: AppRadii.hairAll,
-                     margin: EdgeInsets.only(right: i < totalSteps - 1 ? 6 : 0),
-                     height: 4,
-                   ),
+              color: isActive ? context.c.primary : context.c.cardSurface,
+              radius: AppRadii.hairAll,
+              margin: EdgeInsets.only(right: i < totalSteps - 1 ? 6 : 0),
+              height: 4,
+            ),
           );
         }),
       ),
@@ -965,20 +1265,33 @@ class _TypeOption extends StatelessWidget {
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
       child: PateaCard(
-               color: selected ? context.c.primary.withValues(alpha: 0.12) : context.c.cardSurface,
-               radius: AppRadii.cardAll,
-               borderColor: selected ? context.c.primary : context.c.border,
-               padding: const EdgeInsets.all(14),
-               child: Row(
+        color: selected
+            ? context.c.primary.withValues(alpha: 0.12)
+            : context.c.cardSurface,
+        radius: AppRadii.cardAll,
+        borderColor: selected ? context.c.primary : context.c.border,
+        padding: const EdgeInsets.all(14),
+        child: Row(
           children: [
-            Icon(icon, size: 20, color: selected ? context.c.primary : context.c.textSecondary),
+            Icon(
+              icon,
+              size: 20,
+              color: selected ? context.c.primary : context.c.textSecondary,
+            ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label, style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary)),
+              child: Text(
+                label,
+                style: AppTypography.body(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  color: context.c.textPrimary,
+                ),
+              ),
             ),
           ],
         ),
-             ),
+      ),
     );
   }
 }
@@ -1000,10 +1313,14 @@ class _PositionCountChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: count > 0 ? color.withValues(alpha: 0.12) : context.c.cardSurface,
+          color: count > 0
+              ? color.withValues(alpha: 0.12)
+              : context.c.cardSurface,
           borderRadius: AppRadii.surfaceAll,
           border: Border.all(
-            color: count > 0 ? color.withValues(alpha: 0.6) : context.c.border.withValues(alpha: 0.3),
+            color: count > 0
+                ? color.withValues(alpha: 0.6)
+                : context.c.border.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -1011,13 +1328,19 @@ class _PositionCountChip extends StatelessWidget {
           children: [
             Text(
               label,
-              style: AppTypography.code(size: 9, weight: FontWeight.w800, color: color),
+              style: AppTypography.code(
+                size: 9,
+                weight: FontWeight.w800,
+                color: color,
+              ),
             ),
             Text(
               '$count',
               style: AppTypography.sportNumber(
                 size: 13,
-                color: count > 0 ? context.c.textPrimary : context.c.textSecondary.withValues(alpha: 0.5),
+                color: count > 0
+                    ? context.c.textPrimary
+                    : context.c.textSecondary.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -1041,12 +1364,19 @@ class _EmptyHint extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: context.c.textSecondary.withValues(alpha: 0.5)),
+            Icon(
+              icon,
+              size: 40,
+              color: context.c.textSecondary.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 12),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 13, color: context.c.textSecondary),
+              style: AppTypography.body(
+                size: 13,
+                color: context.c.textSecondary,
+              ),
             ),
           ],
         ),
