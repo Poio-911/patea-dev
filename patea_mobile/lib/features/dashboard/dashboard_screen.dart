@@ -2,6 +2,7 @@ import 'widgets/dashboard_match_hero.dart';
 import 'widgets/latest_match_review.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/widgets/patea_snack.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -120,15 +121,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    player == null
-                        ? 'Tu fútbol, acá.'
-                        : 'Dale, ${player.name.split(' ').first}.',
-                    style: AppTypography.headline(
-                      size: 30,
-                      weight: FontWeight.w700,
-                      letterSpacing: -1,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/mate.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          context.c.primary,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          player == null
+                              ? 'Tu fútbol, acá.'
+                              : 'Dale, ${player.name.split(' ').first}.',
+                          style: AppTypography.headline(
+                            size: 30,
+                            weight: FontWeight.w700,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 5),
                   Text(
@@ -139,27 +157,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       color: context.c.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 8,
-                    children: [
-                      FilledButton.icon(
-                        onPressed: () => context.push(
-                          hasGroup ? '/matches/create' : '/groups',
-                        ),
-                        icon: Icon(
-                          hasGroup
-                              ? Icons.add_rounded
-                              : Icons.group_add_outlined,
-                          size: 19,
-                        ),
-                        label: Text(
-                          hasGroup ? 'Armar partido' : 'Crear mi grupo',
-                        ),
-                      ),
-                    ],
-                  ),
+                  if (!hasGroup) ...[
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      onPressed: () => context.push('/groups'),
+                      icon: const Icon(Icons.group_add_outlined, size: 19),
+                      label: const Text('Crear mi grupo'),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -231,3 +231,8 @@ Versión **1.0.4** en las dos plataformas. Ese día salieron dos entregas: la
 - Webhook de GitHub registrado (`create`, `pull_request`, `push`), así que el
   disparo automático ya está activo. Los pushes anteriores a su creación no
   dispararon nada.
+
+
+## Entrega autorizada del 16/11/2026 — 1.0.30
+
+La suspensión anterior se sustituye por una distribución explícita por etiquetas `ios-testflight-*` en `feat/flutter-mobile-app`. Los pushes habituales no publican. Se usa la firma e integración existentes y se verifican grupos internos y procesamiento de Apple dentro del job. [Registro de esta entrega](RELEASE_1.0.30_2026-11-16.md).

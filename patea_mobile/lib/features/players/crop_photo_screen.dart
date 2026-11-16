@@ -1,23 +1,17 @@
-import '../../core/widgets/patea_button_progress.dart';
+import 'dart:math' as math;
+
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/theme/app_radii.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/profile_service.dart';
-import '../../core/theme/patea_colors.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/patea_colors.dart';
+import '../../core/widgets/patea_button_progress.dart';
 
-/// Ajuste del encuadre de la foto de perfil.
-///
-/// La web usa `ImageCropperDialog`: un recuadro con manijas que se arrastran
-/// con el mouse. Acá se hace con los gestos del teléfono — se mueve la foto con
-/// el dedo y se hace zoom pellizcando, y el recorte se ve directamente dentro
-/// del círculo donde después va a quedar.
-///
-/// Guarda lo mismo que la web: `cropPosition` (x,y en porcentaje 0-100) y
-/// `cropZoom` (1 a 4).
+/// Ajuste del encuadre de la foto de perfil con proporción de retrato de ficha.
 class CropPhotoScreen extends ConsumerStatefulWidget {
   final String photoUrl;
   final double initialX;
@@ -39,7 +33,8 @@ class CropPhotoScreen extends ConsumerStatefulWidget {
 class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
   static const _minZoom = 1.0;
   static const _maxZoom = 4.0;
-  static const _circle = 260.0;
+  static const _frameWidth = 240.0;
+  static const _frameHeight = 300.0;
 
   late double _x = widget.initialX;
   late double _y = widget.initialY;
@@ -58,12 +53,11 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
       if (details.scale != 1.0) {
         _zoom = (_zoomAtGestureStart * details.scale).clamp(_minZoom, _maxZoom);
       }
-      // El desplazamiento del dedo se traduce a porcentaje sobre el diámetro
-      // del círculo. Se divide por el zoom para que, cuando está ampliada, el
-      // dedo mueva la imagen lo mismo en pantalla y no de golpe.
       if (details.focalPointDelta != Offset.zero) {
-        _x = (_x - (details.focalPointDelta.dx / _circle) * 100 / _zoom).clamp(0.0, 100.0);
-        _y = (_y - (details.focalPointDelta.dy / _circle) * 100 / _zoom).clamp(0.0, 100.0);
+        _x = (_x - (details.focalPointDelta.dx / _frameWidth) * 100 / _zoom)
+            .clamp(0.0, 100.0);
+        _y = (_y - (details.focalPointDelta.dy / _frameHeight) * 100 / _zoom)
+            .clamp(0.0, 100.0);
       }
     });
   }
@@ -74,7 +68,9 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
       _error = null;
     });
     try {
-      await ref.read(profileServiceProvider).updateCrop(x: _x, y: _y, zoom: _zoom);
+      await ref
+          .read(profileServiceProvider)
+          .updateCrop(x: _x, y: _y, zoom: _zoom);
       await HapticFeedback.mediumImpact();
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -98,145 +94,197 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final isDefault = _x == 50 && _y == 50 && _zoom == 1;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('Ajustar foto',
-            style: AppTypography.headline(size: 16, weight: FontWeight.w700)),
+        title: Text(
+          'Ajustar encuadre',
+          style: AppTypography.headline(size: 17, weight: FontWeight.w700),
+        ),
         actions: [
           if (!isDefault)
             TextButton(
               onPressed: _saving ? null : _reset,
-              child: Text('Centrar',
-                  style: AppTypography.body(size: 13, color: context.c.textSecondary)),
+              child: Text(
+                'Centrar',
+                style: AppTypography.action(size: 13, color: c.textSecondary),
+              ),
             ),
         ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Text(
-              'Arrastrá para mover y pellizcá para acercar. Así se va a ver en tu carta.',
-              textAlign: TextAlign.center,
-              style: AppTypography.body(size: 13, color: context.c.textSecondary, height: 1.45),
-            ),
-          ),
-          const Spacer(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final frameW = math.min(_frameWidth, constraints.maxWidth - 48);
+          final frameH = frameW * (_frameHeight / _frameWidth);
 
-          // El círculo ES el marco real de la carta, no una aproximación.
-          GestureDetector(
-            onScaleStart: _onScaleStart,
-            onScaleUpdate: _onScaleUpdate,
-            child: Container(
-              width: _circle,
-              height: _circle,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: context.c.primary, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.c.brandVolt.withValues(alpha: 0.25),
-                    blurRadius: 22,
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: math.max(0, constraints.maxHeight - 36),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Arrastrá para mover y pellizcá para acercar. Así se va a ver en tu ficha y en tu perfil.',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.body(
+                      size: 13,
+                      color: c.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onScaleStart: _onScaleStart,
+                    onScaleUpdate: _onScaleUpdate,
+                    child: Container(
+                      width: frameW,
+                      height: frameH,
+                      decoration: BoxDecoration(
+                        color: c.cardSurface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: c.primary, width: 2),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Transform.scale(
+                            scale: _zoom,
+                            alignment: Alignment((_x / 50) - 1, (_y / 50) - 1),
+                            child: CachedNetworkImage(
+                              imageUrl: widget.photoUrl,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              memCacheWidth: 780,
+                              placeholder: (_, _) => ColoredBox(
+                                color: c.cardSurface,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: c.primary,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (_, _, _) => ColoredBox(
+                                color: c.cardSurface,
+                                child: Icon(
+                                  Icons.broken_image_outlined,
+                                  color: c.textSecondary,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: 64,
+                            child: IgnorePointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      c.card.withValues(alpha: 0),
+                                      c.card.withValues(alpha: 0.85),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.zoom_out,
+                            size: 18,
+                            color: c.textSecondary,
+                          ),
+                          Expanded(
+                            child: Slider(
+                              value: _zoom,
+                              min: _minZoom,
+                              max: _maxZoom,
+                              activeColor: c.primary,
+                              inactiveColor: c.overlayLine,
+                              onChanged: _saving
+                                  ? null
+                                  : (v) => setState(() => _zoom = v),
+                            ),
+                          ),
+                          Icon(Icons.zoom_in, size: 18, color: c.textSecondary),
+                        ],
+                      ),
+                      Text(
+                        '${_zoom.toStringAsFixed(1)}×',
+                        style: AppTypography.body(
+                          size: 12,
+                          color: c.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.body(
+                              size: 12,
+                              color: c.destructive,
+                            ),
+                          ),
+                        ),
+                      FilledButton.icon(
+                        onPressed: _saving ? null : _save,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: PateaButtonProgress(),
+                              )
+                            : const Icon(Icons.check, size: 18),
+                        label: Text(
+                          _saving ? 'Guardando…' : 'Usar este encuadre',
+                          style: AppTypography.action(
+                            size: 15,
+                            color: c.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              child: ClipOval(
-                child: Transform.scale(
-                  scale: _zoom,
-                  alignment: Alignment((_x / 50) - 1, (_y / 50) - 1),
-                  child: CachedNetworkImage(
-                    imageUrl: widget.photoUrl,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 780,
-                    placeholder: (_, _) => Container(
-                      color: context.c.cardSurface,
-                      child: Center(
-                        child: CircularProgressIndicator(color: context.c.primary),
-                      ),
-                    ),
-                    errorWidget: (_, _, _) => Container(
-                      color: context.c.cardSurface,
-                      child: Icon(Icons.broken_image_outlined,
-                          color: context.c.textSecondary, size: 40),
-                    ),
-                  ),
-                ),
-              ),
             ),
-          ),
-
-          const SizedBox(height: 28),
-
-          // El slider es la alternativa para quien no maneja el pellizco.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Row(
-              children: [
-                Icon(Icons.zoom_out, size: 18, color: context.c.textSecondary),
-                Expanded(
-                  child: Slider(
-                    value: _zoom,
-                    min: _minZoom,
-                    max: _maxZoom,
-                    activeColor: context.c.primary,
-                    inactiveColor: context.c.overlayLine,
-                    onChanged: _saving ? null : (v) => setState(() => _zoom = v),
-                  ),
-                ),
-                Icon(Icons.zoom_in, size: 18, color: context.c.textSecondary),
-              ],
-            ),
-          ),
-          Text(
-            '${_zoom.toStringAsFixed(1)}×',
-            style: AppTypography.body(size: 12, color: context.c.textSecondary),
-          ),
-
-          const Spacer(),
-
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: AppTypography.body(size: 12, color: context.c.destructive),
-              ),
-            ),
-
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.c.primary,
-                  foregroundColor: context.c.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                ),
-                icon: _saving
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: const PateaButtonProgress(),
-                      )
-                    : const Icon(Icons.check, size: 18),
-                label: Text(
-                  _saving ? 'Guardando…' : 'Usar este encuadre',
-                  style: AppTypography.headline(
-                      size: 14, weight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

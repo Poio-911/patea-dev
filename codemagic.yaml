@@ -64,10 +64,14 @@ workflows:
     # La app Flutter no está en la raíz del repo: todo el workflow corre acá.
     working_directory: patea_mobile
 
+    # Sólo una etiqueta explícita publica; un push de desarrollo no distribuye.
     triggering:
-      <<: *push_to_branch
-    when:
-      <<: *mobile_changes
+      events:
+        - tag
+      tag_patterns:
+        - pattern: ios-testflight-*
+          include: true
+      cancel_previous_builds: false
 
     integrations:
       app_store_connect: patea
@@ -124,12 +128,16 @@ workflows:
             --build-number="$BUILD_NUMBER" \
             --export-options-plist=/Users/builder/export_options.plist
 
+      - name: Publicar y verificar TestFlight interno
+        script: python3 ../scripts/publish_testflight_internal.py
+
     artifacts:
+      - build/ios/testflight-delivery.json
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
-    # Distribución suspendida a pedido del usuario: revisar primero en Android.
-    # Este workflow sólo conserva el IPA como artefacto; no lo envía a Apple.
+    # La publicación y la comprobación de grupos se ejecutan en el paso anterior.
+    # No hay envío a revisión externa ni a App Store.
 
   # ──────────────────────────────────────────────────────────────────────────
   # Android → Firebase App Distribution

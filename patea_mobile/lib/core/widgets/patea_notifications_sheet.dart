@@ -1,24 +1,21 @@
-import 'package:flutter/material.dart';
-import '../../core/widgets/patea_card.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../services/auth_service.dart';
-import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
+import '../theme/patea_colors.dart';
 
-/// Cuántas notificaciones se leen de una. Mismo número que usa la web
-/// (`notification-bell.tsx`, `limit(20)`), y el mismo que marca "leídas".
 const int _kNotificationsLimit = 20;
 
 CollectionReference<Map<String, dynamic>> _notificationsRef(String uid) =>
-    FirebaseFirestore.instance.collection('users').doc(uid).collection('notifications');
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('notifications');
 
-/// No leídas del usuario actual. Lo consume el punto de la campana en
-/// [PateaTopHeader]: la web lo tiene desde siempre y en el móvil la campana
-/// nunca mostró estado, así que no había forma de enterarse de nada sin abrir
-/// la hoja a mano.
 final unreadNotificationsCountProvider = StreamProvider<int>((ref) {
   final uid = ref.watch(authStateProvider).value?.uid;
   if (uid == null || uid.isEmpty) return Stream.value(0);
@@ -30,10 +27,6 @@ final unreadNotificationsCountProvider = StreamProvider<int>((ref) {
       .map((snap) => snap.docs.length);
 });
 
-/// Ícono por tipo de notificación.
-///
-/// La web mapea los 15 tipos de `NotificationType` en `notification-bell.tsx`;
-/// acá había tres y los otros doce caían en un ícono genérico de info.
 IconData _iconForType(String? type) {
   switch (type) {
     case 'match_invite':
@@ -70,11 +63,6 @@ IconData _iconForType(String? type) {
   }
 }
 
-/// "hace 5 min", "hace 3 h", "hace 2 d".
-///
-/// La web usa `formatDistanceToNow` de date-fns con locale español. Traer una
-/// dependencia entera para esto no se justifica; `createdAt` se guarda como
-/// ISO 8601 desde las Cloud Functions.
 String _timeAgo(dynamic createdAt) {
   DateTime? when;
   if (createdAt is Timestamp) {
@@ -92,7 +80,7 @@ String _timeAgo(dynamic createdAt) {
   return 'hace ${(diff.inDays / 7).floor()} sem';
 }
 
-/// Hoja de Notificaciones (port de `src/components/notification-bell.tsx`).
+/// Hoja de Notificaciones revisada visualmente para ambos temas y texto a 1,3×.
 class PateaNotificationsSheet extends ConsumerWidget {
   const PateaNotificationsSheet({super.key});
 
@@ -112,21 +100,21 @@ class PateaNotificationsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     final currentUser = ref.watch(authStateProvider).value;
     final uid = currentUser?.uid ?? '';
     final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
 
-    // La web le da una ventana de 384px (`h-96`). Acá estaba fija en 280, que
-    // en un teléfono alto desperdicia media pantalla.
-    final listHeight = (MediaQuery.sizeOf(context).height * 0.45).clamp(240.0, 420.0);
+    final listHeight = (MediaQuery.sizeOf(context).height * 0.48).clamp(
+      240.0,
+      440.0,
+    );
 
     return Container(
       decoration: BoxDecoration(
-        color: context.c.popover,
+        color: c.popover,
         borderRadius: AppRadii.surfaceTop,
-        border: Border(
-          top: BorderSide(color: context.c.overlayLine, width: 1),
-        ),
+        border: Border(top: BorderSide(color: c.overlayLine, width: 1)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       child: SafeArea(
@@ -141,21 +129,21 @@ class PateaNotificationsSheet extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: context.c.overlayStrong,
+                  color: c.overlayStrong,
                   borderRadius: AppRadii.hairAll,
                 ),
               ),
             ),
-
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Notificaciones',
-                  style: AppTypography.headline(
-                    size: 17,
-                    weight: FontWeight.w900,
-                    color: context.c.textPrimary,
+                Expanded(
+                  child: Text(
+                    'Notificaciones',
+                    style: AppTypography.headline(
+                      size: 18,
+                      weight: FontWeight.w700,
+                      color: c.textPrimary,
+                    ),
                   ),
                 ),
                 if (unread > 0)
@@ -163,30 +151,28 @@ class PateaNotificationsSheet extends ConsumerWidget {
                     onPressed: uid.isEmpty ? null : () => _markAllRead(uid),
                     child: Text(
                       'Marcar leídas',
-                      style: AppTypography.body(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: context.c.primary,
+                      style: AppTypography.action(
+                        size: 13,
+                        color: c.primary,
                       ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-
+            const SizedBox(height: 8),
             SizedBox(
               height: listHeight,
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: uid.isNotEmpty
                     ? _notificationsRef(uid)
-                        .orderBy('createdAt', descending: true)
-                        .limit(_kNotificationsLimit)
-                        .snapshots()
+                          .orderBy('createdAt', descending: true)
+                          .limit(_kNotificationsLimit)
+                          .snapshots()
                     : const Stream.empty(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(
-                      child: CircularProgressIndicator(color: context.c.primary),
+                      child: CircularProgressIndicator(color: c.primary),
                     );
                   }
 
@@ -197,16 +183,25 @@ class PateaNotificationsSheet extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.notifications_off_outlined,
-                            size: 40,
-                            color: context.c.overlayStrong,
+                            Icons.notifications_none_rounded,
+                            size: 38,
+                            color: c.textSecondary,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'No tenés notificaciones pendientes',
+                            'Estás al día',
+                            style: AppTypography.headline(
+                              size: 15,
+                              weight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'No tenés notificaciones pendientes.',
+                            textAlign: TextAlign.center,
                             style: AppTypography.body(
                               size: 13,
-                              color: context.c.textSecondary,
+                              color: c.textSecondary,
                             ),
                           ),
                         ],
@@ -216,11 +211,10 @@ class PateaNotificationsSheet extends ConsumerWidget {
 
                   return ListView.separated(
                     itemCount: docs.length,
-                    separatorBuilder: (context, index) => Divider(
-                      color: context.c.overlaySubtle,
-                      height: 1,
-                    ),
-                    itemBuilder: (context, index) => _NotificationRow(doc: docs[index]),
+                    separatorBuilder: (_, _) =>
+                        Divider(color: c.border, height: 1),
+                    itemBuilder: (context, index) =>
+                        _NotificationRow(doc: docs[index]),
                   );
                 },
               ),
@@ -239,6 +233,7 @@ class _NotificationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final data = doc.data();
     final title = (data['title'] as String?) ?? 'Aviso de Pateá';
     final message = (data['message'] ?? data['body'] ?? '') as String;
@@ -246,15 +241,8 @@ class _NotificationRow extends StatelessWidget {
     final link = data['link'] as String?;
     final when = _timeAgo(data['createdAt']);
 
-    // Cada notificación trae a dónde ir (`link`, lo escriben las Cloud
-    // Functions: /matches/:id, /evaluations/:matchId, /players/:id — las tres
-    // existen en el router del móvil). La web envuelve cada fila en un
-    // `<Link>`; acá las filas eran `Container` sin `onTap`, así que te
-    // enterabas de que te habían invitado a un partido y no podías ir.
     Future<void> open() async {
       if (!isRead) {
-        // Si no, el punto de la campana no se apaga nunca sin usar
-        // "marcar leídas".
         await doc.reference.update({'isRead': true});
       }
       if (!context.mounted) return;
@@ -264,30 +252,30 @@ class _NotificationRow extends StatelessWidget {
 
     return InkWell(
       onTap: open,
-      borderRadius: AppRadii.cardAll,
-      child: PateaCard(
-               color: isRead ? Colors.transparent : context.c.brandVolt.withValues(alpha: 0.10),
-               radius: AppRadii.cardAll,
-               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-               child: Row(
+      borderRadius: AppRadii.chipAll,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isRead
+              ? Colors.transparent
+              : c.primary.withValues(alpha: 0.08),
+          borderRadius: AppRadii.chipAll,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // La web pinta todos los íconos igual (`bg-card/70`, borde,
-            // `text-foreground`) — el tipo lo dice el dibujo, no el color.
-            // Acá había un volt para evaluaciones y un azul `#3B82F6` suelto
-            // para partidos, que no sale de ninguna paleta del proyecto.
             Container(
-              width: 32,
-              height: 32,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                color: context.c.card,
+                color: c.cardSurface,
                 shape: BoxShape.circle,
-                border: Border.all(color: context.c.overlayLine),
+                border: Border.all(color: c.border),
               ),
               child: Icon(
                 _iconForType(data['type'] as String?),
-                color: context.c.textPrimary,
-                size: 16,
+                color: isRead ? c.textSecondary : c.primary,
+                size: 17,
               ),
             ),
             const SizedBox(width: 12),
@@ -295,28 +283,42 @@ class _NotificationRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: AppTypography.headline(
-                      size: 13,
-                      weight: isRead ? FontWeight.w600 : FontWeight.w800,
-                      color: context.c.textPrimary,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: AppTypography.headline(
+                            size: 14,
+                            weight: isRead ? FontWeight.w600 : FontWeight.w700,
+                            color: c.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (when.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          when,
+                          style: AppTypography.body(
+                            size: 11,
+                            color: c.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   if (message.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      message,
-                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (when.isNotEmpty) ...[
                     const SizedBox(height: 3),
                     Text(
-                      when,
-                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
+                      message,
+                      style: AppTypography.body(
+                        size: 13,
+                        color: c.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
@@ -324,17 +326,17 @@ class _NotificationRow extends StatelessWidget {
             ),
             if (!isRead)
               Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(top: 4, left: 6),
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(top: 6, left: 8),
                 decoration: BoxDecoration(
-                  color: context.c.primary,
+                  color: c.primary,
                   shape: BoxShape.circle,
                 ),
               ),
           ],
         ),
-             ),
+      ),
     );
   }
 }

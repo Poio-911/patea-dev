@@ -146,11 +146,11 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('panel $mode: próxima convocatoria y acciones sin desbordes', (
+    testWidgets('panel $mode: bienvenida y resumen sin desbordes', (
       tester,
     ) async {
       await _mount(tester, const DashboardScreen(), light: light);
-      expect(find.text('Armar partido'), findsOneWidget);
+      expect(find.text('Dale, Santiago.'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await _capture(tester, 'dashboard_$mode');
     });
