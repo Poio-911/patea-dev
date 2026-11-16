@@ -24,10 +24,17 @@ import '../../../core/widgets/player_avatar_fallback.dart';
 /// El dato importante: los testimonios que alimentan todo esto ya se venían
 /// guardando. El formulario de evaluación del móvil pide `personalChronicle` y
 /// `mvpVote` desde siempre, y hasta ahora nada los leía.
+enum MatchStoryPart { all, figure, planilla, chronicle }
+
 class MatchStoryView extends ConsumerStatefulWidget {
   final MatchModel match;
+  final MatchStoryPart part;
 
-  const MatchStoryView({super.key, required this.match});
+  const MatchStoryView({
+    super.key,
+    required this.match,
+    this.part = MatchStoryPart.all,
+  });
 
   @override
   ConsumerState<MatchStoryView> createState() => _MatchStoryViewState();
@@ -43,7 +50,9 @@ class _MatchStoryViewState extends ConsumerState<MatchStoryView> {
       _error = null;
     });
     try {
-      await ref.read(matchServiceProvider).generateMatchChronicle(widget.match.id);
+      await ref
+          .read(matchServiceProvider)
+          .generateMatchChronicle(widget.match.id);
       // No hace falta guardar nada: la función escribe la crónica en el
       // partido y el stream la trae.
     } catch (e) {
@@ -83,7 +92,9 @@ class _MatchStoryViewState extends ConsumerState<MatchStoryView> {
   @override
   Widget build(BuildContext context) {
     final match = widget.match;
-    final stats = ref.watch(matchResultStatsProvider(match.id)).value ?? MatchResultStats.empty;
+    final stats =
+        ref.watch(matchResultStatsProvider(match.id)).value ??
+        MatchResultStats.empty;
     final chronicle = match.chronicle;
 
     // El MVP guardado en el partido manda; si el partido es viejo y no lo
@@ -91,42 +102,60 @@ class _MatchStoryViewState extends ConsumerState<MatchStoryView> {
     final mvpId = match.bestPlayerId ?? stats.mvpId;
     final mvp = mvpId == null ? null : _playerOf(mvpId);
 
-    return _Paper(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (chronicle != null)
-            _Masthead(
-              headline: chronicle.headline,
-              match: match,
-            )
-          else
-            _CoverPending(
-              generating: _generating,
-              error: _error,
-              onTap: _generate,
-            ),
+    final showFigure =
+        widget.part == MatchStoryPart.all ||
+        widget.part == MatchStoryPart.figure;
+    final showPlanilla =
+        widget.part == MatchStoryPart.all ||
+        widget.part == MatchStoryPart.planilla;
+    final showChronicle =
+        widget.part == MatchStoryPart.all ||
+        widget.part == MatchStoryPart.chronicle;
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showChronicle && chronicle != null)
+          _Masthead(headline: chronicle.headline, match: match)
+        else if (showChronicle)
+          _CoverPending(
+            generating: _generating,
+            error: _error,
+            onTap: _generate,
+          ),
 
-          if (mvp != null) _MvpMedallion(player: mvp, votes: stats.mvpVotes),
+        if (showFigure && mvp != null)
+          _MvpMedallion(
+            player: mvp,
+            votes: stats.mvpVotes,
+            goals: stats.scorers
+                .where((p) => p.playerId == mvpId)
+                .fold<int>(0, (sum, p) => sum + p.goals),
+            assists: stats.assisters
+                .where((p) => p.playerId == mvpId)
+                .fold<int>(0, (sum, p) => sum + p.assists),
+          ),
 
-          if (chronicle != null) _Story(text: chronicle.story),
+        if (showChronicle && chronicle != null) _Story(text: chronicle.story),
 
-          if (stats.scorers.isNotEmpty || stats.assisters.isNotEmpty)
-            _Boxscore(
-              scorers: stats.scorers,
-              assisters: stats.assisters,
-              nameOf: _nameOf,
-              playerOf: _playerOf,
-            ),
+        if (showPlanilla &&
+            (stats.scorers.isNotEmpty || stats.assisters.isNotEmpty))
+          _Boxscore(
+            scorers: stats.scorers,
+            assisters: stats.assisters,
+            nameOf: _nameOf,
+            playerOf: _playerOf,
+          ),
 
-          if (chronicle != null && chronicle.playerVoices.isNotEmpty)
-            _Voices(
-              voices: chronicle.playerVoices,
-              playerByName: _playerByName,
-            ),
-        ],
-      ),
+        if (showChronicle &&
+            chronicle != null &&
+            chronicle.playerVoices.isNotEmpty)
+          _Voices(voices: chronicle.playerVoices, playerByName: _playerByName),
+      ],
     );
+    return widget.part == MatchStoryPart.all ||
+            widget.part == MatchStoryPart.chronicle
+        ? _Paper(child: content)
+        : content;
   }
 }
 
@@ -139,12 +168,12 @@ class _Paper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PateaCard(
-             color: context.c.card.withValues(alpha: 0.55),
-             radius: AppRadii.cardAll,
-             borderColor: context.c.border.withValues(alpha: 0.35),
-             clipBehavior: Clip.antiAlias,
-             child: child,
-           );
+      color: context.c.card,
+      radius: AppRadii.cardAll,
+      borderColor: context.c.border.withValues(alpha: 0.35),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
   }
 }
 
@@ -157,7 +186,8 @@ class _Masthead extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasScore = match.hasFinalScore && match.teamA != null && match.teamB != null;
+    final hasScore =
+        match.hasFinalScore && match.teamA != null && match.teamB != null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
@@ -170,16 +200,20 @@ class _Masthead extends StatelessWidget {
                 color: context.c.brandVolt.withValues(alpha: 0.15),
                 radius: AppRadii.chipAll,
                 padding: const EdgeInsets.all(6),
-                child: Icon(Icons.auto_stories_rounded, size: 15, color: context.c.primary),
+                child: Icon(
+                  Icons.auto_stories_rounded,
+                  size: 15,
+                  color: context.c.primary,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'CRÓNICA DEL PARTIDO',
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.code(
-                    size: 9.5,
+                    size: 12,
                     weight: FontWeight.w800,
                     color: context.c.primary,
                   ).copyWith(letterSpacing: 1.4),
@@ -191,10 +225,16 @@ class _Masthead extends StatelessWidget {
                   color: context.c.cardSurface,
                   radius: AppRadii.chipAll,
                   borderColor: context.c.border.withValues(alpha: 0.4),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3.5,
+                  ),
                   child: Text(
                     '${match.teamA!.score} - ${match.teamB!.score}',
-                    style: AppTypography.sportNumber(size: 18, color: context.c.textPrimary),
+                    style: AppTypography.sportNumber(
+                      size: 18,
+                      color: context.c.textPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -203,10 +243,7 @@ class _Masthead extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             '«$headline»',
-            style: AppTypography.headline(
-              size: 18,
-              weight: FontWeight.w800,
-            ),
+            style: AppTypography.headline(size: 18, weight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
           Container(height: 1, color: context.c.border.withValues(alpha: 0.25)),
@@ -215,23 +252,31 @@ class _Masthead extends StatelessWidget {
     );
   }
 }
+
 /// La figura del partido en tarjeta dorada moderna.
 class _MvpMedallion extends StatelessWidget {
   final MatchPlayerEntry player;
   final int votes;
+  final int goals;
+  final int assists;
 
-  const _MvpMedallion({required this.player, required this.votes});
+  const _MvpMedallion({
+    required this.player,
+    required this.votes,
+    this.goals = 0,
+    this.assists = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+      padding: const EdgeInsets.only(bottom: 10),
       child: PateaCard(
-               color: context.c.cardSurface,
-               radius: AppRadii.cardAll,
-               borderColor: context.c.goldBorder.withValues(alpha: 0.5),
-               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-               child: Row(
+        color: context.c.cardSurface,
+        radius: AppRadii.cardAll,
+        borderColor: context.c.goldBorder.withValues(alpha: 0.5),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
           children: [
             Container(
               width: 40,
@@ -248,37 +293,60 @@ class _MvpMedallion extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Icon(Icons.emoji_events_rounded, size: 13, color: context.c.goldBorder),
+                      Icon(
+                        Icons.emoji_events_rounded,
+                        size: 13,
+                        color: context.c.goldBorder,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         'FIGURA DEL PARTIDO',
-                        style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.goldBorder)
-                            .copyWith(letterSpacing: 1.3),
+                        style: AppTypography.body(
+                          size: 11,
+                          weight: FontWeight.w600,
+                          color: context.c.ratingAccent,
+                        ),
                       ),
                       if (votes > 0) ...[
-                        const Spacer(),
                         Text(
                           '$votes voto${votes > 1 ? "s" : ""}',
-                          style: AppTypography.code(size: 9, color: context.c.textSecondary),
+                          style: AppTypography.body(
+                            size: 11,
+                            color: context.c.textSecondary,
+                          ),
                         ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    player.displayName.toUpperCase(),
+                    player.displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.headline(size: 15, weight: FontWeight.w600),
+                    style: AppTypography.headline(
+                      size: 15,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '$goals goles · $assists asistencias',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
-             ),
+      ),
     );
   }
 }
@@ -327,35 +395,21 @@ class _StoryState extends State<_Story> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AnimatedCrossFade(
-            duration: const Duration(milliseconds: 250),
+            duration: Duration(
+              milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 180,
+            ),
             crossFadeState: _expanded
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
-            firstChild: Stack(
-              children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 160),
-                  child: ClipRect(child: textWidget),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 65,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          context.c.card.withValues(alpha: 0.0),
-                          context.c.card.withValues(alpha: 0.95),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            firstChild: Text(
+              clean,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.body(
+                size: 14,
+                height: 1.6,
+                color: context.c.textPrimary,
+              ),
             ),
             secondChild: textWidget,
           ),
@@ -364,20 +418,22 @@ class _StoryState extends State<_Story> {
             child: TextButton.icon(
               onPressed: () => setState(() => _expanded = !_expanded),
               icon: Icon(
-                _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                _expanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
                 size: 18,
                 color: context.c.primary,
               ),
               label: Text(
                 _expanded ? 'Mostrar menos' : 'Leer crónica completa',
-                style: AppTypography.action(
-                  size: 14,
-                  color: context.c.primary,
-                ),
+                style: AppTypography.action(size: 14, color: context.c.primary),
               ),
               style: TextButton.styleFrom(
                 foregroundColor: context.c.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -407,136 +463,78 @@ class _Boxscore extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.28),
-        border: Border(
-          top: BorderSide(color: context.c.border.withValues(alpha: 0.30)),
-          bottom: BorderSide(color: context.c.border.withValues(alpha: 0.30)),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final twoColumns =
+          constraints.maxWidth >= 320 &&
+          MediaQuery.textScalerOf(context).scale(14) <= 20;
+      Widget list(List<MatchPlayerTally> values, bool goals) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'LA PLANILLA',
-            style: AppTypography.code(
-                size: 9, weight: FontWeight.w700, color: context.c.textSecondary)
-                .copyWith(letterSpacing: 3),
+            goals ? 'Goles' : 'Asistencias',
+            style: AppTypography.body(size: 13, color: context.c.textSecondary),
           ),
-          // Dos listas separadas y no una sola: quien marcó y asistió aparece
-          // en las dos, y sin el encabezado se lee como una fila repetida.
-          if (scorers.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _TallyHeader(
-                icon: Icons.sports_soccer_rounded,
-                text: 'GOLES',
-                color: context.c.primary),
-            const SizedBox(height: 8),
-            for (final t in scorers)
-              _TallyLine(
-                icon: Icons.sports_soccer_rounded,
-                player: playerOf(t.playerId),
-                name: nameOf(t.playerId),
-                count: t.goals,
-                color: context.c.primary,
+          const SizedBox(height: 12),
+          for (final value in values)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      nameOf(value.playerId),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(
+                        size: 13,
+                        weight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${goals ? value.goals : value.assists}',
+                    style: AppTypography.sportNumber(
+                      size: 18,
+                      color: context.c.primary,
+                    ),
+                  ),
+                ],
               ),
-          ],
-          if (assisters.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            _TallyHeader(
-                icon: Icons.compare_arrows_rounded,
-                text: 'ASISTENCIAS',
-                color: context.c.info),
-            const SizedBox(height: 8),
-            for (final t in assisters)
-              _TallyLine(
-                icon: Icons.compare_arrows_rounded,
-                player: playerOf(t.playerId),
-                name: nameOf(t.playerId),
-                count: t.assists,
-                color: context.c.info,
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TallyHeader extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-
-  const _TallyHeader({required this.icon, required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 6),
-        Text(text,
-            style: AppTypography.headline(size: 14, weight: FontWeight.w600, color: color)),
-      ],
-    );
-  }
-}
-
-class _TallyLine extends StatelessWidget {
-  final IconData icon;
-  final MatchPlayerEntry? player;
-  final String name;
-  final int count;
-  final Color color;
-
-  const _TallyLine({
-    required this.icon,
-    required this.player,
-    required this.name,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: ClipOval(child: _Avatar(player: player, seed: name)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.headline(size: 15, weight: FontWeight.w600),
             ),
-          ),
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          SizedBox(
-            width: 18,
-            child: Text(
-              '$count',
-              textAlign: TextAlign.right,
-              style: AppTypography.code(
-                  size: 13, weight: FontWeight.w800, color: color),
-            ),
-          ),
         ],
-      ),
-    );
-  }
+      );
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'La planilla',
+              style: AppTypography.headline(size: 17, weight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            if (twoColumns && scorers.isNotEmpty && assisters.isNotEmpty)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: list(scorers, true)),
+                  const SizedBox(width: 24),
+                  Expanded(child: list(assisters, false)),
+                ],
+              )
+            else ...[
+              if (scorers.isNotEmpty) list(scorers, true),
+              if (scorers.isNotEmpty && assisters.isNotEmpty)
+                const SizedBox(height: 16),
+              if (assisters.isNotEmpty) list(assisters, false),
+            ],
+          ],
+        ),
+      );
+    },
+  );
 }
 
 /// Voces del vestuario: recortes que se pasan de costado.
@@ -560,13 +558,19 @@ class _Voices extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Icon(Icons.format_quote_rounded, size: 14, color: context.c.textSecondary),
+                Icon(
+                  Icons.format_quote_rounded,
+                  size: 14,
+                  color: context.c.textSecondary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'VOCES DEL VESTUARIO',
                   style: AppTypography.code(
-                      size: 9, weight: FontWeight.w700, color: context.c.textSecondary)
-                      .copyWith(letterSpacing: 3),
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: context.c.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -600,18 +604,22 @@ class _VoiceCard extends StatelessWidget {
   final String name;
   final MatchPlayerEntry? player;
 
-  const _VoiceCard({required this.quote, required this.name, required this.player});
+  const _VoiceCard({
+    required this.quote,
+    required this.name,
+    required this.player,
+  });
 
   @override
   Widget build(BuildContext context) {
     return PateaCard(
-             color: context.c.card.withValues(alpha: 0.75),
-             radius: AppRadii.cardAll,
-             borderColor: context.c.border.withValues(alpha: 0.35),
-             width: 250,
-             clipBehavior: Clip.antiAlias,
-             padding: const EdgeInsets.all(16),
-             child: Stack(
+      color: context.c.card,
+      radius: AppRadii.cardAll,
+      borderColor: context.c.border.withValues(alpha: 0.35),
+      width: 250,
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(16),
+      child: Stack(
         children: [
           // La comilla gigante de fondo, girada, como en la web.
           Positioned(
@@ -648,7 +656,9 @@ class _VoiceCard extends StatelessWidget {
                   SizedBox(
                     width: 28,
                     height: 28,
-                    child: ClipOval(child: _Avatar(player: player, seed: name)),
+                    child: ClipOval(
+                      child: _Avatar(player: player, seed: name),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -660,16 +670,18 @@ class _VoiceCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.editorial(
-                              size: 12, weight: FontWeight.w700),
+                            size: 12,
+                            weight: FontWeight.w700,
+                          ),
                         ),
                         if (player != null)
                           Text(
                             player!.position.toUpperCase(),
                             style: AppTypography.code(
-                                size: 8,
-                                weight: FontWeight.w700,
-                                color: context.c.positionColor(player!.position))
-                                .copyWith(letterSpacing: 1.2),
+                              size: 8,
+                              weight: FontWeight.w700,
+                              color: context.c.positionColor(player!.position),
+                            ).copyWith(letterSpacing: 1.2),
                           ),
                       ],
                     ),
@@ -680,7 +692,7 @@ class _VoiceCard extends StatelessWidget {
           ),
         ],
       ),
-           );
+    );
   }
 }
 
@@ -712,18 +724,31 @@ class _CoverPending extends StatelessWidget {
                 color: context.c.brandVolt.withValues(alpha: 0.12),
                 radius: AppRadii.cardAll,
                 padding: const EdgeInsets.all(8),
-                child: Icon(Icons.auto_stories_rounded, size: 20, color: context.c.primary),
+                child: Icon(
+                  Icons.auto_stories_rounded,
+                  size: 20,
+                  color: context.c.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Crónica del Partido', style: AppTypography.headline(size: 15, weight: FontWeight.w800)),
+                    Text(
+                      'Crónica del Partido',
+                      style: AppTypography.headline(
+                        size: 15,
+                        weight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 3),
                     Text(
                       'Relato oficial con IA a partir de goles, asistencias y votos.',
-                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -732,9 +757,11 @@ class _CoverPending extends StatelessWidget {
           ),
           if (error != null) ...[
             const SizedBox(height: 12),
-            Text(error!,
-                textAlign: TextAlign.center,
-                style: AppTypography.body(size: 11, color: context.c.destructive)),
+            Text(
+              error!,
+              textAlign: TextAlign.center,
+              style: AppTypography.body(size: 11, color: context.c.destructive),
+            ),
           ],
           const SizedBox(height: 14),
           SizedBox(
@@ -783,7 +810,8 @@ class _Avatar extends StatelessWidget {
     return Image.network(
       url,
       fit: BoxFit.cover,
-      errorBuilder: (_, error, stack) => PlayerAvatarFallback(seed: fallbackSeed),
+      errorBuilder: (_, error, stack) =>
+          PlayerAvatarFallback(seed: fallbackSeed),
     );
   }
 }

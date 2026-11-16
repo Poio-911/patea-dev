@@ -94,6 +94,13 @@ class PateaColors extends ThemeExtension<PateaColors> {
   // entre esquemas: no describen el tema, describen la foto.
   /// texto sobre foto
   final Color onPhoto;
+
+  /// Dark editorial veil remains dark over photography in both themes.
+  Color get livePitchSurface => const Color(0xFF123326);
+  Color get photoFallback => const Color(0xFF13242B);
+  List<Color> get activityPhotoGradient => const [Color(0x4D071015), Color(0xB3071015), Color(0xF2071015)];
+  Color get activityPhotoTitle => const Color(0xFFF4F7F6);
+  Color get activityPhotoDetails => const Color(0xFFDCE5E3);
   /// texto secundario sobre foto
   final Color onPhotoMuted;
   /// linea y borde sobre foto
@@ -153,7 +160,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
     required this.posPor,
   });
 
-  /// El tema `game`: volt, carbón y foto de cancha.
+  /// El tema `game`: volt y carbón; fotos reservadas para las portadas.
   static const game = PateaColors(
     isDarkSurface: true,
   // Superficies

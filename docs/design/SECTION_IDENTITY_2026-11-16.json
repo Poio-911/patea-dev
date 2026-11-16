@@ -1,0 +1,35 @@
+[
+  {
+    "section": "evaluations",
+    "asset": "patea_mobile\\assets\\brand\\patea_evaluations.webp",
+    "original": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-3902c977-74dd-4e3f-81a8-e8d5d02ad56a.png",
+    "bytes": 75970,
+    "size": [
+      1200,
+      800
+    ],
+    "sha256": "57369752de4af1bcd6f3bc9c7f3df86650ed4438b9a4a4740cd3e6fd5e00cdd1"
+  },
+  {
+    "section": "ranking",
+    "asset": "patea_mobile\\assets\\brand\\patea_ranking.webp",
+    "original": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-15ea4932-3357-441e-91da-9c59cc40795c.png",
+    "bytes": 47736,
+    "size": [
+      1200,
+      800
+    ],
+    "sha256": "afbd8bc7dc9876ed2e0f7b118b0c189a81d2cd4cd12e2f0c6ccbe43158d157e0"
+  },
+  {
+    "section": "coach",
+    "asset": "patea_mobile\\assets\\brand\\patea_coach.webp",
+    "original": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-73c4f440-0b2c-4176-aff4-421cc5b12743.png",
+    "bytes": 67766,
+    "size": [
+      1200,
+      800
+    ],
+    "sha256": "de02914820b5be51d0e412124006ccbef6efb771cb6452c709f92e02e971a482"
+  }
+]

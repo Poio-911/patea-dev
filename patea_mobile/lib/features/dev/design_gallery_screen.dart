@@ -9,7 +9,6 @@ import '../../core/widgets/patea_snack.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/fondo_claro.dart';
 import '../../core/theme/patea_colors.dart';
 
 /// La galería del sistema de diseño. Sólo en debug.
@@ -70,15 +69,6 @@ class _DesignGalleryScreenState extends ConsumerState<DesignGalleryScreen> {
           padding: EdgeInsets.fromLTRB(
               16, 16, 16, MediaQuery.paddingOf(context).bottom + 32),
           children: [
-            if (!_game) ...[
-              _Title('Fondo del tema claro'),
-              _Note('Tres candidatas. La eleccion vale para toda la app y '
-                  'sobrevive a cerrarla, asi que se puede salir de aca y '
-                  'mirar las pantallas de verdad. Es andamio: cuando este '
-                  'decidida queda una sola y esto se borra.'),
-              const _SelectorDeFondo(),
-              const SizedBox(height: 8),
-            ],
             _Section('Superficies', [
               _Swatch('background', c.background),
               _Swatch('card', c.card),
@@ -221,27 +211,6 @@ class _DesignGalleryScreenState extends ConsumerState<DesignGalleryScreen> {
         ),
         ),
       ),
-    );
-  }
-}
-
-/// Los tres botones que cambian el fondo del tema claro.
-class _SelectorDeFondo extends ConsumerWidget {
-  const _SelectorDeFondo();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final actual = ref.watch(fondoClaroProvider);
-
-    return SegmentedButton<FondoClaro>(
-      showSelectedIcon: false,
-      segments: [
-        for (final v in FondoClaro.values)
-          ButtonSegment(value: v, label: Text(v.etiqueta)),
-      ],
-      selected: {actual},
-      onSelectionChanged: (s) =>
-          ref.read(fondoClaroProvider.notifier).elegir(s.first),
     );
   }
 }

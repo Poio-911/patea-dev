@@ -10,8 +10,8 @@
 ///
 /// La tercera no guarda golden a propósito. Duplicar las imágenes por escala
 /// no agrega información: lo que interesa a 1,3× no es cómo queda sino **si
-/// entra**, y un desborde de layout llega al test como excepción. Así son 24
-/// imágenes en vez de 48, y la pasada de 1,3× cuesta casi nada.
+/// entra**, y un desborde de layout llega al test como excepción. Así son 26
+/// imágenes en vez de 52, y la pasada de 1,3× cuesta casi nada.
 ///
 /// Eso es lo que encuentra los `height:` fijos: un `SizedBox(height: 44)` con
 /// una línea de texto adentro entra a 1× y revienta a 1,3×.
@@ -26,6 +26,12 @@
 ///
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
+
+import 'package:patea_mobile/features/evaluations/evaluation_form_screen.dart';
+import 'package:patea_mobile/core/widgets/patea_user_menu_sheet.dart';
+
+import 'package:patea_mobile/features/dashboard/widgets/dashboard_match_hero.dart';
+
 
 import 'dart:async';
 
@@ -51,6 +57,10 @@ import 'package:patea_mobile/features/players/players_list_screen.dart';
 import 'package:patea_mobile/features/social/leaderboard_screen.dart';
 import 'package:patea_mobile/features/social/social_feed_screen.dart';
 
+import 'package:patea_mobile/features/coach/ai_coach_screen.dart';
+
+import 'package:patea_mobile/features/matches/live_match_screen.dart';
+import 'package:patea_mobile/features/matches/match_chat_screen.dart';
 import 'arnes.dart';
 
 /// Una pantalla y el nombre con el que se guarda su imagen.
@@ -58,16 +68,22 @@ typedef Caso = (String, Widget Function());
 
 final List<Caso> _pantallas = [
   ('panel', () => const DashboardScreen()),
+  ('panel_en_vivo', () => Scaffold(backgroundColor: Colors.transparent, body: SingleChildScrollView(child: Padding(padding: const EdgeInsets.all(20), child: DashboardMatchHero(match: partidoDirigir, isLive: true))))),
   ('plantel', () => const PlayersListScreen()),
   ('partidos', () => const MatchesScreen()),
   ('partido_detalle', () => const MatchDetailScreen(matchId: idPartido)),
   ('competiciones', () => const CompetitionsScreen()),
   ('explorar', () => const ExplorarScreen()),
+  ('evaluar_partido', () => const EvaluationFormScreen(matchId: idPartido)),
+  ('menu_usuario', () => const Scaffold(backgroundColor: Colors.transparent, body: Align(alignment: Alignment.bottomCenter, child: PateaUserMenuSheet()))),
   ('evaluaciones', () => const EvaluationsInboxScreen()),
   ('grupos', () => const GroupsScreen()),
   ('equipo_detalle', () => const TeamDetailScreen(teamId: 'team-1')),
   ('jugador_detalle', () => const PlayerDetailScreen(playerId: uidYo)),
+  ('dirigir', () => LiveMatchScreen(matchId: partidoDirigir.id)),
+  ('chat', () => MatchChatScreen(match: partidos.first)),
   ('tabla', () => const LeaderboardScreen()),
+  ('entrenador', () => const AICoachScreen()),
   ('comunidad', () => const SocialFeedScreen()),
 ];
 
@@ -212,6 +228,7 @@ void main() {
           find.byType(MaterialApp),
           matchesGoldenFile('pantalla_${nombre}_$sufijo.png'),
         );
+        if (nombre == 'dirigir') await tester.pumpWidget(const SizedBox.shrink());
       });
     }
 
@@ -231,6 +248,7 @@ void main() {
           isEmpty,
           reason: '\n$nombre · $cual · 1,3×\n${resumirErrores(errores)}\n',
         );
+        if (nombre == 'dirigir') await tester.pumpWidget(const SizedBox.shrink());
       }
     });
   }

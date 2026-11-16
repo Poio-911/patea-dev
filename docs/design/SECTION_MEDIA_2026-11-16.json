@@ -1,0 +1,86 @@
+{
+  "generatedWith": "built-in image_gen",
+  "assets": [
+    {
+      "asset": "groups",
+      "path": "patea_mobile/assets/brand/patea_groups.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 128948,
+      "sha256": "fd40142609b1caec76ed75f7474278104c12d3a5f1fae089c7af10398c1ee18f",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-41b739f8-5d62-4a3d-97d1-876cba502485.png"
+    },
+    {
+      "asset": "competitions",
+      "path": "patea_mobile/assets/brand/patea_competitions.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 110684,
+      "sha256": "6e108b3fff0e4d9e6f76c21f7a3273e7290a9cb5c2c4b8a0c5fd0a22c43515f6",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-a7725249-b5ce-4cc0-88c3-6daa9594a873.png"
+    },
+    {
+      "asset": "explore",
+      "path": "patea_mobile/assets/brand/patea_explore.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 129580,
+      "sha256": "990b119383b1b0dbd5dbdfee218b9f3508fec9deb1301c5a74d47caaea0cbc1b",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-97601e90-2d1f-4e76-8150-8e86eefe6ba5.png"
+    },
+    {
+      "asset": "ready_pitch",
+      "path": "patea_mobile/assets/brand/patea_ready_pitch.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 200186,
+      "sha256": "b6f99458a7feefab71e591e1b8a09ec832a26df12e3b5237b177ec1a79fb8ade",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-28e465f5-5b5e-47bc-a38e-fe83e92d370a.png"
+    },
+    {
+      "asset": "locker_room",
+      "path": "patea_mobile/assets/brand/patea_locker_room.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 64968,
+      "sha256": "a819203713949cfbefeab31d0ba107857ed6ba42aea16db61b94cdbe0648c581",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-ff858f1e-d97f-4118-be84-dad64dee44de.png"
+    },
+    {
+      "asset": "league",
+      "path": "patea_mobile/assets/brand/patea_league.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 189096,
+      "sha256": "aac75855a9416a9da005fdf56ecc2c9b8ff01739df6020945d09cc8c9d76ec44",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-023b7b55-a66b-46db-9af6-3d264f760fb5.png"
+    },
+    {
+      "asset": "indoor",
+      "path": "patea_mobile/assets/brand/patea_indoor.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 145352,
+      "sha256": "7bd88ab4ec19a37aecb0c185a171fedb8f7f70eb5b55a2d967787888ecd8329f",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-9b354cfe-d10b-485e-a9c7-ab8a5f360e56.png"
+    },
+    {
+      "asset": "park",
+      "path": "patea_mobile/assets/brand/patea_park.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 227680,
+      "sha256": "fe75d5d4df4ee63610c8cf4a3aa7a8849ad532fef4218fb855433c8bd757e399",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-4e774edf-f24d-4d05-9771-b92d3801f307.png"
+    },
+    {
+      "asset": "urban_court",
+      "path": "patea_mobile/assets/brand/patea_urban_court.webp",
+      "width": 1200,
+      "height": 800,
+      "bytes": 167240,
+      "sha256": "5f561f00ebd33c07da768b90ab0e827f0360d1fc79a5b26c0632e983e6eade91",
+      "source": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-2db5779d-41c9-466c-8a75-16240a2ac860.png"
+    }
+  ]
+}

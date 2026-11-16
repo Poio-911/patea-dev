@@ -1,6 +1,6 @@
+import '../../core/widgets/patea_tabs.dart';
 import 'dart:async';
 import '../../core/widgets/patea_snack.dart';
-import '../../core/widgets/patea_card.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +46,8 @@ class LiveMatchScreen extends ConsumerStatefulWidget {
 
 class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
   Timer? _ticker;
+  int _tab = 0;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -54,7 +56,14 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
     // sólo fuerza el repintado cada segundo; si el partido está pausado o
     // terminado, `LiveClock` devuelve siempre lo mismo y no se nota.
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      final match = ref
+          .read(singleMatchStreamProvider(widget.matchId))
+          .asData
+          ?.value;
+      if (match?.status == 'active' && match?.timerPaused == false) {
+        setState(() {});
+      }
     });
   }
 
@@ -68,15 +77,23 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
 
   Future<void> _guard(Future<void> Function() action) async {
     // Se captura antes del await: después el contexto puede no valer.
+    if (_busy) return;
     final avisar = PateaSnack.of(context);
+    setState(() => _busy = true);
     try {
       await action();
     } catch (e) {
       avisar.error('$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _openEventLogger(MatchModel match, String type) async {
+  Future<void> _openEventLogger(
+    MatchModel match,
+    String type, [
+    MatchPlayerEntry? player,
+  ]) async {
     final clock = LiveClock.of(match);
     await showModalBottomSheet<void>(
       context: context,
@@ -86,6 +103,7 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
         match: match,
         eventType: type,
         currentMinute: clock.minute,
+        initialPlayer: player,
       ),
     );
   }
@@ -99,8 +117,10 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.c.popover,
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-        title: Text('¿Finalizar el partido?',
-            style: AppTypography.headline(size: 17, weight: FontWeight.w800)),
+        title: Text(
+          '¿Finalizar el partido?',
+          style: AppTypography.headline(size: 17, weight: FontWeight.w800),
+        ),
         content: Text(
           'Queda $a a $b. Después de esto se abren las evaluaciones y ya no se '
           'pueden cargar más eventos.',
@@ -109,8 +129,13 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancelar',
-                style: AppTypography.body(size: 13, color: context.c.textSecondary)),
+            child: Text(
+              'Cancelar',
+              style: AppTypography.body(
+                size: 13,
+                color: context.c.textSecondary,
+              ),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -132,27 +157,38 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
   @override
   Widget build(BuildContext context) {
     final matchAsync = ref.watch(singleMatchStreamProvider(widget.matchId));
-    final uid = ref.watch(authStateProvider).value?.uid;
+    final uid = ref.watch(authStateProvider).asData?.value?.uid;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('MINUTO A MINUTO',
-            style: AppTypography.headline(size: 15, weight: FontWeight.w800, letterSpacing: 0.5)),
+        title: Text(
+          matchAsync.asData?.value?.title ?? 'Minuto a minuto',
+          style: AppTypography.headline(
+            size: 15,
+            weight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
       body: matchAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: context.c.primary)),
         error: (e, _) => Center(
-          child: Text('No se pudo cargar el partido.\n$e',
-              textAlign: TextAlign.center,
-              style: AppTypography.body(color: context.c.textSecondary)),
+          child: Text(
+            'No se pudo cargar el partido.\n$e',
+            textAlign: TextAlign.center,
+            style: AppTypography.body(color: context.c.textSecondary),
+          ),
         ),
         data: (match) {
           if (match == null) {
             return Center(
-              child: Text('Partido no encontrado',
-                  style: AppTypography.body(color: context.c.textSecondary)),
+              child: Text(
+                'Partido no encontrado',
+                style: AppTypography.body(color: context.c.textSecondary),
+              ),
             );
           }
 
@@ -160,70 +196,153 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
           // Un partido terminado no se dirige: sin esto, un partido
           // finalizado que nunca pasó por el panel en vivo (liveStatus vacío)
           // mostraba "Iniciar partido" debajo del cartel de FINALIZADO.
-          final isOver = match.status == 'completed' || match.status == 'evaluated';
+          final isOver =
+              match.status == 'completed' || match.status == 'evaluated';
           final canDirect = isOrganizer && !isOver;
           final clock = LiveClock.of(match);
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+          final pages = [
+            MatchTimelineView(match: match),
+            match.events.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Las estadísticas aparecen al registrar eventos.',
+                      style: AppTypography.body(color: context.c.textSecondary),
+                    ),
+                  )
+                : LiveStatsPanel(match: match),
+            MatchClipsView(
+              match: match,
+              canUpload:
+                  uid != null &&
+                  (isOrganizer || match.playerUids.contains(uid)),
+            ),
+          ];
+          return Column(
             children: [
-              _Scoreboard(match: match, clock: clock),
-              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 2, 14, 4),
+                child: _Scoreboard(match: match, clock: clock),
+              ),
               _WatchingLine(matchId: match.id),
-              const SizedBox(height: 14),
-              LivePitchView(match: match),
-              const SizedBox(height: 18),
-
-              if (canDirect) ...[
-                _PeriodControls(
-                  match: match,
-                  clock: clock,
-                  onStart: () => _guard(() => _service.startMatch(match.id)),
-                  onSetState: (status, base, paused) => _guard(
-                    () => _service.updateLiveState(
-                      matchId: match.id,
-                      liveStatus: status,
-                      baseMinute: base,
-                      paused: paused,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: PateaTabs(
+                  tabs: const [
+                    PateaTab('Cancha'),
+                    PateaTab('Minuto a minuto'),
+                    PateaTab('Estadísticas'),
+                    PateaTab('Clips'),
+                  ],
+                  active: _tab,
+                  onChanged: (value) => setState(() => _tab = value),
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) => ListView(
+                    key: PageStorageKey('live-${widget.matchId}-$_tab'),
+                    padding: EdgeInsets.fromLTRB(
+                      _tab == 0 ? 6 : 16,
+                      6,
+                      _tab == 0 ? 6 : 16,
+                      4,
+                    ),
+                    children: [
+                      _tab == 0
+                          ? LivePitchView(
+                              match: match,
+                              viewportHeight: constraints.maxHeight - 10,
+                              onGoal: canDirect && clock.isRunning
+                                  ? (player) =>
+                                        _openEventLogger(match, 'goal', player)
+                                  : null,
+                            )
+                          : pages[_tab - 1],
+                    ],
+                  ),
+                ),
+              ),
+              if (canDirect)
+                Container(
+                  key: const ValueKey('live-control-dock'),
+                  decoration: BoxDecoration(
+                    color: context.c.card,
+                    border: Border(
+                      top: BorderSide(color: context.c.overlayLine),
                     ),
                   ),
-                  onFinish: () => _confirmFinish(match),
-                ),
-                if (clock.isRunning) ...[
-                  const SizedBox(height: 18),
-                  _QuickEvents(onPick: (type) => _openEventLogger(match, type)),
-                ],
-                const SizedBox(height: 18),
-              ],
-
-              if (match.status == 'completed' || match.status == 'evaluated') ...[
-                FilledButton.icon(
-                  onPressed: () => context.push('/evaluations/${match.id}'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.c.primary,
-                    foregroundColor: context.c.background,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: IgnorePointer(
+                        ignoring: _busy,
+                        child: Opacity(
+                          opacity: _busy ? .5 : 1,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: clock.isRunning
+                                        ? double.infinity
+                                        : 210,
+                                  ),
+                                  child: _PeriodControls(
+                                    match: match,
+                                    clock: clock,
+                                    onStart: () => _guard(
+                                      () => _service.startMatch(match.id),
+                                    ),
+                                    onSetState: (status, base, paused) =>
+                                        _guard(
+                                          () => _service.updateLiveState(
+                                            matchId: match.id,
+                                            liveStatus: status,
+                                            baseMinute: base,
+                                            paused: paused,
+                                          ),
+                                        ),
+                                    onFinish: () => _confirmFinish(match),
+                                  ),
+                                ),
+                              ),
+                              if (clock.isRunning) ...[
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _QuickEvents(
+                                    onPick: (type) =>
+                                        _openEventLogger(match, type),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  icon: const Icon(Icons.star_rate_rounded, size: 20),
-                  label: Text('Evaluar a tus compañeros',
-                      style: AppTypography.action(
-                          size: 14, weight: FontWeight.w800, color: context.c.background)),
                 ),
-                const SizedBox(height: 18),
-              ],
-
-              MatchClipsView(
-                match: match,
-                // La regla de Firestore sólo deja subir a los que están en el
-                // partido; mostrar el botón a quien no puede sería mentirle.
-                canUpload: uid != null &&
-                    (isOrganizer || match.playerUids.contains(uid)),
-              ),
-              const SizedBox(height: 22),
-              LiveStatsPanel(match: match),
-              const SizedBox(height: 22),
-              MatchTimelineView(match: match),
+              if (isOver &&
+                  uid != null &&
+                  (isOrganizer || match.playerUids.contains(uid)))
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/evaluations/${match.id}'),
+                      icon: const Icon(Icons.star_rate_rounded),
+                      label: const Text('Evaluar a tus compañeros'),
+                    ),
+                  ),
+                ),
             ],
           );
         },
@@ -237,118 +356,75 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
 class _Scoreboard extends StatelessWidget {
   final MatchModel match;
   final LiveClock clock;
-
   const _Scoreboard({required this.match, required this.clock});
 
   @override
-  Widget build(BuildContext context) {
-    final live = match.status == 'active';
-
-    return PateaCard(
-             color: context.c.card,
-             radius: AppRadii.surfaceAll,
-             borderColor: live
-              ? context.c.destructive.withValues(alpha: 0.55)
-              : context.c.overlaySubtle,
-          width: live ? 1.5 : 1,
-             padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-             child: Column(
-        children: [
-          _StatusLine(match: match, clock: clock),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: _TeamColumn(team: match.teamA, fallback: 'Equipo A')),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  '${match.teamA?.score ?? 0} : ${match.teamB?.score ?? 0}',
-                  style: AppTypography.sportNumber(size: 40, color: context.c.textPrimary),
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: _TeamColumn(team: match.teamA, fallback: 'Equipo A'),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${match.teamA?.score ?? 0} – ${match.teamB?.score ?? 0}',
+              style: AppTypography.sportNumber(
+                size: 34,
+                color: context.c.textPrimary,
+              ),
+            ),
+            if (match.status == 'active')
+              Text(
+                '${clock.minute.toString().padLeft(2, '0')}:${clock.second.toString().padLeft(2, '0')}${match.timerPaused ? ' · Pausa' : ''}',
+                style: AppTypography.code(
+                  size: 14,
+                  weight: FontWeight.w700,
+                  color: context.c.primary,
                 ),
               ),
-              Expanded(child: _TeamColumn(team: match.teamB, fallback: 'Equipo B')),
-            ],
-          ),
-        ],
-      ),
-           );
-  }
-}
-
-class _StatusLine extends StatelessWidget {
-  final MatchModel match;
-  final LiveClock clock;
-
-  const _StatusLine({required this.match, required this.clock});
-
-  @override
-  Widget build(BuildContext context) {
-    final live = match.status == 'active';
-    final color = live ? context.c.destructive : context.c.textSecondary;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (live) ...[
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 7),
-        ],
-        Text(
-          clock.periodLabel(match).toUpperCase(),
-          style: AppTypography.headline(
-              size: 11, weight: FontWeight.w800, color: color, letterSpacing: 1),
-        ),
-        if (live) ...[
-          const SizedBox(width: 10),
-          Container(width: 1, height: 12, color: context.c.overlayLine),
-          const SizedBox(width: 10),
-          Text(
-            clock.display,
-            style: AppTypography.code(color: context.c.textSecondary, size: 13, weight: FontWeight.w800),
-          ),
-          if (match.timerPaused) ...[
-            const SizedBox(width: 6),
-            Icon(Icons.pause_rounded, size: 13, color: context.c.textSecondary),
+            Text(
+              clock.periodLabel(match),
+              textAlign: TextAlign.center,
+              style: AppTypography.body(
+                size: 10,
+                color: context.c.textSecondary,
+              ),
+            ),
           ],
-        ],
-      ],
-    );
-  }
+        ),
+      ),
+      Expanded(
+        child: _TeamColumn(team: match.teamB, fallback: 'Equipo B'),
+      ),
+    ],
+  );
 }
 
 class _TeamColumn extends StatelessWidget {
   final MatchTeam? team;
   final String fallback;
-
   const _TeamColumn({required this.team, required this.fallback});
-
   @override
-  Widget build(BuildContext context) {
-    final jersey = team?.jersey;
-
-    return Column(
-      children: [
-        if (jersey != null)
-          JerseyWidget(jersey: jersey, size: 54)
-        else
-          Icon(Icons.shield_outlined,
-              size: 40, color: context.c.textSecondary.withValues(alpha: 0.5)),
-        const SizedBox(height: 8),
-        Text(
-          team?.name ?? fallback,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.headline(size: 13, weight: FontWeight.w800),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (team?.jersey != null)
+        JerseyWidget(jersey: team!.jersey!, size: 23)
+      else
+        Icon(Icons.shield_outlined, size: 22, color: context.c.textSecondary),
+      const SizedBox(height: 3),
+      Text(
+        team?.name ?? fallback,
+        textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: AppTypography.body(size: 11, weight: FontWeight.w700),
+      ),
+    ],
+  );
 }
 
 // ------------------------------------------------------ control del tiempo --
@@ -374,44 +450,60 @@ class _PeriodControls extends StatelessWidget {
     final children = <Widget>[];
 
     if (match.status == 'upcoming' || status == 'not_started') {
-      children.add(_ControlButton(
-        icon: Icons.play_arrow_rounded,
-        label: 'Iniciar partido',
-        primary: true,
-        onTap: onStart,
-      ));
+      children.add(
+        _ControlButton(
+          icon: Icons.play_arrow_rounded,
+          label: 'Iniciar partido',
+          primary: true,
+          onTap: onStart,
+        ),
+      );
     } else if (status == 'first_half' || status == 'second_half') {
-      children.add(_ControlButton(
-        icon: match.timerPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-        label: match.timerPaused ? 'Reanudar' : 'Pausar',
-        // Al pausar se congela el minuto que se ve; al reanudar se vuelve a
-        // anclar el reloj desde ese mismo minuto.
-        onTap: () => onSetState(status, clock.minute, !match.timerPaused),
-      ));
+      children.add(
+        _ControlButton(
+          icon: match.timerPaused
+              ? Icons.play_arrow_rounded
+              : Icons.pause_rounded,
+          label: match.timerPaused ? 'Reanudar' : 'Pausar',
+          // Al pausar se congela el minuto que se ve; al reanudar se vuelve a
+          // anclar el reloj desde ese mismo minuto.
+          onTap: () => onSetState(status, clock.minute, !match.timerPaused),
+        ),
+      );
       if (status == 'first_half') {
-        children.add(_ControlButton(
-          icon: Icons.free_breakfast_outlined,
-          label: 'Entretiempo',
-          onTap: () => onSetState('half_time', clock.minute, true),
-        ));
+        children.add(
+          _ControlButton(
+            icon: Icons.free_breakfast_outlined,
+            label: 'Descanso',
+            onTap: () => onSetState('half_time', clock.minute, true),
+          ),
+        );
       } else {
-        children.add(_ControlButton(
-          icon: Icons.sports_score_rounded,
-          label: 'Finalizar',
-          danger: true,
-          onTap: onFinish,
-        ));
+        children.add(
+          _ControlButton(
+            icon: Icons.sports_score_rounded,
+            label: 'Finalizar',
+            danger: true,
+            onTap: onFinish,
+          ),
+        );
       }
     } else if (status == 'half_time') {
-      children.add(_ControlButton(
-        icon: Icons.play_arrow_rounded,
-        label: 'Segundo tiempo',
-        primary: true,
-        // Mismo criterio que la web (`Math.max(45, currentMinute)`): el
-        // complemento arranca en el 45 aunque el primer tiempo haya sido más
-        // corto.
-        onTap: () => onSetState('second_half', clock.minute > 45 ? clock.minute : 45, false),
-      ));
+      children.add(
+        _ControlButton(
+          icon: Icons.play_arrow_rounded,
+          label: 'Segundo tiempo',
+          primary: true,
+          // Mismo criterio que la web (`Math.max(45, currentMinute)`): el
+          // complemento arranca en el 45 aunque el primer tiempo haya sido más
+          // corto.
+          onTap: () => onSetState(
+            'second_half',
+            clock.minute > 45 ? clock.minute : 45,
+            false,
+          ),
+        ),
+      );
     }
 
     if (children.isEmpty) return const SizedBox.shrink();
@@ -419,7 +511,7 @@ class _PeriodControls extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i < children.length; i++) ...[
-          if (i > 0) const SizedBox(width: 10),
+          if (i > 0) const SizedBox(width: 4),
           Expanded(child: children[i]),
         ],
       ],
@@ -447,39 +539,38 @@ class _ControlButton extends StatelessWidget {
     final fg = danger
         ? context.c.destructive
         : primary
-            ? context.c.background
-            : context.c.textPrimary;
-    final bg = primary ? context.c.primary : Colors.transparent;
-    final border = primary
-        ? context.c.primary
-        : danger
-            ? context.c.destructive.withValues(alpha: 0.5)
-            : context.c.overlayLine;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadii.cardAll,
-      child: PateaCard(
-               color: bg,
-               radius: AppRadii.cardAll,
-               borderColor: border,
-               padding: const EdgeInsets.symmetric(vertical: 13),
-               child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: fg),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.headline(size: 13, weight: FontWeight.w800, color: fg),
-              ),
+        ? context.c.onPrimary
+        : context.c.textPrimary;
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: primary ? context.c.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: fg),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style: AppTypography.body(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: fg,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-             ),
+      ),
     );
   }
 }
@@ -501,39 +592,59 @@ class _QuickEvents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text('REGISTRAR',
-            style: AppTypography.headline(
-                size: 11, weight: FontWeight.w800,
-                color: context.c.textSecondary, letterSpacing: 1.2)),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            for (var i = 0; i < _items.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () => onPick(_items[i].$1),
-                  borderRadius: AppRadii.cardAll,
-                  child: PateaCard(
-                           radius: AppRadii.cardAll,
-                           borderColor: context.c.overlayLine,
-                           padding: const EdgeInsets.symmetric(vertical: 12),
-                           child: Column(
-                      children: [
-                        Icon(_items[i].$2, size: 20, color: context.c.textPrimary),
-                        const SizedBox(height: 6),
-                        Text(_items[i].$3,
-                            style: AppTypography.body(size: 10, color: context.c.textSecondary)),
-                      ],
-                    ),
-                         ),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: () => onPick('goal'),
+            icon: const Icon(Icons.sports_soccer_rounded, size: 20),
+            label: const Text('Gol'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 48),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: PopupMenuButton<String>(
+            tooltip: 'Más eventos',
+            onSelected: onPick,
+            itemBuilder: (_) => [
+              for (final item in _items.skip(1))
+                PopupMenuItem(
+                  value: item.$1,
+                  child: Row(
+                    children: [
+                      Icon(item.$2, size: 20, color: context.c.textPrimary),
+                      const SizedBox(width: 12),
+                      Text(item.$3),
+                    ],
+                  ),
                 ),
-              ),
             ],
-          ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.more_horiz_rounded,
+                    size: 21,
+                    color: context.c.textPrimary,
+                  ),
+                  Text(
+                    'Eventos',
+                    style: AppTypography.body(
+                      size: 11,
+                      weight: FontWeight.w600,
+                      color: context.c.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -551,7 +662,9 @@ class _WatchingLine extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final presence = ref.watch(matchPresenceProvider(matchId)).value ?? MatchPresence.none;
+    final presence =
+        ref.watch(matchPresenceProvider(matchId)).asData?.value ??
+        MatchPresence.none;
     if (presence.others < 1) return const SizedBox.shrink();
 
     return Row(
@@ -560,7 +673,10 @@ class _WatchingLine extends ConsumerWidget {
         Container(
           width: 6,
           height: 6,
-          decoration: BoxDecoration(color: context.c.primary, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: context.c.primary,
+            shape: BoxShape.circle,
+          ),
         ),
         const SizedBox(width: 7),
         Text(

@@ -1,8 +1,9 @@
+import '../../core/widgets/patea_activity_cover.dart';
+import '../../core/widgets/patea_evaluation_mark.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
-import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_states.dart';
@@ -15,30 +16,44 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/evaluation_service.dart';
 import '../../core/models/evaluation_models.dart';
 import '../../core/theme/app_insets.dart';
-import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
 
-
-
-
 ({String label, Color color, bool urgent}) _urgency(
-    BuildContext context, String matchDate) {
+  BuildContext context,
+  String matchDate,
+) {
   final d = DateTime.tryParse(matchDate);
-  if (d == null) return (label: '', color: context.c.textSecondary, urgent: false);
+  if (d == null)
+    return (label: '', color: context.c.textSecondary, urgent: false);
   final deadline = d.toLocal().add(const Duration(hours: 72));
   final hoursLeft = deadline.difference(DateTime.now()).inHours;
-  if (hoursLeft <= 0) return (label: 'Cerrada', color: context.c.textSecondary, urgent: false);
-  if (hoursLeft <= 12) return (label: '${hoursLeft}h restantes', color: context.c.destructive, urgent: true);
-  if (hoursLeft <= 24) return (label: '${hoursLeft}h restantes', color: context.c.warning, urgent: false);
+  if (hoursLeft <= 0)
+    return (label: 'Cerrada', color: context.c.textSecondary, urgent: false);
+  if (hoursLeft <= 12)
+    return (
+      label: '${hoursLeft}h restantes',
+      color: context.c.destructive,
+      urgent: true,
+    );
+  if (hoursLeft <= 24)
+    return (
+      label: '${hoursLeft}h restantes',
+      color: context.c.warning,
+      urgent: false,
+    );
   final days = (hoursLeft / 24).floor();
-  return (label: '${days}d restantes', color: context.c.textSecondary, urgent: false);
+  return (
+    label: '${days}d restantes',
+    color: context.c.textSecondary,
+    urgent: false,
+  );
 }
 
 /// Port de src/app/evaluations/page.tsx: 3 tabs — Pendientes, Historial,
 /// Solicitudes (de revelación de identidad). El armado de items combina
 /// assignments + matches + processedSubmissions client-side (ver
-/// EvaluationService.loadInboxItems) en vez de listeners en vivo por
-/// partido como la web — el pull-to-refresh cubre la reactividad.
+/// EvaluationService.watchInboxItems). Las asignaciones se escuchan en vivo;
+/// el gesto de recarga sirve como recuperación manual.
 ///
 /// Deliberadamente NO portado en esta pasada: el pedido de revelación
 /// ("¿quién me evaluó?") desde el lado del jugador evaluado
@@ -48,10 +63,12 @@ class EvaluationsInboxScreen extends ConsumerStatefulWidget {
   const EvaluationsInboxScreen({super.key});
 
   @override
-  ConsumerState<EvaluationsInboxScreen> createState() => _EvaluationsInboxScreenState();
+  ConsumerState<EvaluationsInboxScreen> createState() =>
+      _EvaluationsInboxScreenState();
 }
 
-class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen> with SingleTickerProviderStateMixin {
+class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override
@@ -78,8 +95,10 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(
-          child: Text('Debés iniciar sesión.',
-              style: AppTypography.body(color: context.c.textSecondary)),
+          child: Text(
+            'Debés iniciar sesión.',
+            style: AppTypography.body(color: context.c.textSecondary),
+          ),
         ),
       );
     }
@@ -95,6 +114,9 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: RefreshIndicator(
+        // The vertical lists live inside a horizontal TabBarView viewport.
+        notificationPredicate: (notification) =>
+            notification.metrics.axis == Axis.vertical,
         onRefresh: () async {
           refresh();
           await ref.read(evaluationInboxItemsProvider(uid).future);
@@ -103,54 +125,49 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
           data: (items) {
             final pending = items.where((i) => !i.isSubmitted).toList();
             final history = items.where((i) => i.isSubmitted).toList();
-            final requestsCount = requestsAsync.value?.length ?? 0;
-            final urgentCount = pending.where((i) => _urgency(context, i.matchDate).urgent).length;
+            final requestsCount = requestsAsync.asData?.value.length ?? 0;
+            final urgentCount = pending
+                .where((i) => _urgency(context, i.matchDate).urgent)
+                .length;
 
             return Column(
               children: [
-                // Misma norma que Panel, Jugadores, Partidos y Explorar:
-                // titulo + descripcion como contenido, no como AppBar fijo.
-                // El "refrescar" pasa a ser el gesto de tirar hacia abajo,
-                // que ya estaba: el boton de la barra era la unica razon por
-                // la que esta pantalla necesitaba un AppBar.
                 Padding(
                   padding: EdgeInsets.fromLTRB(
-                      16, MediaQuery.of(context).padding.top + 12, 16, 0),
-                  child: PateaPageHeader(
-                    title: spec(Section.evaluations).title,
-                    description:
-                        'Puntuá a tus compañeros después de cada partido: de ahí salen los OVR de todos.',
-                    showCountRow: false,
+                    16,
+                    MediaQuery.paddingOf(context).top + 12,
+                    16,
+                    0,
+                  ),
+                  child: PateaActivityCover(
+                    image: 'assets/brand/patea_evaluations.webp',
+                    compact: true,
+                    title: 'Evaluaciones',
+                    details: pending.isEmpty
+                        ? 'Todo al día · ${history.length} ${history.length == 1 ? 'completada' : 'completadas'}.\nTu devolución también hace equipo.'
+                        : '${pending.length} ${pending.length == 1 ? 'pendiente' : 'pendientes'} · ${history.length} ${history.length == 1 ? 'completada' : 'completadas'}.\nTu devolución también hace equipo.',
                   ),
                 ),
-                // Los números aparecen sólo si hay algo que contar. Tres cajas
-                // con cero adentro no informan: ocupan media pantalla para
-                // decir que no pasa nada, y "0 urgentes" en rojo se lee como
-                // una alarma que no existe.
-                if (pending.isNotEmpty || history.isNotEmpty)
+                if (urgentCount > 0)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                     child: Row(
                       children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 18,
+                          color: context.c.destructive,
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
-                            child: _StatBox(
-                                value: '${pending.length}', label: 'Pendientes')),
-                        const SizedBox(width: 10),
-                        Expanded(
-                            child: _StatBox(
-                                value: '${history.length}',
-                                label: 'Completadas',
-                                color: context.c.success)),
-                        if (urgentCount > 0) ...[
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatBox(
-                              value: '$urgentCount',
-                              label: 'Urgentes',
+                          child: Text(
+                            '$urgentCount ${urgentCount == 1 ? 'evaluación cierra' : 'evaluaciones cierran'} en menos de 12 horas',
+                            style: AppTypography.body(
+                              size: 13,
                               color: context.c.destructive,
                             ),
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -164,7 +181,12 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
                       PateaTab('Solicitudes', count: requestsCount),
                     ],
                     active: _tabController.index,
-                    onChanged: (i) => setState(() => _tabController.index = i),
+                    onChanged: (i) => _tabController.animateTo(
+                      i,
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 220),
+                    ),
                   ),
                 ),
                 Expanded(
@@ -181,34 +203,10 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => PateaError(error: e),
+          error: (e, _) => PateaError(error: e, onRetry: refresh),
         ),
       ),
     );
-  }
-}
-
-class _StatBox extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color? color;
-
-  const _StatBox({required this.value, required this.label, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return PateaCard(
-             color: context.c.card,
-             radius: AppRadii.cardAll,
-             borderColor: context.c.border.withValues(alpha: 0.4),
-             padding: const EdgeInsets.symmetric(vertical: 10),
-             child: Column(
-        children: [
-          Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: color ?? context.c.textPrimary)),
-          Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary)),
-        ],
-      ),
-           );
   }
 }
 
@@ -217,7 +215,11 @@ class _EmptyState extends StatelessWidget {
   final String title;
   final String description;
 
-  const _EmptyState({required this.icon, required this.title, required this.description});
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +233,14 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(title, style: AppTypography.headline(size: 15)),
             const SizedBox(height: 6),
-            Text(description, textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
+              ),
+            ),
           ],
         ),
       ),
@@ -247,9 +256,32 @@ class _PendingList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const _EmptyState(icon: Icons.verified_outlined, title: '¡Todo al día!', description: 'No tenés evaluaciones pendientes.');
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(28, 48, 28, 30),
+        child: Column(
+          children: [
+            const PateaEvaluationMark(),
+            const SizedBox(height: 20),
+            Text(
+              '¡Todo al día!',
+              style: AppTypography.headline(size: 22, weight: FontWeight.w600),
+            ),
+            const SizedBox(height: 9),
+            Text(
+              'No tenés evaluaciones pendientes. Cuando termine el próximo partido, vas a poder valorar a tus compañeros.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body(
+                size: 14,
+                color: context.c.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
     }
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -257,22 +289,41 @@ class _PendingList extends StatelessWidget {
         final item = items[index];
         final urgency = _urgency(context, item.matchDate);
         return PateaCard(
-                 color: context.c.card,
-                 radius: AppRadii.cardAll,
-                 borderColor: context.c.border.withValues(alpha: 0.4),
-                 padding: const EdgeInsets.all(14),
-                 child: Column(
+          color: context.c.card,
+          radius: AppRadii.cardAll,
+          borderColor: context.c.border.withValues(alpha: 0.4),
+          padding: const EdgeInsets.all(14),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.chipAll),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.c.cardSurface,
+                      borderRadius: AppRadii.chipAll,
+                    ),
                     child: Column(
                       children: [
-                        Text(fmtMonthShort(item.matchDate), style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.primary)),
-                        Text(fmtDayNumber(item.matchDate), style: AppTypography.headline(size: 16, weight: FontWeight.w900)),
+                        Text(
+                          fmtMonthShort(item.matchDate),
+                          style: AppTypography.body(
+                            size: 12,
+                            weight: FontWeight.w600,
+                            color: context.c.primary,
+                          ),
+                        ),
+                        Text(
+                          fmtDayNumber(item.matchDate),
+                          style: AppTypography.headline(
+                            size: 16,
+                            weight: FontWeight.w900,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -281,13 +332,27 @@ class _PendingList extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.matchTitle, style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          item.matchTitle,
+                          style: AppTypography.body(
+                            color: context.c.textSecondary,
+                            size: 14,
+                            weight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         if (urgency.label.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: urgency.color.withValues(alpha: 0.12), borderRadius: AppRadii.surfaceAll),
-                            child: Text(urgency.label, style: AppTypography.body(size: 12, weight: FontWeight.w600, color: urgency.color)),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              urgency.label,
+                              style: AppTypography.body(
+                                size: 12,
+                                weight: FontWeight.w600,
+                                color: urgency.color,
+                              ),
+                            ),
                           ),
                       ],
                     ),
@@ -296,15 +361,21 @@ class _PendingList extends StatelessWidget {
               ),
               if (item.assignedPlayers.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text('Evaluás a', style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary)),
+                Text(
+                  'Evaluás a',
+                  style: AppTypography.body(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: context.c.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: item.assignedPlayers.map((p) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.surfaceAll),
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12, bottom: 6),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -314,7 +385,18 @@ class _PendingList extends StatelessWidget {
                             size: 18,
                           ),
                           const SizedBox(width: 6),
-                          Text(p.name.split(' ').first, style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w600)),
+                          Flexible(
+                            child: Text(
+                              p.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.body(
+                                color: context.c.textSecondary,
+                                size: 12,
+                                weight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -326,14 +408,17 @@ class _PendingList extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/evaluations/${item.matchId}'),
-                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.onPrimary,
+                  ),
                   icon: const Icon(Icons.edit_outlined, size: 16),
                   label: const Text('Evaluar ahora'),
                 ),
               ),
             ],
           ),
-               );
+        );
       },
     );
   }
@@ -347,20 +432,25 @@ class _HistoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const _EmptyState(icon: Icons.history, title: 'Historial vacío', description: 'Acá van a aparecer tus evaluaciones enviadas.');
+      return const _EmptyState(
+        icon: Icons.history,
+        title: 'Historial vacío',
+        description: 'Acá van a aparecer tus evaluaciones enviadas.',
+      );
     }
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = items[index];
         return PateaCard(
-                 color: context.c.card,
-                 radius: AppRadii.cardAll,
-                 borderColor: context.c.success.withValues(alpha: 0.2),
-                 padding: const EdgeInsets.all(14),
-                 child: Row(
+          color: context.c.card,
+          radius: AppRadii.cardAll,
+          borderColor: context.c.success.withValues(alpha: 0.2),
+          padding: const EdgeInsets.all(14),
+          child: Row(
             children: [
               Icon(Icons.check_circle, color: context.c.success, size: 20),
               const SizedBox(width: 10),
@@ -368,18 +458,28 @@ class _HistoryList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.matchTitle, style: AppTypography.body(color: context.c.textSecondary, size: 14, weight: FontWeight.w700)),
+                    Text(
+                      item.matchTitle,
+                      style: AppTypography.body(
+                        color: context.c.textSecondary,
+                        size: 14,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
                     Text(
                       'Evaluaste ${item.submittedEvaluationsCount ?? 0} jugador(es)'
                       '${item.submittedGoals != null ? ' · ${item.submittedGoals} goles · ${item.submittedAssists ?? 0} asis.' : ''}',
-                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-               );
+        );
       },
     );
   }
@@ -399,16 +499,19 @@ class _RequestsList extends ConsumerWidget {
           return const _EmptyState(
             icon: Icons.help_outline,
             title: 'Sin solicitudes',
-            description: 'Cuando alguien quiera saber que fuiste vos quien lo evaluó, va a aparecer acá.',
+            description:
+                'Cuando alguien quiera saber que fuiste vos quien lo evaluó, va a aparecer acá.',
           );
         }
         return ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
           itemCount: requests.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) => _IdentityRequestCard(
             request: requests[index],
-            onResponded: () => ref.invalidate(identityRevealRequestsProvider(uid)),
+            onResponded: () =>
+                ref.invalidate(identityRevealRequestsProvider(uid)),
           ),
         );
       },
@@ -422,10 +525,14 @@ class _IdentityRequestCard extends ConsumerStatefulWidget {
   final IdentityRevealRequest request;
   final VoidCallback onResponded;
 
-  const _IdentityRequestCard({required this.request, required this.onResponded});
+  const _IdentityRequestCard({
+    required this.request,
+    required this.onResponded,
+  });
 
   @override
-  ConsumerState<_IdentityRequestCard> createState() => _IdentityRequestCardState();
+  ConsumerState<_IdentityRequestCard> createState() =>
+      _IdentityRequestCardState();
 }
 
 class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
@@ -434,10 +541,17 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
   Future<void> _respond(String response) async {
     setState(() => _loading = response);
     try {
-      await ref.read(evaluationServiceProvider).respondToIdentityReveal(widget.request.evaluationId, response);
+      await ref
+          .read(evaluationServiceProvider)
+          .respondToIdentityReveal(widget.request.evaluationId, response);
       if (mounted) {
         widget.onResponded();
-        PateaSnack.ok(context, response == 'accepted' ? 'Identidad revelada.' : 'Anonimato mantenido.');
+        PateaSnack.ok(
+          context,
+          response == 'accepted'
+              ? 'Identidad revelada.'
+              : 'Anonimato mantenido.',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -451,11 +565,11 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
   Widget build(BuildContext context) {
     final r = widget.request;
     return PateaCard(
-             color: context.c.card,
-             radius: AppRadii.cardAll,
-             borderColor: context.c.border.withValues(alpha: 0.4),
-             padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
-             child: Column(
+      color: context.c.card,
+      radius: AppRadii.cardAll,
+      borderColor: context.c.border.withValues(alpha: 0.4),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -470,35 +584,72 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.fromPlayerName, style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700)),
-                    Text(r.matchTitle, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                    Text(
+                      r.fromPlayerName,
+                      style: AppTypography.body(
+                        color: context.c.textSecondary,
+                        size: 13,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      r.matchTitle,
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text('${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó.', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+          Text(
+            '${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó.',
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
+          ),
           const SizedBox(height: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               OutlinedButton.icon(
                 onPressed: _loading != null ? null : () => _respond('rejected'),
-                icon: _loading == 'rejected' ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.visibility_off_outlined, size: 18),
-                label: Text('Mantener anonimato', style: AppTypography.action(size: 14)),
+                icon: _loading == 'rejected'
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.visibility_off_outlined, size: 18),
+                label: Text(
+                  'Mantener anonimato',
+                  style: AppTypography.action(size: 14),
+                ),
               ),
               const SizedBox(height: 8),
               ElevatedButton.icon(
                 onPressed: _loading != null ? null : () => _respond('accepted'),
-                style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
-                icon: _loading == 'accepted' ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress()) : const Icon(Icons.visibility_outlined, size: 18),
-                label: Text('Revelar identidad', style: AppTypography.action(size: 14)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.c.primary,
+                  foregroundColor: context.c.onPrimary,
+                ),
+                icon: _loading == 'accepted'
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: const PateaButtonProgress(),
+                      )
+                    : const Icon(Icons.visibility_outlined, size: 18),
+                label: Text(
+                  'Revelar identidad',
+                  style: AppTypography.action(size: 14),
+                ),
               ),
             ],
           ),
         ],
       ),
-           );
+    );
   }
 }

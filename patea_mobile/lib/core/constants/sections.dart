@@ -113,7 +113,7 @@ const sections = <Section, SectionSpec>{
     navLabel: 'Explorar',
     title: 'Explorar',
     description:
-        'Reclutá agentes libres para tus partidos, o sumate a partidos abiertos.',
+        'Encontrá jugadores cerca o un partido para sumarte.',
     icon: Icons.public_outlined,
     activeIcon: Icons.public,
   ),

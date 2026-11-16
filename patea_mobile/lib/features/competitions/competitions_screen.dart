@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_section_scene.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -18,7 +19,8 @@ class CompetitionsScreen extends ConsumerStatefulWidget {
   ConsumerState<CompetitionsScreen> createState() => _CompetitionsScreenState();
 }
 
-class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> with SingleTickerProviderStateMixin {
+class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _tab = 0;
 
@@ -72,7 +74,8 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> with Si
         children: [
           // Ligas
           leaguesAsync.when(
-            data: (leagues) => _CompetitionsList(competitions: leagues, isCup: false),
+            data: (leagues) =>
+                _CompetitionsList(competitions: leagues, isCup: false),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => PateaError(error: err),
           ),
@@ -97,20 +100,38 @@ class _CompetitionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (competitions.isEmpty) {
-      return Center(
-        child: Text(
-          isCup ? 'No hay copas activas' : 'No hay ligas activas',
-          style: AppTypography.body(color: context.c.textSecondary),
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: PateaSectionScene(
+          image: isCup
+              ? PateaSectionScene.competitions
+              : PateaSectionScene.league,
+          title: isCup ? 'No hay copas activas' : 'No hay ligas activas',
+          description:
+              'Las competiciones de tu grupo aparecen acá, con sus fechas, equipos y resultados.',
         ),
       );
     }
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: competitions.length,
+      itemCount: competitions.length + 1,
       separatorBuilder: (_, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final comp = competitions[index];
+        if (index == 0)
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: PateaSectionScene(
+              image: isCup
+                  ? PateaSectionScene.competitions
+                  : PateaSectionScene.league,
+              title: isCup ? 'Copas del grupo' : 'Ligas del grupo',
+              description: isCup
+                  ? 'Seguí las llaves, los cruces y los resultados.'
+                  : 'Seguí cada fecha y los resultados de tus equipos.',
+            ),
+          );
+        final comp = competitions[index - 1];
         return InkWell(
           onTap: () {
             if (isCup) {
@@ -119,11 +140,11 @@ class _CompetitionsList extends StatelessWidget {
           },
           borderRadius: AppRadii.cardAll,
           child: PateaCard(
-                   color: context.c.card,
-                   radius: AppRadii.cardAll,
-                   borderColor: context.c.border,
-                   padding: const EdgeInsets.all(16),
-                   child: Row(
+            color: context.c.card,
+            radius: AppRadii.cardAll,
+            borderColor: context.c.border,
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -144,12 +165,18 @@ class _CompetitionsList extends StatelessWidget {
                     children: [
                       Text(
                         comp.name,
-                        style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+                        style: AppTypography.headline(
+                          size: 16,
+                          weight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         comp.status.toUpperCase(),
-                        style: AppTypography.code(size: 11, color: context.c.primary),
+                        style: AppTypography.code(
+                          size: 11,
+                          color: context.c.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -157,7 +184,7 @@ class _CompetitionsList extends StatelessWidget {
                 Icon(Icons.chevron_right, color: context.c.textSecondary),
               ],
             ),
-                 ),
+          ),
         );
       },
     );

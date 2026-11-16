@@ -367,7 +367,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     return PopScope(
       canPop: !_isSubmitting,
       child: Scaffold(
-        backgroundColor: context.c.background,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           title: Text(

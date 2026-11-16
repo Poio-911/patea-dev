@@ -20,12 +20,14 @@ class EventLoggerSheet extends ConsumerStatefulWidget {
   final MatchModel match;
   final String eventType;
   final int currentMinute;
+  final MatchPlayerEntry? initialPlayer;
 
   const EventLoggerSheet({
     super.key,
     required this.match,
     required this.eventType,
     required this.currentMinute,
+    this.initialPlayer,
   });
 
   @override
@@ -82,6 +84,13 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
   void initState() {
     super.initState();
     _minute = widget.currentMinute;
+    final player = widget.initialPlayer;
+    if (player != null) {
+      _teamA = !(widget.match.teamB?.playerIds.contains(player.uid) == true ||
+          widget.match.teamB?.players.any((p) => p.uid == player.uid) == true);
+      _playerId = player.uid;
+      _playerName = player.displayName;
+    }
   }
 
   /// Plantel del lado elegido. Los partidos armados con IA traen el detalle en

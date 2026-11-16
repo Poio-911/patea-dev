@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'patea_snack.dart';
-import '../../core/widgets/patea_card.dart';
-import '../theme/fondo_claro.dart';
 import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,8 +25,7 @@ import '../theme/app_typography.dart';
 /// etiqueta, como la web.
 ///
 /// Faltan **Logros** y **Configuración**, que la web sí tiene: no existen
-/// `/achievements` ni `/settings` en el router del móvil todavía. Y falta el
-/// selector de tema, que no aplica: la app tiene un solo tema.
+/// `/achievements` ni `/settings` en el router del móvil todavía.
 class PateaUserMenuSheet extends ConsumerWidget {
   const PateaUserMenuSheet({super.key});
 
@@ -55,7 +52,8 @@ class PateaUserMenuSheet extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
       child: SafeArea(
         top: false,
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -145,6 +143,22 @@ class PateaUserMenuSheet extends ConsumerWidget {
                 context.push('/groups');
               },
             ),
+            _MenuItem(
+              icon: Icons.leaderboard_outlined,
+              label: 'Ranking del plantel',
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/leaderboard');
+              },
+            ),
+            _MenuItem(
+              icon: Icons.sports_soccer_outlined,
+              label: 'Mi entrenamiento',
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/coach');
+              },
+            ),
             // Explorar y Evaluaciones estaban acá también, y las dos son
             // pestañas de la barra de abajo: abrías el menú de usuario para ir
             // a algo que está a un toque de distancia.
@@ -196,39 +210,6 @@ class PateaUserMenuSheet extends ConsumerWidget {
               ),
             ),
 
-            // ANDAMIO: las tres candidatas de fondo del tema claro, acá
-            // porque el recorrido hasta `/dev/gallery` era largo para lo que
-            // hay que hacer, que es alternar y mirar. Sólo en debug y sólo
-            // con el tema claro puesto: en `game` el fondo es la foto de
-            // cancha y esto no cambiaría nada.
-            //
-            // Se va entero cuando esté elegida la variante. Ver
-            // `core/theme/fondo_claro.dart`.
-            if (kDebugMode &&
-                ref.watch(themeControllerProvider) == PateaTheme.light)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                child: SegmentedButton<FondoClaro>(
-                  showSelectedIcon: false,
-                  style: const ButtonStyle(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  segments: [
-                    for (final v in FondoClaro.values)
-                      ButtonSegment(
-                        value: v,
-                        label: Text(
-                          v.etiqueta,
-                          style: AppTypography.body(size: 12),
-                        ),
-                      ),
-                  ],
-                  selected: {ref.watch(fondoClaroProvider)},
-                  onSelectionChanged: (s) =>
-                      ref.read(fondoClaroProvider.notifier).elegir(s.first),
-                ),
-              ),
-
             // La galeria del sistema de diseno. Solo en debug: es la vista con
             // la que se aprueba un cambio de paleta sin recorrer la app.
             if (kDebugMode)
@@ -251,6 +232,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
               },
             ),
           ],
+        ),
         ),
       ),
     );
@@ -309,16 +291,10 @@ class _OvrPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tier = context.c.ovrBorderColor(ovr);
 
-    return PateaCard(
-             color: tier.withValues(alpha: 0.12),
-             radius: AppRadii.chipAll,
-             borderColor: tier.withValues(alpha: 0.35),
-             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-             child: Text(
-        '$ovr',
-        style: AppTypography.headline(size: 16, weight: FontWeight.w900, color: tier),
-      ),
-           );
+    return Semantics(label: 'OVR $ovr', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Text('$ovr', style: AppTypography.sportNumber(size: 28, color: tier)),
+      Text('OVR', style: AppTypography.body(size: 10, weight: FontWeight.w700, color: context.c.textSecondary)),
+    ]));
   }
 }
 

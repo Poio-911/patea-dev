@@ -19,6 +19,10 @@
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
 
+import 'package:patea_mobile/core/services/match_result_service.dart';
+import 'package:patea_mobile/core/services/match_presence_service.dart';
+import 'package:patea_mobile/core/services/match_chat_service.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
 import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/material.dart';
@@ -62,14 +66,25 @@ final List<PlayerModel> jugadores = [
     name: 'Santiago Fernández',
     position: 'MED',
     ovr: 82,
-    pac: 78, sho: 74, pas: 86, dri: 83, def: 71, phy: 76,
+    pac: 78,
+    sho: 74,
+    pas: 86,
+    dri: 83,
+    def: 71,
+    phy: 76,
     groupId: idGrupo,
     ownerUid: uidYo,
     preferredFoot: 'derecho',
     birthYear: 1994,
     nationality: 'Uruguay',
     bio: 'Volante central. Juega los sábados desde 2011.',
-    stats: PlayerStats(matchesPlayed: 48, goals: 12, assists: 21, averageRating: 7.4, mvpCount: 5),
+    stats: PlayerStats(
+      matchesPlayed: 48,
+      goals: 12,
+      assists: 21,
+      averageRating: 7.4,
+      mvpCount: 5,
+    ),
   ),
   PlayerModel(
     id: 'uid-2',
@@ -78,53 +93,163 @@ final List<PlayerModel> jugadores = [
     name: 'Juan Ignacio Rodríguez Etchegaray',
     position: 'DEL',
     ovr: 91,
-    pac: 94, sho: 92, pas: 78, dri: 90, def: 42, phy: 80,
+    pac: 94,
+    sho: 92,
+    pas: 78,
+    dri: 90,
+    def: 42,
+    phy: 80,
     groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 52, goals: 61, assists: 18, averageRating: 8.1, mvpCount: 14),
+    stats: PlayerStats(
+      matchesPlayed: 52,
+      goals: 61,
+      assists: 18,
+      averageRating: 8.1,
+      mvpCount: 14,
+    ),
   ),
   PlayerModel(
-    id: 'uid-3', name: 'Nicolás Gómez', position: 'DEF', ovr: 78,
-    pac: 70, sho: 45, pas: 68, dri: 62, def: 85, phy: 84, groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 40, goals: 3, assists: 6, averageRating: 7.0),
+    id: 'uid-3',
+    name: 'Nicolás Gómez',
+    position: 'DEF',
+    ovr: 78,
+    pac: 70,
+    sho: 45,
+    pas: 68,
+    dri: 62,
+    def: 85,
+    phy: 84,
+    groupId: idGrupo,
+    stats: PlayerStats(
+      matchesPlayed: 40,
+      goals: 3,
+      assists: 6,
+      averageRating: 7.0,
+    ),
   ),
   PlayerModel(
-    id: 'uid-4', name: 'Mateo Rossi', position: 'MED', ovr: 74,
-    pac: 72, sho: 66, pas: 79, dri: 75, def: 64, phy: 68, groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 33, goals: 9, assists: 14, averageRating: 6.8),
+    id: 'uid-4',
+    name: 'Mateo Rossi',
+    position: 'MED',
+    ovr: 74,
+    pac: 72,
+    sho: 66,
+    pas: 79,
+    dri: 75,
+    def: 64,
+    phy: 68,
+    groupId: idGrupo,
+    stats: PlayerStats(
+      matchesPlayed: 33,
+      goals: 9,
+      assists: 14,
+      averageRating: 6.8,
+    ),
   ),
   PlayerModel(
-    id: 'uid-5', name: 'Diego Píriz', position: 'POR', ovr: 69,
-    pac: 55, sho: 30, pas: 52, dri: 48, def: 72, phy: 74, groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 29, goals: 0, assists: 1, averageRating: 6.9),
+    id: 'uid-5',
+    name: 'Diego Píriz',
+    position: 'POR',
+    ovr: 69,
+    pac: 55,
+    sho: 30,
+    pas: 52,
+    dri: 48,
+    def: 72,
+    phy: 74,
+    groupId: idGrupo,
+    stats: PlayerStats(
+      matchesPlayed: 29,
+      goals: 0,
+      assists: 1,
+      averageRating: 6.9,
+    ),
   ),
   PlayerModel(
-    id: 'uid-6', name: 'Facundo Bentancur', position: 'DEL', ovr: 86,
-    pac: 88, sho: 87, pas: 72, dri: 85, def: 38, phy: 77, groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 44, goals: 47, assists: 11, averageRating: 7.9, mvpCount: 9),
+    id: 'uid-6',
+    name: 'Facundo Bentancur',
+    position: 'DEL',
+    ovr: 86,
+    pac: 88,
+    sho: 87,
+    pas: 72,
+    dri: 85,
+    def: 38,
+    phy: 77,
+    groupId: idGrupo,
+    stats: PlayerStats(
+      matchesPlayed: 44,
+      goals: 47,
+      assists: 11,
+      averageRating: 7.9,
+      mvpCount: 9,
+    ),
   ),
   PlayerModel(
-    id: 'uid-7', name: 'Bruno Cardozo', position: 'DEF', ovr: 63,
-    pac: 61, sho: 38, pas: 55, dri: 52, def: 70, phy: 72, groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 18, goals: 1, assists: 2, averageRating: 6.2),
+    id: 'uid-7',
+    name: 'Bruno Cardozo',
+    position: 'DEF',
+    ovr: 63,
+    pac: 61,
+    sho: 38,
+    pas: 55,
+    dri: 52,
+    def: 70,
+    phy: 72,
+    groupId: idGrupo,
+    stats: PlayerStats(
+      matchesPlayed: 18,
+      goals: 1,
+      assists: 2,
+      averageRating: 6.2,
+    ),
   ),
   PlayerModel(
-    id: 'uid-8', name: 'Emiliano Sosa', position: 'MED', ovr: 71,
-    pac: 69, sho: 60, pas: 74, dri: 70, def: 66, phy: 65, groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 25, goals: 5, assists: 9, averageRating: 6.7),
+    id: 'uid-8',
+    name: 'Emiliano Sosa',
+    position: 'MED',
+    ovr: 71,
+    pac: 69,
+    sho: 60,
+    pas: 74,
+    dri: 70,
+    def: 66,
+    phy: 65,
+    groupId: idGrupo,
+    stats: PlayerStats(
+      matchesPlayed: 25,
+      goals: 5,
+      assists: 9,
+      averageRating: 6.7,
+    ),
   ),
   PlayerModel(
-    id: 'uid-9', name: 'Álvaro Da Silva', position: 'DEL', ovr: 58,
-    pac: 64, sho: 57, pas: 50, dri: 59, def: 33, phy: 61, groupId: idGrupo,
-    stats: PlayerStats(matchesPlayed: 11, goals: 4, assists: 1, averageRating: 6.0),
+    id: 'uid-9',
+    name: 'Álvaro Da Silva',
+    position: 'DEL',
+    ovr: 58,
+    pac: 64,
+    sho: 57,
+    pas: 50,
+    dri: 59,
+    def: 33,
+    phy: 61,
+    groupId: idGrupo,
+    stats: PlayerStats(
+      matchesPlayed: 11,
+      goals: 4,
+      assists: 1,
+      averageRating: 6.0,
+    ),
   ),
 ];
 
 MatchPlayerEntry _entrada(PlayerModel p) => MatchPlayerEntry(
-      uid: p.id,
-      displayName: p.name,
-      ovr: p.ovr,
-      position: p.position,
-    );
+  uid: p.id,
+  displayName: p.name,
+  ovr: p.ovr,
+  position: p.position,
+);
 
 final MatchTeam _equipoA = MatchTeam(
   name: 'Los Galácticos',
@@ -227,7 +352,11 @@ final List<GroupTeamModel> equipos = [
     name: 'Los Galácticos',
     groupId: idGrupo,
     createdBy: uidYo,
-    jersey: JerseyModel(pattern: 'vertical', primaryColor: '#1E90FF', secondaryColor: '#FFFFFF'),
+    jersey: JerseyModel(
+      pattern: 'vertical',
+      primaryColor: '#1E90FF',
+      secondaryColor: '#FFFFFF',
+    ),
     members: [
       TeamMemberEntry(playerId: uidYo, number: 5),
       TeamMemberEntry(playerId: 'uid-2', number: 9),
@@ -239,7 +368,11 @@ final List<GroupTeamModel> equipos = [
     name: 'La Furia Roja del Prado',
     groupId: idGrupo,
     createdBy: 'uid-6',
-    jersey: JerseyModel(pattern: 'band', primaryColor: '#C62828', secondaryColor: '#FFEB3B'),
+    jersey: JerseyModel(
+      pattern: 'band',
+      primaryColor: '#C62828',
+      secondaryColor: '#FFEB3B',
+    ),
     members: [
       TeamMemberEntry(playerId: 'uid-6', number: 7),
       TeamMemberEntry(playerId: 'uid-7', number: 2),
@@ -291,7 +424,11 @@ final List<EvaluationInboxItem> bandejaEvaluaciones = [
     matchDate: '2026-08-27',
     isSubmitted: false,
     assignedPlayers: [
-      AssignedPlayerInfo(id: 'uid-2', name: 'Juan Ignacio Rodríguez Etchegaray', position: 'DEL'),
+      AssignedPlayerInfo(
+        id: 'uid-2',
+        name: 'Juan Ignacio Rodríguez Etchegaray',
+        position: 'DEL',
+      ),
       AssignedPlayerInfo(id: 'uid-3', name: 'Nicolás Gómez', position: 'DEF'),
     ],
   ),
@@ -324,7 +461,9 @@ final List<AvailablePlayerModel> agentesLibres = [
     ovr: 77,
     distanceKm: 2.4,
     matchScore: 3,
-    availability: const {'sabado': ['tarde', 'noche']},
+    availability: const {
+      'sabado': ['tarde', 'noche'],
+    },
   ),
   AvailablePlayerModel(
     uid: 'libre-2',
@@ -333,7 +472,9 @@ final List<AvailablePlayerModel> agentesLibres = [
     ovr: 72,
     distanceKm: 6.1,
     matchScore: 2,
-    availability: const {'domingo': ['manana']},
+    availability: const {
+      'domingo': ['manana'],
+    },
   ),
 ];
 
@@ -407,14 +548,22 @@ class _ExploreFalso implements ExploreService {
     String? dayOfWeek,
     String? timeOfDay,
     List<String> matchPlayerUids = const [],
-  }) async =>
-      agentesLibres;
+  }) async => agentesLibres;
 
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
 class _EvaluacionesFalso implements EvaluationService {
+  @override
+  Future<bool> hasSubmittedFor(String matchId, String uid) async => false;
+  @override
+  Future<List<EvaluationAssignmentModel>> getPendingAssignmentsForMatch(String matchId, String uid) async => [
+    for (final p in jugadores.skip(1).take(2)) EvaluationAssignmentModel(id: 'assignment-${p.id}', matchId: matchId, evaluatorId: uid, subjectId: p.id, status: 'pending'),
+  ];
+  @override
+  Future<List<PlayerModel>> getPlayersByIds(List<String> ids) async => jugadores.where((p) => ids.contains(p.id)).toList();
+
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
@@ -428,49 +577,102 @@ class _EvaluacionesFalso implements EvaluationService {
 /// Es una sola lista para todas en vez de una por pantalla: cuando alguien
 /// agregue un `ref.watch` nuevo, el test que falla dice qué falta y se agrega
 /// acá una vez.
+final partidoDirigir = MatchModel(
+  id: 'match-director-review', title: 'Clásico del Barrio', date: '2026-09-12',
+  time: '21:30', type: 'manual', status: 'active', matchSize: 10,
+  ownerUid: uidYo, playerUids: jugadores.map((p) => p.id).toList(),
+  players: partidos.first.players, teamA: partidos.first.teamA, teamB: partidos.first.teamB,
+  liveStatus: 'first_half', currentMinute: 12,
+  events: [MatchEvent(type: 'goal', playerId: uidYo, playerName: 'Santiago Fernández', minute: 8)],
+);
+final mensajesChat = [
+  MatchChatMessage(id: 'message-3', text: 'Dale, llevo la pelota. Nos vemos ahí.',
+    senderId: uidYo, senderName: 'Santiago Fernández', createdAt: DateTime(2026, 9, 12, 20, 36)),
+  MatchChatMessage(id: 'message-2', text: '¿Quién lleva pelota hoy?', senderId: 'uid-2',
+    senderName: 'Juan Ignacio Rodríguez Etchegaray', createdAt: DateTime(2026, 9, 12, 20, 35)),
+  MatchChatMessage(id: 'message-1', text: 'Llego un rato antes para reservar la cancha.',
+    senderId: 'uid-3', senderName: 'Mateo Rossi', createdAt: DateTime(2026, 9, 12, 20, 30)),
+];
+
 List<Override> overridesDelArnes() {
   return [
+    singleMatchStreamProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(partidoDirigir)),
+    matchClipsProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(const [])),
+    matchPresenceProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(MatchPresence.none)),
+    matchChatMessagesProvider((matchId: idPartido, limit: 60)).overrideWith((ref) => Stream.value(mensajesChat)),
     // Sesión
     authServiceProvider.overrideWithValue(_AuthFalso()),
     authStateProvider.overrideWith((ref) => Stream.value(_UsuarioFalso())),
     currentUidProvider.overrideWithValue(uidYo),
 
     // Red de seguridad: ningún stream debería llegar a Firestore.
-    firestoreServiceProvider.overrideWithValue(FirestoreService(_FirestoreFalso())),
+    firestoreServiceProvider.overrideWithValue(
+      FirestoreService(_FirestoreFalso()),
+    ),
 
     // Grupo
-    activeGroupIdStreamProvider(uidYo).overrideWith((ref) => Stream.value(idGrupo)),
-    singleGroupStreamProvider(idGrupo).overrideWith((ref) => Stream.value(grupo)),
-    userGroupsStreamProvider(uidYo).overrideWith((ref) => Stream.value([grupo])),
-    groupTeamsStreamProvider(idGrupo).overrideWith((ref) => Stream.value(equipos)),
-    myGroupRoleProvider(idGrupo).overrideWith((ref) => Stream.value(GroupRole.admin)),
+    activeGroupIdStreamProvider(
+      uidYo,
+    ).overrideWith((ref) => Stream.value(idGrupo)),
+    singleGroupStreamProvider(
+      idGrupo,
+    ).overrideWith((ref) => Stream.value(grupo)),
+    userGroupsStreamProvider(
+      uidYo,
+    ).overrideWith((ref) => Stream.value([grupo])),
+    groupTeamsStreamProvider(
+      idGrupo,
+    ).overrideWith((ref) => Stream.value(equipos)),
+    myGroupRoleProvider(
+      idGrupo,
+    ).overrideWith((ref) => Stream.value(GroupRole.admin)),
     for (final e in equipos) ...[
       singleTeamStreamProvider(e.id).overrideWith((ref) => Stream.value(e)),
-      teamTrophiesProvider(e.id).overrideWith((ref) => Stream.value(const [
-            TeamTrophy(name: 'Copa Verano 2026', isCup: true),
-          ])),
+      teamTrophiesProvider(e.id).overrideWith(
+        (ref) => Stream.value(const [
+          TeamTrophy(name: 'Copa Verano 2026', isCup: true),
+        ]),
+      ),
     ],
 
     // Jugadores
     activeGroupPlayersProvider.overrideWith((ref) => Stream.value(jugadores)),
-    playersStreamProvider(idGrupo).overrideWith((ref) => Stream.value(jugadores)),
+    playersStreamProvider(
+      idGrupo,
+    ).overrideWith((ref) => Stream.value(jugadores)),
     playersStreamProvider(null).overrideWith((ref) => Stream.value(jugadores)),
     for (final p in jugadores)
       singlePlayerStreamProvider(p.id).overrideWith((ref) => Stream.value(p)),
     for (final p in jugadores)
-      ovrHistoryStreamProvider(p.id).overrideWith((ref) => Stream.value(historialOvr)),
+      ovrHistoryStreamProvider(
+        p.id,
+      ).overrideWith((ref) => Stream.value(historialOvr)),
 
     // Partidos
     activeGroupMatchesProvider.overrideWith((ref) => Stream.value(partidos)),
-    matchesStreamProvider(idGrupo).overrideWith((ref) => Stream.value(partidos)),
+    matchesStreamProvider(
+      idGrupo,
+    ).overrideWith((ref) => Stream.value(partidos)),
     matchesStreamProvider(null).overrideWith((ref) => Stream.value(partidos)),
-    publicMatchesStreamProvider.overrideWith((ref) => Stream.value(partidos.take(2).toList())),
-    userUpcomingMatchesStreamProvider(uidYo).overrideWith((ref) => Stream.value([partidos.first])),
+    publicMatchesStreamProvider.overrideWith(
+      (ref) => Stream.value(partidos.take(2).toList()),
+    ),
+    ownedUpcomingMatchesProvider(uidYo).overrideWith((ref) => Stream.value([partidos.first])),
+    userUpcomingMatchesStreamProvider(
+      uidYo,
+    ).overrideWith((ref) => Stream.value([partidos.first])),
     for (final m in partidos) ...[
+      matchResultStatsProvider(
+        m.id,
+      ).overrideWith((ref) => Stream.value(MatchResultStats.empty)),
       singleMatchStreamProvider(m.id).overrideWith((ref) => Stream.value(m)),
       matchClipsProvider(m.id).overrideWith((ref) => Stream.value(const [])),
-      matchJoinRequestsProvider(m.id).overrideWith((ref) => Stream.value(const [])),
-      matchAssignmentsStreamProvider(m.id).overrideWith((ref) => Stream.value(const [])),
+      matchJoinRequestsProvider(
+        m.id,
+      ).overrideWith((ref) => Stream.value(const [])),
+      matchAssignmentsStreamProvider(
+        m.id,
+      ).overrideWith((ref) => Stream.value(const [])),
     ],
 
     // Perfiles crudos (nombre del organizador)
@@ -483,23 +685,42 @@ List<Override> overridesDelArnes() {
 
     // Explorar
     exploreServiceProvider.overrideWithValue(_ExploreFalso()),
-    myAvailabilityStreamProvider(uidYo).overrideWith((ref) => Stream.value(docDisponibilidad)),
-    savedLocationStreamProvider(uidYo).overrideWith((ref) => Stream.value(ubicacionGuardada)),
+    myAvailabilityStreamProvider(
+      uidYo,
+    ).overrideWith((ref) => Stream.value(docDisponibilidad)),
+    savedLocationStreamProvider(
+      uidYo,
+    ).overrideWith((ref) => Stream.value(ubicacionGuardada)),
 
     // Evaluaciones
     evaluationServiceProvider.overrideWithValue(_EvaluacionesFalso()),
-    evaluationInboxItemsProvider(uidYo).overrideWith((ref) async => bandejaEvaluaciones),
-    identityRevealRequestsProvider(uidYo).overrideWith((ref) async => solicitudesIdentidad),
+    evaluationInboxItemsProvider(
+      uidYo,
+    ).overrideWith((ref) => Stream.value(bandejaEvaluaciones)),
+    identityRevealRequestsProvider(
+      uidYo,
+    ).overrideWith((ref) async => solicitudesIdentidad),
 
     // Comunidad
-    feedActivitiesStreamProvider.overrideWith((ref) => Stream.value(const [
-          {'type': 'ovr_updated', 'playerName': 'Juan Ignacio Rodríguez Etchegaray', 'change': 3, 'newOvr': 91},
-          {'type': 'match_played', 'playerName': 'Nicolás Gómez', 'change': -1, 'newOvr': 78},
-        ])),
+    feedActivitiesStreamProvider.overrideWith(
+      (ref) => Stream.value(const [
+        {
+          'type': 'ovr_updated',
+          'playerName': 'Juan Ignacio Rodríguez Etchegaray',
+          'change': 3,
+          'newOvr': 91,
+        },
+        {
+          'type': 'match_played',
+          'playerName': 'Nicolás Gómez',
+          'change': -1,
+          'newOvr': 78,
+        },
+      ]),
+    ),
 
     // El fondo elige una foto al azar: fijarla es lo que hace comparable la
     // imagen entre corridas.
-    backgroundIndexProvider.overrideWithValue(3),
     clockProvider.overrideWithValue(() => DateTime(2026, 9, 6, 12)),
   ];
 }
@@ -522,6 +743,7 @@ Future<List<FlutterErrorDetails>> montarPantalla(
   required ThemeData tema,
   double escala = 1.0,
   Size tamano = const Size(1080, 2400),
+  List<Override> extraOverrides = const [],
 }) async {
   tester.view.physicalSize = tamano;
   tester.view.devicePixelRatio = 3.0;
@@ -535,7 +757,7 @@ Future<List<FlutterErrorDetails>> montarPantalla(
   try {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: overridesDelArnes(),
+        overrides: [...overridesDelArnes(), ...extraOverrides],
         child: MaterialApp(
           theme: tema,
           debugShowCheckedModeBanner: false,

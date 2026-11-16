@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart' show User;
+import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,157 +17,265 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  final playerA1 = MatchPlayerEntry(uid: 'uid-a1', displayName: 'Lucas Silva', ovr: 80, position: 'DEL');
-  final playerA2 = MatchPlayerEntry(uid: 'uid-a2', displayName: 'Mateo Rossi', ovr: 74, position: 'MED');
-  final playerB1 = MatchPlayerEntry(uid: 'uid-b1', displayName: 'Nico Gomez', ovr: 78, position: 'DEF');
-  final playerB2 = MatchPlayerEntry(uid: 'uid-b2', displayName: 'Julian Alvarez', ovr: 84, position: 'DEL');
+  final playerA1 = MatchPlayerEntry(
+    uid: 'uid-a1',
+    displayName: 'Lucas Silva',
+    ovr: 80,
+    position: 'DEL',
+  );
+  final playerA2 = MatchPlayerEntry(
+    uid: 'uid-a2',
+    displayName: 'Mateo Rossi',
+    ovr: 74,
+    position: 'MED',
+  );
+  final playerB1 = MatchPlayerEntry(
+    uid: 'uid-b1',
+    displayName: 'Nico Gomez',
+    ovr: 78,
+    position: 'DEF',
+  );
+  final playerB2 = MatchPlayerEntry(
+    uid: 'uid-b2',
+    displayName: 'Julian Alvarez',
+    ovr: 84,
+    position: 'DEL',
+  );
 
-  final teamA = MatchTeam(name: 'Los Galácticos', playerIds: ['uid-a1', 'uid-a2'], players: [playerA1, playerA2], score: 4);
-  final teamB = MatchTeam(name: 'La Furia', playerIds: ['uid-b1', 'uid-b2'], players: [playerB1, playerB2], score: 2);
+  final teamA = MatchTeam(
+    name: 'Los Galácticos',
+    playerIds: ['uid-a1', 'uid-a2'],
+    players: [playerA1, playerA2],
+    score: 4,
+  );
+  final teamB = MatchTeam(
+    name: 'La Furia',
+    playerIds: ['uid-b1', 'uid-b2'],
+    players: [playerB1, playerB2],
+    score: 2,
+  );
 
-  testWidgets('Detalle de Partido: Partido upcoming renderiza Hero Broadcast, Sticky Action Bar y OVR promedio', (tester) async {
-    tester.view.physicalSize = const Size(1080, 2424);
-    tester.view.devicePixelRatio = 3.0;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'Detalle de Partido: Partido upcoming renderiza Hero Broadcast, Sticky Action Bar y OVR promedio',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2424);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
 
-    final upcomingMatch = MatchModel(
-      id: 'match-upcoming-1',
-      title: 'Clásico del Barrio',
-      date: '2026-03-10',
-      time: '21:30',
-      status: 'upcoming',
-      type: 'manual',
-      matchSize: 10,
-      players: [playerA1, playerA2, playerB1, playerB2],
-      playerUids: ['uid-a1', 'uid-a2', 'uid-b1', 'uid-b2'],
-      teamA: teamA,
-      teamB: teamB,
-      location: 'Cancha 5 Prado',
-    );
+      final upcomingMatch = MatchModel(
+        id: 'match-upcoming-1',
+        title: 'Clásico del Barrio',
+        date: '2026-03-10',
+        time: '21:30',
+        status: 'upcoming',
+        type: 'manual',
+        matchSize: 10,
+        players: [playerA1, playerA2, playerB1, playerB2],
+        playerUids: ['uid-a1', 'uid-a2', 'uid-b1', 'uid-b2'],
+        teamA: teamA,
+        teamB: teamB,
+        location: 'Cancha 5 Prado',
+      );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          singleMatchStreamProvider('match-upcoming-1').overrideWith((ref) => Stream.value(upcomingMatch)),
-          authStateProvider.overrideWith((ref) => Stream.value(null)),
-          matchClipsProvider('match-upcoming-1').overrideWith((ref) => Stream.value([])),
-        ],
-        child: const MaterialApp(
-          home: MatchDetailScreen(matchId: 'match-upcoming-1'),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            singleMatchStreamProvider(
+              'match-upcoming-1',
+            ).overrideWith((ref) => Stream.value(upcomingMatch)),
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            matchClipsProvider(
+              'match-upcoming-1',
+            ).overrideWith((ref) => Stream.value([])),
+          ],
+          child: const MaterialApp(
+            home: MatchDetailScreen(matchId: 'match-upcoming-1'),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    expect(tester.takeException(), isNull);
-    // El título va dos veces: en el hero y en el AppBar, que lo revela al
-    // hacer scroll. Sin scroll el del AppBar está montado con opacidad 0.
-    expect(find.text('CLÁSICO DEL BARRIO'), findsNWidgets(2));
-    expect(find.text('AMISTOSO'), findsOneWidget);
-    expect(find.text('Cancha 5 Prado'), findsOneWidget);
-    expect(find.text('LOS GALÁCTICOS'), findsWidgets);
-    expect(find.text('LA FURIA'), findsWidgets);
-    // Team avg OVR
-    expect(find.text('OVR PROM. 77.0'), findsOneWidget);
-    expect(find.text('OVR PROM. 81.0'), findsOneWidget);
-    // Sticky Action Bar
-    expect(find.text('Anotarme al partido'), findsOneWidget);
-  });
+      expect(tester.takeException(), isNull);
+      // El título va dos veces: en el hero y en el AppBar, que lo revela al
+      // hacer scroll. Sin scroll el del AppBar está montado con opacidad 0.
+      expect(find.text('Clásico del Barrio'), findsNWidgets(2));
+      expect(find.text('Próximo partido · Amistoso'), findsOneWidget);
+      expect(find.text('Cancha 5 Prado'), findsOneWidget);
+      expect(find.text('Los Galácticos'), findsWidgets);
+      expect(find.text('La Furia'), findsWidgets);
+      // Team avg OVR
+      expect(find.text('OVR promedio 77.0'), findsOneWidget);
+      expect(find.text('OVR promedio 81.0'), findsOneWidget);
+      // Sticky Action Bar
+      expect(find.text('Anotarme al partido'), findsOneWidget);
+    },
+  );
 
-  testWidgets('Detalle de Partido: Partido completed muestra estado y boton EVALUAR PARTIDO', (tester) async {
-    tester.view.physicalSize = const Size(1080, 2424);
-    tester.view.devicePixelRatio = 3.0;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'Detalle de Partido: Partido completed muestra estado y boton EVALUAR PARTIDO',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2424);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
 
-    final completedMatch = MatchModel(
-      id: 'match-completed-1',
-      title: 'Final de Copa',
-      date: '2026-03-05',
-      time: '20:00',
-      status: 'completed',
-      type: 'collaborative',
-      hasFinalScore: false,
-      matchSize: 10,
-      players: [playerA1, playerA2, playerB1, playerB2],
-      playerUids: ['uid-a1', 'uid-a2', 'uid-b1', 'uid-b2'],
-      teamA: teamA,
-      teamB: teamB,
-      location: 'Complejo Central',
-    );
+      final completedMatch = MatchModel(
+        id: 'match-completed-1',
+        title: 'Final de Copa',
+        date: '2026-03-05',
+        time: '20:00',
+        status: 'completed',
+        type: 'collaborative',
+        hasFinalScore: false,
+        matchSize: 10,
+        players: [playerA1, playerA2, playerB1, playerB2],
+        playerUids: ['uid-a1', 'uid-a2', 'uid-b1', 'uid-b2'],
+        teamA: teamA,
+        teamB: teamB,
+        location: 'Complejo Central',
+      );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          singleMatchStreamProvider('match-completed-1').overrideWith((ref) => Stream.value(completedMatch)),
-          authStateProvider.overrideWith((ref) => Stream.value(null)),
-          matchClipsProvider('match-completed-1').overrideWith((ref) => Stream.value([])),
-        ],
-        child: const MaterialApp(
-          home: MatchDetailScreen(matchId: 'match-completed-1'),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            singleMatchStreamProvider(
+              'match-completed-1',
+            ).overrideWith((ref) => Stream.value(completedMatch)),
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            matchClipsProvider(
+              'match-completed-1',
+            ).overrideWith((ref) => Stream.value([])),
+          ],
+          child: const MaterialApp(
+            home: MatchDetailScreen(matchId: 'match-completed-1'),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    expect(tester.takeException(), isNull);
-    // El título va dos veces: en el hero y en el AppBar, que lo revela al
-    // hacer scroll. Sin scroll el del AppBar está montado con opacidad 0.
-    expect(find.text('FINAL DE COPA'), findsNWidgets(2));
-    expect(find.text('Complejo Central'), findsOneWidget);
-    expect(find.text('Evaluar partido'), findsOneWidget);
-  });
+      expect(tester.takeException(), isNull);
+      // El título va dos veces: en el hero y en el AppBar, que lo revela al
+      // hacer scroll. Sin scroll el del AppBar está montado con opacidad 0.
+      expect(find.text('Final de Copa'), findsNWidgets(2));
+      expect(find.text('Complejo Central'), findsOneWidget);
+      expect(find.text('Evaluar partido'), findsOneWidget);
+    },
+  );
 
-  testWidgets('Detalle de Partido: Partido evaluated muestra marcador final con ganador destacado y badges', (tester) async {
-    tester.view.physicalSize = const Size(1080, 2424);
-    tester.view.devicePixelRatio = 3.0;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'Detalle de Partido: Partido evaluated muestra marcador final con ganador destacado y badges',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2424);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
 
-    final evaluatedMatch = MatchModel(
-      id: 'match-evaluated-1',
-      title: 'Semifinal Liga',
-      date: '2026-03-01',
-      time: '19:00',
-      status: 'evaluated',
-      type: 'manual',
-      hasFinalScore: true,
-      matchSize: 10,
-      bestPlayerId: 'uid-a1',
-      events: [
-        MatchEvent(type: 'goal', playerId: 'uid-a1', playerName: 'Lucas Silva', minute: 12),
-        MatchEvent(type: 'goal', playerId: 'uid-a1', playerName: 'Lucas Silva', minute: 34),
-        MatchEvent(type: 'card', playerId: 'uid-b1', playerName: 'Nico Gomez', minute: 25, cardType: 'yellow'),
-      ],
-      players: [playerA1, playerA2, playerB1, playerB2],
-      playerUids: ['uid-a1', 'uid-a2', 'uid-b1', 'uid-b2'],
-      teamA: teamA,
-      teamB: teamB,
-      location: 'Cancha 1',
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          singleMatchStreamProvider('match-evaluated-1').overrideWith((ref) => Stream.value(evaluatedMatch)),
-          authStateProvider.overrideWith((ref) => Stream.value(null)),
-          matchResultStatsProvider('match-evaluated-1').overrideWith((ref) => Stream.value(MatchResultStats.empty)),
-          matchClipsProvider('match-evaluated-1').overrideWith((ref) => Stream.value([])),
+      final evaluatedMatch = MatchModel(
+        id: 'match-evaluated-1',
+        title: 'Semifinal Liga',
+        date: '2026-03-01',
+        time: '19:00',
+        status: 'evaluated',
+        type: 'manual',
+        hasFinalScore: true,
+        matchSize: 10,
+        bestPlayerId: 'uid-a1',
+        events: [
+          MatchEvent(
+            type: 'goal',
+            playerId: 'uid-a1',
+            playerName: 'Lucas Silva',
+            minute: 12,
+          ),
+          MatchEvent(
+            type: 'goal',
+            playerId: 'uid-a1',
+            playerName: 'Lucas Silva',
+            minute: 34,
+          ),
+          MatchEvent(
+            type: 'card',
+            playerId: 'uid-b1',
+            playerName: 'Nico Gomez',
+            minute: 25,
+            cardType: 'yellow',
+          ),
         ],
-        child: const MaterialApp(
-          home: MatchDetailScreen(matchId: 'match-evaluated-1'),
-        ),
-      ),
-    );
-    await tester.pump();
+        players: [playerA1, playerA2, playerB1, playerB2],
+        playerUids: ['uid-a1', 'uid-a2', 'uid-b1', 'uid-b2'],
+        teamA: teamA,
+        teamB: teamB,
+        location: 'Cancha 1',
+      );
 
-    expect(tester.takeException(), isNull);
-    // Marcador final en el Hero
-    expect(find.text('4'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
-    // Badges en el jugador
-    expect(find.text('FIGURA'), findsOneWidget);
-    expect(find.text('⚽ 2'), findsOneWidget);
-    expect(find.text('🟨'), findsOneWidget);
-    // Minuto a minuto integrado presente
-    expect(find.text('MINUTO A MINUTO'), findsOneWidget);
-  });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            singleMatchStreamProvider(
+              'match-evaluated-1',
+            ).overrideWith((ref) => Stream.value(evaluatedMatch)),
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            matchResultStatsProvider(
+              'match-evaluated-1',
+            ).overrideWith((ref) => Stream.value(MatchResultStats.empty)),
+            matchClipsProvider(
+              'match-evaluated-1',
+            ).overrideWith((ref) => Stream.value([])),
+          ],
+          child: const MaterialApp(
+            home: MatchDetailScreen(matchId: 'match-evaluated-1'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      // Marcador final en el Hero
+      expect(find.text('4 – 2'), findsOneWidget);
+      // Badges en el jugador
+      expect(find.text('FIGURA'), findsOneWidget);
+      expect(find.text('⚽ 2'), findsOneWidget);
+      expect(find.text('🟨'), findsOneWidget);
+      // Minuto a minuto integrado presente
+      expect(find.text('MINUTO A MINUTO'), findsOneWidget);
+    },
+  );
+  for (final theme in [AppTheme.darkTheme, AppTheme.lightTheme]) {
+    testWidgets('Full match keeps the detail and back button visible (${theme.brightness})', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2424);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      final match = MatchModel(
+        id: 'full-match-viewer', title: 'Amistoso sin cupos',
+        date: '2026-11-16', time: '21:00', status: 'upcoming', type: 'manual',
+        ownerUid: 'another-organizer', matchSize: 4,
+        players: [playerA1, playerA2, playerB1, playerB2],
+        playerUids: ['uid-a1', 'uid-a2', 'uid-b1', 'uid-b2'],
+        teamA: teamA, teamB: teamB, location: 'Cancha del barrio',
+      );
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          singleMatchStreamProvider(match.id).overrideWith((ref) => Stream.value(match)),
+          authStateProvider.overrideWith((ref) => Stream.value(_MatchViewer())),
+          matchClipsProvider(match.id).overrideWith((ref) => Stream.value([])),
+        ],
+        child: MaterialApp(theme: theme, home: MatchDetailScreen(matchId: match.id)),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+      expect(tester.getSize(find.byWidget(scaffold.bottomNavigationBar!)).height, lessThan(120));
+      expect(tester.getSize(find.byType(ListView).first).height, greaterThan(400));
+      expect(find.byType(BackButton).hitTestable(), findsOneWidget);
+      expect(find.text('Partido completo'), findsOneWidget);
+      expect(find.text('Amistoso sin cupos'), findsNWidgets(2));
+      expect(find.text('Anotarme al partido'), findsNothing);
+    });
+  }
+
+}
+
+
+class _MatchViewer extends Fake implements User {
+  @override
+  String get uid => 'uid-viewer-not-in-roster';
 }

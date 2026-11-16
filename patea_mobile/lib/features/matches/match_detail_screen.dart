@@ -1,3 +1,4 @@
+import 'match_chat_screen.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/widgets/patea_snack.dart';
@@ -7,7 +8,6 @@ import '../../core/widgets/patea_avatar.dart';
 import 'dart:ui' show ImageFilter;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,8 +24,6 @@ import '../../core/services/push_permission.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/utils/dates.dart';
-import '../../core/theme/match_theme.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/player_avatar_fallback.dart';
 import '../../core/widgets/player_card_widget.dart';
@@ -34,12 +32,10 @@ import 'widgets/join_requests_section.dart';
 import 'widgets/match_clips_view.dart';
 import 'widgets/match_planning_view.dart';
 import 'widgets/match_story_view.dart';
+import 'widgets/match_cover.dart';
 import 'widgets/match_timeline.dart';
 import 'widgets/recruit_players_sheet.dart';
 import 'widgets/weather_alert.dart';
-
-
-
 
 /// Pantalla de Detalle de Partido: experiencia deportiva estilo broadcast de TV
 /// y fútbol callejero.
@@ -78,17 +74,25 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _handleJoinLeave(MatchModel match, String uid, bool isUserInMatch) async {
+  Future<void> _handleJoinLeave(
+    MatchModel match,
+    String uid,
+    bool isUserInMatch,
+  ) async {
     setState(() => _isJoining = true);
     try {
       if (isUserInMatch) {
         await ref.read(matchServiceProvider).leaveMatch(match.id, uid);
       } else if (match.type == 'manual' && match.ownerUid != uid) {
-        final already = await ref.read(matchServiceProvider).requestJoinMatch(match.id);
+        final already = await ref
+            .read(matchServiceProvider)
+            .requestJoinMatch(match.id);
         if (mounted) {
-          _showSnack(already
-              ? 'Ya habías pedido entrar a este partido.'
-              : 'Solicitud enviada. El organizador te va a responder.');
+          _showSnack(
+            already
+                ? 'Ya habías pedido entrar a este partido.'
+                : 'Solicitud enviada. El organizador te va a responder.',
+          );
         }
       } else {
         await ref.read(matchServiceProvider).joinMatch(match.id, uid);
@@ -112,7 +116,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     setState(() => _isFinishing = true);
     try {
       await ref.read(matchServiceProvider).finishMatch(match.id);
-      if (mounted) _showSnack('Partido finalizado. Ya se habilitaron las evaluaciones.');
+      if (mounted)
+        _showSnack('Partido finalizado. Ya se habilitaron las evaluaciones.');
     } catch (e) {
       if (mounted) _showError('$e');
     } finally {
@@ -124,8 +129,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     if (_isShuffling) return;
     setState(() => _isShuffling = true);
     try {
-      final changed = await ref.read(matchServiceProvider).shuffleTeams(match.id);
-      if (mounted) _showSnack(changed ? 'Equipos equilibrados por nivel y posiciones.' : 'Los equipos ya están equilibrados.');
+      final changed = await ref
+          .read(matchServiceProvider)
+          .shuffleTeams(match.id);
+      if (mounted)
+        _showSnack(
+          changed
+              ? 'Equipos equilibrados por nivel y posiciones.'
+              : 'Los equipos ya están equilibrados.',
+        );
     } catch (e) {
       if (mounted) _showError('$e');
     } finally {
@@ -138,16 +150,24 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: context.c.card,
-        title: Text('¿Borrar este partido?', style: AppTypography.headline(size: 16)),
+        title: Text(
+          '¿Borrar este partido?',
+          style: AppTypography.headline(size: 16),
+        ),
         content: Text(
           'Esta acción es permanente y no se puede deshacer. Los jugadores inscriptos recibirán una notificación de cancelación.',
           style: AppTypography.body(color: context.c.textSecondary, size: 13),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: context.c.destructive),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.c.destructive,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -164,10 +184,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 
   Future<void> _showRescheduleDialog(MatchModel match) async {
-    DateTime selectedDate = DateTime.tryParse(match.date)?.toLocal() ?? DateTime.now().add(const Duration(days: 1));
+    DateTime selectedDate =
+        DateTime.tryParse(match.date)?.toLocal() ??
+        DateTime.now().add(const Duration(days: 1));
     TimeOfDay selectedTime = () {
       final parts = (match.time ?? '21:00').split(':');
-      return TimeOfDay(hour: int.tryParse(parts[0]) ?? 21, minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0);
+      return TimeOfDay(
+        hour: int.tryParse(parts[0]) ?? 21,
+        minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+      );
     }();
     bool submitting = false;
 
@@ -176,14 +201,19 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: context.c.card,
-          title: Text('Reprogramar partido', style: AppTypography.headline(size: 16)),
+          title: Text(
+            'Reprogramar partido',
+            style: AppTypography.headline(size: 16),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.calendar_today),
-                title: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+                title: Text(
+                  '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                ),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -191,7 +221,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
-                  if (picked != null) setDialogState(() => selectedDate = picked);
+                  if (picked != null)
+                    setDialogState(() => selectedDate = picked);
                 },
               ),
               ListTile(
@@ -199,32 +230,53 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 leading: const Icon(Icons.access_time),
                 title: Text(selectedTime.format(context)),
                 onTap: () async {
-                  final picked = await showTimePicker(context: context, initialTime: selectedTime);
-                  if (picked != null) setDialogState(() => selectedTime = picked);
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: selectedTime,
+                  );
+                  if (picked != null)
+                    setDialogState(() => selectedTime = picked);
                 },
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: submitting ? null : () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
             ElevatedButton(
               onPressed: submitting
                   ? null
                   : () async {
                       setDialogState(() => submitting = true);
-                      final dateIso = DateTime(selectedDate.year, selectedDate.month, selectedDate.day).toIso8601String();
-                      final timeStr = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
+                      final dateIso = DateTime(
+                        selectedDate.year,
+                        selectedDate.month,
+                        selectedDate.day,
+                      ).toIso8601String();
+                      final timeStr =
+                          '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
                       try {
-                        await ref.read(matchServiceProvider).updateMatchDate(match.id, dateIso, timeStr);
+                        await ref
+                            .read(matchServiceProvider)
+                            .updateMatchDate(match.id, dateIso, timeStr);
                         if (context.mounted) Navigator.pop(context);
                       } catch (e) {
                         if (context.mounted) _showError('$e');
                         setDialogState(() => submitting = false);
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.c.primary,
+                foregroundColor: context.c.onPrimary,
+              ),
               child: submitting
-                  ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: const PateaButtonProgress(),
+                    )
                   : const Text('Guardar'),
             ),
           ],
@@ -246,7 +298,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: context.c.card,
-          title: Text('Cambiar cancha', style: AppTypography.headline(size: 16)),
+          title: Text(
+            'Cambiar cancha',
+            style: AppTypography.headline(size: 16),
+          ),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -254,18 +309,23 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               children: [
                 TextField(
                   controller: controller,
-                  decoration: const InputDecoration(hintText: 'Buscá la nueva cancha...'),
+                  decoration: const InputDecoration(
+                    hintText: 'Buscá la nueva cancha...',
+                  ),
                   onChanged: (v) {
                     selected = null;
                     debounce?.cancel();
-                    debounce = Timer(const Duration(milliseconds: 300), () async {
-                      if (v.trim().length < 3) {
-                        setDialogState(() => suggestions = []);
-                        return;
-                      }
-                      final results = await locationService.suggest(v);
-                      setDialogState(() => suggestions = results);
-                    });
+                    debounce = Timer(
+                      const Duration(milliseconds: 300),
+                      () async {
+                        if (v.trim().length < 3) {
+                          setDialogState(() => suggestions = []);
+                          return;
+                        }
+                        final results = await locationService.suggest(v);
+                        setDialogState(() => suggestions = results);
+                      },
+                    );
                   },
                 ),
                 if (suggestions.isNotEmpty)
@@ -274,15 +334,25 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     child: ListView(
                       shrinkWrap: true,
                       children: suggestions
-                          .map((s) => ListTile(
-                                dense: true,
-                                title: Text(s.label, style: AppTypography.body(color: context.c.textSecondary, size: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-                                onTap: () => setDialogState(() {
-                                  selected = s;
-                                  controller.text = s.label;
-                                  suggestions = [];
-                                }),
-                              ))
+                          .map(
+                            (s) => ListTile(
+                              dense: true,
+                              title: Text(
+                                s.label,
+                                style: AppTypography.body(
+                                  color: context.c.textSecondary,
+                                  size: 12,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onTap: () => setDialogState(() {
+                                selected = s;
+                                controller.text = s.label;
+                                suggestions = [];
+                              }),
+                            ),
+                          )
                           .toList(),
                     ),
                   ),
@@ -290,14 +360,19 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: submitting ? null : () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
             ElevatedButton(
               onPressed: submitting || selected == null
                   ? null
                   : () async {
                       setDialogState(() => submitting = true);
                       try {
-                        await ref.read(matchServiceProvider).updateMatchLocation(
+                        await ref
+                            .read(matchServiceProvider)
+                            .updateMatchLocation(
                               matchId: match.id,
                               locationName: selected!.label,
                               locationAddress: selected!.label,
@@ -311,9 +386,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         setDialogState(() => submitting = false);
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.c.primary,
+                foregroundColor: context.c.onPrimary,
+              ),
               child: submitting
-                  ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: const PateaButtonProgress(),
+                    )
                   : const Text('Guardar'),
             ),
           ],
@@ -332,11 +414,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
 
   Future<void> _openMaps(MatchModel match) async {
     final loc = match.locationDetail;
-    final query = Uri.encodeComponent(loc?.address.isNotEmpty == true ? loc!.address : (match.location ?? ''));
+    final query = Uri.encodeComponent(
+      loc?.address.isNotEmpty == true ? loc!.address : (match.location ?? ''),
+    );
     final placeId = loc?.placeId ?? '';
-    final url = 'https://www.google.com/maps/search/?api=1&query=$query${placeId.isNotEmpty ? '&query_place_id=$placeId' : ''}';
+    final url =
+        'https://www.google.com/maps/search/?api=1&query=$query${placeId.isNotEmpty ? '&query_place_id=$placeId' : ''}';
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (await canLaunchUrl(uri))
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -350,7 +436,12 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           return Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(backgroundColor: Colors.transparent),
-            body: Center(child: Text('Partido no encontrado.', style: AppTypography.body(color: context.c.textSecondary))),
+            body: Center(
+              child: Text(
+                'Partido no encontrado.',
+                style: AppTypography.body(color: context.c.textSecondary),
+              ),
+            ),
           );
         }
 
@@ -359,7 +450,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         final isPending = uid != null && match.pendingPlayerUids.contains(uid);
         final isMatchFull = match.players.length >= match.matchSize;
         final hasTeams = match.teamA != null && match.teamB != null;
-        final isCompetition = ['league', 'cup', 'league_final'].contains(match.type);
+        final isCompetition = [
+          'league',
+          'cup',
+          'league_final',
+        ].contains(match.type);
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -371,14 +466,18 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             surfaceTintColor: Colors.transparent,
             elevation: _showCollapsedTitle ? 1 : 0,
             shape: _showCollapsedTitle
-                ? Border(bottom: BorderSide(color: context.c.border.withValues(alpha: 0.35)))
+                ? Border(
+                    bottom: BorderSide(
+                      color: context.c.border.withValues(alpha: 0.35),
+                    ),
+                  )
                 : null,
             centerTitle: false,
             title: AnimatedOpacity(
               opacity: _showCollapsedTitle ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 180),
               child: Text(
-                match.title.toUpperCase(),
+                match.title,
                 style: AppTypography.headline(
                   size: 18,
                   color: context.c.textPrimary,
@@ -389,20 +488,25 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               ),
             ),
             leading: BackButton(
-              color: _showCollapsedTitle ? context.c.textPrimary : context.c.onPhoto,
+              color: _showCollapsedTitle
+                  ? context.c.textPrimary
+                  : context.c.onPhoto,
             ),
             actions: [
               IconButton(
                 icon: Icon(
                   Icons.share_outlined,
                   size: 20,
-                  color: _showCollapsedTitle ? context.c.textPrimary : context.c.onPhoto,
+                  color: _showCollapsedTitle
+                      ? context.c.textPrimary
+                      : context.c.onPhoto,
                 ),
                 tooltip: 'Compartir partido',
                 onPressed: () {
                   SharePlus.instance.share(
                     ShareParams(
-                      text: '¡Se juega ${match.title}! Miralo o sumate en Pateá: https://patea.app/match/${match.id}',
+                      text:
+                          '¡Se juega ${match.title}! Miralo o sumate en Pateá: https://patea.app/match/${match.id}',
                     ),
                   );
                 },
@@ -411,12 +515,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 PopupMenuButton<String>(
                   icon: Icon(
                     Icons.more_vert_rounded,
-                    color: _showCollapsedTitle ? context.c.textPrimary : context.c.onPhoto,
+                    color: _showCollapsedTitle
+                        ? context.c.textPrimary
+                        : context.c.onPhoto,
                   ),
                   color: context.c.card,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppRadii.cardAll,
-                    side: BorderSide(color: context.c.border.withValues(alpha: 0.4)),
+                    side: BorderSide(
+                      color: context.c.border.withValues(alpha: 0.4),
+                    ),
                   ),
                   onSelected: (action) {
                     switch (action) {
@@ -432,16 +540,27 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     }
                   },
                   itemBuilder: (context) {
-                    final isFinished = match.status == 'completed' || match.status == 'evaluated';
+                    final isFinished =
+                        match.status == 'completed' ||
+                        match.status == 'evaluated';
                     return [
                       if (!isFinished) ...[
                         PopupMenuItem(
                           value: 'reschedule',
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_month_outlined, size: 18),
+                              const Icon(
+                                Icons.calendar_month_outlined,
+                                size: 18,
+                              ),
                               const SizedBox(width: 10),
-                              Text('Reprogramar partido', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
+                              Text(
+                                'Reprogramar partido',
+                                style: AppTypography.body(
+                                  color: context.c.textSecondary,
+                                  size: 13,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -451,7 +570,13 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             children: [
                               const Icon(Icons.map_outlined, size: 18),
                               const SizedBox(width: 10),
-                              Text('Cambiar cancha', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
+                              Text(
+                                'Cambiar cancha',
+                                style: AppTypography.body(
+                                  color: context.c.textSecondary,
+                                  size: 13,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -461,9 +586,19 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline, size: 18, color: context.c.destructive),
+                            Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: context.c.destructive,
+                            ),
                             const SizedBox(width: 10),
-                            Text('Eliminar partido', style: AppTypography.body(size: 13, color: context.c.destructive)),
+                            Text(
+                              'Eliminar partido',
+                              style: AppTypography.body(
+                                size: 13,
+                                color: context.c.destructive,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -481,17 +616,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             isMatchFull: isMatchFull,
             isJoining: _isJoining,
             isFinishing: _isFinishing,
-            onJoinLeave: (uid == null || isCompetition) ? null : () => _handleJoinLeave(match, uid, isUserInMatch),
+            onJoinLeave: (uid == null || isCompetition)
+                ? null
+                : () => _handleJoinLeave(match, uid, isUserInMatch),
             onFinish: () => _handleFinish(match),
           ),
           body: ListView(
             controller: _scrollController,
             padding: EdgeInsets.only(bottom: bottomInset(context) + 80),
             children: [
-              _HeroCard(
-                match: match,
-                onOpenMaps: () => _openMaps(match),
-              ),
+              MatchCover(match: match, onOpenMaps: () => _openMaps(match)),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
@@ -506,27 +640,33 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       const SizedBox(height: 14),
                       MatchPlanningView(match: match, uid: uid),
                     ],
-                    if (isOwner && match.type == 'manual' && match.status == 'upcoming') ...[
+                    if (isOwner &&
+                        match.type == 'manual' &&
+                        match.status == 'upcoming') ...[
                       const SizedBox(height: 14),
                       JoinRequestsSection(matchId: match.id),
+                    ],
+                    if (match.status == 'evaluated' ||
+                        match.status == 'completed' ||
+                        match.chronicle != null) ...[
+                      MatchStoryView(match: match, part: MatchStoryPart.figure),
+                      const SizedBox(height: 18),
                     ],
                     hasTeams
                         ? _TeamsRoster(match: match)
                         : _PlayersConfirmedRoster(match: match),
-                    if (isOwner) ...[
-                      const SizedBox(height: 16),
-                      _OrganizerPanel(
+                    if (match.status == 'evaluated' ||
+                        match.status == 'completed' ||
+                        match.chronicle != null) ...[
+                      const SizedBox(height: 20),
+                      MatchStoryView(
                         match: match,
-                        hasTeams: hasTeams,
-                        isCompetition: isCompetition,
-                        isShuffling: _isShuffling,
-                        canFinalize: isOwner && match.status == 'upcoming' && match.players.length >= 2,
-                        isFinishing: _isFinishing,
-                        onShuffle: () => _handleShuffle(match),
-                        onReschedule: () => _showRescheduleDialog(match),
-                        onChangeVenue: () => _showChangeVenueDialog(match),
-                        onDelete: () => _handleDelete(match),
-                        onFinish: () => _handleFinish(match),
+                        part: MatchStoryPart.planilla,
+                      ),
+                      const SizedBox(height: 20),
+                      MatchStoryView(
+                        match: match,
+                        part: MatchStoryPart.chronicle,
                       ),
                     ],
                     if (match.events.isNotEmpty) ...[
@@ -535,16 +675,35 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     ],
                     if (match.status != 'upcoming') ...[
                       const SizedBox(height: 20),
-                      MatchClipsView(match: match, canUpload: isUserInMatch || isOwner),
+                      MatchClipsView(
+                        match: match,
+                        canUpload: isUserInMatch || isOwner,
+                      ),
                     ],
                     const SizedBox(height: 20),
                     _ChatPreviewCard(
                       matchId: match.id,
-                      onOpenChat: () => _openChatBottomSheet(context, match.id),
+                      canChat: isOwner || isUserInMatch,
+                      onOpenChat: () => _openMatchChat(context, match),
                     ),
-                    if (match.status == 'evaluated' || match.status == 'completed' || match.chronicle != null) ...[
-                      const SizedBox(height: 20),
-                      MatchStoryView(match: match),
+                    if (isOwner) ...[
+                      const SizedBox(height: 16),
+                      _OrganizerPanel(
+                        match: match,
+                        hasTeams: hasTeams,
+                        isCompetition: isCompetition,
+                        isShuffling: _isShuffling,
+                        canFinalize:
+                            isOwner &&
+                            match.status == 'upcoming' &&
+                            match.players.length >= 2,
+                        isFinishing: _isFinishing,
+                        onShuffle: () => _handleShuffle(match),
+                        onReschedule: () => _showRescheduleDialog(match),
+                        onChangeVenue: () => _showChangeVenueDialog(match),
+                        onDelete: () => _handleDelete(match),
+                        onFinish: () => _handleFinish(match),
+                      ),
                     ],
                   ],
                 ),
@@ -559,178 +718,13 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       ),
       error: (e, _) => Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(child: Text('Error: $e', style: AppTypography.body(color: context.c.destructive))),
+        body: Center(
+          child: Text(
+            'Error: $e',
+            style: AppTypography.body(color: context.c.destructive),
+          ),
+        ),
       ),
-    );
-  }
-}
-
-/// Banner superior de Detalle de Partido:
-/// Enfocado en el título del partido, tipo (en texto limpio), fecha y hora con protagonismo,
-/// y sede resumida (nombre del local o dirección corta), sin equipos duplicados ni contenedores pesados.
-class _HeroCard extends StatelessWidget {
-  final MatchModel match;
-  final VoidCallback onOpenMaps;
-
-  const _HeroCard({
-    required this.match,
-    required this.onOpenMaps,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = getMatchTypeTheme(match.type);
-    final isLive = match.status == 'active';
-
-    // Resumen de la sede: nombre del local o primera parte de la dirección
-    final hasVenue = match.location != null && match.location!.trim().isNotEmpty;
-    String venueName = 'Sede a confirmar';
-    if (match.locationDetail != null && match.locationDetail!.name.trim().isNotEmpty) {
-      venueName = match.locationDetail!.name.trim();
-    } else if (hasVenue) {
-      venueName = match.location!.trim().split(',').first.trim();
-    }
-
-    final dateStr = match.date.isNotEmpty ? fmtLongDate(match.date) : 'Fecha a definir';
-    final timeStr = (match.time != null && match.time!.trim().isNotEmpty) ? '${match.time!.trim()} hs' : '';
-    final dateTimeStr = timeStr.isNotEmpty ? '$dateStr • $timeStr' : dateStr;
-
-    final categoryText = isLive ? '🔴 EN VIVO' : theme.label.toUpperCase();
-
-    return Stack(
-      children: [
-        // Foto de fondo de estadio con viñeta cinematográfica (fondo fijo: la reja)
-        Positioned.fill(
-          child: Image.asset(
-            'assets/backgrounds/fondo_7.jpg',
-            fit: BoxFit.cover,
-            opacity: AlwaysStoppedAnimation(isLive ? 0.90 : 0.72),
-          ),
-        ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const [0.0, 0.50, 1.0],
-                colors: [
-                  Colors.black.withValues(alpha: 0.75),
-                  Colors.black.withValues(alpha: 0.40),
-                  context.c.background,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Contenido tipográfico puro (sin cajas ni contenedores pesados)
-        SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 36), // Espacio para botones del AppBar transparente (back / share)
-
-                // Tipo de partido como texto puro
-                Text(
-                  categoryText,
-                  style: AppTypography.code(
-                    size: 12,
-                    weight: FontWeight.w600,
-                    color: isLive
-                        ? context.c.destructive
-                        : (context.c.isDarkSurface ? context.c.primary : context.c.onPhoto),
-                  ).copyWith(letterSpacing: 0.4),
-                ),
-                const SizedBox(height: 8),
-
-                // Nombre del partido protagonista
-                Text(
-                  match.title.toUpperCase(),
-                  style: AppTypography.jersey(
-                    size: 34,
-                    height: 1.05,
-                    letterSpacing: 1.2,
-                    // La portada es una foto de cancha con un velo negro: es
-                    // oscura en los dos temas. Con `textPrimary` el titulo
-                    // salia casi negro sobre el cesped en tema claro.
-                    color: context.c.onPhoto,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Fecha y hora protagonista
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 16,
-                      color: context.c.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        dateTimeStr,
-                        style: AppTypography.body(
-                          size: 16,
-                          weight: FontWeight.w600,
-                          color: context.c.onPhoto,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Lugar resumido interactivo (sin contenedor)
-                GestureDetector(
-                  onTap: hasVenue ? onOpenMaps : null,
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.place_outlined,
-                        size: 17,
-                        color: hasVenue
-                            ? context.c.primary
-                            : (context.c.isDarkSurface ? context.c.onPhotoMuted : context.c.textSecondary),
-                      ),
-                      const SizedBox(width: 7),
-                      Flexible(
-                        child: Text(
-                          venueName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(
-                            size: 14.5,
-                            weight: FontWeight.w600,
-                            color: hasVenue
-                                ? (context.c.isDarkSurface ? context.c.onPhoto : context.c.primary)
-                                : (context.c.isDarkSurface ? context.c.onPhotoMuted : context.c.textSecondary),
-                          ),
-                        ),
-                      ),
-                      if (hasVenue) ...[
-                        const SizedBox(width: 5),
-                        Icon(
-                          Icons.arrow_outward_rounded,
-                          size: 12,
-                          color: context.c.primary,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -749,11 +743,18 @@ class _TeamsRoster extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('Equipos', style: AppTypography.headline(size: 17, weight: FontWeight.w900)),
+            Text(
+              'Equipos',
+              style: AppTypography.headline(size: 17, weight: FontWeight.w900),
+            ),
             const SizedBox(width: 8),
             Text(
               '${match.players.length} JUGADORES',
-              style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
+              style: AppTypography.body(
+                size: 12,
+                weight: FontWeight.w600,
+                color: context.c.textSecondary,
+              ),
             ),
           ],
         ),
@@ -792,139 +793,108 @@ class _TeamBlock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final players = [...team.players]..sort((a, b) => b.ovr.compareTo(a.ovr));
     final avgOvr = _calcAvgOvr(players);
+    final columns = MediaQuery.textScalerOf(context).scale(14) > 21 ? 1 : 2;
 
-    return Stack(
-      clipBehavior: Clip.none,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Marca de agua
-        Positioned(
-          left: -6,
-          top: -24,
-          right: 0,
-          child: IgnorePointer(
-            child: ClipRect(
-              child: Transform(
-                transform: Matrix4.skewX(-0.16),
-                alignment: Alignment.bottomLeft,
-                child: Text(
-                  team.name.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.clip,
-                  softWrap: false,
-                  style: AppTypography.jersey(
-                    size: 56,
-                    color: context.c.overlaySubtle,
-                    letterSpacing: -1,
-                    height: 1,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           children: [
-            Row(
-              children: [
-                if (team.jersey != null)
-                  JerseyWidget(jersey: team.jersey!, size: 44)
-                else
-                  Icon(Icons.checkroom, size: 38, color: context.c.textSecondary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            if (team.jersey != null)
+              JerseyWidget(jersey: team.jersey!, size: 44)
+            else
+              Icon(Icons.checkroom, size: 38, color: context.c.textSecondary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              team.name.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.headline(size: 18, weight: FontWeight.w700),
-                            ),
+                      Expanded(
+                        child: Text(
+                          team.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.headline(
+                            size: 18,
+                            weight: FontWeight.w700,
                           ),
-                          if (match.hasFinalScore) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '${team.score}',
-                              style: AppTypography.jersey(
-                                size: 28,
-                                color: (team.score > (match.teamA == team ? (match.teamB?.score ?? 0) : (match.teamA?.score ?? 0)))
-                                    ? context.c.primary
-                                    : context.c.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 6,
-                        runSpacing: 2,
-                        children: [
-                          Text(
-                            '${team.players.length} JUGADORES',
-                            style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
-                          ),
-                          if (avgOvr != null) ...[
-                            PateaCard(
-                              color: context.c.primary.withValues(alpha: 0.12),
-                              radius: AppRadii.hairAll,
-                              borderColor: context.c.primary.withValues(alpha: 0.3),
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              child: Text(
-                                'OVR PROM. ${avgOvr.toStringAsFixed(1)}',
-                                style: AppTypography.code(
-                                  size: 12,
-                                  weight: FontWeight.w800,
-                                  color: context.c.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Mosaico 2 columnas
-            for (var i = 0; i < players.length; i += 2)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _MosaicPlayer(
-                        player: players[i],
-                        photo: _photoOf(players[i]),
-                        match: match,
-                        onTap: () => _showPlayerCardModal(context, ref, players[i], photo: _photoOf(players[i])),
+                  const SizedBox(height: 2),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 2,
+                    children: [
+                      Text(
+                        '${team.players.length} jugadores',
+                        style: AppTypography.body(
+                          size: 12,
+                          weight: FontWeight.w600,
+                          color: context.c.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: i + 1 < players.length
-                          ? _MosaicPlayer(
-                              player: players[i + 1],
-                              photo: _photoOf(players[i + 1]),
-                              match: match,
-                              onTap: () => _showPlayerCardModal(context, ref, players[i + 1], photo: _photoOf(players[i + 1])),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
-                ),
+                      if (avgOvr != null) ...[
+                        Text(
+                          'OVR promedio ${avgOvr.toStringAsFixed(1)}',
+                          style: AppTypography.body(
+                            size: 12,
+                            color: context.c.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
               ),
+            ),
           ],
         ),
+        const SizedBox(height: 12),
+        // Mosaico 2 columnas
+        for (var i = 0; i < players.length; i += columns)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _MosaicPlayer(
+                    player: players[i],
+                    photo: _photoOf(players[i]),
+                    match: match,
+                    onTap: () => _showPlayerCardModal(
+                      context,
+                      ref,
+                      players[i],
+                      photo: _photoOf(players[i]),
+                    ),
+                  ),
+                ),
+                if (columns == 2) const SizedBox(width: 8),
+                if (columns == 2)
+                  Expanded(
+                    child: i + 1 < players.length
+                        ? _MosaicPlayer(
+                            player: players[i + 1],
+                            photo: _photoOf(players[i + 1]),
+                            match: match,
+                            onTap: () => _showPlayerCardModal(
+                              context,
+                              ref,
+                              players[i + 1],
+                              photo: _photoOf(players[i + 1]),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -982,12 +952,20 @@ class _MosaicPlayer extends StatelessWidget {
                 height: 46,
                 child: ClipOval(
                   child: (photo == null || photo!.isEmpty)
-                      ? PlayerAvatarFallback(seed: player.uid.isNotEmpty ? player.uid : player.displayName)
+                      ? PlayerAvatarFallback(
+                          seed: player.uid.isNotEmpty
+                              ? player.uid
+                              : player.displayName,
+                        )
                       : Image.network(
                           photo!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, error, stack) => PlayerAvatarFallback(
-                              seed: player.uid.isNotEmpty ? player.uid : player.displayName),
+                          errorBuilder: (_, error, stack) =>
+                              PlayerAvatarFallback(
+                                seed: player.uid.isNotEmpty
+                                    ? player.uid
+                                    : player.displayName,
+                              ),
                         ),
                 ),
               ),
@@ -1001,7 +979,10 @@ class _MosaicPlayer extends StatelessWidget {
                       player.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.headline(size: 15, weight: FontWeight.w600),
+                      style: AppTypography.headline(
+                        size: 15,
+                        weight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Row(
@@ -1022,7 +1003,11 @@ class _MosaicPlayer extends StatelessWidget {
                           const SizedBox(width: 5),
                           Text(
                             '${player.ovr}',
-                            style: AppTypography.code(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
+                            style: AppTypography.code(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: context.c.textSecondary,
+                            ),
                           ),
                         ],
                       ],
@@ -1089,20 +1074,35 @@ class _PlayerMatchBadges extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.emoji_events_rounded, size: 9, color: context.c.goldBorder),
+                  Icon(
+                    Icons.emoji_events_rounded,
+                    size: 9,
+                    color: context.c.goldBorder,
+                  ),
                   const SizedBox(width: 2),
-                  Text('FIGURA', style: AppTypography.code(size: 7.5, weight: FontWeight.w800, color: context.c.goldBorder)),
+                  Text(
+                    'FIGURA',
+                    style: AppTypography.code(
+                      size: 7.5,
+                      weight: FontWeight.w800,
+                      color: context.c.goldBorder,
+                    ),
+                  ),
                 ],
               ),
             ),
           if (goals > 0)
-            _MiniBadge(label: goals > 1 ? '⚽ $goals' : '⚽', color: context.c.primary),
+            _MiniBadge(
+              label: goals > 1 ? '⚽ $goals' : '⚽',
+              color: context.c.primary,
+            ),
           if (assists > 0)
-            _MiniBadge(label: assists > 1 ? '👟 $assists' : '👟', color: context.c.textSecondary),
-          if (reds > 0)
-            _MiniBadge(label: '🟥', color: context.c.destructive),
-          if (yellows > 0)
-            _MiniBadge(label: '🟨', color: context.c.warning),
+            _MiniBadge(
+              label: assists > 1 ? '👟 $assists' : '👟',
+              color: context.c.textSecondary,
+            ),
+          if (reds > 0) _MiniBadge(label: '🟥', color: context.c.destructive),
+          if (yellows > 0) _MiniBadge(label: '🟨', color: context.c.warning),
         ],
       ),
     );
@@ -1118,15 +1118,19 @@ class _MiniBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PateaCard(
-             color: color.withValues(alpha: 0.14),
-             radius: AppRadii.hairAll,
-             borderColor: color.withValues(alpha: 0.35),
-             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
-             child: Text(
+      color: color.withValues(alpha: 0.14),
+      radius: AppRadii.hairAll,
+      borderColor: color.withValues(alpha: 0.35),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
+      child: Text(
         label,
-        style: AppTypography.body(size: 12, weight: FontWeight.w600, color: color),
+        style: AppTypography.body(
+          size: 12,
+          weight: FontWeight.w600,
+          color: color,
+        ),
       ),
-           );
+    );
   }
 }
 
@@ -1139,23 +1143,43 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return PateaCard(
-             color: context.c.card.withValues(alpha: 0.40),
-             radius: AppRadii.cardAll,
-             borderColor: context.c.border.withValues(alpha: 0.35),
-             padding: const EdgeInsets.all(16),
-             child: Column(
+      color: context.c.card,
+      radius: AppRadii.cardAll,
+      borderColor: context.c.border.withValues(alpha: 0.35),
+      padding: const EdgeInsets.all(16),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.groups_outlined, size: 18, color: context.c.textSecondary),
+              Icon(
+                Icons.groups_outlined,
+                size: 18,
+                color: context.c.textSecondary,
+              ),
               const SizedBox(width: 8),
-              Expanded(child: Text('Jugadores confirmados', style: AppTypography.headline(size: 15), maxLines: 2)),
+              Expanded(
+                child: Text(
+                  'Jugadores confirmados',
+                  style: AppTypography.headline(size: 15),
+                  maxLines: 2,
+                ),
+              ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.surfaceAll),
-                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: context.c.textSecondary, size: 12, weight: FontWeight.w600)),
+                decoration: BoxDecoration(
+                  color: context.c.cardSurface,
+                  borderRadius: AppRadii.surfaceAll,
+                ),
+                child: Text(
+                  '${match.players.length}/${match.matchSize}',
+                  style: AppTypography.code(
+                    color: context.c.textSecondary,
+                    size: 12,
+                    weight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1164,7 +1188,13 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text('Todavía no hay jugadores confirmados', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                child: Text(
+                  'Todavía no hay jugadores confirmados',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
               ),
             )
           else
@@ -1179,7 +1209,12 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                   return Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => _showPlayerCardModal(context, ref, p, photo: p.photoURL),
+                      onTap: () => _showPlayerCardModal(
+                        context,
+                        ref,
+                        p,
+                        photo: p.photoURL,
+                      ),
                       borderRadius: AppRadii.cardAll,
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
@@ -1198,13 +1233,20 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
-                                style: AppTypography.headline(size: 14, weight: FontWeight.w600),
+                                style: AppTypography.headline(
+                                  size: 14,
+                                  weight: FontWeight.w600,
+                                ),
                               ),
                               Text(
-                                '${p.position} ${p.ovr > 0 ? p.ovr : ""}'.trim(),
+                                '${p.position} ${p.ovr > 0 ? p.ovr : ""}'
+                                    .trim(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.code(size: 12, color: context.c.positionColor(p.position)),
+                                style: AppTypography.code(
+                                  size: 12,
+                                  color: context.c.positionColor(p.position),
+                                ),
                               ),
                             ],
                           ),
@@ -1217,7 +1259,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
             ),
         ],
       ),
-           );
+    );
   }
 }
 
@@ -1253,146 +1295,256 @@ class _OrganizerPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final canEvaluate = match.status == 'completed';
 
-    return PateaCard(
-             color: context.c.card.withValues(alpha: 0.55),
-             radius: AppRadii.cardAll,
-             borderColor: context.c.border.withValues(alpha: 0.35),
-             padding: const EdgeInsets.all(16),
-             child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: context.c.primary.withValues(alpha: 0.12),
-                  borderRadius: AppRadii.chipAll,
-                ),
-                child: Icon(Icons.admin_panel_settings_rounded, size: 16, color: context.c.primary),
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: Text(
-                'Panel del organizador',
-                style: AppTypography.headline(size: 15, weight: FontWeight.w600, color: context.c.primary),
-              )),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (match.status == 'upcoming' && !isCompetition) ...[
-                if (match.players.length < match.matchSize)
-                  OutlinedButton.icon(
-                    onPressed: () => RecruitPlayersSheet.show(context, match),
-                    icon: const Icon(Icons.person_search_outlined, size: 15),
-                    label: const Text('Falta uno'),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
-                      foregroundColor: context.c.textPrimary,
-                      side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                    ),
-                  ),
-                if (hasTeams)
-                  OutlinedButton.icon(
-                    onPressed: isShuffling ? null : () => EditTeamsSheet.show(context, match),
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 15),
-                    label: const Text('Armar equipos'),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
-                      foregroundColor: context.c.textPrimary,
-                      side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                    ),
-                  ),
-                OutlinedButton.icon(
-                  onPressed: isShuffling ? null : onShuffle,
-                  icon: isShuffling
-                      ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary))
-                      : const Icon(Icons.shuffle_rounded, size: 15),
-                  label: Text(hasTeams ? 'Recalcular equilibrio' : 'Equilibrar equipos'),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
-                    foregroundColor: context.c.primary,
-                    side: BorderSide(color: context.c.primary.withValues(alpha: 0.4)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                  ),
-                ),
-                OutlinedButton.icon(
-                  onPressed: onReschedule,
-                  icon: const Icon(Icons.calendar_month_outlined, size: 15),
-                  label: const Text('Reprogramar'),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
-                    foregroundColor: context.c.textPrimary,
-                    side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                  ),
-                ),
-                OutlinedButton.icon(
-                  onPressed: onChangeVenue,
-                  icon: const Icon(Icons.map_outlined, size: 15),
-                  label: const Text('Cambiar Cancha'),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
-                    foregroundColor: context.c.textPrimary,
-                    side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                  ),
-                ),
-                if (canFinalize)
-                  ElevatedButton.icon(
-                    onPressed: isFinishing ? null : onFinish,
-                    icon: isFinishing
-                        ? SizedBox(width: 14, height: 14, child: const PateaButtonProgress())
-                        : Icon(Icons.check_circle_outline, size: 15),
-                    label: Text('Finalizar Partido', style: AppTypography.action(size: 14, weight: FontWeight.w700)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.c.primary,
-                      foregroundColor: context.c.onPrimary,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                    ),
-                  ),
-              ],
-              if (canEvaluate) ...[
-                ElevatedButton.icon(
-                  onPressed: () => context.push('/matches/${match.id}/evaluate'),
-                  icon: Icon(Icons.fact_check_rounded, size: 15, color: context.c.onPrimary),
-                  label: Text('Ver Evaluaciones', style: AppTypography.action(size: 14, weight: FontWeight.w700, color: context.c.onPrimary)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.c.primary,
-                    foregroundColor: context.c.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                  ),
-                ),
-              ],
-              OutlinedButton.icon(
-                onPressed: onDelete,
-                icon: Icon(Icons.delete_outline_rounded, size: 15, color: context.c.destructive),
-                label: Text('Eliminar Partido', style: AppTypography.action(size: 14, color: context.c.destructive)),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
-                  foregroundColor: context.c.destructive,
-                  side: BorderSide(color: context.c.destructive.withValues(alpha: 0.4)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                ),
-              ),
-            ],
-          ),
-        ],
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      shape: const Border(),
+      collapsedShape: const Border(),
+      leading: Icon(
+        Icons.admin_panel_settings_outlined,
+        color: context.c.textSecondary,
       ),
-           );
+      title: Text(
+        'Panel del organizador',
+        style: AppTypography.action(size: 14),
+      ),
+      children: [
+        PateaCard(
+          color: context.c.card,
+          radius: AppRadii.cardAll,
+          borderColor: context.c.border.withValues(alpha: 0.35),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (match.status == 'upcoming' && !isCompetition) ...[
+                    if (match.players.length < match.matchSize)
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            RecruitPlayersSheet.show(context, match),
+                        icon: const Icon(
+                          Icons.person_search_outlined,
+                          size: 15,
+                        ),
+                        label: const Text('Falta uno'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: context.c.cardSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                          foregroundColor: context.c.textPrimary,
+                          side: BorderSide(
+                            color: context.c.border.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
+                      ),
+                    if (hasTeams)
+                      OutlinedButton.icon(
+                        onPressed: isShuffling
+                            ? null
+                            : () => EditTeamsSheet.show(context, match),
+                        icon: const Icon(Icons.swap_horiz_rounded, size: 15),
+                        label: const Text('Armar equipos'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: context.c.cardSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                          foregroundColor: context.c.textPrimary,
+                          side: BorderSide(
+                            color: context.c.border.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: isShuffling ? null : onShuffle,
+                      icon: isShuffling
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: context.c.primary,
+                              ),
+                            )
+                          : const Icon(Icons.shuffle_rounded, size: 15),
+                      label: Text(
+                        hasTeams
+                            ? 'Recalcular equilibrio'
+                            : 'Equilibrar equipos',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: context.c.cardSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                        foregroundColor: context.c.primary,
+                        side: BorderSide(
+                          color: context.c.primary.withValues(alpha: 0.4),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: onReschedule,
+                      icon: const Icon(Icons.calendar_month_outlined, size: 15),
+                      label: const Text('Reprogramar'),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: context.c.cardSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                        foregroundColor: context.c.textPrimary,
+                        side: BorderSide(
+                          color: context.c.border.withValues(alpha: 0.5),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: onChangeVenue,
+                      icon: const Icon(Icons.map_outlined, size: 15),
+                      label: const Text('Cambiar Cancha'),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: context.c.cardSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                        foregroundColor: context.c.textPrimary,
+                        side: BorderSide(
+                          color: context.c.border.withValues(alpha: 0.5),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
+                      ),
+                    ),
+                    if (canFinalize)
+                      ElevatedButton.icon(
+                        onPressed: isFinishing ? null : onFinish,
+                        icon: isFinishing
+                            ? SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: const PateaButtonProgress(),
+                              )
+                            : Icon(Icons.check_circle_outline, size: 15),
+                        label: Text(
+                          'Finalizar Partido',
+                          style: AppTypography.action(
+                            size: 14,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.c.primary,
+                          foregroundColor: context.c.onPrimary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
+                      ),
+                  ],
+                  if (canEvaluate) ...[
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          context.push('/matches/${match.id}/evaluate'),
+                      icon: Icon(
+                        Icons.fact_check_rounded,
+                        size: 15,
+                        color: context.c.onPrimary,
+                      ),
+                      label: Text(
+                        'Ver Evaluaciones',
+                        style: AppTypography.action(
+                          size: 14,
+                          weight: FontWeight.w700,
+                          color: context.c.onPrimary,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.c.primary,
+                        foregroundColor: context.c.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
+                      ),
+                    ),
+                  ],
+                  OutlinedButton.icon(
+                    onPressed: onDelete,
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 15,
+                      color: context.c.destructive,
+                    ),
+                    label: Text(
+                      'Eliminar Partido',
+                      style: AppTypography.action(
+                        size: 14,
+                        color: context.c.destructive,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: context.c.cardSurface.withValues(
+                        alpha: 0.5,
+                      ),
+                      foregroundColor: context.c.destructive,
+                      side: BorderSide(
+                        color: context.c.destructive.withValues(alpha: 0.4),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.cardAll,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -1424,7 +1576,11 @@ class _StickyActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompetition = ['league', 'cup', 'league_final'].contains(match.type);
+    final isCompetition = [
+      'league',
+      'cup',
+      'league_final',
+    ].contains(match.type);
     final isLive = match.status == 'active';
     final isCompleted = match.status == 'completed';
 
@@ -1440,7 +1596,11 @@ class _StickyActionBar extends StatelessWidget {
           elevation: 4,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
-        icon: Icon(Icons.sensors_rounded, size: 20, color: context.c.textPrimary),
+        icon: Icon(
+          Icons.sensors_rounded,
+          size: 20,
+          color: context.c.textPrimary,
+        ),
         label: Text(
           isOwner ? 'Dirigir en vivo' : 'Seguir en vivo',
           style: AppTypography.action(size: 16, color: context.c.textPrimary),
@@ -1448,7 +1608,11 @@ class _StickyActionBar extends StatelessWidget {
       );
     } else if (isCompleted && !isCompetition) {
       actionWidget = ElevatedButton.icon(
-        onPressed: () => context.push(isOwner ? '/matches/${match.id}/evaluate' : '/evaluations/${match.id}'),
+        onPressed: () => context.push(
+          isOwner
+              ? '/matches/${match.id}/evaluate'
+              : '/evaluations/${match.id}',
+        ),
         style: ElevatedButton.styleFrom(
           backgroundColor: context.c.primary,
           foregroundColor: context.c.onPrimary,
@@ -1456,7 +1620,11 @@ class _StickyActionBar extends StatelessWidget {
           elevation: 4,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
-        icon: Icon(isOwner ? Icons.fact_check_rounded : Icons.rate_review_rounded, size: 20, color: context.c.onPrimary),
+        icon: Icon(
+          isOwner ? Icons.fact_check_rounded : Icons.rate_review_rounded,
+          size: 20,
+          color: context.c.onPrimary,
+        ),
         label: Text(
           isOwner ? 'Ver evaluaciones' : 'Evaluar partido',
           style: AppTypography.action(size: 16, color: context.c.onPrimary),
@@ -1477,7 +1645,13 @@ class _StickyActionBar extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                label: Text('Dirigir', style: AppTypography.action(size: 15, color: context.c.textPrimary)),
+                label: Text(
+                  'Dirigir',
+                  style: AppTypography.action(
+                    size: 15,
+                    color: context.c.textPrimary,
+                  ),
+                ),
               ),
             ),
             if (canFinalize) ...[
@@ -1489,12 +1663,21 @@ class _StickyActionBar extends StatelessWidget {
                     backgroundColor: context.c.primary,
                     foregroundColor: context.c.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.cardAll,
+                    ),
                   ),
                   icon: isFinishing
-                      ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: const PateaButtonProgress(),
+                        )
                       : Icon(Icons.check_circle_outline, size: 18),
-                  label: Text('Finalizar', style: AppTypography.action(size: 15)),
+                  label: Text(
+                    'Finalizar',
+                    style: AppTypography.action(size: 15),
+                  ),
                 ),
               ),
             ],
@@ -1509,15 +1692,26 @@ class _StickyActionBar extends StatelessWidget {
                 color: context.c.cardSurface,
                 radius: AppRadii.cardAll,
                 borderColor: context.c.primary.withValues(alpha: 0.35),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle_rounded, size: 16, color: context.c.primary),
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: context.c.primary,
+                    ),
                     const SizedBox(width: 7),
                     Text(
                       'Anotado',
-                      style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.primary),
+                      style: AppTypography.body(
+                        size: 12,
+                        weight: FontWeight.w600,
+                        color: context.c.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -1527,18 +1721,39 @@ class _StickyActionBar extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: isJoining ? null : onJoinLeave,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
+                    backgroundColor: context.c.cardSurface.withValues(
+                      alpha: 0.5,
+                    ),
                     foregroundColor: context.c.textSecondary,
-                    side: BorderSide(color: context.c.border.withValues(alpha: 0.5)),
+                    side: BorderSide(
+                      color: context.c.border.withValues(alpha: 0.5),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.cardAll,
+                    ),
                   ),
                   icon: isJoining
-                      ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.textSecondary))
-                      : Icon(Icons.logout_rounded, size: 16, color: context.c.textSecondary),
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: context.c.textSecondary,
+                          ),
+                        )
+                      : Icon(
+                          Icons.logout_rounded,
+                          size: 16,
+                          color: context.c.textSecondary,
+                        ),
                   label: Text(
                     'Darme de baja',
-                    style: AppTypography.action(size: 15, weight: FontWeight.w600, color: context.c.textSecondary),
+                    style: AppTypography.action(
+                      size: 15,
+                      weight: FontWeight.w600,
+                      color: context.c.textSecondary,
+                    ),
                   ),
                 ),
               ),
@@ -1546,29 +1761,46 @@ class _StickyActionBar extends StatelessWidget {
           );
         } else if (isPending) {
           actionWidget = PateaCard(
-                           color: context.c.cardSurface,
-                           radius: AppRadii.cardAll,
-                           borderColor: context.c.primary.withValues(alpha: 0.3),
-                           padding: const EdgeInsets.symmetric(vertical: 13),
-                           child: Row(
+            color: context.c.cardSurface,
+            radius: AppRadii.cardAll,
+            borderColor: context.c.primary.withValues(alpha: 0.3),
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.hourglass_top_rounded, size: 18, color: context.c.primary),
+                Icon(
+                  Icons.hourglass_top_rounded,
+                  size: 18,
+                  color: context.c.primary,
+                ),
                 const SizedBox(width: 8),
-                Text('Solicitud enviada', style: AppTypography.action(size: 14, color: context.c.primary)),
+                Text(
+                  'Solicitud enviada',
+                  style: AppTypography.action(
+                    size: 14,
+                    color: context.c.primary,
+                  ),
+                ),
               ],
             ),
-                         );
+          );
         } else if (isMatchFull) {
           actionWidget = PateaCard(
-                           color: context.c.cardSurface,
-                           radius: AppRadii.cardAll,
-                           borderColor: context.c.border.withValues(alpha: 0.3),
-                           padding: const EdgeInsets.symmetric(vertical: 13),
-                           child: Center(
-              child: Text('Partido completo', style: AppTypography.action(size: 15, color: context.c.textSecondary)),
+            color: context.c.cardSurface,
+            radius: AppRadii.cardAll,
+            borderColor: context.c.border.withValues(alpha: 0.3),
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            // A Center without heightFactor expands the bottom bar to the
+            // entire viewport, hiding the match for viewers without a place.
+            child: Text(
+              'Partido completo',
+              textAlign: TextAlign.center,
+              style: AppTypography.action(
+                size: 15,
+                color: context.c.textSecondary,
+              ),
             ),
-                         );
+          );
         } else {
           actionWidget = ElevatedButton.icon(
             onPressed: isJoining ? null : onJoinLeave,
@@ -1580,8 +1812,17 @@ class _StickyActionBar extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
             ),
             icon: isJoining
-                ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
-                : Icon(needsApproval ? Icons.how_to_reg_rounded : Icons.sports_soccer_rounded, size: 20),
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: const PateaButtonProgress(),
+                  )
+                : Icon(
+                    needsApproval
+                        ? Icons.how_to_reg_rounded
+                        : Icons.sports_soccer_rounded,
+                    size: 20,
+                  ),
             label: Text(
               needsApproval ? 'Pedir lugar' : 'Anotarme al partido',
               style: AppTypography.action(size: 16),
@@ -1597,7 +1838,12 @@ class _StickyActionBar extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + MediaQuery.of(context).padding.bottom),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            10,
+            16,
+            10 + MediaQuery.of(context).padding.bottom,
+          ),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.88),
             border: Border(
@@ -1611,36 +1857,40 @@ class _StickyActionBar extends StatelessWidget {
   }
 }
 
-final matchLastMessageStreamProvider = StreamProvider.family<Map<String, dynamic>?, String>((ref, matchId) {
-  try {
-    return FirebaseFirestore.instance
-        .collection('matches/$matchId/messages')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .snapshots()
-        .map((snap) => snap.docs.isNotEmpty ? snap.docs.first.data() : null);
-  } catch (_) {
-    return Stream.value(null);
-  }
-});
+final matchLastMessageStreamProvider =
+    StreamProvider.family<Map<String, dynamic>?, String>((ref, matchId) {
+      try {
+        return FirebaseFirestore.instance
+            .collection('matches/$matchId/messages')
+            .orderBy('createdAt', descending: true)
+            .limit(1)
+            .snapshots()
+            .map(
+              (snap) => snap.docs.isNotEmpty ? snap.docs.first.data() : null,
+            );
+      } catch (_) {
+        return Stream.value(null);
+      }
+    });
 
 /// Tarjeta resumen del chat en el feed del partido.
 class _ChatPreviewCard extends ConsumerWidget {
   final String matchId;
   final VoidCallback onOpenChat;
+  final bool canChat;
 
-  const _ChatPreviewCard({required this.matchId, required this.onOpenChat});
+  const _ChatPreviewCard({required this.matchId, required this.onOpenChat, required this.canChat});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lastMsg = ref.watch(matchLastMessageStreamProvider(matchId)).valueOrNull;
+    final lastMsg = canChat ? ref.watch(matchLastMessageStreamProvider(matchId)).asData?.value : null;
 
     return PateaCard(
-             color: context.c.card.withValues(alpha: 0.40),
-             radius: AppRadii.cardAll,
-             borderColor: context.c.border.withValues(alpha: 0.35),
-             clipBehavior: Clip.antiAlias,
-             child: Material(
+      color: context.c.card,
+      radius: AppRadii.cardAll,
+      borderColor: context.c.border.withValues(alpha: 0.35),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onOpenChat,
@@ -1651,7 +1901,11 @@ class _ChatPreviewCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.chat_bubble_outline_rounded, color: context.c.primary, size: 18),
+                    Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: context.c.primary,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1663,14 +1917,20 @@ class _ChatPreviewCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2.5,
+                      ),
                       decoration: BoxDecoration(
                         color: context.c.primary.withValues(alpha: 0.12),
                         borderRadius: AppRadii.cardAll,
                       ),
                       child: Text(
                         'Abrir',
-                        style: AppTypography.action(size: 14, color: context.c.primary),
+                        style: AppTypography.action(
+                          size: 14,
+                          color: context.c.primary,
+                        ),
                       ),
                     ),
                   ],
@@ -1678,38 +1938,51 @@ class _ChatPreviewCard extends ConsumerWidget {
                 const SizedBox(height: 10),
                 if (lastMsg == null)
                   Text(
-                    'Sin mensajes aún. Tocá para iniciar la charla.',
-                    style: AppTypography.body(size: 12, color: context.c.textSecondary),
+                    canChat ? 'Sin mensajes aún. Tocá para iniciar la charla.' : 'Solo participantes y organizador.',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.textSecondary,
+                    ),
                   )
                 else
                   Text(
                     '${(lastMsg['senderName'] as String?) ?? "Jugador"}: ${(lastMsg['text'] as String?) ?? ""}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 12.5, color: context.c.textSecondary),
+                    style: AppTypography.body(
+                      size: 12.5,
+                      color: context.c.textSecondary,
+                    ),
                   ),
               ],
             ),
           ),
         ),
       ),
-           );
+    );
   }
 }
 
 /// Abre el modal de la Player Card 3D al tocar un jugador.
-void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry entry, {String? photo}) {
+void _showPlayerCardModal(
+  BuildContext context,
+  WidgetRef ref,
+  MatchPlayerEntry entry, {
+  String? photo,
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
       return PateaCard(
-               color: context.c.popover,
-               radius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-               borderColor: context.c.border.withValues(alpha: 0.4),
-               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-               child: Column(
+        color: context.c.popover,
+        radius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadii.surface),
+        ),
+        borderColor: context.c.border.withValues(alpha: 0.4),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -1723,14 +1996,19 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
             const SizedBox(height: 18),
             Consumer(
               builder: (context, ref, _) {
-                final snap = entry.uid.isNotEmpty ? ref.watch(singlePlayerStreamProvider(entry.uid)) : null;
+                final snap = entry.uid.isNotEmpty
+                    ? ref.watch(singlePlayerStreamProvider(entry.uid))
+                    : null;
                 final fullPlayer = snap?.valueOrNull;
 
-                final effectivePlayer = fullPlayer ??
+                final effectivePlayer =
+                    fullPlayer ??
                     Player(
                       id: entry.uid,
                       name: entry.displayName,
-                      position: entry.position.isNotEmpty ? entry.position : 'MED',
+                      position: entry.position.isNotEmpty
+                          ? entry.position
+                          : 'MED',
                       ovr: entry.ovr > 0 ? entry.ovr : 60,
                       pac: entry.ovr > 0 ? entry.ovr : 60,
                       sho: entry.ovr > 0 ? entry.ovr : 60,
@@ -1762,188 +2040,20 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
                 label: const Text('Ver perfil completo'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: context.c.textPrimary,
-                  side: BorderSide(color: context.c.border.withValues(alpha: 0.6)),
+                  side: BorderSide(
+                    color: context.c.border.withValues(alpha: 0.6),
+                  ),
                 ),
               ),
           ],
         ),
-             );
+      );
     },
   );
 }
 
-/// Abre el chat en un BottomSheet deslizable optimizado para teclado.
-void _openChatBottomSheet(BuildContext context, String matchId) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      return _ChatModalSheet(matchId: matchId);
-    },
-  );
-}
-
-class _ChatModalSheet extends StatefulWidget {
-  final String matchId;
-
-  const _ChatModalSheet({required this.matchId});
-
-  @override
-  State<_ChatModalSheet> createState() => _ChatModalSheetState();
-}
-
-class _ChatModalSheetState extends State<_ChatModalSheet> {
-  final _controller = TextEditingController();
-  bool _sending = false;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    final text = _controller.text.trim();
-    final user = FirebaseAuth.instance.currentUser;
-    if (text.isEmpty || user == null) return;
-    setState(() => _sending = true);
-    try {
-      await FirebaseFirestore.instance.collection('matches/${widget.matchId}/messages').add({
-        'text': text,
-        'senderId': user.uid,
-        'senderName': user.displayName ?? 'Usuario',
-        'senderPhotoUrl': user.photoURL ?? '',
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'sent',
-      });
-      _controller.clear();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-
-    return PateaCard(
-             color: context.c.background,
-             radius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-             borderColor: context.c.border.withValues(alpha: 0.4),
-             height: MediaQuery.of(context).size.height * 0.82,
-             padding: EdgeInsets.only(bottom: keyboardHeight),
-             child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 38,
-            height: 4,
-            decoration: BoxDecoration(
-              color: context.c.overlayStrong,
-              borderRadius: AppRadii.hairAll,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-            child: Row(
-              children: [
-                Icon(Icons.chat_bubble_outline_rounded, color: context.c.primary, size: 18),
-                const SizedBox(width: 8),
-                Text('Chat del Partido', style: AppTypography.headline(size: 16)),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, size: 20),
-                  color: context.c.textSecondary,
-                ),
-              ],
-            ),
-          ),
-          Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('matches/${widget.matchId}/messages')
-                  .orderBy('createdAt', descending: false)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                final docs = snapshot.data!.docs;
-                if (docs.isEmpty) {
-                  return Center(
-                    child: Text('¡Sé el primero en saludar al grupo!',
-                        style: AppTypography.body(size: 13, color: context.c.textSecondary)),
-                  );
-                }
-                final uid = FirebaseAuth.instance.currentUser?.uid;
-                return ListView.builder(
-                  reverse: false,
-                  padding: const EdgeInsets.all(14),
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final data = docs[index].data();
-                    final isMine = data['senderId'] == uid;
-                    return Align(
-                      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                        constraints: const BoxConstraints(maxWidth: 270),
-                        decoration: BoxDecoration(
-                          color: isMine ? context.c.primary.withValues(alpha: 0.15) : context.c.cardSurface,
-                          borderRadius: AppRadii.cardAll,
-                          border: Border.all(
-                            color: isMine ? context.c.primary.withValues(alpha: 0.35) : context.c.border.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!isMine)
-                              Text(
-                                data['senderName'] as String? ?? 'Usuario',
-                                style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.primary),
-                              ),
-                            Text(data['text'] as String? ?? '', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Escribí un mensaje...',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    ),
-                    onSubmitted: (_) => _send(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _sending ? null : _send,
-                  icon: _sending
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(Icons.send_rounded, color: context.c.primary),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-           );
-  }
+void _openMatchChat(BuildContext context, MatchModel match) {
+  Navigator.of(context).push(MaterialPageRoute<void>(
+    builder: (_) => MatchChatScreen(match: match),
+  ));
 }

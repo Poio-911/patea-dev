@@ -1,16 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'callable_functions.dart';
+import 'firestore_service.dart' show currentUidProvider;
 import '../models/player_model.dart';
 import '../models/match_model.dart';
 import '../models/evaluation_models.dart';
 
 final evaluationServiceProvider = Provider<EvaluationService>((ref) {
+  ref.watch(currentUidProvider);
   return EvaluationService(FirebaseFirestore.instance);
 });
 
-final evaluationInboxItemsProvider = FutureProvider.family<List<EvaluationInboxItem>, String>((ref, uid) {
-  return ref.watch(evaluationServiceProvider).loadInboxItems(uid);
+final evaluationInboxItemsProvider = StreamProvider.autoDispose.family<List<EvaluationInboxItem>, String>((ref, uid) {
+  return ref.watch(evaluationServiceProvider).watchInboxItems(uid);
 });
 
 final identityRevealRequestsProvider = FutureProvider.family<List<IdentityRevealRequest>, String>((ref, uid) {
@@ -70,10 +72,21 @@ class EvaluationService {
     return results;
   }
 
-  /// Arma el inbox: matches con assignments pendientes (a evaluar) o con una
-  /// evaluación ya enviada y procesada (historial), igual que
-  /// src/app/evaluations/page.tsx pero simplificado a fetch único en vez de
-  /// listeners en vivo por partido (el pull-to-refresh cubre la reactividad).
+  /// Listen to the evaluator's assignments, including the initial snapshot.
+  /// Uses the existing evaluatorId/status collection-group index and rules.
+  Stream<void> watchAssignmentChanges(String uid) {
+    return _firestore.collectionGroup('assignments')
+        .where('evaluatorId', isEqualTo: uid)
+        .where('status', whereIn: ['pending', 'completed'])
+        .snapshots().map((_) {});
+  }
+
+  /// Each committed assignment change refreshes both pending and history.
+  /// Notifications and completing a match do not have to invalidate a cache.
+  Stream<List<EvaluationInboxItem>> watchInboxItems(String uid) {
+    return watchAssignmentChanges(uid).asyncMap((_) => loadInboxItems(uid));
+  }
+
   Future<List<EvaluationInboxItem>> loadInboxItems(String uid) async {
     final pendingSnap = await _firestore
         .collectionGroup('assignments')

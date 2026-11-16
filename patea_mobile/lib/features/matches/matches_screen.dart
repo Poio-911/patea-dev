@@ -1,3 +1,6 @@
+import '../../core/widgets/patea_background.dart';
+import '../../core/utils/match_photography.dart';
+import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/theme/app_radii.dart';
@@ -28,7 +31,7 @@ import '../../core/theme/app_insets.dart';
 const Map<String, String> _statusLabels = {
   'planning': 'A Confirmar',
   'upcoming': 'Próximo',
-  'active': 'Activo',
+  'active': 'En vivo',
   'completed': 'Finalizado',
   'evaluated': 'Evaluado',
 };
@@ -36,7 +39,7 @@ const Map<String, String> _statusLabels = {
 String _actionLabel(String status) {
   switch (status) {
     case 'active':
-      return 'Ver en vivo ⚡';
+      return 'Ver en vivo';
     case 'evaluated':
       return 'Ver resultado';
     case 'completed':
@@ -50,7 +53,12 @@ String _actionLabel(String status) {
 
 // Port de amistososTypes en src/components/matches/match-filters.tsx —
 // solo estos 4 tipos se muestran en /matches (ligas/copas viven en /competitions).
-const _amistosoTypes = ['manual', 'collaborative', 'by_teams', 'intergroup_friendly'];
+const _amistosoTypes = [
+  'manual',
+  'collaborative',
+  'by_teams',
+  'intergroup_friendly',
+];
 const _competitionTypes = {'league', 'cup', 'league_final'};
 
 const Map<String, String> _amistosoTypeLabels = {
@@ -63,7 +71,7 @@ const Map<String, String> _amistosoTypeLabels = {
 const Map<String, String> _statusFilterLabels = {
   'planning': 'A Confirmar',
   'upcoming': 'Próximo',
-  'active': 'Activo',
+  'active': 'En vivo',
   'completed': 'Finalizado',
   'evaluated': 'Evaluado',
 };
@@ -81,7 +89,10 @@ DateTime? _matchDateTime(MatchModel m) {
   final d = DateTime.tryParse(m.date);
   if (d == null) return null;
   final local = d.toLocal();
-  final clean = (m.time ?? '').replaceAll(' hs', '').replaceAll('hs', '').trim();
+  final clean = (m.time ?? '')
+      .replaceAll(' hs', '')
+      .replaceAll('hs', '')
+      .trim();
   final parts = clean.split(':');
   final hh = parts.isNotEmpty ? int.tryParse(parts[0]) ?? 0 : 0;
   final mm = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
@@ -101,7 +112,11 @@ class MatchFiltersState {
     this.onlyMine = false,
   });
 
-  MatchFiltersState copyWith({Set<String>? types, Set<String>? statuses, bool? onlyMine}) {
+  MatchFiltersState copyWith({
+    Set<String>? types,
+    Set<String>? statuses,
+    bool? onlyMine,
+  }) {
     return MatchFiltersState(
       types: types ?? this.types,
       statuses: statuses ?? this.statuses,
@@ -143,12 +158,19 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-                      title: Row(
+              title: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: context.c.warning, size: 22),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: context.c.warning,
+                    size: 22,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('Tenés partidos sin finalizar', style: AppTypography.headline(size: 16)),
+                    child: Text(
+                      'Tenés partidos sin finalizar',
+                      style: AppTypography.headline(size: 16),
+                    ),
                   ),
                 ],
               ),
@@ -162,7 +184,10 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                       pending.length == 1
                           ? 'Tenés un partido que ya pasó y no fue finalizado. Podés finalizarlo ahora o ver los detalles.'
                           : 'Tenés ${pending.length} partidos que ya pasaron y no fueron finalizados. Podés finalizarlos ahora o ver los detalles de cada uno.',
-                      style: AppTypography.body(size: 13, color: context.c.textSecondary),
+                      style: AppTypography.body(
+                        size: 13,
+                        color: context.c.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     ConstrainedBox(
@@ -170,7 +195,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: pending.length,
-                        separatorBuilder: (_, index) => const SizedBox(height: 8),
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final match = pending[index];
                           return Container(
@@ -183,19 +209,35 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(match.title, style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      Text(
+                                        match.title,
+                                        style: AppTypography.body(
+                                          color: context.c.textSecondary,
+                                          size: 13,
+                                          weight: FontWeight.w700,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                       const SizedBox(height: 3),
                                       Text(
                                         '${fmtDate(match.date)} · ${match.time ?? ''} hs',
-                                        style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                                        style: AppTypography.body(
+                                          size: 11,
+                                          color: context.c.textSecondary,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.visibility_outlined, size: 18),
+                                  icon: const Icon(
+                                    Icons.visibility_outlined,
+                                    size: 18,
+                                  ),
                                   onPressed: () {
                                     Navigator.pop(context);
                                     context.push('/matches/${match.id}');
@@ -221,16 +263,31 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                       : () async {
                           setDialogState(() => isLoading = true);
                           try {
-                            await ref.read(matchServiceProvider).finalizePendingMatches(pending.map((m) => m.id).toList());
+                            await ref
+                                .read(matchServiceProvider)
+                                .finalizePendingMatches(
+                                  pending.map((m) => m.id).toList(),
+                                );
                           } finally {
                             if (context.mounted) Navigator.pop(context);
                           }
                         },
-                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.onPrimary,
+                  ),
                   icon: isLoading
-                      ? SizedBox(width: 14, height: 14, child: const PateaButtonProgress())
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: const PateaButtonProgress(),
+                        )
                       : const Icon(Icons.check_circle_outline, size: 18),
-                  label: Text(pending.length == 1 ? 'Finalizar Partido' : 'Finalizar ${pending.length} Partidos'),
+                  label: Text(
+                    pending.length == 1
+                        ? 'Finalizar Partido'
+                        : 'Finalizar ${pending.length} Partidos',
+                  ),
                 ),
               ],
             );
@@ -245,7 +302,11 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
       context: context,
       backgroundColor: context.c.card,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadii.surface),
+        ),
+      ),
       builder: (context) => _MatchFiltersSheet(initial: _filters),
     );
     if (result != null) {
@@ -254,7 +315,12 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PateaBackground(
+    scene: PateaBackgroundScene.matches,
+    child: _buildScreen(context),
+  );
+
+  Widget _buildScreen(BuildContext context) {
     // Partidos del grupo activo, acotados y ordenados en el servidor.
     final matchesAsync = ref.watch(activeGroupMatchesProvider);
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
@@ -271,7 +337,9 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
           final today = DateTime(now.year, now.month, now.day);
           final weekEnd = today.add(const Duration(days: 7));
 
-          final amistosos = allMatches.where((m) => _amistosoTypes.contains(m.type)).toList();
+          final amistosos = allMatches
+              .where((m) => _amistosoTypes.contains(m.type))
+              .toList();
 
           final pending = uid == null
               ? <MatchModel>[]
@@ -283,33 +351,45 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 }).toList();
           _maybeShowPendingDialog(pending);
 
-          final bannerMatches = allMatches.where((m) {
-            if (m.status == 'active') return true;
-            if (m.status != 'upcoming') return false;
-            final dt = _matchDateTime(m);
-            return dt != null && !dt.isBefore(now);
-          }).toList()
-            ..sort((a, b) => (DateTime.tryParse(a.date) ?? DateTime(0)).compareTo(DateTime.tryParse(b.date) ?? DateTime(0)));
+          final bannerMatches =
+              allMatches.where((m) {
+                if (m.status == 'active') return true;
+                if (m.status != 'upcoming') return false;
+                final dt = _matchDateTime(m);
+                return dt != null && !dt.isBefore(now);
+              }).toList()..sort(
+                (a, b) => (DateTime.tryParse(a.date) ?? DateTime(0)).compareTo(
+                  DateTime.tryParse(b.date) ?? DateTime(0),
+                ),
+              );
 
           final counts = <TimeFilter, int>{
             TimeFilter.upcoming: amistosos.where((m) {
               if (m.status == 'planning') return true;
               final day = _matchDay(m);
-              return (day != null && !day.isBefore(today)) || m.status == 'active';
+              return (day != null && !day.isBefore(today)) ||
+                  m.status == 'active';
             }).length,
             TimeFilter.thisWeek: amistosos.where((m) {
               final day = _matchDay(m);
-              return day != null && !day.isBefore(today) && day.isBefore(weekEnd);
+              return day != null &&
+                  !day.isBefore(today) &&
+                  day.isBefore(weekEnd);
             }).length,
             TimeFilter.history: amistosos.where((m) {
               final day = _matchDay(m);
-              return day != null && day.isBefore(today) && (m.status == 'completed' || m.status == 'evaluated');
+              return day != null &&
+                  day.isBefore(today) &&
+                  (m.status == 'completed' || m.status == 'evaluated');
             }).length,
           };
 
           var filtered = amistosos.where((m) {
-            if (_filters.types.isNotEmpty && !_filters.types.contains(m.type)) return false;
-            if (_filters.statuses.isNotEmpty && !_filters.statuses.contains(m.status)) return false;
+            if (_filters.types.isNotEmpty && !_filters.types.contains(m.type))
+              return false;
+            if (_filters.statuses.isNotEmpty &&
+                !_filters.statuses.contains(m.status))
+              return false;
             if (_filters.onlyMine && m.ownerUid != uid) return false;
             return true;
           }).toList();
@@ -319,24 +399,31 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               filtered = filtered.where((m) {
                 if (m.status == 'planning') return true;
                 final day = _matchDay(m);
-                return (day != null && !day.isBefore(today)) || m.status == 'active';
+                return (day != null && !day.isBefore(today)) ||
+                    m.status == 'active';
               }).toList();
             case TimeFilter.thisWeek:
               filtered = filtered.where((m) {
                 final day = _matchDay(m);
-                return day != null && !day.isBefore(today) && day.isBefore(weekEnd);
+                return day != null &&
+                    !day.isBefore(today) &&
+                    day.isBefore(weekEnd);
               }).toList();
             case TimeFilter.history:
               filtered = filtered.where((m) {
                 final day = _matchDay(m);
-                return day != null && day.isBefore(today) && (m.status == 'completed' || m.status == 'evaluated');
+                return day != null &&
+                    day.isBefore(today) &&
+                    (m.status == 'completed' || m.status == 'evaluated');
               }).toList();
           }
 
           filtered.sort((a, b) {
             final da = DateTime.tryParse(a.date) ?? DateTime(0);
             final db = DateTime.tryParse(b.date) ?? DateTime(0);
-            return _timeFilter == TimeFilter.history ? db.compareTo(da) : da.compareTo(db);
+            return _timeFilter == TimeFilter.history
+                ? db.compareTo(da)
+                : da.compareTo(db);
           });
 
           return CustomScrollView(
@@ -347,7 +434,12 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               // ya arranca justo debajo del alto propio del header (60dp) —
               // solo falta compensar el status bar, no los 60dp de nuevo.
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 12, 16, 0),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  MediaQuery.of(context).padding.top + 12,
+                  16,
+                  0,
+                ),
                 sliver: SliverToBoxAdapter(
                   child: PateaPageHeader(
                     title: spec(Section.matches).title,
@@ -361,12 +453,18 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                           backgroundColor: context.c.primary,
                           foregroundColor: context.c.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
                         ),
                         icon: const Icon(Icons.add_circle, size: 18),
                         label: Text(
                           'Armar partido',
-                          style: AppTypography.action(size: 14, weight: FontWeight.w700, color: context.c.onPrimary),
+                          style: AppTypography.action(
+                            size: 14,
+                            weight: FontWeight.w700,
+                            color: context.c.onPrimary,
+                          ),
                         ),
                       ),
                     ),
@@ -406,7 +504,11 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                           side: BorderSide(color: context.c.border),
                         ),
                         icon: const Icon(Icons.filter_list, size: 16),
-                        label: Text(_filters.activeCount > 0 ? 'Filtros (${_filters.activeCount})' : 'Filtros'),
+                        label: Text(
+                          _filters.activeCount > 0
+                              ? 'Filtros (${_filters.activeCount})'
+                              : 'Filtros',
+                        ),
                       ),
                       const Spacer(),
                       _ViewModeToggle(
@@ -421,16 +523,33 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               if (filtered.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(
-                    child: Text(
-                      'No hay partidos en esta vista',
-                      style: AppTypography.body(color: context.c.textSecondary),
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
+                    child: allMatches.isEmpty
+                        ? const PateaSectionScene(
+                            image: PateaSectionScene.matches,
+                            title: 'La cancha está lista',
+                            description:
+                                'Todavía no hay partidos. Tocá Armar partido para elegir la cancha y convocar al equipo.',
+                          )
+                        : Center(
+                            child: Text(
+                              'No hay partidos en esta vista',
+                              style: AppTypography.body(
+                                color: context.c.textSecondary,
+                              ),
+                            ),
+                          ),
                   ),
                 )
               else if (_viewMode == MatchViewMode.grid)
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset(context, extra: 24)),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    0,
+                    16,
+                    bottomInset(context, extra: 24),
+                  ),
                   sliver: SliverList.separated(
                     itemCount: filtered.length,
                     separatorBuilder: (_, index) => const SizedBox(height: 14),
@@ -444,23 +563,26 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 )
               else
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset(context, extra: 24)),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    0,
+                    16,
+                    bottomInset(context, extra: 24),
+                  ),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 0.72,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return _CompactMatchCard(match: filtered[index])
-                            .animate(delay: (index * 50).ms)
-                            .fadeIn(duration: 300.ms)
-                            .slideY(begin: 0.05, end: 0, duration: 300.ms);
-                      },
-                      childCount: filtered.length,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.72,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return _CompactMatchCard(match: filtered[index])
+                          .animate(delay: (index * 50).ms)
+                          .fadeIn(duration: 300.ms)
+                          .slideY(begin: 0.05, end: 0, duration: 300.ms);
+                    }, childCount: filtered.length),
                   ),
                 ),
             ],
@@ -500,7 +622,11 @@ class _ViewModeToggle extends StatelessWidget {
             color: selected ? context.c.primary : Colors.transparent,
             borderRadius: AppRadii.chipAll,
           ),
-          child: Icon(icon, size: 16, color: selected ? context.c.onPrimary : context.c.textSecondary),
+          child: Icon(
+            icon,
+            size: 16,
+            color: selected ? context.c.onPrimary : context.c.textSecondary,
+          ),
         ),
       );
     }
@@ -546,7 +672,9 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: 20, right: 20, top: 20,
+          left: 20,
+          right: 20,
+          top: 20,
           bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Column(
@@ -568,7 +696,14 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Por tipo', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
+            Text(
+              'Por tipo',
+              style: AppTypography.body(
+                size: 12,
+                weight: FontWeight.w700,
+                color: context.c.textSecondary,
+              ),
+            ),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -577,14 +712,23 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                 return FilterChip(
                   label: Text(entry.value),
                   selected: selected,
-                  onSelected: (v) => setState(() => v ? _types.add(entry.key) : _types.remove(entry.key)),
+                  onSelected: (v) => setState(
+                    () => v ? _types.add(entry.key) : _types.remove(entry.key),
+                  ),
                   selectedColor: context.c.primary.withValues(alpha: 0.25),
                   checkmarkColor: context.c.primary,
                 );
               }).toList(),
             ),
             const SizedBox(height: 16),
-            Text('Por estado', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
+            Text(
+              'Por estado',
+              style: AppTypography.body(
+                size: 12,
+                weight: FontWeight.w700,
+                color: context.c.textSecondary,
+              ),
+            ),
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -593,18 +737,32 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                 return FilterChip(
                   label: Text(entry.value),
                   selected: selected,
-                  onSelected: (v) => setState(() => v ? _statuses.add(entry.key) : _statuses.remove(entry.key)),
+                  onSelected: (v) => setState(
+                    () => v
+                        ? _statuses.add(entry.key)
+                        : _statuses.remove(entry.key),
+                  ),
                   selectedColor: context.c.primary.withValues(alpha: 0.25),
                   checkmarkColor: context.c.primary,
                 );
               }).toList(),
             ),
             const SizedBox(height: 16),
-            Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
+            Container(
+              height: 1,
+              color: context.c.border.withValues(alpha: 0.3),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Text('Solo mis partidos', style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w600)),
+                Text(
+                  'Solo mis partidos',
+                  style: AppTypography.body(
+                    color: context.c.textSecondary,
+                    size: 13,
+                    weight: FontWeight.w600,
+                  ),
+                ),
                 const Spacer(),
                 Switch(
                   value: _onlyMine,
@@ -619,9 +777,16 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(
                   context,
-                  MatchFiltersState(types: _types, statuses: _statuses, onlyMine: _onlyMine),
+                  MatchFiltersState(
+                    types: _types,
+                    statuses: _statuses,
+                    onlyMine: _onlyMine,
+                  ),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.c.primary,
+                  foregroundColor: context.c.onPrimary,
+                ),
                 child: const Text('Aplicar'),
               ),
             ),
@@ -676,11 +841,6 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
     super.dispose();
   }
 
-  static int _photoIndexFor(String id) {
-    final sum = id.codeUnits.fold<int>(0, (acc, c) => acc + c);
-    return (sum.abs() % 9) + 1;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.matches.isEmpty) {
@@ -689,20 +849,33 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: context.c.border.withValues(alpha: 0.4), style: BorderStyle.solid),
+          border: Border.all(
+            color: context.c.border.withValues(alpha: 0.4),
+            style: BorderStyle.solid,
+          ),
           color: context.c.card.withValues(alpha: 0.3),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.calendar_today_outlined, size: 40, color: context.c.textSecondary.withValues(alpha: 0.6)),
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 40,
+              color: context.c.textSecondary.withValues(alpha: 0.6),
+            ),
             const SizedBox(height: 10),
-            Text('No hay fútbol a la vista', style: AppTypography.headline(size: 15)),
+            Text(
+              'No hay fútbol a la vista',
+              style: AppTypography.headline(size: 15),
+            ),
             const SizedBox(height: 6),
             Text(
               'Armá un nuevo partido para que empiece a rodar la pelota.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 12, color: context.c.textSecondary),
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
+              ),
             ),
           ],
         ),
@@ -711,8 +884,8 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
 
     final match = widget.matches[_index];
     final theme = getMatchTypeTheme(match.type);
-    final photoIndex = _photoIndexFor(match.id);
-    final hasTeams = match.type == 'by_teams' && match.teamA != null && match.teamB != null;
+    final hasTeams =
+        match.type == 'by_teams' && match.teamA != null && match.teamB != null;
     final dateObj = DateTime.tryParse(match.date)?.toLocal();
 
     return ClipRRect(
@@ -721,11 +894,14 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         height: 320,
         decoration: BoxDecoration(
           borderRadius: AppRadii.cardAll,
-          border: Border.all(color: theme.brandColor.withValues(alpha: 0.5), width: 1.5),
+          border: Border.all(
+            color: theme.brandColor.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               // Una sombra es negra en los dos temas.
-color: Colors.black.withValues(alpha: 0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -746,14 +922,14 @@ color: Colors.black.withValues(alpha: 0.4),
               child: SizedBox.expand(
                 key: ValueKey(match.id),
                 child: Image.asset(
-                  'assets/backgrounds/fondo_$photoIndex.jpg',
+                  MatchPhotography.forMatch(match.id),
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
                 ),
               ),
             ),
-            Container(color: Colors.black.withValues(alpha: 0.45)),
+            Container(color: Colors.black.withValues(alpha: 0.30)),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -767,7 +943,7 @@ color: Colors.black.withValues(alpha: 0.4),
                 ),
               ),
             ),
-            Container(color: theme.brandColor.withValues(alpha: 0.12)),
+            Container(color: theme.brandColor.withValues(alpha: 0.04)),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -776,7 +952,10 @@ color: Colors.black.withValues(alpha: 0.4),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: AppRadii.surfaceAll,
@@ -785,9 +964,23 @@ color: Colors.black.withValues(alpha: 0.4),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: theme.brandColor,
+                              ),
+                            ),
                             const SizedBox(width: 6),
-                            Text(theme.label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.onPhoto)),
+                            Text(
+                              theme.label.toUpperCase(),
+                              style: AppTypography.code(
+                                size: 9,
+                                weight: FontWeight.w800,
+                                color: context.c.onPhoto,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -801,33 +994,66 @@ color: Colors.black.withValues(alpha: 0.4),
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                Expanded(child: _BannerTeam(team: match.teamA!)),
-                                Text('VS', style: AppTypography.headline(size: 22, weight: FontWeight.w900, color: context.c.onPhotoLine)),
-                                Expanded(child: _BannerTeam(team: match.teamB!)),
+                                Expanded(
+                                  child: _BannerTeam(team: match.teamA!),
+                                ),
+                                Text(
+                                  'VS',
+                                  style: AppTypography.headline(
+                                    size: 22,
+                                    weight: FontWeight.w900,
+                                    color: context.c.onPhotoLine,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _BannerTeam(team: match.teamB!),
+                                ),
                               ],
                             )
                           : Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               child: Text(
                                 match.title.toUpperCase(),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.headline(size: 24, weight: FontWeight.w900, color: context.c.onPhoto),
+                                style: AppTypography.headline(
+                                  size: 24,
+                                  weight: FontWeight.w900,
+                                  color: context.c.onPhoto,
+                                ),
                               ),
                             ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.onPhotoLine))),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: context.c.onPhotoLine),
+                      ),
+                    ),
                     child: Wrap(
                       spacing: 16,
                       runSpacing: 4,
                       children: [
-                        if (dateObj != null) _BannerInfoRow(icon: Icons.calendar_today, text: fmtLongDateOf(dateObj)),
-                        if (match.time != null) _BannerInfoRow(icon: Icons.access_time, text: '${match.time} hs'),
-                        if (match.location != null) _BannerInfoRow(icon: Icons.navigation_outlined, text: match.location!),
+                        if (dateObj != null)
+                          _BannerInfoRow(
+                            icon: Icons.calendar_today,
+                            text: fmtLongDateOf(dateObj),
+                          ),
+                        if (match.time != null)
+                          _BannerInfoRow(
+                            icon: Icons.access_time,
+                            text: '${match.time} hs',
+                          ),
+                        if (match.location != null)
+                          _BannerInfoRow(
+                            icon: Icons.navigation_outlined,
+                            text: match.location!,
+                          ),
                       ],
                     ),
                   ),
@@ -838,8 +1064,13 @@ color: Colors.black.withValues(alpha: 0.4),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: context.c.primary,
                         foregroundColor: context.c.onPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 28,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
                       ),
                       icon: const Text('Ver detalles'),
                       label: const Icon(Icons.arrow_forward, size: 16),
@@ -857,7 +1088,9 @@ color: Colors.black.withValues(alpha: 0.4),
                           width: active ? 20 : 6,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: active ? context.c.onPhoto : context.c.onPhotoLine,
+                            color: active
+                                ? context.c.onPhoto
+                                : context.c.onPhotoLine,
                             borderRadius: AppRadii.hairAll,
                           ),
                         );
@@ -894,7 +1127,11 @@ class _BannerInfoRow extends StatelessWidget {
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.body(size: 11, weight: FontWeight.w600, color: context.c.onPhoto),
+              style: AppTypography.body(
+                size: 11,
+                weight: FontWeight.w600,
+                color: context.c.onPhoto,
+              ),
             ),
           ),
         ],
@@ -923,7 +1160,11 @@ class _BannerTeam extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: AppTypography.headline(size: 12, weight: FontWeight.w800, color: context.c.onPhoto),
+          style: AppTypography.headline(
+            size: 12,
+            weight: FontWeight.w800,
+            color: context.c.onPhoto,
+          ),
         ),
       ],
     );
@@ -940,7 +1181,10 @@ class _BannerOrganizerBadge extends StatelessWidget {
     if (ownerUid == null) return const SizedBox.shrink();
     return Consumer(
       builder: (context, ref, _) {
-        final name = ref.watch(userProfileProvider(ownerUid!)).value?['displayName'] as String? ?? 'Club';
+        final name =
+            ref.watch(userProfileProvider(ownerUid!)).value?['displayName']
+                as String? ??
+            'Club';
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -951,8 +1195,22 @@ class _BannerOrganizerBadge extends StatelessWidget {
           child: Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: 'Organiza: ', style: AppTypography.body(size: 9, weight: FontWeight.w700, color: context.c.onPhoto)),
-                TextSpan(text: name.toUpperCase(), style: AppTypography.body(size: 9, weight: FontWeight.w800, color: context.c.primary)),
+                TextSpan(
+                  text: 'Organiza: ',
+                  style: AppTypography.body(
+                    size: 9,
+                    weight: FontWeight.w700,
+                    color: context.c.onPhoto,
+                  ),
+                ),
+                TextSpan(
+                  text: name.toUpperCase(),
+                  style: AppTypography.body(
+                    size: 9,
+                    weight: FontWeight.w800,
+                    color: context.c.primary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -962,98 +1220,27 @@ class _BannerOrganizerBadge extends StatelessWidget {
   }
 }
 
-class _MatchCard extends StatefulWidget {
+class _MatchCard extends StatelessWidget {
   final MatchModel match;
-
   const _MatchCard({required this.match});
 
   @override
-  State<_MatchCard> createState() => _MatchCardState();
-}
-
-class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMixin {
-  /// Late sólo si el partido está en curso. Un partido en vivo tiene que
-  /// sentirse vivo en la lista, no distinguirse por el color de un borde.
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  );
-
-  /// El latido corre sólo si el sistema no pidió menos movimiento.
-  ///
-  /// `AnimationController` ya acorta las animaciones cuando
-  /// `disableAnimations` está activo, pero las que se repiten quedan afuera a
-  /// propósito (`AnimationBehavior.preserve` es el default de `repeat`, para
-  /// que no titilen). O sea: un bucle infinito es el único caso que hay que
-  /// atender a mano, y este es el único bucle infinito de la app.
-  void _syncPulse() {
-    final live = widget.match.status == 'active' &&
-        !MediaQuery.disableAnimationsOf(context);
-    if (live && !_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    } else if (!live && _pulse.isAnimating) {
-      _pulse.stop();
-      _pulse.value = 0;
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncPulse();
-  }
-
-  @override
-  void didUpdateWidget(_MatchCard old) {
-    super.didUpdateWidget(old);
-    _syncPulse();
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final match = widget.match;
     final theme = getMatchTypeTheme(match.type);
     final isLive = match.status == 'active';
     // Un partido ya jugado se apaga: no compite por atención con los que
     // todavía importan.
     final isPast = match.status == 'completed' || match.status == 'evaluated';
     final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
-    final hasTeams = (match.type == 'by_teams' ||
+    final hasTeams =
+        (match.type == 'by_teams' ||
             match.type == 'league' ||
             match.type == 'cup' ||
             match.type == 'league_final') &&
         match.teamA != null &&
         match.teamB != null;
-    final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (context, child) {
-        // El halo respira alrededor de la tarjeta en vivo.
-        final glow = isLive ? (0.18 + _pulse.value * 0.32) : 0.0;
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: AppRadii.cardAll,
-            boxShadow: isLive
-                ? [
-                    BoxShadow(
-                      color: context.c.destructive.withValues(alpha: glow),
-                      blurRadius: 18 + _pulse.value * 10,
-                      spreadRadius: _pulse.value * 2,
-                    ),
-                  ]
-                : null,
-          ),
-          child: child,
-        );
-      },
-      child: InkWell(
+    return InkWell(
       onTap: () => context.push('/matches/${match.id}'),
       borderRadius: AppRadii.cardAll,
       child: ClipRRect(
@@ -1063,13 +1250,13 @@ class _MatchCardState extends State<_MatchCard> with SingleTickerProviderStateMi
             color: context.c.card,
             borderRadius: AppRadii.cardAll,
             border: Border.all(
-              color: isLive ? context.c.destructive : theme.brandColor.withValues(alpha: 0.35),
-              width: isLive ? 1.5 : 1.0,
+              color: theme.brandColor.withValues(alpha: 0.35),
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
                 // Una sombra es negra en los dos temas.
-color: Colors.black.withValues(alpha: 0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1077,14 +1264,12 @@ color: Colors.black.withValues(alpha: 0.3),
           ),
           child: Stack(
             children: [
-              // Fondo de estadio con parallax: se desplaza según dónde está
-              // la tarjeta en la pantalla. Un partido en vivo lo muestra más
-              // fuerte y uno ya jugado más apagado, así el estado se lee
-              // antes de leer el texto.
+              // La foto conserva el tratamiento de las demás tarjetas.
+              // El estado en vivo se comunica con su etiqueta, sin halo.
               Positioned.fill(
                 child: ParallaxBackground(
-                  asset: 'assets/backgrounds/fondo_$photoIndex.jpg',
-                  opacity: isLive ? 0.34 : (isPast ? 0.10 : 0.22),
+                  asset: MatchPhotography.forMatch(match.id),
+                  opacity: isPast ? 0.10 : 0.22,
                 ),
               ),
               Positioned.fill(
@@ -1106,176 +1291,238 @@ color: Colors.black.withValues(alpha: 0.3),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-            Text(
-              match.title,
-              style: AppTypography.headline(size: 17, weight: FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
-            _OrganizerRow(ownerUid: match.ownerUid),
-            const SizedBox(height: 10),
+                    Text(
+                      match.title,
+                      style: AppTypography.headline(
+                        size: 17,
+                        weight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    _OrganizerRow(ownerUid: match.ownerUid),
+                    const SizedBox(height: 10),
 
-            // Tipo de partido + estado
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: context.c.cardSurface,
-                    borderRadius: AppRadii.surfaceAll,
-                    border: Border.all(color: context.c.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: theme.brandColor,
-                          boxShadow: [BoxShadow(color: theme.brandColor.withValues(alpha: 0.7), blurRadius: 6)],
+                    // Tipo de partido + estado
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.c.cardSurface,
+                            borderRadius: AppRadii.surfaceAll,
+                            border: Border.all(color: context.c.border),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: theme.brandColor,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: theme.brandColor.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                theme.label.toUpperCase(),
+                                style: AppTypography.code(
+                                  size: 10,
+                                  weight: FontWeight.w700,
+                                  color: context.c.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        theme.label.toUpperCase(),
-                        style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textPrimary),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isLive ? context.c.destructive.withValues(alpha: 0.15) : context.c.brandVolt.withValues(alpha: 0.12),
-                    borderRadius: AppRadii.chipAll,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isLive) ...[
-                        // Antes era verde con el texto al lado en rojo.
-                        // Ahora late en el mismo rojo que el resto del estado.
-                        FadeTransition(
-                          opacity: Tween<double>(begin: 0.35, end: 1.0).animate(_pulse),
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            margin: const EdgeInsets.only(right: 5),
-                            decoration: BoxDecoration(
-                                shape: BoxShape.circle, color: context.c.destructive),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isLive
+                                ? context.c.cardSurface
+                                : context.c.brandVolt.withValues(alpha: 0.12),
+                            borderRadius: AppRadii.chipAll,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isLive) ...[
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: context.c.destructive,
+                                  ),
+                                ),
+                              ],
+                              Text(
+                                isLive ? 'En vivo' : statusLabel.toUpperCase(),
+                                style: AppTypography.body(
+                                  size: 11,
+                                  weight: FontWeight.w700,
+                                  color: isLive ? context.c.textPrimary : context.c.primary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                      Text(
-                        statusLabel.toUpperCase(),
-                        style: AppTypography.code(size: 10, weight: FontWeight.w700, color: isLive ? context.c.destructive : context.c.primary),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                    ),
 
-            const SizedBox(height: 14),
-            Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
-            const SizedBox(height: 14),
+                    const SizedBox(height: 14),
+                    Container(
+                      height: 1,
+                      color: context.c.border.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 14),
 
-            // Fecha / hora. Los partidos en 'planning' todavía no tienen
-            // fecha/hora confirmada (se define por votación) — igual que
-            // match-card.tsx real, mostramos placeholders en vez de vacío.
-            Row(
-              children: [
-                Expanded(
-                  child: _InfoRow(
-                    icon: Icons.calendar_today_outlined,
-                    label: 'Fecha',
-                    value: (match.status == 'planning' || match.date.isEmpty)
-                        ? 'Por confirmar'
-                        : match.time == null ? fmtDateTime(match.date) : fmtDate(match.date),
-                  ),
-                ),
-                Expanded(
-                  child: _InfoRow(
-                    icon: Icons.access_time,
-                    label: 'Hora',
-                    value: (match.status == 'planning' || match.time == null) ? 'Por votar' : '${match.time} hs',
-                  ),
-                ),
-              ],
-            ),
-            if (match.location != null) ...[
-              const SizedBox(height: 10),
-              _InfoRow(
-                icon: Icons.location_on_outlined,
-                label: 'Lugar',
-                value: match.location!,
-              ),
-            ],
-
-            const SizedBox(height: 14),
-
-            if (hasTeams)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _TeamJersey(team: match.teamA!),
-                  Column(
-                    children: [
-                      Text('VS', style: AppTypography.code(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
-                      if (match.status == 'completed' || match.status == 'evaluated')
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '${match.teamA!.score} - ${match.teamB!.score}',
-                            style: AppTypography.sportNumber(size: 18),
+                    // Fecha / hora. Los partidos en 'planning' todavía no tienen
+                    // fecha/hora confirmada (se define por votación) — igual que
+                    // match-card.tsx real, mostramos placeholders en vez de vacío.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _InfoRow(
+                            icon: Icons.calendar_today_outlined,
+                            label: 'Fecha',
+                            value:
+                                (match.status == 'planning' ||
+                                    match.date.isEmpty)
+                                ? 'Por confirmar'
+                                : match.time == null
+                                ? fmtDateTime(match.date)
+                                : fmtDate(match.date),
                           ),
                         ),
+                        Expanded(
+                          child: _InfoRow(
+                            icon: Icons.access_time,
+                            label: 'Hora',
+                            value:
+                                (match.status == 'planning' ||
+                                    match.time == null)
+                                ? 'Por votar'
+                                : '${match.time} hs',
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (match.location != null) ...[
+                      const SizedBox(height: 10),
+                      _InfoRow(
+                        icon: Icons.location_on_outlined,
+                        label: 'Lugar',
+                        value: match.location!,
+                      ),
                     ],
-                  ),
-                  _TeamJersey(team: match.teamB!),
-                ],
-              )
-            else
-              Row(
-                children: [
-                  Icon(Icons.groups_outlined, size: 20, color: context.c.textSecondary),
-                  const SizedBox(width: 8),
-                  Text(
-                    match.matchSize > 0 ? '${match.playerUids.length} / ${match.matchSize}' : '${match.playerUids.length}',
-                    style: AppTypography.sportNumber(size: 18),
-                  ),
-                  const SizedBox(width: 4),
-                  Text('Jugadores', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
-                ],
-              ),
 
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => context.push('/matches/${match.id}'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isLive ? context.c.destructive : context.c.primary,
-                  foregroundColor: isLive ? context.c.textPrimary : context.c.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                    const SizedBox(height: 14),
+
+                    if (hasTeams)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _TeamJersey(team: match.teamA!),
+                          Column(
+                            children: [
+                              Text(
+                                'VS',
+                                style: AppTypography.code(
+                                  size: 12,
+                                  weight: FontWeight.w700,
+                                  color: context.c.textSecondary,
+                                ),
+                              ),
+                              if (match.status == 'completed' ||
+                                  match.status == 'evaluated')
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '${match.teamA!.score} - ${match.teamB!.score}',
+                                    style: AppTypography.sportNumber(size: 18),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          _TeamJersey(team: match.teamB!),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.groups_outlined,
+                            size: 20,
+                            color: context.c.textSecondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            match.matchSize > 0
+                                ? '${match.playerUids.length} / ${match.matchSize}'
+                                : '${match.playerUids.length}',
+                            style: AppTypography.sportNumber(size: 18),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Jugadores',
+                            style: AppTypography.body(
+                              color: context.c.textSecondary,
+                              size: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.push('/matches/${match.id}'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.c.primary,
+                          foregroundColor: context.c.onPrimary,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
+                        icon: const Icon(Icons.visibility_outlined, size: 18),
+                        label: Text(
+                          _actionLabel(match.status),
+                          style: AppTypography.action(
+                            size: 14,
+                            color: context.c.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                icon: const Icon(Icons.visibility_outlined, size: 18),
-                label: Text(_actionLabel(match.status), style: AppTypography.action(size: 14, color: isLive ? context.c.textPrimary : context.c.onPrimary)),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ],
-  ),
-),
-),
-),
-);
-}
+    );
+  }
 }
 
 /// Port de CompactMatchCard (src/components/compact-match-card.tsx).
@@ -1287,11 +1534,11 @@ class _CompactMatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = getMatchTypeTheme(match.type);
-    final isByTeams = match.type == 'by_teams' && match.teamA != null && match.teamB != null;
+    final isByTeams =
+        match.type == 'by_teams' && match.teamA != null && match.teamB != null;
     final hasScore = match.status == 'completed' || match.status == 'evaluated';
     final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
     final isPlanning = match.status == 'planning';
-    final photoIndex = (match.id.codeUnits.fold<int>(0, (acc, c) => acc + c).abs() % 9) + 1;
 
     return InkWell(
       borderRadius: AppRadii.cardAll,
@@ -1306,7 +1553,7 @@ class _CompactMatchCard extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 // Una sombra es negra en los dos temas.
-color: Colors.black.withValues(alpha: 0.25),
+                color: Colors.black.withValues(alpha: 0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -1319,7 +1566,7 @@ color: Colors.black.withValues(alpha: 0.25),
                 child: Opacity(
                   opacity: 0.22,
                   child: Image.asset(
-                    'assets/backgrounds/fondo_$photoIndex.jpg',
+                    MatchPhotography.forMatch(match.id),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -1344,145 +1591,217 @@ color: Colors.black.withValues(alpha: 0.25),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: context.c.cardSurface,
-                      borderRadius: AppRadii.surfaceAll,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Row(
                       children: [
-                        Container(width: 5, height: 5, decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor)),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.c.cardSurface,
+                              borderRadius: AppRadii.surfaceAll,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: theme.brandColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    theme.label.toUpperCase(),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.code(
+                                      size: 8,
+                                      weight: FontWeight.w700,
+                                      color: context.c.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            theme.label.toUpperCase(),
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.code(size: 8, weight: FontWeight.w700, color: context.c.textSecondary),
+                        Text(
+                          statusLabel.toUpperCase(),
+                          style: AppTypography.code(
+                            size: 8,
+                            weight: FontWeight.w700,
+                            color: match.status == 'active'
+                                ? context.c.destructive
+                                : context.c.primary,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  statusLabel.toUpperCase(),
-                  style: AppTypography.code(
-                    size: 8,
-                    weight: FontWeight.w700,
-                    color: match.status == 'active' ? context.c.destructive : context.c.primary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (isByTeams)
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Expanded(
-                        child: match.teamA!.jersey != null
-                            ? JerseyWidget(jersey: match.teamA!.jersey!, size: 32)
-                            : Icon(Icons.checkroom, size: 28, color: context.c.textSecondary),
-                      ),
-                      Text(
-                        hasScore ? '${match.teamA!.score}-${match.teamB!.score}' : 'vs',
-                        style: AppTypography.body(size: 11, weight: FontWeight.w700, color: context.c.textSecondary),
-                      ),
-                      Expanded(
-                        child: match.teamB!.jersey != null
-                            ? JerseyWidget(jersey: match.teamB!.jersey!, size: 32)
-                            : Icon(Icons.checkroom, size: 28, color: context.c.textSecondary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          match.teamA!.name,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(color: context.c.textSecondary, size: 9, weight: FontWeight.w700),
+                    const SizedBox(height: 8),
+                    if (isByTeams)
+                      Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Expanded(
+                                child: match.teamA!.jersey != null
+                                    ? JerseyWidget(
+                                        jersey: match.teamA!.jersey!,
+                                        size: 32,
+                                      )
+                                    : Icon(
+                                        Icons.checkroom,
+                                        size: 28,
+                                        color: context.c.textSecondary,
+                                      ),
+                              ),
+                              Text(
+                                hasScore
+                                    ? '${match.teamA!.score}-${match.teamB!.score}'
+                                    : 'vs',
+                                style: AppTypography.body(
+                                  size: 11,
+                                  weight: FontWeight.w700,
+                                  color: context.c.textSecondary,
+                                ),
+                              ),
+                              Expanded(
+                                child: match.teamB!.jersey != null
+                                    ? JerseyWidget(
+                                        jersey: match.teamB!.jersey!,
+                                        size: 32,
+                                      )
+                                    : Icon(
+                                        Icons.checkroom,
+                                        size: 28,
+                                        color: context.c.textSecondary,
+                                      ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  match.teamA!.name,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.body(
+                                    color: context.c.textSecondary,
+                                    size: 9,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  match.teamB!.name,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.body(
+                                    color: context.c.textSecondary,
+                                    size: 9,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    else ...[
+                      SizedBox(
+                        height: 32,
+                        child: Center(
+                          child: Text(
+                            match.title,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.body(
+                              color: context.c.textSecondary,
+                              size: 12,
+                              weight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
-                      Expanded(
-                        child: Text(
-                          match.teamB!.name,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(color: context.c.textSecondary, size: 9, weight: FontWeight.w700),
-                        ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.groups_outlined,
+                            size: 11,
+                            color: context.c.textSecondary,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            match.matchSize > 0
+                                ? '${match.playerUids.length}/${match.matchSize} jugadores'
+                                : '${match.playerUids.length} jugadores',
+                            style: AppTypography.body(
+                              size: 9,
+                              color: context.c.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              )
-            else ...[
-              SizedBox(
-                height: 32,
-                child: Center(
-                  child: Text(
-                    match.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w700),
-                  ),
+                    const SizedBox(height: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _CompactInfoRow(
+                          icon: Icons.calendar_today_outlined,
+                          text: isPlanning
+                              ? 'Fecha por confirmar'
+                              : fmtDate(match.date),
+                        ),
+                        const SizedBox(height: 3),
+                        _CompactInfoRow(
+                          icon: Icons.access_time,
+                          text: isPlanning
+                              ? 'Por votar'
+                              : '${match.time ?? ''} hs',
+                        ),
+                        if (match.location != null) ...[
+                          const SizedBox(height: 3),
+                          _CompactInfoRow(
+                            icon: Icons.location_on_outlined,
+                            text: match.location!,
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Icon(
+                        Icons.chevron_right,
+                        size: 14,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.groups_outlined, size: 11, color: context.c.textSecondary),
-                  const SizedBox(width: 3),
-                  Text(
-                    match.matchSize > 0
-                        ? '${match.playerUids.length}/${match.matchSize} jugadores'
-                        : '${match.playerUids.length} jugadores',
-                    style: AppTypography.body(size: 9, color: context.c.textSecondary),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _CompactInfoRow(icon: Icons.calendar_today_outlined, text: isPlanning ? 'Fecha por confirmar' : fmtDate(match.date)),
-                const SizedBox(height: 3),
-                _CompactInfoRow(icon: Icons.access_time, text: isPlanning ? 'Por votar' : '${match.time ?? ''} hs'),
-                if (match.location != null) ...[
-                  const SizedBox(height: 3),
-                  _CompactInfoRow(icon: Icons.location_on_outlined, text: match.location!),
-                ],
-              ],
-            ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Icon(Icons.chevron_right, size: 14, color: context.c.textSecondary),
-            ),
             ],
           ),
         ),
-      ],
-    ),
-  ),
-),
-);
-}
+      ),
+    );
+  }
 }
 
 class _CompactInfoRow extends StatelessWidget {
@@ -1515,7 +1834,11 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1528,10 +1851,20 @@ class _InfoRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+              Text(
+                label,
+                style: AppTypography.body(
+                  size: 11,
+                  color: context.c.textSecondary,
+                ),
+              ),
               Text(
                 value,
-                style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.textPrimary),
+                style: AppTypography.body(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  color: context.c.textPrimary,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -1563,7 +1896,11 @@ class _TeamJersey extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textPrimary),
+            style: AppTypography.body(
+              size: 12,
+              weight: FontWeight.w600,
+              color: context.c.textPrimary,
+            ),
           ),
         ),
       ],
@@ -1592,7 +1929,13 @@ class _OrganizerRow extends StatelessWidget {
           children: [
             PateaAvatar(photoUrl: photoUrl, seed: name, size: 20),
             const SizedBox(width: 6),
-            Text(name, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+            Text(
+              name,
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
+              ),
+            ),
           ],
         );
       },

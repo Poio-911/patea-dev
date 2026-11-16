@@ -1,0 +1,16 @@
+[
+  {
+    "section": "players",
+    "asset": "patea_mobile\\assets\\brand\\patea_background_players.webp",
+    "original": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-44ea4954-2d70-4b51-830e-7e91aaabbca8.png",
+    "bytes": 165734,
+    "sha256": "9b7eef5111167d5376527bdd0c028a8e41ade7c5b27b27f021cc92a33c3baaca"
+  },
+  {
+    "section": "matches",
+    "asset": "patea_mobile\\assets\\brand\\patea_background_matches.webp",
+    "original": "C:\\Users\\poio9\\.codex\\generated_images\\01a1e0e4-cc81-7de3-89df-f2ac6aa709e6\\exec-bcad21d7-a260-4892-99ce-8155c58248fc.png",
+    "bytes": 150034,
+    "sha256": "58e4d7157fbe5edd194b3651c479c833a431eb54a269e8b77937dc518bd9d55d"
+  }
+]

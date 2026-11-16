@@ -1,3 +1,5 @@
+import '../../core/utils/explore_filters.dart';
+import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/widgets/patea_card.dart';
@@ -5,7 +7,6 @@ import '../../core/widgets/player_position_badge.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
-import '../../core/widgets/patea_states.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,10 +29,6 @@ import '../../core/services/match_service.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
-import '../../core/widgets/player_card_widget.dart';
-
-
-
 
 const _days = [
   {'id': 'lunes', 'short': 'Lun', 'name': 'Lunes'},
@@ -43,25 +40,27 @@ const _days = [
   {'id': 'domingo', 'short': 'Dom', 'name': 'Domingo'},
 ];
 const _times = [
-  {'id': 'mañana', 'label': 'Mañana', 'sub': '8-13h', 'icon': Icons.wb_sunny_outlined},
-  {'id': 'tarde', 'label': 'Tarde', 'sub': '13-19h', 'icon': Icons.wb_twilight_outlined},
-  {'id': 'noche', 'label': 'Noche', 'sub': '19-00h', 'icon': Icons.nightlight_outlined},
+  {
+    'id': 'mañana',
+    'label': 'Mañana',
+    'sub': '8-13h',
+    'icon': Icons.wb_sunny_outlined,
+  },
+  {
+    'id': 'tarde',
+    'label': 'Tarde',
+    'sub': '13-19h',
+    'icon': Icons.wb_twilight_outlined,
+  },
+  {
+    'id': 'noche',
+    'label': 'Noche',
+    'sub': '19-00h',
+    'icon': Icons.nightlight_outlined,
+  },
 ];
 
-/// Port de src/app/explorar/page.tsx: 2 tabs — "Mercado de Fichajes"
-/// (`explore-content.tsx`, agentes libres cerca de un partido incompleto
-/// propio) y "Partidos Abiertos" (`public-matches-content.tsx`, partidos
-/// públicos con cupo). Se leyeron ambos componentes completos + sus server
-/// actions (`recruitment-actions.ts`, `availability-actions.ts`,
-/// `match-invitation-actions.ts`, `explore-actions.ts`) antes de portar.
-///
-/// Deliberadamente NO portado en esta pasada (ver comentarios inline):
-/// "Sugerencia del DT" (scouting con IA, `findBestFitPlayerAction`), vista
-/// de mapa y filtro por distancia con geolocalización del dispositivo en
-/// Partidos Abiertos (dominio Maps nativo, fuera de alcance), ubicación por
-/// GPS del dispositivo en la ficha de disponibilidad (se usa el buscador
-/// Nominatim ya portado en el wizard de partidos, más simple que pedir
-/// permisos de geolocalización nativos para el mismo resultado).
+/// Discovery keeps browsing independent from publishing availability.
 class ExplorarScreen extends ConsumerStatefulWidget {
   const ExplorarScreen({super.key});
 
@@ -87,7 +86,11 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
           // con slivers sin ganar nada.
           Padding(
             padding: EdgeInsets.fromLTRB(
-                16, MediaQuery.of(context).padding.top + 12, 16, 0),
+              16,
+              MediaQuery.of(context).padding.top + 12,
+              16,
+              0,
+            ),
             child: PateaPageHeader(
               title: spec(Section.explorar).title,
               description: spec(Section.explorar).description,
@@ -97,10 +100,7 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
             child: PateaTabs(
-              tabs: const [
-                PateaTab('Mercado'),
-                PateaTab('Partidos abiertos'),
-              ],
+              tabs: const [PateaTab('Jugadores'), PateaTab('Partidos')],
               active: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -108,7 +108,13 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
           Expanded(
             child: uid == null
                 ? const SizedBox()
-                : (_tab == 0 ? _MercadoTab(uid: uid) : _PartidosAbiertosTab(uid: uid)),
+                : IndexedStack(
+                    index: _tab,
+                    children: [
+                      _MercadoTab(uid: uid),
+                      _PartidosAbiertosTab(uid: uid),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -129,519 +135,624 @@ class _MercadoTab extends ConsumerStatefulWidget {
 }
 
 class _MercadoTabState extends ConsumerState<_MercadoTab> {
-  String? _selectedMatchId;
-  String? _positionFilter;
+  String? _selectedMatchId, _position, _queryKey, _error;
+  LocationSuggestion? _zone;
+  double _radius = 15;
+  int _request = 0;
+  bool _loading = true;
   List<AvailablePlayerModel> _players = [];
-  bool _loadingPlayers = false;
-  String? _lastLoadedMatchId;
 
-  Future<void> _loadPlayers(MatchModel match) async {
-    setState(() => _loadingPlayers = true);
-    _lastLoadedMatchId = match.id;
+  Future<void> _load(
+    MatchModel? match,
+    LocationSuggestion zone,
+    String key,
+  ) async {
+    final request = ++_request;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _queryKey = key;
+    });
     try {
-      final lat = match.locationDetail?.lat;
-      final lng = match.locationDetail?.lng;
-      if (lat == null || lng == null || (lat == 0 && lng == 0)) {
-        setState(() => _players = []);
-        return;
-      }
-      final dt = DateTime.tryParse(match.date)?.toLocal();
-      String? dayOfWeek;
-      if (dt != null) {
-        const map = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-        dayOfWeek = map[dt.weekday - 1];
-      }
-      final hour = int.tryParse((match.time ?? '').split(':').first) ?? 12;
-      final timeOfDay = hour < 13 ? 'mañana' : (hour >= 19 ? 'noche' : 'tarde');
-
-      final players = await ref.read(exploreServiceProvider).getAvailableLocalPlayers(
-            lat: lat,
-            lng: lng,
-            dayOfWeek: dayOfWeek,
-            timeOfDay: timeOfDay,
-            matchPlayerUids: match.playerUids,
+      final date = match == null
+          ? null
+          : DateTime.tryParse(match.date)?.toLocal();
+      final hour = int.tryParse((match?.time ?? '').split(':').first);
+      final players = await ref
+          .read(exploreServiceProvider)
+          .getAvailableLocalPlayers(
+            lat: zone.lat,
+            lng: zone.lng,
+            radiusInKm: _radius,
+            dayOfWeek: date == null ? null : _days[date.weekday - 1]['id'],
+            timeOfDay: hour == null
+                ? null
+                : (hour < 13
+                      ? 'mañana'
+                      : hour < 19
+                      ? 'tarde'
+                      : 'noche'),
+            matchPlayerUids: match?.playerUids ?? const [],
           );
-      if (mounted) setState(() => _players = players);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _players = []);
-        PateaSnack.error(context, '$e');
+      if (mounted && request == _request) {
+        setState(() {
+          _players =
+              players
+                  .where((p) => !p.isCurrentUser && p.uid != widget.uid)
+                  .toList()
+                ..sort((a, b) {
+                  final score = match == null
+                      ? 0
+                      : b.matchScore.compareTo(a.matchScore);
+                  return score != 0
+                      ? score
+                      : (a.distanceKm ?? 999).compareTo(b.distanceKm ?? 999);
+                });
+        });
+      }
+    } catch (_) {
+      if (mounted && request == _request) {
+        setState(
+          () => _error = 'No pudimos buscar jugadores. Volvé a intentar.',
+        );
       }
     } finally {
-      if (mounted) setState(() => _loadingPlayers = false);
+      if (mounted && request == _request) setState(() => _loading = false);
     }
   }
 
-  Future<void> _showAvailabilitySheet(bool isCurrentlyVisible) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _AvailabilitySheet(uid: widget.uid),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final upcomingAsync = ref.watch(userUpcomingMatchesStreamProvider(widget.uid));
-    final availabilityAsync = ref.watch(myAvailabilityStreamProvider(widget.uid));
-    final isFreeAgent = availabilityAsync.value != null;
-
-    return upcomingAsync.when(
-      data: (matches) {
-        final incomplete = matches.where((m) => m.matchSize > 0 && m.playerUids.length < m.matchSize).toList();
-
-        if (_selectedMatchId == null && incomplete.isNotEmpty) {
-          _selectedMatchId = incomplete.first.id;
-        } else if (incomplete.isEmpty) {
-          _selectedMatchId = null;
-        }
-
-        final selectedMatch = incomplete.where((m) => m.id == _selectedMatchId).toList();
-        final match = selectedMatch.isNotEmpty ? selectedMatch.first : null;
-
-        if (match != null && match.id != _lastLoadedMatchId && !_loadingPlayers) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _loadPlayers(match);
-          });
-        }
-
-        final filteredPlayers = _positionFilter == null ? _players : _players.where((p) => p.position == _positionFilter).toList();
-
-        return ListView(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
-          children: [
-            _FreeAgentBanner(isFreeAgent: isFreeAgent, onTap: () => _showAvailabilitySheet(isFreeAgent)),
-            const SizedBox(height: 18),
-            if (incomplete.isEmpty)
-              PateaCard(
-                color: context.c.card,
-                radius: AppRadii.cardAll,
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  children: [
-                    Icon(Icons.groups_outlined, size: 44, color: context.c.textSecondary),
-                    const SizedBox(height: 10),
-                    Text('Plantel Completo', style: AppTypography.headline(size: 15)),
-                    const SizedBox(height: 6),
-                    Text(
-                      'El mercado se abre cuando organizás un partido al que le falten jugadores.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
-                    ),
-                  ],
-                ),
+    final owned = ref.watch(ownedUpcomingMatchesProvider(widget.uid));
+    final available = ref.watch(myAvailabilityStreamProvider(widget.uid));
+    final savedAsync = ref.watch(savedLocationStreamProvider(widget.uid));
+    if (savedAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final saved = savedAsync.value;
+    final matches =
+        (owned.value ?? <MatchModel>[])
+            .where((m) => canRecruitFor(m, widget.uid, DateTime.now()))
+            .toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+    final selected = matches.where((m) => m.id == _selectedMatchId).firstOrNull;
+    final loc = selected?.locationDetail;
+    final zone =
+        _zone ??
+        (loc != null && (loc.lat != 0 || loc.lng != 0)
+            ? LocationSuggestion(
+                label: loc.name,
+                lat: loc.lat,
+                lng: loc.lng,
+                placeId: '',
               )
-            else ...[
-              Container(
-                decoration: BoxDecoration(
-                  color: context.c.isDarkSurface
-                      ? context.c.cardSurface.withValues(alpha: 0.5)
-                      : context.c.card,
-                  borderRadius: AppRadii.cardAll,
-                  border: Border.all(
-                    color: context.c.isDarkSurface
-                        ? context.c.primary.withValues(alpha: 0.3)
-                        : context.c.border,
-                    width: 1.2,
-                  ),
-                  boxShadow: context.c.isDarkSurface
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'BUSCANDO REFUERZOS PARA',
-                      style: AppTypography.code(
-                        size: 10,
-                        weight: FontWeight.w800,
-                        color: context.c.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedMatchId,
-                        isExpanded: true,
-                        dropdownColor: context.c.cardSurface,
-                        style: AppTypography.headline(size: 15, weight: FontWeight.w800, color: context.c.textPrimary),
-                        items: incomplete
-                            .map((m) => DropdownMenuItem(
-                                  value: m.id,
-                                  child: Text('${m.title} (faltan ${m.matchSize - m.playerUids.length})', overflow: TextOverflow.ellipsis),
-                                ))
-                            .toList(),
-                        onChanged: (v) => setState(() => _selectedMatchId = v),
-                      ),
-                    ),
-                    if (match != null) ...[
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        Icon(Icons.calendar_today_outlined, size: 13, color: context.c.textSecondary),
-                        const SizedBox(width: 6),
-                        Text('${fmtDate(match.date)} · ${match.time ?? ''} hs', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
-                      ]),
-                      if (match.location != null) ...[
-                        const SizedBox(height: 4),
-                        Row(children: [
-                          Icon(Icons.location_on_outlined, size: 13, color: context.c.textSecondary),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(match.location!, style: AppTypography.body(size: 11, color: context.c.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                        ]),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: ['Todos', 'POR', 'DEF', 'MED', 'DEL'].map((pos) {
-                    final value = pos == 'Todos' ? null : pos;
-                    final selected = _positionFilter == value;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _positionFilter = value);
-                        },
-                        borderRadius: AppRadii.surfaceAll,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 160),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? context.c.primary
-                                : (context.c.isDarkSurface ? context.c.cardSurface : context.c.card),
-                            borderRadius: AppRadii.surfaceAll,
-                            border: Border.all(
-                              color: selected ? context.c.primary : context.c.border,
-                              width: 1,
-                            ),
-                            boxShadow: selected && !context.c.isDarkSurface
-                                ? [
-                                    BoxShadow(
-                                      color: context.c.primary.withValues(alpha: 0.25),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Text(
-                            pos,
-                            style: AppTypography.code(
-                              size: 11,
-                              weight: FontWeight.w800,
-                              color: selected
-                                  ? context.c.onPrimary
-                                  : context.c.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'JUGADORES DISPONIBLES',
-                    style: AppTypography.code(size: 11, weight: FontWeight.w800, color: context.c.textSecondary),
-                  ),
-                  if (filteredPlayers.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: context.c.primary.withValues(alpha: context.c.isDarkSurface ? 0.20 : 0.10),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${filteredPlayers.length}',
-                        style: AppTypography.code(
-                          color: context.c.primary,
-                          size: 11,
-                          weight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 10),
-              if (_loadingPlayers)
-                const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
-              else if (filteredPlayers.isEmpty)
-                PateaCard(
-                  color: context.c.card.withValues(alpha: 0.4),
-                  radius: AppRadii.cardAll,
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      Icon(Icons.search_off, size: 36, color: context.c.textSecondary),
-                      const SizedBox(height: 8),
-                      Text('Nadie disponible en la zona', style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700)),
-                      const SizedBox(height: 4),
-                      Text('No encontramos jugadores libres para esa fecha, horario y ubicación.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
-                    ],
-                  ),
-                )
-              else
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 14,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 0.58,
-                  ),
-                  itemCount: filteredPlayers.length,
-                  itemBuilder: (context, index) => _FreeAgentCard(
-                    player: filteredPlayers[index],
-                    matchId: match!.id,
-                  ),
-                ),
-            ],
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => PateaError(error: e),
-    );
-  }
-}
-
-class _FreeAgentBanner extends StatelessWidget {
-  final bool isFreeAgent;
-  final VoidCallback onTap;
-
-  const _FreeAgentBanner({required this.isFreeAgent, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = context.c.isDarkSurface;
-    final primary = context.c.primary;
-    final onPrimary = context.c.onPrimary;
-
-    final bgColor = isDark
-        ? (isFreeAgent ? primary.withValues(alpha: 0.12) : context.c.card)
-        : (isFreeAgent ? primary.withValues(alpha: 0.07) : context.c.card);
-
-    final borderColor = isDark
-        ? (isFreeAgent ? primary.withValues(alpha: 0.40) : context.c.border)
-        : (isFreeAgent ? primary.withValues(alpha: 0.30) : context.c.border);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: AppRadii.cardAll,
-        border: Border.all(color: borderColor, width: 1.2),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
+            : _savedZone(saved));
+    final key =
+        '${selected?.id}|${selected?.date}|${selected?.time}|${selected?.playerUids.join(',')}|${zone.lat}|${zone.lng}|$_radius';
+    if (key != _queryKey) {
+      _queryKey = key;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _load(selected, zone, key);
+      });
+    }
+    final players = _players
+        .where((p) => _position == null || p.position == _position)
+        .toList();
+    return RefreshIndicator(
+      onRefresh: () => _load(selected, zone, key),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isFreeAgent ? primary : context.c.cardSurface,
-            ),
-            child: Icon(
-              Icons.campaign_rounded,
-              size: 20,
-              color: isFreeAgent ? onPrimary : context.c.textSecondary,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+          PateaCard(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  isFreeAgent ? 'Estás activo en el Mercado' : '¿Te falta partido?',
-                  style: AppTypography.headline(size: 14, weight: FontWeight.w800, color: context.c.textPrimary),
+                DropdownButtonFormField<String>(
+                  initialValue: selected?.id ?? '',
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Buscar para'),
+                  items: [
+                    const DropdownMenuItem(
+                      value: '',
+                      child: Text('Mi zona · sin partido'),
+                    ),
+                    ...matches.map(
+                      (m) => DropdownMenuItem(
+                        value: m.id,
+                        child: Text(m.title, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() {
+                    _selectedMatchId = v == '' ? null : v;
+                    _zone = null;
+                  }),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  isFreeAgent
-                      ? 'Los organizadores pueden invitarte a sus partidos.'
-                      : 'Ofrecete como agente libre para recibir convocatorias.',
-                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                if (selected != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0 ? 'Cupo abierto' : '${selected.matchSize - selected.playerUids.length} lugares'}',
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                  ),
+                if (owned.hasError)
+                  const Text(
+                    'No pudimos cargar tus partidos. Podés seguir buscando en tu zona.',
+                  ),
+                const SizedBox(height: 10),
+                _ZoneControl(
+                  zone: zone,
+                  radius: _radius,
+                  onZone: (z) => setState(() => _zone = z),
+                  onRadius: (v) => setState(() => _radius = v),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: onTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isFreeAgent
-                  ? (isDark ? primary : context.c.cardSurface)
-                  : primary,
-              foregroundColor: isFreeAgent
-                  ? (isDark ? onPrimary : context.c.textPrimary)
-                  : onPrimary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceAll),
-              side: isFreeAgent && !isDark
-                  ? BorderSide(color: context.c.border)
-                  : BorderSide.none,
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            leading: Icon(
+              Icons.person_search_outlined,
+              color: context.c.primary,
             ),
-            child: Text(
-              isFreeAgent ? 'Ajustar' : 'Ofrecerme',
-              style: AppTypography.body(size: 12, weight: FontWeight.w800),
+            title: Text(
+              available.value != null
+                  ? 'Estás disponible para jugar'
+                  : '¿Querés que te encuentren?',
+              style: AppTypography.body(size: 14, weight: FontWeight.w700),
+            ),
+            subtitle: const Text('Publicá tu zona y tus horarios'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              useRootNavigator: true,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => _AvailabilitySheet(uid: widget.uid),
             ),
           ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final pos in ['Todos', 'POR', 'DEF', 'MED', 'DEL'])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(pos),
+                      selected: _position == (pos == 'Todos' ? null : pos),
+                      onSelected: (_) => setState(
+                        () => _position = pos == 'Todos' ? null : pos,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '${players.length} jugadores cerca',
+            style: AppTypography.body(size: 14, weight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_error != null)
+            Column(
+              children: [
+                Text(_error!),
+                TextButton(
+                  onPressed: () => _load(selected, zone, key),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            )
+          else if (players.isEmpty)
+            PateaSectionScene(
+              image: PateaSectionScene.explore,
+              title: _position == null
+                  ? 'Todavía no hay jugadores en esta zona'
+                  : 'No hay jugadores en esa posición',
+              description:
+                  'Ampliá la distancia o cambiá de zona para seguir buscando.',
+            )
+          else
+            for (final player in players)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _DiscoveryPlayerRow(
+                  player: player,
+                  matchId: selected?.id,
+                ),
+              ),
         ],
       ),
     );
   }
 }
 
-class _FreeAgentCard extends StatelessWidget {
+LocationSuggestion _savedZone(Map<String, dynamic>? saved) =>
+    LocationSuggestion(
+      label: saved?['label'] as String? ?? 'Montevideo · zona inicial',
+      lat: (saved?['lat'] as num?)?.toDouble() ?? -34.9011,
+      lng: (saved?['lng'] as num?)?.toDouble() ?? -56.1645,
+      placeId: '',
+    );
+
+class _DiscoveryPlayerRow extends StatelessWidget {
   final AvailablePlayerModel player;
-  final String matchId;
-
-  const _FreeAgentCard({required this.player, required this.matchId});
-
+  final String? matchId;
+  const _DiscoveryPlayerRow({required this.player, this.matchId});
   @override
-  Widget build(BuildContext context) {
-    final isDark = context.c.isDarkSurface;
-    final (chipLabel, chipColor, chipIcon) = player.matchScore == 2
-        ? ('Coincide horario', context.c.success, Icons.check_circle_rounded)
-        : player.matchScore == 1
-            ? ('Horario parcial', context.c.warning, Icons.access_time_filled_rounded)
-            : ('No coincide', context.c.destructive, Icons.cancel_rounded);
-
-    final p = player.toPlayer();
-
-    void openDetail() {
-      showModalBottomSheet<void>(
+  Widget build(BuildContext context) => PateaCard(
+    padding: const EdgeInsets.all(14),
+    child: InkWell(
+      onTap: () => showModalBottomSheet<void>(
         context: context,
         useRootNavigator: true,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => _FreeAgentDetailSheet(player: player, matchId: matchId),
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // 1. Carta oficial de Pateá (idéntica a la sección Jugadores)
-        Expanded(
-          child: PlayerCardWidget(
-            player: p,
-            photoStyle: CardPhotoStyle.halfTop,
-            onTap: openDetail,
-          ),
-        ),
-        const SizedBox(height: 6),
-
-        // 2. Chip de coincidencia de horario y distancia del mercado
-        InkWell(
-          onTap: openDetail,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: isDark ? context.c.cardSurface : context.c.card,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: chipColor.withValues(alpha: isDark ? 0.45 : 0.35),
-                width: 1,
-              ),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        builder: (_) => _FreeAgentDetailSheet(player: player, matchId: matchId),
+      ),
+      child: Row(
+        children: [
+          PateaAvatar(seed: player.uid, photoUrl: player.photoUrl, size: 58),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(chipIcon, size: 11, color: chipColor),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    player.distanceKm != null
-                        ? '${player.distanceKm!.toStringAsFixed(1)} km · $chipLabel'
-                        : chipLabel,
-                    style: AppTypography.code(
-                      size: 9.5,
-                      weight: FontWeight.w800,
-                      color: chipColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                Text(
+                  player.displayName,
+                  style: AppTypography.body(size: 15, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${player.position} · ${player.distanceKm?.toStringAsFixed(1) ?? '—'} km',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  player.availability.isEmpty
+                      ? 'Consultá sus horarios'
+                      : player.availability.keys
+                            .map(
+                              (d) =>
+                                  _days
+                                      .where((v) => v['id'] == d)
+                                      .firstOrNull?['short'] ??
+                                  d,
+                            )
+                            .join(' · '),
+                  style: AppTypography.body(
+                    size: 11,
+                    color: context.c.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ],
-    );
-  }
+          Column(
+            children: [
+              Text(
+                '${player.ovr}',
+                style: AppTypography.headline(
+                  size: 27,
+                  color: context.c.primary,
+                ),
+              ),
+              Text(
+                'OVR',
+                style: AppTypography.body(
+                  size: 10,
+                  color: context.c.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right, size: 18),
+        ],
+      ),
+    ),
+  );
 }
 
+class _ZoneControl extends StatelessWidget {
+  final LocationSuggestion zone;
+  final double radius;
+  final ValueChanged<LocationSuggestion> onZone;
+  final ValueChanged<double> onRadius;
+  const _ZoneControl({
+    required this.zone,
+    required this.radius,
+    required this.onZone,
+    required this.onRadius,
+  });
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      TextButton.icon(
+        onPressed: () async {
+          final value = await showModalBottomSheet<LocationSuggestion>(
+            context: context,
+            isScrollControlled: true,
+            useRootNavigator: true,
+            builder: (_) => const _DiscoveryZoneSheet(),
+          );
+          if (value != null) onZone(value);
+        },
+        icon: const Icon(Icons.location_on_outlined, size: 18),
+        label: Text(zone.label, maxLines: 2, overflow: TextOverflow.ellipsis),
+      ),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final km in [5.0, 15.0, 30.0, 50.0])
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  showCheckmark: false,
+                  label: Text('${km.toInt()} km'),
+                  selected: radius == km,
+                  onSelected: (_) => onRadius(km),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _DiscoveryZoneSheet extends StatefulWidget {
+  const _DiscoveryZoneSheet();
+  @override
+  State<_DiscoveryZoneSheet> createState() => _DiscoveryZoneSheetState();
+}
+
+class _DiscoveryZoneSheetState extends State<_DiscoveryZoneSheet> {
+  final _controller = TextEditingController();
+  Timer? _timer;
+  int _request = 0;
+  bool _busy = false;
+  String? _error;
+  List<LocationSuggestion> _results = [];
+  void _search(String query) {
+    _timer?.cancel();
+    final request = ++_request;
+    setState(() {
+      _error = null;
+      _results = [];
+      _busy = query.trim().length >= 3;
+    });
+    if (!_busy) return;
+    _timer = Timer(const Duration(milliseconds: 450), () async {
+      try {
+        final results = await LocationService().suggest(query);
+        if (mounted && request == _request) {
+          setState(() {
+            _results = results;
+            _busy = false;
+          });
+        }
+      } catch (_) {
+        if (mounted && request == _request) {
+          setState(() {
+            _error = 'No pudimos buscar esa zona. Intentá de nuevo.';
+            _busy = false;
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 20,
+      ),
+      child: SizedBox(
+        height: 410,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Dónde querés jugar?',
+              style: AppTypography.headline(size: 23),
+            ),
+            const SizedBox(height: 8),
+            const Text('Esta zona se usa solo para esta búsqueda.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _controller,
+              onChanged: _search,
+              decoration: const InputDecoration(
+                labelText: 'Barrio, ciudad o dirección',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_busy) const LinearProgressIndicator(),
+            if (_error != null) Text(_error!),
+            Expanded(
+              child: ListView(
+                children: [
+                  if (_controller.text.trim().length < 3)
+                    ListTile(
+                      title: const Text('Montevideo'),
+                      subtitle: const Text('Usar el centro de la ciudad'),
+                      onTap: () => Navigator.pop(context, _savedZone(null)),
+                    ),
+                  if (!_busy &&
+                      _error == null &&
+                      _controller.text.trim().length >= 3 &&
+                      _results.isEmpty)
+                    const ListTile(
+                      title: Text('No encontramos esa zona'),
+                      subtitle: Text('Probá agregando la ciudad o el país.'),
+                    ),
+                  for (final result in _results)
+                    ListTile(
+                      leading: const Icon(Icons.place_outlined),
+                      title: Text(result.label),
+                      onTap: () => Navigator.pop(context, result),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 class _FreeAgentDetailSheet extends ConsumerStatefulWidget {
   final AvailablePlayerModel player;
-  final String matchId;
+  final String? matchId;
 
   const _FreeAgentDetailSheet({required this.player, required this.matchId});
 
   @override
-  ConsumerState<_FreeAgentDetailSheet> createState() => _FreeAgentDetailSheetState();
+  ConsumerState<_FreeAgentDetailSheet> createState() =>
+      _FreeAgentDetailSheetState();
 }
 
 class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
   bool _isInviting = false;
 
   Future<void> _invite() async {
+    if (_isInviting) return;
     setState(() => _isInviting = true);
     try {
-      await ref.read(exploreServiceProvider).sendMatchInvitations(matchId: widget.matchId, playerIds: [widget.player.uid]);
+      String? matchId = widget.matchId;
+      final uid = ref.read(authServiceProvider).currentUser?.uid;
+      if (uid == null) return;
+      final owned = await ref.read(ownedUpcomingMatchesProvider(uid).future);
+      if (!mounted) return;
+      final choices = owned
+          .where(
+            (m) =>
+                canRecruitFor(m, uid, DateTime.now()) &&
+                !m.playerUids.contains(widget.player.uid),
+          )
+          .toList();
+      if (!choices.any((m) => m.id == matchId)) matchId = null;
+      if (matchId == null) {
+        matchId = await showDialog<String>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: const Text('Elegí tu partido'),
+            children: [
+              if (choices.isEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Organizá un partido con lugares disponibles para invitar.',
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, '__create__'),
+                  child: const Text('Armar partido'),
+                ),
+              ],
+              for (final m in choices)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, m.id),
+                  child: Text(
+                    '${m.title} · ${fmtDate(m.date)} · ${m.time ?? "Sin hora"}',
+                  ),
+                ),
+            ],
+          ),
+        );
+        if (!mounted || matchId == null) return;
+        if (matchId == '__create__') {
+          Navigator.pop(context);
+          context.push('/matches/create');
+          return;
+        }
+      }
+      final alreadyPending = await ref
+          .read(firestoreServiceProvider)
+          .hasPendingMatchInvitation(matchId, widget.player.uid);
+      if (!mounted) return;
+      if (alreadyPending) {
+        PateaSnack.info(
+          context,
+          'Ya le enviaste una invitación a este partido.',
+        );
+        return;
+      }
+      final selected = choices.firstWhere((m) => m.id == matchId);
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Invitar a ${widget.player.displayName}'),
+          content: Text(
+            '${selected.title}\n${fmtDate(selected.date)} · ${selected.time ?? "Horario a definir"}\n${selected.location ?? "Cancha a definir"}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Volver'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Enviar invitación'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      await ref
+          .read(exploreServiceProvider)
+          .sendMatchInvitations(
+            matchId: matchId,
+            playerIds: [widget.player.uid],
+          );
       if (mounted) {
         Navigator.pop(context);
-        PateaSnack.ok(context, '¡Invitación enviada a ${widget.player.displayName}!');
+        PateaSnack.ok(
+          context,
+          '¡Invitación enviada a ${widget.player.displayName}!',
+        );
       }
-    } catch (e) {
-      if (mounted) PateaSnack.error(context, '$e');
+    } catch (_) {
+      if (mounted) {
+        PateaSnack.error(
+          context,
+          'No pudimos enviar la invitación. Revisá el partido e intentá de nuevo.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isInviting = false);
     }
@@ -666,10 +777,14 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? context.c.cardSurface : context.c.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadii.surface),
+          ),
           border: Border(
             top: BorderSide(
-              color: isDark ? context.c.primary.withValues(alpha: 0.35) : context.c.border,
+              color: isDark
+                  ? context.c.primary.withValues(alpha: 0.35)
+                  : context.c.border,
               width: 1.2,
             ),
           ),
@@ -702,124 +817,169 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                 ),
               ),
             ),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: tierCol, width: 2),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: tierCol, width: 2),
+                  ),
+                  child: PateaAvatar(
+                    photoUrl: player.photoUrl,
+                    seed: player.displayName,
+                    size: 56,
+                  ),
                 ),
-                child: PateaAvatar(
-                  photoUrl: player.photoUrl,
-                  seed: player.displayName,
-                  size: 56,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(player.displayName, style: AppTypography.headline(size: 17, weight: FontWeight.w900)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        PlayerPositionBadge(position: player.position, fontSize: 11, dense: true),
-                        const SizedBox(width: 8),
-                        Text(
-                          'OVR ${player.ovr}',
-                          style: AppTypography.code(size: 12, weight: FontWeight.w800, color: tierCol),
-                        ),
-                        if (player.distanceKm != null) ...[
-                          const SizedBox(width: 8),
-                          Text('·', style: TextStyle(color: context.c.textSecondary)),
-                          const SizedBox(width: 8),
-                          Icon(Icons.location_on_outlined, size: 12, color: context.c.textSecondary),
-                          Text(
-                            '${player.distanceKm!.toStringAsFixed(1)} km',
-                            style: AppTypography.body(size: 11, color: context.c.textSecondary),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (player.availability.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            Text(
-              'DISPONIBILIDAD HORARIA',
-              style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.textSecondary),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: player.availability.entries.map((e) {
-                return PateaCard(
-                  color: context.c.cardSurface,
-                  radius: AppRadii.surfaceAll,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${e.key[0].toUpperCase()}${e.key.substring(1)}: ',
-                        style: AppTypography.code(size: 11, weight: FontWeight.w700, color: context.c.textPrimary),
+                        player.displayName,
+                        style: AppTypography.headline(
+                          size: 17,
+                          weight: FontWeight.w900,
+                        ),
                       ),
-                      Text(
-                        e.value.join(', '),
-                        style: AppTypography.body(size: 11, color: context.c.primary),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          PlayerPositionBadge(
+                            position: player.position,
+                            fontSize: 11,
+                            dense: true,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'OVR ${player.ovr}',
+                            style: AppTypography.code(
+                              size: 12,
+                              weight: FontWeight.w800,
+                              color: tierCol,
+                            ),
+                          ),
+                          if (player.distanceKm != null) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '·',
+                              style: TextStyle(color: context.c.textSecondary),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: context.c.textSecondary,
+                            ),
+                            Text(
+                              '${player.distanceKm!.toStringAsFixed(1)} km',
+                              style: AppTypography.body(
+                                size: 11,
+                                color: context.c.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
-          ],
-          const SizedBox(height: 20),
-          if (player.isCurrentUser)
-            PateaCard(
-              borderColor: context.c.border,
-              radius: AppRadii.cardAll,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Text(
-                'Tu perfil de Pase Libre en el mercado',
-                textAlign: TextAlign.center,
-                style: AppTypography.body(size: 12, color: context.c.textSecondary),
+            if (player.availability.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              Text(
+                'DISPONIBILIDAD HORARIA',
+                style: AppTypography.code(
+                  size: 10,
+                  weight: FontWeight.w800,
+                  color: context.c.textSecondary,
+                ),
               ),
-            )
-          else
-            ElevatedButton.icon(
-              onPressed: _isInviting ? null : _invite,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.c.primary,
-                foregroundColor: context.c.onPrimary,
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: player.availability.entries.map((e) {
+                  return PateaCard(
+                    color: context.c.cardSurface,
+                    radius: AppRadii.surfaceAll,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${e.key[0].toUpperCase()}${e.key.substring(1)}: ',
+                          style: AppTypography.code(
+                            size: 11,
+                            weight: FontWeight.w700,
+                            color: context.c.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          e.value.join(', '),
+                          style: AppTypography.body(
+                            size: 11,
+                            color: context.c.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+            const SizedBox(height: 20),
+            if (player.isCurrentUser)
+              PateaCard(
+                borderColor: context.c.border,
+                radius: AppRadii.cardAll,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                child: Text(
+                  'Tu perfil de Pase Libre en el mercado',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _isInviting ? null : _invite,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.c.primary,
+                  foregroundColor: context.c.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadii.cardAll,
+                  ),
+                ),
+                icon: _isInviting
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: const PateaButtonProgress(),
+                      )
+                    : const Icon(Icons.person_add_alt_1, size: 18),
+                label: Text(
+                  'Invitar a mi partido',
+                  style: AppTypography.headline(
+                    size: 14,
+                    weight: FontWeight.w800,
+                  ),
+                ),
               ),
-              icon: _isInviting
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: const PateaButtonProgress(),
-                    )
-                  : const Icon(Icons.person_add_alt_1, size: 18),
-              label: Text(
-                'Invitar a mi partido',
-                style: AppTypography.headline(size: 14, weight: FontWeight.w800),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 }
-
 
 class _AvailabilitySheet extends ConsumerStatefulWidget {
   final String uid;
@@ -861,7 +1021,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
     super.dispose();
   }
 
-  void _initScheduleAndLocation(Map<String, dynamic>? availData, Map<String, dynamic>? locData) {
+  void _initScheduleAndLocation(
+    Map<String, dynamic>? availData,
+    Map<String, dynamic>? locData,
+  ) {
     if (_initialized) return;
     _initialized = true;
 
@@ -972,14 +1135,13 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
 
       final lat = _selectedLocation?.lat ?? _currentLat ?? -34.9011;
       final lng = _selectedLocation?.lng ?? _currentLng ?? -56.1645;
-      final label = _selectedLocation?.label ?? _currentLocationLabel ?? 'Montevideo';
+      final label =
+          _selectedLocation?.label ?? _currentLocationLabel ?? 'Montevideo';
 
       if (_selectedLocation != null) {
-        await ref.read(exploreServiceProvider).saveUserLocation(
-              lat: lat,
-              lng: lng,
-              label: label,
-            );
+        await ref
+            .read(exploreServiceProvider)
+            .saveUserLocation(lat: lat, lng: lng, label: label);
       }
 
       final availabilityMap = <String, List<String>>{};
@@ -994,7 +1156,9 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
         availabilityMap['domingo'] = ['tarde', 'noche'];
       }
 
-      await ref.read(exploreServiceProvider).enableAvailability(
+      await ref
+          .read(exploreServiceProvider)
+          .enableAvailability(
             availability: availabilityMap,
             lat: lat,
             lng: lng,
@@ -1003,7 +1167,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        PateaSnack.ok(context, '¡Disponibilidad guardada! Ya estás activo en el mercado.');
+        PateaSnack.ok(
+          context,
+          '¡Disponibilidad guardada! Ya estás activo en el mercado.',
+        );
       }
     } catch (e) {
       if (mounted) PateaSnack.error(context, 'Error al guardar: $e');
@@ -1014,17 +1181,22 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final availabilityAsync = ref.watch(myAvailabilityStreamProvider(widget.uid));
+    final availabilityAsync = ref.watch(
+      myAvailabilityStreamProvider(widget.uid),
+    );
     final locationAsync = ref.watch(savedLocationStreamProvider(widget.uid));
 
     _initScheduleAndLocation(availabilityAsync.value, locationAsync.value);
 
-    final activeLocationLabel = _selectedLocation?.label ?? _currentLocationLabel ?? 'Montevideo';
+    final activeLocationLabel =
+        _selectedLocation?.label ?? _currentLocationLabel ?? 'Montevideo';
 
     return Container(
       decoration: BoxDecoration(
         color: context.c.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadii.surface),
+        ),
         border: Border(top: BorderSide(color: context.c.border, width: 1)),
       ),
       padding: EdgeInsets.only(
@@ -1054,14 +1226,18 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: _isVisible
-                        ? context.c.primary.withValues(alpha: context.c.isDarkSurface ? 0.20 : 0.12)
+                        ? context.c.primary.withValues(
+                            alpha: context.c.isDarkSurface ? 0.20 : 0.12,
+                          )
                         : context.c.cardSurface,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.radar,
                     size: 22,
-                    color: _isVisible ? context.c.primary : context.c.textSecondary,
+                    color: _isVisible
+                        ? context.c.primary
+                        : context.c.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1069,12 +1245,21 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Modo Agente Libre', style: AppTypography.headline(size: 16, weight: FontWeight.w900)),
+                      Text(
+                        'Modo Agente Libre',
+                        style: AppTypography.headline(
+                          size: 16,
+                          weight: FontWeight.w900,
+                        ),
+                      ),
                       Text(
                         _isVisible
                             ? 'Visible para organizadores en tu zona'
                             : 'Oculto (no recibirás convocatorias)',
-                        style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                        style: AppTypography.body(
+                          size: 11,
+                          color: context.c.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -1095,12 +1280,19 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
               children: [
                 Text(
                   'DÍAS Y HORARIOS',
-                  style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.textSecondary),
+                  style: AppTypography.code(
+                    size: 10,
+                    weight: FontWeight.w800,
+                    color: context.c.textSecondary,
+                  ),
                 ),
                 const Spacer(),
                 Text(
                   'Atajos rápidos:',
-                  style: AppTypography.body(size: 10, color: context.c.textSecondary),
+                  style: AppTypography.body(
+                    size: 10,
+                    color: context.c.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -1149,12 +1341,19 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             const SizedBox(height: 18),
             Text(
               'ZONA DE JUEGO',
-              style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.textSecondary),
+              style: AppTypography.code(
+                size: 10,
+                weight: FontWeight.w800,
+                color: context.c.textSecondary,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               'Organizadores de partidos cercanos a esta zona podrán encontrarte.',
-              style: AppTypography.body(size: 11, color: context.c.textSecondary),
+              style: AppTypography.body(
+                size: 11,
+                color: context.c.textSecondary,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -1162,19 +1361,31 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                 _CityChip(
                   label: 'Montevideo',
                   enabled: _isVisible,
-                  onTap: () => _selectQuickLocation('Montevideo, Uruguay', -34.9011, -56.1645),
+                  onTap: () => _selectQuickLocation(
+                    'Montevideo, Uruguay',
+                    -34.9011,
+                    -56.1645,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 _CityChip(
                   label: 'Canelones',
                   enabled: _isVisible,
-                  onTap: () => _selectQuickLocation('Ciudad de la Costa, Canelones', -34.8239, -55.9556),
+                  onTap: () => _selectQuickLocation(
+                    'Ciudad de la Costa, Canelones',
+                    -34.8239,
+                    -55.9556,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 _CityChip(
                   label: 'Maldonado',
                   enabled: _isVisible,
-                  onTap: () => _selectQuickLocation('Maldonado, Uruguay', -34.9000, -54.9500),
+                  onTap: () => _selectQuickLocation(
+                    'Maldonado, Uruguay',
+                    -34.9000,
+                    -54.9500,
+                  ),
                 ),
               ],
             ),
@@ -1185,11 +1396,21 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
               style: AppTypography.body(size: 13),
               decoration: InputDecoration(
                 hintText: 'Buscá tu barrio o calle...',
-                hintStyle: AppTypography.body(size: 13, color: context.c.textSecondary),
-                prefixIcon: Icon(Icons.search, size: 18, color: context.c.textSecondary),
+                hintStyle: AppTypography.body(
+                  size: 13,
+                  color: context.c.textSecondary,
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  size: 18,
+                  color: context.c.textSecondary,
+                ),
                 filled: true,
                 fillColor: context.c.cardSurface,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: AppRadii.surfaceAll,
                   borderSide: BorderSide(color: context.c.border),
@@ -1214,24 +1435,33 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                 margin: const EdgeInsets.only(top: 4),
                 child: Column(
                   children: _suggestions
-                      .map((s) => ListTile(
-                            dense: true,
-                            leading: Icon(Icons.location_on, size: 16, color: context.c.primary),
-                            title: Text(
-                              s.label,
-                              style: AppTypography.body(color: context.c.textPrimary, size: 12),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                      .map(
+                        (s) => ListTile(
+                          dense: true,
+                          leading: Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: context.c.primary,
+                          ),
+                          title: Text(
+                            s.label,
+                            style: AppTypography.body(
+                              color: context.c.textPrimary,
+                              size: 12,
                             ),
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _selectedLocation = s;
-                                _locationController.text = s.label;
-                                _suggestions = [];
-                              });
-                            },
-                          ))
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _selectedLocation = s;
+                              _locationController.text = s.label;
+                              _suggestions = [];
+                            });
+                          },
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -1241,7 +1471,9 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
               decoration: BoxDecoration(
                 color: context.c.cardSurface,
                 borderRadius: AppRadii.surfaceAll,
-                border: Border.all(color: context.c.border.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: context.c.border.withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 children: [
@@ -1250,7 +1482,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                   Expanded(
                     child: Text(
                       'Ubicación: $activeLocationLabel',
-                      style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                      style: AppTypography.body(
+                        size: 11,
+                        color: context.c.textSecondary,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1262,11 +1497,23 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             ElevatedButton.icon(
               onPressed: _isSaving ? null : _save,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isVisible ? context.c.primary : (context.c.isDarkSurface ? context.c.cardSurface : context.c.card),
-                foregroundColor: _isVisible ? context.c.onPrimary : context.c.destructive,
+                backgroundColor: _isVisible
+                    ? context.c.primary
+                    : (context.c.isDarkSurface
+                          ? context.c.cardSurface
+                          : context.c.card),
+                foregroundColor: _isVisible
+                    ? context.c.onPrimary
+                    : context.c.destructive,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                side: !_isVisible ? BorderSide(color: context.c.destructive.withValues(alpha: 0.5)) : BorderSide.none,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.cardAll,
+                ),
+                side: !_isVisible
+                    ? BorderSide(
+                        color: context.c.destructive.withValues(alpha: 0.5),
+                      )
+                    : BorderSide.none,
                 elevation: _isVisible ? 2 : 0,
               ),
               icon: _isSaving
@@ -1275,20 +1522,27 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: _isVisible ? context.c.onPrimary : context.c.destructive,
+                        color: _isVisible
+                            ? context.c.onPrimary
+                            : context.c.destructive,
                       ),
                     )
-                  : Icon(_isVisible ? Icons.check : Icons.visibility_off, size: 18),
+                  : Icon(
+                      _isVisible ? Icons.check : Icons.visibility_off,
+                      size: 18,
+                    ),
               label: Text(
                 _isSaving
                     ? 'GUARDANDO...'
                     : _isVisible
-                        ? 'GUARDAR DISPONIBILIDAD'
-                        : 'DESACTIVAR MODO PÚBLICO',
+                    ? 'GUARDAR DISPONIBILIDAD'
+                    : 'DESACTIVAR MODO PÚBLICO',
                 style: AppTypography.headline(
                   size: 13,
                   weight: FontWeight.w900,
-                  color: _isVisible ? context.c.onPrimary : context.c.destructive,
+                  color: _isVisible
+                      ? context.c.onPrimary
+                      : context.c.destructive,
                 ),
               ),
             ),
@@ -1320,7 +1574,9 @@ class _PresetChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: context.c.isDarkSurface ? context.c.cardSurface : context.c.card,
+          color: context.c.isDarkSurface
+              ? context.c.cardSurface
+              : context.c.card,
           borderRadius: AppRadii.surfaceAll,
           border: Border.all(color: context.c.border.withValues(alpha: 0.6)),
         ),
@@ -1329,7 +1585,14 @@ class _PresetChip extends StatelessWidget {
           children: [
             Icon(icon, size: 13, color: context.c.primary),
             const SizedBox(width: 4),
-            Text(label, style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textPrimary)),
+            Text(
+              label,
+              style: AppTypography.code(
+                size: 10,
+                weight: FontWeight.w700,
+                color: context.c.textPrimary,
+              ),
+            ),
           ],
         ),
       ),
@@ -1358,7 +1621,9 @@ class _CityChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 6),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: context.c.isDarkSurface ? context.c.cardSurface : context.c.card,
+            color: context.c.isDarkSurface
+                ? context.c.cardSurface
+                : context.c.card,
             borderRadius: AppRadii.surfaceAll,
             border: Border.all(color: context.c.border.withValues(alpha: 0.6)),
           ),
@@ -1369,7 +1634,11 @@ class _CityChip extends StatelessWidget {
               const SizedBox(width: 3),
               Text(
                 label,
-                style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textPrimary),
+                style: AppTypography.code(
+                  size: 10,
+                  weight: FontWeight.w700,
+                  color: context.c.textPrimary,
+                ),
               ),
             ],
           ),
@@ -1415,7 +1684,9 @@ class _ScheduleMatrixPicker extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDayActive
                     ? (isDark ? context.c.cardSurface : context.c.card)
-                    : (isDark ? context.c.card.withValues(alpha: 0.4) : context.c.cardSurface.withValues(alpha: 0.6)),
+                    : (isDark
+                          ? context.c.card
+                          : context.c.cardSurface.withValues(alpha: 0.6)),
                 borderRadius: AppRadii.cardAll,
                 border: Border.all(
                   color: isDayActive
@@ -1439,7 +1710,10 @@ class _ScheduleMatrixPicker extends StatelessWidget {
                     onTap: () => onToggleAllDay(dayId),
                     borderRadius: AppRadii.surfaceAll,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
                       child: Row(
                         children: [
                           Container(
@@ -1458,7 +1732,9 @@ class _ScheduleMatrixPicker extends StatelessWidget {
                               style: AppTypography.code(
                                 size: 12,
                                 weight: FontWeight.w800,
-                                color: isDayActive ? context.c.textPrimary : context.c.textSecondary,
+                                color: isDayActive
+                                    ? context.c.textPrimary
+                                    : context.c.textSecondary,
                               ),
                             ),
                           ),
@@ -1477,27 +1753,39 @@ class _ScheduleMatrixPicker extends StatelessWidget {
 
                         return Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2.5,
+                            ),
                             child: InkWell(
                               onTap: () => onToggleSlot(dayId, slotId),
                               borderRadius: AppRadii.surfaceAll,
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 140),
-                                padding: const EdgeInsets.symmetric(vertical: 7),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 7,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? primary
-                                      : (isDark ? context.c.background.withValues(alpha: 0.7) : context.c.cardSurface),
+                                      : (isDark
+                                            ? context.c.background.withValues(
+                                                alpha: 0.7,
+                                              )
+                                            : context.c.cardSurface),
                                   borderRadius: AppRadii.surfaceAll,
                                   border: Border.all(
                                     color: isSelected
                                         ? primary
-                                        : context.c.border.withValues(alpha: 0.4),
+                                        : context.c.border.withValues(
+                                            alpha: 0.4,
+                                          ),
                                   ),
                                   boxShadow: isSelected && !isDark
                                       ? [
                                           BoxShadow(
-                                            color: primary.withValues(alpha: 0.25),
+                                            color: primary.withValues(
+                                              alpha: 0.25,
+                                            ),
                                             blurRadius: 4,
                                             offset: const Offset(0, 1.5),
                                           ),
@@ -1510,7 +1798,9 @@ class _ScheduleMatrixPicker extends StatelessWidget {
                                     Icon(
                                       slotIcon,
                                       size: 12,
-                                      color: isSelected ? onPrimary : context.c.textSecondary,
+                                      color: isSelected
+                                          ? onPrimary
+                                          : context.c.textSecondary,
                                     ),
                                     const SizedBox(width: 3),
                                     Text(
@@ -1518,7 +1808,9 @@ class _ScheduleMatrixPicker extends StatelessWidget {
                                       style: AppTypography.code(
                                         size: 10,
                                         weight: FontWeight.w800,
-                                        color: isSelected ? onPrimary : context.c.textSecondary,
+                                        color: isSelected
+                                            ? onPrimary
+                                            : context.c.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -1549,89 +1841,183 @@ class _PartidosAbiertosTab extends ConsumerStatefulWidget {
   const _PartidosAbiertosTab({required this.uid});
 
   @override
-  ConsumerState<_PartidosAbiertosTab> createState() => _PartidosAbiertosTabState();
+  ConsumerState<_PartidosAbiertosTab> createState() =>
+      _PartidosAbiertosTabState();
 }
 
 class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
-  final Set<String> _selectedTypes = {};
-
-  static const _typeFilters = {'manual': 'Amistoso', 'collaborative': 'Colaborativo', 'by_teams': 'Por Equipos'};
-
+  LocationSuggestion? _zone;
+  double _radius = 15;
+  String _date = 'Todos', _admission = 'Todos';
   @override
   Widget build(BuildContext context) {
     final matchesAsync = ref.watch(publicMatchesStreamProvider);
-
+    final saved = ref.watch(savedLocationStreamProvider(widget.uid)).value;
+    final zone = _zone ?? _savedZone(saved);
     return matchesAsync.when(
       data: (matches) {
-        var filtered = matches.where((m) => !m.playerUids.contains(widget.uid)).where((m) => m.matchSize == 0 || m.playerUids.length < m.matchSize).toList();
-        if (_selectedTypes.isNotEmpty) {
-          filtered = filtered.where((m) => _selectedTypes.contains(m.type)).toList();
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        double? distance(MatchModel m) {
+          final l = m.locationDetail;
+          if (l == null || (l.lat == 0 && l.lng == 0)) return null;
+          return discoveryDistance(zone.lat, zone.lng, l.lat, l.lng);
         }
 
+        final filtered =
+            matches.where((m) {
+              if (!isPublicDiscoveryMatch(m, widget.uid, now)) return false;
+              final d = distance(m);
+              if (_radius != 0 && (d == null || d > _radius)) return false;
+              final date = discoveryKickoff(m)!;
+              if (_date == 'Hoy' &&
+                  (date.year != today.year ||
+                      date.month != today.month ||
+                      date.day != today.day)) {
+                return false;
+              }
+              if (_date == '7 días' &&
+                  !date.isBefore(today.add(const Duration(days: 7)))) {
+                return false;
+              }
+              if (_admission == 'Directa' && m.needsApprovalFrom(widget.uid)) {
+                return false;
+              }
+              if (_admission == 'Con aprobación' &&
+                  !m.needsApprovalFrom(widget.uid)) {
+                return false;
+              }
+              return true;
+            }).toList()..sort(
+              (a, b) => discoveryKickoff(a)!.compareTo(discoveryKickoff(b)!),
+            );
         return ListView(
           padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
           children: [
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: _typeFilters.entries.map((e) {
-                final selected = _selectedTypes.contains(e.key);
-                return FilterChip(
-                  label: Text(e.value),
-                  selected: selected,
-                  onSelected: (v) => setState(() => v ? _selectedTypes.add(e.key) : _selectedTypes.remove(e.key)),
-                  selectedColor: context.c.primary.withValues(alpha: 0.2),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 14),
-            if (filtered.isEmpty)
-              PateaCard(
-                color: context.c.card,
-                radius: AppRadii.cardAll,
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  children: [
-                    Icon(Icons.calendar_month_outlined, size: 40, color: context.c.textSecondary),
-                    const SizedBox(height: 10),
-                    Text('No hay partidos disponibles', style: AppTypography.headline(size: 15)),
-                    const SizedBox(height: 4),
-                    Text('Probá quitando filtros, o creá un partido público para que otros se unan.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
-                  ],
-                ),
-              )
-            else
-              Column(
+            PateaCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${filtered.length} partido${filtered.length != 1 ? 's' : ''} disponible${filtered.length != 1 ? 's' : ''}', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
-                  const SizedBox(height: 10),
-                  for (final m in filtered)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _PublicMatchCard(match: m, uid: widget.uid),
+                  _ZoneControl(
+                    zone: zone,
+                    radius: _radius,
+                    onZone: (v) => setState(() => _zone = v),
+                    onRadius: (v) => setState(() => _radius = v),
+                  ),
+                  FilterChip(
+                    label: const Text('Todas las zonas'),
+                    selected: _radius == 0,
+                    onSelected: (_) =>
+                        setState(() => _radius = _radius == 0 ? 15 : 0),
+                  ),
+                  const SizedBox(height: 8),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: const Text('Fecha e ingreso'),
+                    subtitle: Text(
+                      '${_date == 'Todos' ? 'Cualquier fecha' : _date} · ${_admission == 'Todos' ? 'Cualquier ingreso' : _admission}',
                     ),
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final value in ['Todos', 'Hoy', '7 días'])
+                            ChoiceChip(
+                              label: Text(
+                                value == 'Todos' ? 'Cualquier fecha' : value,
+                              ),
+                              selected: _date == value,
+                              onSelected: (_) => setState(() => _date = value),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final value in [
+                            'Todos',
+                            'Directa',
+                            'Con aprobación',
+                          ])
+                            ChoiceChip(
+                              label: Text(
+                                value == 'Todos' ? 'Cualquier ingreso' : value,
+                              ),
+                              selected: _admission == value,
+                              onSelected: (_) =>
+                                  setState(() => _admission = value),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${filtered.length} partidos para jugar',
+              style: AppTypography.body(size: 14, weight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            if (filtered.isEmpty) ...[
+              const PateaSectionScene(
+                image: PateaSectionScene.explore,
+                title: 'No encontramos partidos con estos filtros',
+                description:
+                    'Probá otra zona o ampliá la búsqueda. También podés organizar el tuyo.',
+              ),
+              TextButton(
+                onPressed: () => setState(() {
+                  _date = 'Todos';
+                  _admission = 'Todos';
+                  _radius = 0;
+                }),
+                child: const Text('Ver todas las zonas y fechas'),
+              ),
+            ],
+            for (final m in filtered)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _PublicMatchCard(
+                  key: ValueKey(m.id),
+                  match: m,
+                  uid: widget.uid,
+                  distance: distance(m),
+                ),
               ),
           ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => PateaError(error: e),
+      error: (e, _) => Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('No pudimos cargar los partidos.'),
+          TextButton(
+            onPressed: () => ref.invalidate(publicMatchesStreamProvider),
+            child: const Text('Reintentar'),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Un partido al que te podes sumar.
-///
-/// Antes era media tarjeta en una grilla de dos columnas y el unico gesto era
-/// tocarla para ir al detalle. Ahora la accion vive en la tarjeta: sumarse es
-/// lo que uno viene a hacer aca, y no tiene por que costar dos pantallas.
+/// Admission is reviewed before writing; pending/joined cards stay visible.
 class _PublicMatchCard extends ConsumerStatefulWidget {
   final MatchModel match;
   final String uid;
+  final double? distance;
 
-  const _PublicMatchCard({required this.match, required this.uid});
+  const _PublicMatchCard({
+    super.key,
+    required this.match,
+    required this.uid,
+    this.distance,
+  });
 
   @override
   ConsumerState<_PublicMatchCard> createState() => _PublicMatchCardState();
@@ -1639,19 +2025,55 @@ class _PublicMatchCard extends ConsumerStatefulWidget {
 
 class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
   bool _busy = false;
+  bool _sent = false;
+  bool _joined = false;
 
   Future<void> _join() async {
+    final approval = widget.match.needsApprovalFrom(widget.uid);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          approval ? 'Solicitar un lugar' : 'Confirmar participación',
+        ),
+        content: Text(
+          '${widget.match.title}\n${fmtDate(widget.match.date)} · ${widget.match.time ?? "Horario a definir"}\n${widget.match.location ?? "Cancha a definir"}\n\n${approval ? "El organizador debe aprobar tu solicitud. Todavía no ocupás un lugar." : "Vas a ocupar un lugar en el partido."}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Volver'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(approval ? 'Enviar solicitud' : 'Confirmar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || _busy) return;
     setState(() => _busy = true);
     try {
-      final pending =
-          await ref.read(matchServiceProvider).joinOrRequest(widget.match, widget.uid);
+      final pending = await ref
+          .read(matchServiceProvider)
+          .joinOrRequest(widget.match, widget.uid);
       if (!mounted) return;
-      PateaSnack.info(context, pending
+      setState(() {
+        _sent = pending;
+        _joined = !pending;
+      });
+      PateaSnack.info(
+        context,
+        pending
             ? 'Solicitud enviada. El organizador te va a responder.'
-            : 'Te anotaste a "${widget.match.title}".');
+            : 'Te anotaste a "${widget.match.title}".',
+      );
     } catch (e) {
       if (!mounted) return;
-      PateaSnack.error(context, '$e');
+      PateaSnack.error(
+        context,
+        'No pudimos confirmar tu lugar. Volvé a intentar.',
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1662,16 +2084,17 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
     final match = widget.match;
     final theme = getMatchTypeTheme(match.type);
     final hasTeams = match.teamA != null && match.teamB != null;
-    final pending = match.pendingPlayerUids.contains(widget.uid);
+    final pending = _sent || match.pendingPlayerUids.contains(widget.uid);
+    final joined = _joined || match.playerUids.contains(widget.uid);
     final spots = match.matchSize - match.playerUids.length;
     final needsApproval = match.needsApprovalFrom(widget.uid);
 
     return PateaCard(
-             color: context.c.card,
-             radius: AppRadii.cardAll,
-             borderColor: theme.brandColor.withValues(alpha: 0.35),
-             padding: const EdgeInsets.all(14),
-             child: Column(
+      color: context.c.card,
+      radius: AppRadii.cardAll,
+      borderColor: theme.brandColor.withValues(alpha: 0.35),
+      padding: const EdgeInsets.all(14),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -1679,17 +2102,30 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
               Container(
                 width: 6,
                 height: 6,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: theme.brandColor),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.brandColor,
+                ),
               ),
               const SizedBox(width: 7),
-              Text(theme.label.toUpperCase(),
-                  style: AppTypography.code(
-                      size: 9, weight: FontWeight.w700, color: context.c.textSecondary)),
+              Text(
+                theme.label.toUpperCase(),
+                style: AppTypography.code(
+                  size: 11,
+                  weight: FontWeight.w700,
+                  color: context.c.textSecondary,
+                ),
+              ),
               const Spacer(),
               if (match.matchSize > 0 && spots > 0)
-                Text(spots == 1 ? 'falta 1' : 'faltan $spots',
-                    style: AppTypography.code(
-                        size: 10, weight: FontWeight.w800, color: context.c.primary)),
+                Text(
+                  spots == 1 ? 'falta 1' : 'faltan $spots',
+                  style: AppTypography.code(
+                    size: 12,
+                    weight: FontWeight.w800,
+                    color: context.c.primary,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -1704,16 +2140,23 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
                 const SizedBox(width: 10),
               ],
               Expanded(
-                child: Text(match.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.headline(size: 15, weight: FontWeight.w800)),
+                child: Text(
+                  match.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.headline(
+                    size: 20,
+                    weight: FontWeight.w800,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          _row(Icons.calendar_today_outlined,
-              '${fmtDate(match.date)}  -  ${match.time ?? ''} hs'),
+          _row(
+            Icons.calendar_today_outlined,
+            '${fmtDate(match.date)}  -  ${match.time ?? ''} hs',
+          ),
           if (match.location != null) ...[
             const SizedBox(height: 4),
             _row(Icons.location_on_outlined, match.location!),
@@ -1725,19 +2168,50 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
                 ? '${match.playerUids.length}/${match.matchSize} jugadores'
                 : '${match.playerUids.length} jugadores',
           ),
+          const SizedBox(height: 10),
+          Text(
+            joined
+                ? 'Ya estás en el plantel'
+                : pending
+                ? 'Tu solicitud está pendiente de aprobación'
+                : needsApproval
+                ? 'Ingreso con aprobación del organizador'
+                : 'Ingreso directo · tu lugar se confirma al unirte',
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
+          ),
+          if (widget.distance != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'A ${widget.distance!.toStringAsFixed(1)} km de tu zona',
+                style: AppTypography.body(
+                  size: 12,
+                  color: context.c.textSecondary,
+                ),
+              ),
+            ),
           const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => context.push('/matches/${match.id}'),
-                  child: const Text('Ver detalles'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: const Text('Detalle'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 flex: 2,
-                child: pending
+                child: joined
+                    ? OutlinedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.check_circle_outline, size: 16),
+                        label: const Text('Ya participás'),
+                      )
+                    : pending
                     ? OutlinedButton.icon(
                         onPressed: null,
                         icon: const Icon(Icons.hourglass_top_rounded, size: 16),
@@ -1747,31 +2221,38 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
                         onPressed: _busy ? null : _join,
                         style: FilledButton.styleFrom(
                           backgroundColor: context.c.primary,
-                          foregroundColor: context.c.background,
+                          foregroundColor: context.c.onPrimary,
                         ),
                         icon: _busy
                             ? SizedBox(
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: context.c.background))
+                                  strokeWidth: 2,
+                                  color: context.c.onPrimary,
+                                ),
+                              )
                             : Icon(
                                 needsApproval
                                     ? Icons.how_to_reg_rounded
                                     : Icons.person_add_alt_1,
-                                size: 16),
-                        label: Text(needsApproval ? 'Solicitar' : 'Unirme',
-                            style: AppTypography.headline(
-                                size: 13,
-                                weight: FontWeight.w800,
-                                color: context.c.background)),
+                                size: 16,
+                              ),
+                        label: Text(
+                          needsApproval ? 'Solicitar' : 'Unirme',
+                          style: AppTypography.headline(
+                            size: 13,
+                            weight: FontWeight.w800,
+                            color: context.c.onPrimary,
+                          ),
+                        ),
                       ),
               ),
             ],
           ),
         ],
       ),
-           );
+    );
   }
 
   Widget _row(IconData icon, String text) {
@@ -1780,10 +2261,12 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
         Icon(icon, size: 12, color: context.c.textSecondary),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(text,
-              style: AppTypography.body(size: 11, color: context.c.textSecondary),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
+          child: Text(
+            text,
+            style: AppTypography.body(size: 13, color: context.c.textSecondary),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );

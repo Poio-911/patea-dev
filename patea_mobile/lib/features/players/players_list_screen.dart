@@ -1,3 +1,6 @@
+import '../../core/widgets/patea_background.dart';
+import '../../core/widgets/patea_activity_cover.dart';
+import '../../core/widgets/patea_section_scene.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -49,15 +52,14 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
   };
 
   int _statOf(PlayerModel p, String key) => switch (key) {
-        'PAC' => p.pac,
-        'SHO' => p.sho,
-        'PAS' => p.pas,
-        'DRI' => p.dri,
-        'DEF' => p.def,
-        'PHY' => p.phy,
-        _ => p.ovr,
-      };
-
+    'PAC' => p.pac,
+    'SHO' => p.sho,
+    'PAS' => p.pas,
+    'DRI' => p.dri,
+    'DEF' => p.def,
+    'PHY' => p.phy,
+    _ => p.ovr,
+  };
 
   /// Cuántos filtros hay puestos, para avisarlo en el botón.
   int get _activeFilterCount =>
@@ -88,10 +90,12 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
               bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
             ),
             child: PateaCard(
-                     color: context.c.popover,
-                     radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-                     child: SafeArea(
+              color: context.c.popover,
+              radius: BorderRadius.vertical(
+                top: Radius.circular(AppRadii.surface),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: SafeArea(
                 top: false,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -110,8 +114,13 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     ),
                     Row(
                       children: [
-                        Text('Filtros',
-                            style: AppTypography.headline(size: 18, weight: FontWeight.w700)),
+                        Text(
+                          'Filtros',
+                          style: AppTypography.headline(
+                            size: 18,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
                         const Spacer(),
                         if (_activeFilterCount > 0)
                           TextButton(
@@ -121,9 +130,13 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                               _searchController.clear();
                               _sortBy = 'OVR';
                             }),
-                            child: Text('Limpiar',
-                                style: AppTypography.body(
-                                    size: 13, color: context.c.textSecondary)),
+                            child: Text(
+                              'Limpiar',
+                              style: AppTypography.body(
+                                size: 13,
+                                color: context.c.textSecondary,
+                              ),
+                            ),
                           ),
                       ],
                     ),
@@ -137,24 +150,37 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: (val) => update(() => _searchQuery = val),
-                        style: TextStyle(color: context.c.textPrimary, fontSize: 14),
+                        style: TextStyle(
+                          color: context.c.textPrimary,
+                          fontSize: 14,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Buscar jugador...',
                           hintStyle: TextStyle(
                             color: context.c.textSecondary,
                             fontSize: 14,
                           ),
-                          prefixIcon: Icon(Icons.search,
-                              size: 20, color: context.c.overlayStrong),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            size: 20,
+                            color: context.c.overlayStrong,
+                          ),
                           border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text('Posición',
-                        style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                    Text(
+                      'Posición',
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -171,8 +197,13 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    Text('Ordenar por',
-                        style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                    Text(
+                      'Ordenar por',
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -198,17 +229,22 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                           foregroundColor: context.c.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: AppRadii.cardAll),
+                            borderRadius: AppRadii.cardAll,
+                          ),
                         ),
-                        child: Text('Ver jugadores',
-                            style: AppTypography.action(
-                                size: 15, color: context.c.onPrimary)),
+                        child: Text(
+                          'Ver jugadores',
+                          style: AppTypography.action(
+                            size: 15,
+                            color: context.c.onPrimary,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-                   ),
+            ),
           );
         },
       ),
@@ -216,39 +252,43 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
   }
 
   Widget _chip(String label, bool selected) => AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected
-              ? context.c.primary.withValues(alpha: 0.16)
-              : context.c.background,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(
-            color: selected ? context.c.primary : context.c.overlayLine,
-            width: selected ? 1.4 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.headline(
-            size: 12,
-            weight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? context.c.primary : context.c.textSecondary,
-          ),
-        ),
-      );
-
+    duration: const Duration(milliseconds: 150),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+    decoration: BoxDecoration(
+      color: selected
+          ? context.c.primary.withValues(alpha: 0.16)
+          : context.c.background,
+      borderRadius: AppRadii.cardAll,
+      border: Border.all(
+        color: selected ? context.c.primary : context.c.overlayLine,
+        width: selected ? 1.4 : 1,
+      ),
+    ),
+    child: Text(
+      label,
+      style: AppTypography.headline(
+        size: 12,
+        weight: selected ? FontWeight.w800 : FontWeight.w600,
+        color: selected ? context.c.primary : context.c.textSecondary,
+      ),
+    ),
+  );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PateaBackground(
+    scene: PateaBackgroundScene.players,
+    child: _buildScreen(context),
+  );
+
+  Widget _buildScreen(BuildContext context) {
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
     final minimumCardWidth = MediaQuery.textScalerOf(context).scale(14) > 20
         ? 260.0
         : 150.0;
-    final columns = ((MediaQuery.sizeOf(context).width - 18) /
-            (minimumCardWidth + 10))
-        .floor()
-        .clamp(1, 4);
+    final columns =
+        ((MediaQuery.sizeOf(context).width - 18) / (minimumCardWidth + 10))
+            .floor()
+            .clamp(1, 4);
     // Jugadores del grupo activo, no de toda la plataforma. Sin grupo activo
     // no se consulta nada — igual que `players/page.tsx:44` en la web.
     final playersAsync = ref.watch(activeGroupPlayersProvider);
@@ -264,139 +304,187 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: playersAsync.when(
-          data: (players) {
-            var filtered = [...players];
+        data: (players) {
+          var filtered = [...players];
 
-            // Filtro de posición
-            if (_selectedPosition != 'ALL') {
-              filtered = filtered
-                  .where((p) => p.position.toUpperCase() == _selectedPosition.toUpperCase())
-                  .toList();
-            }
+          // Filtro de posición
+          if (_selectedPosition != 'ALL') {
+            filtered = filtered
+                .where(
+                  (p) =>
+                      p.position.toUpperCase() ==
+                      _selectedPosition.toUpperCase(),
+                )
+                .toList();
+          }
 
-            // Filtro de búsqueda
-            if (_searchQuery.trim().isNotEmpty) {
-              final q = _searchQuery.toLowerCase();
-              filtered = filtered.where((p) => p.name.toLowerCase().contains(q)).toList();
-            }
+          // Filtro de búsqueda
+          if (_searchQuery.trim().isNotEmpty) {
+            final q = _searchQuery.toLowerCase();
+            filtered = filtered
+                .where((p) => p.name.toLowerCase().contains(q))
+                .toList();
+          }
 
-            // Orden por el atributo elegido, siempre de mayor a menor. Con
-            // el OVR como desempate para que el orden sea estable entre
-            // jugadores con el mismo valor y no salte al reordenar.
-            filtered.sort((a, b) {
-              final byStat = _statOf(b, _sortBy).compareTo(_statOf(a, _sortBy));
-              return byStat != 0 ? byStat : b.ovr.compareTo(a.ovr);
-            });
+          // Orden por el atributo elegido, siempre de mayor a menor. Con
+          // el OVR como desempate para que el orden sea estable entre
+          // jugadores con el mismo valor y no salte al reordenar.
+          filtered.sort((a, b) {
+            final byStat = _statOf(b, _sortBy).compareTo(_statOf(a, _sortBy));
+            return byStat != 0 ? byStat : b.ovr.compareTo(a.ovr);
+          });
 
-            return CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // 0. Header real (título + descripción + "Agregar Jugador"
-                // debajo, igual que PageHeader en la web). Medido en vivo
-                // con uiautomator (no a ojo): el body YA arranca justo
-                // debajo del alto propio del header (60dp) — solo falta
-                // compensar el status bar, no los 60dp de nuevo.
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 12, 16, 0),
-                  sliver: SliverToBoxAdapter(
-                    child: PateaPageHeader(
-                      title: spec(Section.players).title,
-                      description: spec(Section.players).description,
-                      currentCount: filtered.length,
-                      totalCount: players.length,
-                      activeFilterCount: _activeFilterCount,
-                      onFiltersTap: _openFilters,
-                      actionButton: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => const CreatePlayerDialog(),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: context.c.primary,
-                            foregroundColor: context.c.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+          return CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // 0. Header real (título + descripción + "Agregar Jugador"
+              // debajo, igual que PageHeader en la web). Medido en vivo
+              // con uiautomator (no a ojo): el body YA arranca justo
+              // debajo del alto propio del header (60dp) — solo falta
+              // compensar el status bar, no los 60dp de nuevo.
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  MediaQuery.of(context).padding.top + 12,
+                  16,
+                  0,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: PateaPageHeader(
+                    title: spec(Section.players).title,
+                    description: spec(Section.players).description,
+                    currentCount: filtered.length,
+                    totalCount: players.length,
+                    activeFilterCount: _activeFilterCount,
+                    onFiltersTap: _openFilters,
+                    actionButton: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const CreatePlayerDialog(),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.c.primary,
+                          foregroundColor: context.c.onPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
                           ),
-                          icon: const Icon(Icons.add_circle, size: 18),
-                          label: Text(
-                            'Agregar Jugador',
-                            style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: context.c.onPrimary),
+                        ),
+                        icon: const Icon(Icons.add_circle, size: 18),
+                        label: Text(
+                          'Agregar Jugador',
+                          style: AppTypography.headline(
+                            size: 13,
+                            weight: FontWeight.w700,
+                            color: context.c.onPrimary,
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
+              ),
 
-                // 2. Grilla de Cartas de Jugadores
-                if (filtered.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(40.0),
-                      child: Center(
-                        child: Text(
-                          'No hay jugadores que coincidan con la búsqueda.',
-                          style: AppTypography.body(size: 13, color: context.c.textSecondary),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(14, 6, 14, bottomInset(context, extra: 24)),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        childAspectRatio: 2.0 / 3.0,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 12,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final player = filtered[index];
-                          final card = Hero(
-                            // La carta vuela de la grilla a la ficha en vez de
-                            // cortar. El tag lleva el criterio de orden porque
-                            // si no, al reordenar quedan dos Heros con el
-                            // mismo tag en el árbol durante la transición.
-                            tag: 'player-card-${player.id}',
-                            flightShuttleBuilder: (_, _, _, _, _) =>
-                                PlayerCardWidget(
-                              player: player,
-                              photoStyle: CardPhotoStyle.halfTop,
-                            ),
-                            child: PlayerCardWidget(
-                              player: player,
-                              photoStyle: CardPhotoStyle.halfTop,
-                              highlightStat: _sortBy == 'OVR' ? null : _sortBy,
-                              onTap: () => context.push('/players/${player.id}'),
-                            ),
-                          );
-                          if (reducedMotion) return card;
-                          return card
-                              // Al cambiar el orden las cartas entran
-                              // escalonadas: se lee como que el plantel se
-                              // reacomodó, no como un salto de contenido.
-                              .animate(key: ValueKey('$_sortBy-${player.id}'))
-                              .fadeIn(duration: 220.ms, delay: (index * 22).ms)
-                              .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic);
-                        },
-                        childCount: filtered.length,
-                      ),
+              if (players.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                  sliver: SliverToBoxAdapter(
+                    child: PateaActivityCover(
+                      image: PateaSectionScene.groups,
+                      title: 'El plantel',
+                      details:
+                          '${players.length} jugadores · OVR promedio ${(players.fold<double>(0, (sum, p) => sum + p.ovr) / players.length).toStringAsFixed(1)}',
                     ),
                   ),
-              ],
-            );
-          },
-          loading: () => Center(
-            child: CircularProgressIndicator(color: context.c.primary),
+                ),
+
+              // 2. Grilla de Cartas de Jugadores
+              if (filtered.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+                    child: players.isEmpty
+                        ? const PateaSectionScene(
+                            image: PateaSectionScene.players,
+                            title: 'El plantel está por armarse',
+                            description:
+                                'Agregá el primer jugador desde el botón de arriba para empezar a formar tu equipo.',
+                          )
+                        : Text(
+                            'No hay jugadores que coincidan con la búsqueda.',
+                            style: AppTypography.body(
+                              size: 13,
+                              color: context.c.textSecondary,
+                            ),
+                          ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    14,
+                    6,
+                    14,
+                    bottomInset(context, extra: 24),
+                  ),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      childAspectRatio: 2.0 / 3.0,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 12,
+                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final player = filtered[index];
+                      final card = Hero(
+                        // La carta vuela de la grilla a la ficha en vez de
+                        // cortar. El tag lleva el criterio de orden porque
+                        // si no, al reordenar quedan dos Heros con el
+                        // mismo tag en el árbol durante la transición.
+                        tag: 'player-card-${player.id}',
+                        flightShuttleBuilder: (_, _, _, _, _) =>
+                            PlayerCardWidget(
+                              player: player,
+                              photoStyle: CardPhotoStyle.halfTop,
+                            ),
+                        child: PlayerCardWidget(
+                          player: player,
+                          photoStyle: CardPhotoStyle.halfTop,
+                          highlightStat: _sortBy == 'OVR' ? null : _sortBy,
+                          onTap: () => context.push('/players/${player.id}'),
+                        ),
+                      );
+                      if (reducedMotion) return card;
+                      return card
+                          // Al cambiar el orden las cartas entran
+                          // escalonadas: se lee como que el plantel se
+                          // reacomodó, no como un salto de contenido.
+                          .animate(key: ValueKey('$_sortBy-${player.id}'))
+                          .fadeIn(duration: 220.ms, delay: (index * 22).ms)
+                          .slideY(
+                            begin: 0.06,
+                            end: 0,
+                            curve: Curves.easeOutCubic,
+                          );
+                    }, childCount: filtered.length),
+                  ),
+                ),
+            ],
+          );
+        },
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: context.c.primary)),
+        error: (err, stack) => Center(
+          child: Text(
+            'Error: $err',
+            style: TextStyle(color: context.c.textPrimary),
           ),
-          error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.c.textPrimary))),
         ),
+      ),
     );
   }
 }

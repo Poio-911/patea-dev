@@ -26,7 +26,7 @@ class PlayerPositionBadge extends StatelessWidget {
     required this.position,
     this.showFullName = false,
     this.fontSize = 12,
-    this.dense = false,
+    this.dense = true,
   });
 
   String get _fullName {

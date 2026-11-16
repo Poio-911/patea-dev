@@ -135,6 +135,11 @@ final savedLocationStreamProvider = StreamProvider.family<Map<String, dynamic>?,
   return ref.watch(firestoreServiceProvider).getSavedLocationStream(uid);
 });
 
+/// Only organizers can recruit; participating is not enough.
+final ownedUpcomingMatchesProvider = StreamProvider.family<List<MatchModel>, String>((ref, uid) {
+  return ref.watch(firestoreServiceProvider).getOwnedUpcomingMatchesStream(uid);
+});
+
 final userUpcomingMatchesStreamProvider = StreamProvider.family<List<MatchModel>, String>((ref, uid) {
   return ref.watch(firestoreServiceProvider).getUserUpcomingMatchesStream(uid);
 });
@@ -282,10 +287,13 @@ class FirestoreService {
   }
 
   Stream<List<MatchModel>> getPublicMatchesStream() {
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     return _firestore
         .collection('matches')
         .where('status', isEqualTo: 'upcoming')
         .where('isPublic', isEqualTo: true)
+        .where('date', isGreaterThanOrEqualTo: today)
         .orderBy('date')
         .limit(50)
         .snapshots()
@@ -298,6 +306,21 @@ class FirestoreService {
 
   Stream<Map<String, dynamic>?> getSavedLocationStream(String uid) {
     return _firestore.collection('users').doc(uid).snapshots().map((doc) => doc.data()?['savedLocation'] as Map<String, dynamic>?);
+  }
+
+  Stream<List<MatchModel>> getOwnedUpcomingMatchesStream(String uid) {
+    return _firestore.collection('matches')
+        .where('ownerUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'upcoming')
+        .limit(QueryLimits.matches).snapshots()
+        .map((snap) => snap.docs.map((d) => MatchModel.fromFirestore(d.data(), d.id)).toList());
+  }
+
+  Future<bool> hasPendingMatchInvitation(String matchId, String playerId) async {
+    final snap = await _firestore.collection('matches').doc(matchId)
+        .collection('invitations').where('playerId', isEqualTo: playerId)
+        .where('status', isEqualTo: 'pending').limit(1).get();
+    return snap.docs.isNotEmpty;
   }
 
   Stream<List<MatchModel>> getUserUpcomingMatchesStream(String uid) {

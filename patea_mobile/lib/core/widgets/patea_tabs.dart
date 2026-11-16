@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_radii.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/patea_colors.dart';
@@ -112,19 +111,12 @@ class _Tab extends StatelessWidget {
             ),
             if (tab.count > 0) ...[
               const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: active ? context.c.primary : context.c.cardSurface,
-                  borderRadius: AppRadii.surfaceAll,
-                ),
-                child: Text(
-                  '${tab.count}',
-                  style: AppTypography.body(
-                    size: 10,
-                    weight: FontWeight.w700,
-                    color: active ? context.c.onPrimary : context.c.textSecondary,
-                  ),
+              Text(
+                '${tab.count}',
+                style: AppTypography.body(
+                  size: 12,
+                  weight: FontWeight.w600,
+                  color: active ? context.c.primary : context.c.textSecondary,
                 ),
               ),
             ],
