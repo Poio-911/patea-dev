@@ -66,19 +66,67 @@ class EvaluationInboxItem {
   });
 }
 
+/// Impacto sugerido por el análisis de una reseña escrita.
+class TextPerformanceChange {
+  final String attribute;
+  final int change;
+  final String reason;
+
+  const TextPerformanceChange({
+    required this.attribute,
+    required this.change,
+    required this.reason,
+  });
+
+  factory TextPerformanceChange.fromMap(Map<String, dynamic> map) {
+    return TextPerformanceChange(
+      attribute: (map['attribute'] as String? ?? '').toLowerCase(),
+      change: (map['change'] as num?)?.round() ?? 0,
+      reason: map['reason'] as String? ?? '',
+    );
+  }
+}
+
+/// Vista previa del análisis de una reseña de partido.
+class TextPerformancePreview {
+  final String summary;
+  final double confidence;
+  final List<TextPerformanceChange> attributeChanges;
+
+  const TextPerformancePreview({
+    required this.summary,
+    required this.confidence,
+    required this.attributeChanges,
+  });
+
+  factory TextPerformancePreview.fromMap(Map<String, dynamic> map) {
+    final rawChanges = map['attributeChanges'] as List<dynamic>? ?? const [];
+    return TextPerformancePreview(
+      summary: map['summary'] as String? ?? '',
+      confidence: (map['confidence'] as num?)?.toDouble() ?? 0.0,
+      attributeChanges: rawChanges
+          .whereType<Map>()
+          .map((m) => TextPerformanceChange.fromMap(Map<String, dynamic>.from(m)))
+          .where((c) => c.attribute.isNotEmpty && c.change != 0)
+          .toList(),
+    );
+  }
+}
+
 /// Una evaluación pendiente de un formulario de "evaluar partido" — combina
 /// el assignment con los datos del jugador y la elección del evaluador
-/// (points o tags). El tipo 'text' (con análisis IA) no se porta en esta
-/// pasada — ver cabecera de evaluation_form_screen.dart.
+/// (points, tags o text).
 class PlayerEvaluationDraft {
   final String assignmentId;
   final String subjectId;
   final String displayName;
   final String photoURL;
   final String position;
-  String evaluationType; // 'points' | 'tags'
+  String evaluationType; // 'points' | 'tags' | 'text'
   double rating;
   List<PerformanceTagItem> performanceTags;
+  String textDescription;
+  TextPerformancePreview? aiPreview;
   final List<PerformanceTagItem> tagPool;
 
   PlayerEvaluationDraft({
@@ -91,6 +139,8 @@ class PlayerEvaluationDraft {
     this.evaluationType = 'points',
     this.rating = 5,
     List<PerformanceTagItem>? performanceTags,
+    this.textDescription = '',
+    this.aiPreview,
   }) : performanceTags = performanceTags ?? [];
 
   Map<String, dynamic> toSubmissionMap() {
@@ -116,6 +166,7 @@ class PlayerEvaluationDraft {
                   'effects': t.effects.entries.map((e) => {'attribute': e.key, 'change': e.value}).toList(),
                 })
             .toList(),
+      if (evaluationType == 'text') 'textDescription': textDescription.trim(),
     };
   }
 }

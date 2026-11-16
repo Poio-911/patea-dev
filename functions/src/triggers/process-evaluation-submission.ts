@@ -2,6 +2,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { submissionKey, validDocumentId, validateEvaluationSubmission } from '../lib/evaluation-submission';
+import { analyzeTextPerformanceCore, TextPerformanceResult } from '../lib/text-performance-analyzer';
 
 /**
  * Lee nuevamente el documento dentro de la transacción: el evento puede llegar
@@ -14,6 +15,47 @@ export async function processSubmission(
 ): Promise<'processed' | 'duplicate' | 'missing' | 'rejected'> {
   if (!validDocumentId(submissionId)) return 'rejected';
   const sourceRef = db.doc(`evaluationSubmissions/${submissionId}`);
+
+  // Pre-analiza en servidor las evaluaciones de tipo 'text' fuera de la
+  // transacción de Firestore para no repetir llamadas a Vertex AI ante retries.
+  const aiAnalysisByAssignment = new Map<string, TextPerformanceResult>();
+  const initialSnap = await sourceRef.get();
+  if (initialSnap.exists) {
+    const rawSub = initialSnap.data()?.submission as Record<string, unknown> | undefined;
+    const rawEvals = Array.isArray(rawSub?.evaluations) ? rawSub!.evaluations : [];
+    const textEvals = rawEvals.filter(
+      (ev: any) =>
+        ev &&
+        typeof ev === 'object' &&
+        ev.evaluationType === 'text' &&
+        typeof ev.textDescription === 'string' &&
+        ev.textDescription.trim().length >= 10 &&
+        validDocumentId(ev.assignmentId) &&
+        validDocumentId(ev.subjectId),
+    );
+    if (textEvals.length > 0) {
+      await Promise.all(
+        textEvals.map(async (ev: any) => {
+          try {
+            const pSnap = await db.doc(`players/${ev.subjectId}`).get();
+            const pData = pSnap.exists ? pSnap.data() : undefined;
+            const analyzed = await analyzeTextPerformanceCore({
+              text: String(ev.textDescription),
+              playerPosition: typeof pData?.position === 'string' ? pData.position : 'MED',
+              playerName: typeof pData?.name === 'string' ? pData.name : 'Jugador',
+            });
+            aiAnalysisByAssignment.set(String(ev.assignmentId), analyzed);
+          } catch (err) {
+            console.error('Server-side text evaluation analysis failed', {
+              assignmentId: ev.assignmentId,
+              message: err instanceof Error ? err.message : 'Unknown error',
+            });
+          }
+        }),
+      );
+    }
+  }
+
   return db.runTransaction(async transaction => {
     const sourceSnap = await transaction.get(sourceRef);
     if (!sourceSnap.exists) return 'missing';
@@ -89,7 +131,15 @@ export async function processSubmission(
       };
       if (evaluation.evaluationType === 'points') data.rating = evaluation.rating;
       if (evaluation.evaluationType === 'tags') data.performanceTags = evaluation.performanceTags;
-      if (evaluation.evaluationType === 'text') data.textDescription = evaluation.textDescription;
+      if (evaluation.evaluationType === 'text') {
+        data.textDescription = evaluation.textDescription;
+        const analyzed = aiAnalysisByAssignment.get(evaluation.assignmentId);
+        if (analyzed) {
+          data.aiAttributeChanges = analyzed.attributeChanges;
+          data.aiSummary = analyzed.summary;
+          data.aiConfidence = analyzed.confidence;
+        }
+      }
       transaction.set(evaluationRef, data);
       const assignmentRef = db.doc(`matches/${matchId}/assignments/${evaluation.assignmentId}`);
       transaction.set(db.doc(`${assignmentRef.path}/private/evaluation`), {

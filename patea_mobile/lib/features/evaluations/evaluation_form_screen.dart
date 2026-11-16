@@ -154,6 +154,13 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
         );
         return;
       }
+      if (d.evaluationType == 'text' && d.textDescription.trim().length < 10) {
+        PateaSnack.info(
+          context,
+          'Escribí al menos 10 caracteres en la reseña de ${d.displayName}.',
+        );
+        return;
+      }
     }
 
     final confirmed = await showDialog<bool>(
@@ -173,7 +180,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    '${draft.displayName}: ${draft.evaluationType == 'points' ? '${draft.rating.round()}/10' : '${draft.performanceTags.length} etiquetas'}',
+                    '${draft.displayName}: ${_draftSummaryLabel(draft)}',
                   ),
                 ),
               const SizedBox(height: 8),
@@ -568,18 +575,32 @@ class _PlayerEvaluationCard extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         PateaTabs(
-          tabs: const [PateaTab('Nota'), PateaTab('Etiquetas')],
-          active: draft.evaluationType == 'points' ? 0 : 1,
+          tabs: const [
+            PateaTab('Nota'),
+            PateaTab('Etiquetas'),
+            PateaTab('Reseña'),
+          ],
+          active: draft.evaluationType == 'points'
+              ? 0
+              : draft.evaluationType == 'tags'
+                  ? 1
+                  : 2,
           onChanged: (i) {
-            draft.evaluationType = i == 0 ? 'points' : 'tags';
+            draft.evaluationType = i == 0
+                ? 'points'
+                : i == 1
+                    ? 'tags'
+                    : 'text';
             onChanged();
           },
         ),
         const SizedBox(height: 18),
         if (draft.evaluationType == 'points')
           _PointsEditor(draft: draft, onChanged: onChanged)
+        else if (draft.evaluationType == 'tags')
+          _TagsEditor(draft: draft, onChanged: onChanged)
         else
-          _TagsEditor(draft: draft, onChanged: onChanged),
+          _ResenaEditor(draft: draft, onChanged: onChanged),
       ],
     ),
   );
@@ -712,4 +733,217 @@ class _TagsEditor extends StatelessWidget {
       ],
     ],
   );
+}
+
+String _draftSummaryLabel(PlayerEvaluationDraft draft) {
+  if (draft.evaluationType == 'points') return '${draft.rating.round()}/10';
+  if (draft.evaluationType == 'tags') {
+    return '${draft.performanceTags.length} etiquetas';
+  }
+  final count = draft.aiPreview?.attributeChanges.length;
+  return count != null && count > 0
+      ? 'Reseña ($count impactos)'
+      : 'Reseña escrita';
+}
+
+const Map<String, String> _attrLabels = {
+  'pac': 'RIT',
+  'sho': 'TIR',
+  'pas': 'PAS',
+  'dri': 'REG',
+  'def': 'DEF',
+  'phy': 'FIS',
+};
+
+class _ResenaEditor extends ConsumerStatefulWidget {
+  final PlayerEvaluationDraft draft;
+  final VoidCallback onChanged;
+
+  const _ResenaEditor({required this.draft, required this.onChanged});
+
+  @override
+  ConsumerState<_ResenaEditor> createState() => _ResenaEditorState();
+}
+
+class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
+  late final TextEditingController _controller;
+  bool _analyzing = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.draft.textDescription);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ResenaEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.draft.assignmentId != widget.draft.assignmentId &&
+        _controller.text != widget.draft.textDescription) {
+      _controller.text = widget.draft.textDescription;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _previewImpact() async {
+    final text = _controller.text.trim();
+    if (text.length < 10) {
+      setState(() => _error = 'Escribí al menos 10 caracteres para ver el impacto.');
+      return;
+    }
+    setState(() {
+      _analyzing = true;
+      _error = null;
+    });
+    try {
+      final preview = await ref.read(evaluationServiceProvider).analyzeTextPerformance(
+            text: text,
+            playerPosition: widget.draft.position,
+            playerName: widget.draft.displayName,
+          );
+      if (!mounted) return;
+      setState(() {
+        widget.draft.aiPreview = preview;
+        _analyzing = false;
+      });
+      widget.onChanged();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _analyzing = false;
+        _error = 'No pudimos calcular el impacto ahora. Igual podés enviar tu reseña.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final preview = widget.draft.aiPreview;
+    final len = widget.draft.textDescription.trim().length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Contá con tus palabras cómo jugó hoy.',
+          style: AppTypography.body(size: 13, color: c.textSecondary),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _controller,
+          minLines: 3,
+          maxLines: 5,
+          maxLength: 500,
+          onChanged: (value) {
+            widget.draft.textDescription = value;
+            if (widget.draft.aiPreview != null) {
+              widget.draft.aiPreview = null;
+            }
+            if (_error != null) _error = null;
+            widget.onChanged();
+          },
+          decoration: const InputDecoration(
+            hintText:
+                'Ej: Metió dos pases gol, corrió todo el segundo tiempo y cerró bien abajo…',
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                len < 10 ? 'Mínimo 10 caracteres ($len/10)' : 'Listo para enviar',
+                style: AppTypography.body(
+                  size: 12,
+                  color: len < 10 ? c.textSecondary : c.primary,
+                ),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _analyzing || len < 10 ? null : _previewImpact,
+              icon: _analyzing
+                  ? const PateaButtonProgress()
+                  : const Icon(Icons.auto_graph_rounded, size: 16),
+              label: Text(_analyzing ? 'Leyendo…' : 'Ver impacto'),
+            ),
+          ],
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            _error!,
+            style: AppTypography.body(
+              size: 12,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ],
+        if (preview != null) ...[
+          const SizedBox(height: 14),
+          PateaCard(
+            color: c.cardSurface,
+            radius: AppRadii.cardAll,
+            borderColor: c.border,
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lectura del partido',
+                  style: AppTypography.body(size: 13, weight: FontWeight.w700),
+                ),
+                if (preview.summary.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    preview.summary,
+                    style: AppTypography.body(size: 12, color: c.textSecondary),
+                  ),
+                ],
+                if (preview.attributeChanges.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      for (final ch in preview.attributeChanges)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (ch.change >= 0
+                                    ? c.primary
+                                    : Theme.of(context).colorScheme.error)
+                                .withValues(alpha: 0.14),
+                            borderRadius: AppRadii.chipAll,
+                          ),
+                          child: Text(
+                            '${ch.change >= 0 ? '+' : ''}${ch.change} ${_attrLabels[ch.attribute] ?? ch.attribute.toUpperCase()}',
+                            style: AppTypography.code(
+                              size: 11,
+                              weight: FontWeight.w700,
+                              color: ch.change >= 0
+                                  ? c.primary
+                                  : Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }

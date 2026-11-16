@@ -205,6 +205,24 @@ class EvaluationService {
     await callFunction('respondToIdentityReveal', {'evaluationId': evaluationId, 'response': response});
   }
 
+  /// Analiza una reseña libre para mostrar el impacto estimado en atributos.
+  Future<TextPerformancePreview> analyzeTextPerformance({
+    required String text,
+    required String playerPosition,
+    required String playerName,
+  }) async {
+    final result = await callFunction(
+      'analyzeTextPerformance',
+      {
+        'text': text.trim(),
+        'playerPosition': playerPosition,
+        'playerName': playerName,
+      },
+      timeout: const Duration(seconds: 60),
+    );
+    return TextPerformancePreview.fromMap(result);
+  }
+
   /// Solo el organizador; agrega los assignments incompletos con el
   /// promedio del partido y actualiza OVR/atributos/stats reales.
   Future<int> finalizeMatchEvaluation(String matchId) async {
