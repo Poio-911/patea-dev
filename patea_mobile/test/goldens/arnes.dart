@@ -19,6 +19,9 @@
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
 
+import 'package:patea_mobile/core/models/player_activity_models.dart';
+import 'package:patea_mobile/core/services/player_profile_service.dart';
+
 import 'package:patea_mobile/core/services/match_result_service.dart';
 import 'package:patea_mobile/core/services/match_presence_service.dart';
 import 'package:patea_mobile/core/services/match_chat_service.dart';
@@ -594,8 +597,23 @@ final mensajesChat = [
     senderId: 'uid-3', senderName: 'Mateo Rossi', createdAt: DateTime(2026, 9, 12, 20, 30)),
 ];
 
+const feedbackDePerfil = MatchFeedback(matchId: 'feedback-review', title: 'Amistoso Fecha 2 · Puntos y etiquetas',
+  date: '2026-09-06', locationName: 'Av. Corrientes 4500, CABA',
+  selfEvaluation: SelfEvaluationSummary(goals: 2, assists: 0), ovrUpdate: OvrUpdate(previousOvr: 55, newOvr: 56),
+  peerEvaluations: [
+    PeerEvaluation(id: 'peer-1', evaluatorId: 'anonymous', isAnonymous: true, rating: 7, performanceTags: [
+      EvaluationTag(id: 'area', name: 'El Terror del Área', impact: 'positive', effects: [AttributeChange(attribute: 'dri', change: 2), AttributeChange(attribute: 'def', change: -2)]),
+      EvaluationTag(id: 'assist', name: 'Asistidor Serial', impact: 'positive', effects: [AttributeChange(attribute: 'pas', change: 2)]),
+    ]),
+    PeerEvaluation(id: 'peer-2', evaluatorId: 'anonymous', isAnonymous: true, rating: 7, performanceTags: [
+      EvaluationTag(id: 'area', name: 'El Terror del Área', impact: 'positive', effects: [AttributeChange(attribute: 'dri', change: 2), AttributeChange(attribute: 'def', change: -2)]),
+      EvaluationTag(id: 'assist', name: 'Asistidor Serial', impact: 'positive', effects: [AttributeChange(attribute: 'pas', change: 2)]),
+    ]),
+  ]);
+
 List<Override> overridesDelArnes() {
   return [
+    playerActivityProvider('feedback-review').overrideWith((ref) async => [feedbackDePerfil]),
     singleMatchStreamProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(partidoDirigir)),
     matchClipsProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(const [])),
     matchPresenceProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(MatchPresence.none)),

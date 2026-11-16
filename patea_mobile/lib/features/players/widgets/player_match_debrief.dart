@@ -1,6 +1,5 @@
+import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter/material.dart';
-import '../../../core/widgets/patea_card.dart';
-import '../../../core/theme/app_radii.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,14 +11,17 @@ import '../../../core/utils/dates.dart';
 
 /// Port de `PlayerMatchDebriefView` (src/components/player-match-debrief-view.tsx).
 ///
-/// `compact: true` reproduce el modo compacto que la web usa dentro del perfil:
-/// los cuatro números de arriba, la tarjeta del último partido y un enlace al
-/// historial completo. `compact: false` lista todos los partidos evaluados.
+/// El perfil presenta el último partido sin repetir los totales de carrera.
+/// El historial completo agrega el resumen de todos los partidos evaluados.
 class PlayerMatchDebrief extends ConsumerWidget {
   final String playerId;
   final bool compact;
 
-  const PlayerMatchDebrief({super.key, required this.playerId, this.compact = true});
+  const PlayerMatchDebrief({
+    super.key,
+    required this.playerId,
+    this.compact = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +30,9 @@ class PlayerMatchDebrief extends ConsumerWidget {
     return activityAsync.when(
       loading: () => Padding(
         padding: EdgeInsets.symmetric(vertical: 28),
-        child: Center(child: CircularProgressIndicator(color: context.c.primary)),
+        child: Center(
+          child: CircularProgressIndicator(color: context.c.primary),
+        ),
       ),
       error: (err, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -45,11 +49,18 @@ class PlayerMatchDebrief extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 48),
             child: Column(
               children: [
-                Icon(Icons.calendar_today, size: 38, color: context.c.textSecondary.withValues(alpha: 0.35)),
+                Icon(
+                  Icons.calendar_today,
+                  size: 38,
+                  color: context.c.textSecondary.withValues(alpha: 0.35),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Aún no hay partidos evaluados.',
-                  style: AppTypography.body(size: 13, color: context.c.textSecondary),
+                  style: AppTypography.body(
+                    size: 13,
+                    color: context.c.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -62,11 +73,13 @@ class PlayerMatchDebrief extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SummaryRow(summary: summary),
-            const SizedBox(height: 18),
-            for (final m in shown) ...[
-              _MatchCard(feedback: m),
-              const SizedBox(height: 14),
+            if (!compact) ...[
+              _SummaryRow(summary: summary),
+              const SizedBox(height: 24),
+            ],
+            for (var index = 0; index < shown.length; index++) ...[
+              if (index > 0) Divider(height: 40, color: context.c.border),
+              _MatchCard(feedback: shown[index]),
             ],
             if (compact && matches.length > 1)
               Center(
@@ -80,7 +93,11 @@ class PlayerMatchDebrief extends ConsumerWidget {
                       color: context.c.primary,
                     ),
                   ),
-                  label: Icon(Icons.chevron_right, size: 16, color: context.c.primary),
+                  label: Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: context.c.primary,
+                  ),
                 ),
               ),
           ],
@@ -100,343 +117,374 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trendUp = summary.totalOvrChange > 0;
-    return Row(
-      children: [
-        _Stat(
-          label: 'Rating Prom.',
-          value: summary.avgRating > 0 ? summary.avgRating.toStringAsFixed(1) : '─',
-          icon: Icons.star_outline,
-        ),
-        _Stat(label: 'Goles', value: '${summary.totalGoals}', icon: Icons.sports_soccer),
-        _Stat(label: 'Partidos', value: '${summary.matchCount}', icon: Icons.calendar_today),
-        if (summary.totalOvrChange != 0)
-          _Stat(
-            label: 'Tend. OVR',
-            value: '${trendUp ? '+' : ''}${summary.totalOvrChange.toStringAsFixed(1)}',
-            icon: trendUp ? Icons.trending_up : Icons.trending_down,
-            valueColor: trendUp ? context.c.success : context.c.destructive,
+    return LayoutBuilder(
+      builder: (context, constraints) => Wrap(
+        spacing: 20,
+        runSpacing: 18,
+        children: [
+          SizedBox(
+            width: (constraints.maxWidth - 20) / 2,
+            child: _Stat(
+              label: 'Nota media',
+              value: summary.avgRating > 0
+                  ? summary.avgRating.toStringAsFixed(1)
+                  : '—',
+            ),
           ),
-      ],
+          SizedBox(
+            width: (constraints.maxWidth - 20) / 2,
+            child: _Stat(label: 'Goles', value: '${summary.totalGoals}'),
+          ),
+          SizedBox(
+            width: (constraints.maxWidth - 20) / 2,
+            child: _Stat(
+              label: 'Partidos evaluados',
+              value: '${summary.matchCount}',
+            ),
+          ),
+          if (summary.totalOvrChange != 0)
+            SizedBox(
+              width: (constraints.maxWidth - 20) / 2,
+              child: _Stat(
+                label: 'Cambio OVR',
+                value:
+                    '${trendUp ? '+' : ''}${summary.totalOvrChange.toStringAsFixed(1)}',
+                valueColor: trendUp ? context.c.success : context.c.destructive,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
 class _Stat extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
+  final String label, value;
   final Color? valueColor;
-
-  const _Stat({required this.label, required this.value, required this.icon, this.valueColor});
-
+  const _Stat({required this.label, required this.value, this.valueColor});
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 11, color: context.c.textSecondary),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(size: 12, color: context.c.textSecondary),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: AppTypography.sportNumber(
-              size: 22,
-              color: valueColor ?? context.c.textPrimary,
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: AppTypography.body(size: 12, color: context.c.textSecondary),
       ),
-    );
-  }
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: AppTypography.sportNumber(
+          size: 26,
+          color: valueColor ?? context.c.textPrimary,
+        ),
+      ),
+    ],
+  );
 }
+
+/// One match reads as an open report, shared by own and public profiles.
 
 class _MatchCard extends StatelessWidget {
   final MatchFeedback feedback;
-
   const _MatchCard({required this.feedback});
-
-  String get _dateLabel => fmtDayAndMonth(feedback.date);
-
   @override
   Widget build(BuildContext context) {
-    final deltas = feedback.attributeDeltas;
+    final c = context.c;
+    final changes =
+        feedback.attributeDeltas.entries.where((e) => e.value != 0).toList()
+          ..sort((a, b) => b.value.abs().compareTo(a.value.abs()));
     final ovr = feedback.ovrUpdate;
-
-    return PateaCard(
-             color: context.c.card,
-             radius: AppRadii.surfaceAll,
-             borderColor: context.c.border.withValues(alpha: 0.5),
-             padding: const EdgeInsets.all(16),
-             child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      feedback.title,
-                      style: AppTypography.headline(size: 15, weight: FontWeight.w700),
-                    ),
-                    if (_dateLabel.isNotEmpty || feedback.locationName != null) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        [_dateLabel, feedback.locationName].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
-                        style: AppTypography.body(size: 12, color: context.c.textSecondary),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (ovr != null && ovr.change != 0) _OvrBadge(ovr: ovr),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          Row(
-            children: [
-              _MiniStat(label: 'Goles', value: '${feedback.goals}'),
-              _MiniStat(label: 'Asist.', value: '${feedback.assists}'),
-              _MiniStat(
-                label: 'Rating',
-                value: feedback.avgRating > 0 ? feedback.avgRating.toStringAsFixed(1) : '─',
-              ),
-            ],
-          ),
-
-          if (deltas.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _AttributeDeltas(deltas: deltas),
-          ],
-
-          if (feedback.peerEvaluations.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Divider(color: context.c.border.withValues(alpha: 0.4), height: 1),
-            const SizedBox(height: 12),
-            Text(
-              'Qué dijeron tus compañeros',
-              style: AppTypography.body(size: 12, color: context.c.textSecondary),
-            ),
-            const SizedBox(height: 10),
-            for (final ev in feedback.peerEvaluations) _PeerEvalTile(evaluation: ev),
-          ],
-        ],
-      ),
-           );
-  }
-}
-
-class _OvrBadge extends StatelessWidget {
-  final OvrUpdate ovr;
-
-  const _OvrBadge({required this.ovr});
-
-  @override
-  Widget build(BuildContext context) {
-    final up = ovr.change > 0;
-    final color = up ? context.c.success : context.c.destructive;
-    return PateaCard(
-             color: color.withValues(alpha: 0.12),
-             radius: AppRadii.cardAll,
-             borderColor: color.withValues(alpha: 0.35),
-             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-             child: Row(
-        children: [
-          Icon(up ? Icons.trending_up : Icons.trending_down, size: 13, color: color),
-          const SizedBox(width: 5),
-          Text(
-            '${ovr.previousOvr} → ${ovr.newOvr}',
-            style: AppTypography.body(size: 12, color: color),
-          ),
-        ],
-      ),
-           );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MiniStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(value, style: AppTypography.sportNumber(size: 17, color: context.c.primary)),
-          const SizedBox(height: 2),
-          Text(label, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
-        ],
-      ),
-    );
-  }
-}
-
-/// Tabla de cambios por atributo. Suma los efectos de las etiquetas y los
-/// cambios calculados por IA — las dos fuentes, no una sola.
-class _AttributeDeltas extends StatelessWidget {
-  final Map<String, int> deltas;
-
-  static const _labels = {
-    'pac': 'RIT',
-    'sho': 'TIR',
-    'pas': 'PAS',
-    'dri': 'REG',
-    'def': 'DEF',
-    'phy': 'FIS',
-  };
-
-  const _AttributeDeltas({required this.deltas});
-
-  @override
-  Widget build(BuildContext context) {
-    final entries = deltas.entries.where((e) => e.value != 0).toList()
-      ..sort((a, b) => b.value.abs().compareTo(a.value.abs()));
-    if (entries.isEmpty) return const SizedBox.shrink();
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: entries.map((e) {
-        final up = e.value > 0;
-        final color = up ? context.c.success : context.c.destructive;
-        return PateaCard(
-                 color: color.withValues(alpha: 0.1),
-                 radius: AppRadii.chipAll,
-                 borderColor: color.withValues(alpha: 0.3),
-                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                 child: Text(
-            '${_labels[e.key] ?? e.key.toUpperCase()} ${up ? '+' : ''}${e.value}',
-            style: AppTypography.body(size: 12, color: color),
-          ),
-               );
-      }).toList(),
-    );
-  }
-}
-
-/// Una evaluación de un par. El display cambia según el tipo, igual que
-/// `PeerEvalList` en la web: puntos muestra la nota, etiquetas muestra los
-/// chips con sus efectos, texto muestra el resumen de la IA, y las automáticas
-/// se muestran sin avatar ni nombre.
-class _PeerEvalTile extends StatelessWidget {
-  final PeerEvaluation evaluation;
-
-  const _PeerEvalTile({required this.evaluation});
-
-  @override
-  Widget build(BuildContext context) {
-    final anon = evaluation.isAnonymous || evaluation.evaluatorId == 'anonymous';
-    final isAuto = evaluation.type == EvalType.auto;
-
-    final String name;
-    if (isAuto) {
-      name = 'Evaluación automática';
-    } else if (anon) {
-      name = 'Compañero anónimo';
-    } else {
-      name = evaluation.evaluatorDisplayName ?? 'Compañero';
-    }
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!isAuto)
-            Container(
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: context.c.cardSurface,
-                shape: BoxShape.circle,
-                border: Border.all(color: context.c.border.withValues(alpha: 0.6)),
+          Text(
+            feedback.title,
+            style: AppTypography.headline(size: 20, weight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            [
+              fmtDayAndMonth(feedback.date),
+              feedback.locationName,
+            ].whereType<String>().where((s) => s.trim().isNotEmpty).join(' · '),
+            style: AppTypography.body(size: 13, color: c.textSecondary),
+          ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            decoration: BoxDecoration(
+              color: c.cardSurface.withValues(
+                alpha: c.isDarkSurface ? .55 : .65,
               ),
-              child: anon
-                  ? Icon(Icons.visibility_off_outlined, size: 13, color: context.c.textSecondary)
-                  : Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
-                    ),
-            )
-          else
-            Icon(Icons.smart_toy_outlined, size: 20, color: context.c.textSecondary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.body(
-                          size: 12,
-                          weight: FontWeight.w600,
-                          color: context.c.textSecondary,
-                        ),
-                      ),
-                    ),
-                    if (evaluation.rating != null)
-                      Text(
-                        evaluation.rating!.toStringAsFixed(evaluation.rating! % 1 == 0 ? 0 : 1),
-                        style: AppTypography.sportNumber(size: 15, color: context.c.primary),
-                      ),
-                  ],
+                _MatchStat(label: 'Goles', value: '${feedback.goals}'),
+                _MatchStat(label: 'Asistencias', value: '${feedback.assists}'),
+                _MatchStat(
+                  label: 'Nota media',
+                  value: feedback.avgRating > 0
+                      ? feedback.avgRating.toStringAsFixed(1)
+                      : '—',
                 ),
-                if (evaluation.performanceTags.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: evaluation.performanceTags.map((t) {
-                      final positive = t.impact == 'positive';
-                      final color = positive ? context.c.success : context.c.destructive;
-                      return PateaCard(
-                               color: color.withValues(alpha: 0.1),
-                               radius: AppRadii.chipAll,
-                               borderColor: color.withValues(alpha: 0.28),
-                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                               child: Text(
-                          t.name,
-                          style: AppTypography.body(size: 12, weight: FontWeight.w600, color: color),
-                        ),
-                             );
-                    }).toList(),
-                  ),
-                ],
-                if ((evaluation.aiSummary ?? evaluation.textDescription) != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    (evaluation.aiSummary ?? evaluation.textDescription)!,
-                    style: AppTypography.body(size: 12, color: context.c.textSecondary, height: 1.45),
-                  ),
-                ],
               ],
             ),
           ),
+          if (ovr != null && ovr.change != 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Row(
+                children: [
+                  Icon(
+                    ovr.change > 0
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    size: 18,
+                    color: ovr.change > 0 ? c.success : c.destructive,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'OVR ${ovr.previousOvr} → ${ovr.newOvr}',
+                      style: AppTypography.body(
+                        size: 14,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${ovr.change > 0 ? '+' : ''}${ovr.change.toInt()}',
+                    style: AppTypography.sportNumber(
+                      size: 22,
+                      color: ovr.change > 0 ? c.success : c.destructive,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (changes.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Text(
+              'Evolución en este partido',
+              style: AppTypography.body(size: 14, weight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            _AttributeChanges(changes: changes),
+          ],
+          if (feedback.peerEvaluations.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text('Devoluciones', style: AppTypography.headline(size: 19)),
+            const SizedBox(height: 4),
+            Text(
+              'Lo que vieron tus compañeros en la cancha.',
+              style: AppTypography.body(size: 12, color: c.textSecondary),
+            ),
+            for (var i = 0; i < feedback.peerEvaluations.length; i++) ...[
+              if (i > 0)
+                Divider(height: 1, color: c.border.withValues(alpha: .45)),
+              _PeerEvalTile(evaluation: feedback.peerEvaluations[i]),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MatchStat extends StatelessWidget {
+  final String label, value;
+  const _MatchStat({required this.label, required this.value});
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Column(
+      children: [
+        Text(
+          value,
+          style: AppTypography.sportNumber(
+            size: 29,
+            color: context.c.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: AppTypography.body(size: 12, color: context.c.textSecondary),
+        ),
+      ],
+    ),
+  );
+}
+
+class _AttributeChanges extends StatelessWidget {
+  final List<MapEntry<String, int>> changes;
+  const _AttributeChanges({required this.changes});
+  static const labels = {
+    'pac': 'Ritmo',
+    'sho': 'Tiro',
+    'pas': 'Pase',
+    'dri': 'Regate',
+    'def': 'Defensa',
+    'phy': 'Físico',
+  };
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Wrap(
+      spacing: 20,
+      runSpacing: 12,
+      children: [
+        for (final change in changes)
+          SizedBox(
+            width: (constraints.maxWidth - 20) / 2,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    labels[change.key] ?? change.key.toUpperCase(),
+                    style: AppTypography.body(
+                      size: 13,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${change.value > 0 ? '+' : ''}${change.value}',
+                  style: AppTypography.body(
+                    size: 15,
+                    weight: FontWeight.w700,
+                    color: change.value > 0
+                        ? context.c.success
+                        : context.c.destructive,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+class _PeerEvalTile extends StatelessWidget {
+  final PeerEvaluation evaluation;
+  const _PeerEvalTile({required this.evaluation});
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final anon =
+        evaluation.isAnonymous || evaluation.evaluatorId == 'anonymous';
+    final automatic = evaluation.type == EvalType.auto;
+    final name = automatic
+        ? 'Evaluación automática'
+        : anon
+        ? 'Compañero anónimo'
+        : evaluation.evaluatorDisplayName ?? 'Compañero';
+    final summary = (evaluation.aiSummary?.trim().isNotEmpty ?? false)
+        ? evaluation.aiSummary
+        : evaluation.textDescription;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              if (anon || automatic)
+                Icon(
+                  automatic
+                      ? Icons.auto_awesome_outlined
+                      : Icons.visibility_off_outlined,
+                  size: 18,
+                  color: c.textSecondary,
+                )
+              else
+                PateaAvatar(
+                  photoUrl: evaluation.evaluatorPhotoUrl,
+                  seed: evaluation.evaluatorId,
+                  size: 30,
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body(
+                    size: 13,
+                    weight: FontWeight.w600,
+                    color: c.textSecondary,
+                  ),
+                ),
+              ),
+              if (evaluation.rating != null) ...[
+                const SizedBox(width: 12),
+                Text(
+                  evaluation.rating!.toStringAsFixed(
+                    evaluation.rating! % 1 == 0 ? 0 : 1,
+                  ),
+                  style: AppTypography.sportNumber(
+                    size: 24,
+                    color: c.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  '/10',
+                  style: AppTypography.body(size: 11, color: c.textSecondary),
+                ),
+              ],
+            ],
+          ),
+          if (evaluation.performanceTags.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            for (final tag in evaluation.performanceTags)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        tag.impact == 'positive'
+                            ? Icons.check_rounded
+                            : Icons.trending_down_rounded,
+                        size: 16,
+                        color: tag.impact == 'positive'
+                            ? c.success
+                            : c.destructive,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        tag.name,
+                        style: AppTypography.body(
+                          size: 14,
+                          weight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (summary != null && summary.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                summary,
+                style: AppTypography.body(
+                  size: 14,
+                  color: c.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+            ),
         ],
       ),
     );

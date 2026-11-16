@@ -27,6 +27,8 @@
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
 
+import 'package:patea_mobile/features/players/widgets/player_match_debrief.dart';
+
 import 'package:patea_mobile/features/evaluations/evaluation_form_screen.dart';
 import 'package:patea_mobile/core/widgets/patea_user_menu_sheet.dart';
 
@@ -79,6 +81,7 @@ final List<Caso> _pantallas = [
   ('evaluaciones', () => const EvaluationsInboxScreen()),
   ('grupos', () => const GroupsScreen()),
   ('equipo_detalle', () => const TeamDetailScreen(teamId: 'team-1')),
+  ('perfil_devoluciones', () => const Scaffold(backgroundColor: Colors.transparent, body: SafeArea(child: SingleChildScrollView(child: Padding(padding: EdgeInsets.all(18), child: PlayerMatchDebrief(playerId: 'feedback-review')))))),
   ('jugador_detalle', () => const PlayerDetailScreen(playerId: uidYo)),
   ('dirigir', () => LiveMatchScreen(matchId: partidoDirigir.id)),
   ('chat', () => MatchChatScreen(match: partidos.first)),
