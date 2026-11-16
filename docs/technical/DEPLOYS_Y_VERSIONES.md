@@ -235,4 +235,4 @@ Versión **1.0.4** en las dos plataformas. Ese día salieron dos entregas: la
 
 ## Entrega autorizada del 16/11/2026 — 1.0.30
 
-La suspensión anterior se sustituye por una distribución explícita por etiquetas `ios-testflight-*` en `feat/flutter-mobile-app`. Los pushes habituales no publican. Se usa la firma e integración existentes y se verifican grupos internos y procesamiento de Apple dentro del job. [Registro de esta entrega](RELEASE_1.0.30_2026-11-16.md).
+La suspensión anterior se sustituye por una distribución explícita por etiquetas `ios-testflight-*` en `feat/flutter-mobile-app`. Los pushes habituales no publican. Se usa la firma e integración existentes y el publicador nativo de Codemagic. La subida de 1.0.30 terminó correctamente; la asignación final al grupo y el procesamiento posterior requieren comprobación autenticada en Apple/Codemagic. [Registro de esta entrega](RELEASE_1.0.30_2026-11-16.md).

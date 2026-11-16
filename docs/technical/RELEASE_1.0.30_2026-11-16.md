@@ -1,5 +1,7 @@
 # Entrega iOS 1.0.30
 
+**Resultado vigente:** segundo intento correcto; IPA compilado, firmado y subido a App Store Connect para TestFlight con el publicador nativo. [Build exitosa](https://codemagic.io/app/6a9b3fecaea87264a4d6ae80/build/6afb8570ae2a1a47cc7da7ea). Fuente `1b225995`, etiqueta `ios-testflight-1.0.30-20261116-r2`, check final `133673423029`. Se conserva la configuración interna histórica, sin introducir nombres de grupos nuevos. La disponibilidad posterior al procesamiento de Apple y la asignación final al grupo no pudieron comprobarse desde esta sesión, que no tiene acceso autenticado a Codemagic/App Store Connect.
+
 El usuario autoriza compilar y distribuir en TestFlight el 16/11/2026. Rama `feat/flutter-mobile-app`; se incluyen las mejoras de perfil, competiciones y los cambios locales de interfaz aportados por el usuario.
 
 `ios-testflight` publica sólo con etiquetas `ios-testflight-*`. Los pushes ordinarios ya no distribuyen versiones. Se conserva la integración App Store Connect `patea`, firma existente, app 6808798274 y distribución interna histórica sin añadir testers externos. No se envía a revisión de App Store ni se expiran builds anteriores. El número de build se calcula contra Apple en Codemagic, independiente del +31 local.
@@ -20,3 +22,8 @@ Validación local: 283 pruebas Flutter y 4 pruebas de selección de grupos aprob
 ## Reintento con el publicador nativo
 
 Se retira del workflow el publicador Python añadido en el primer intento, y se restaura el bloque `publishing.app_store_connect` usado en entregas anteriores: integración `patea`, TestFlight habilitado, App Store deshabilitado, sin añadir grupos externos. La compilación sigue restringida a etiquetas explícitas. El primer fallo queda conservado en el registro; la distribución no se da por terminada hasta comprobar el nuevo resultado.
+
+
+## Resultado del reintento
+
+Codemagic confirma éxito en todos los pasos, incluida compilación del IPA (6 min 51 s) y Publishing (1 min 42 s). Los checks de GitHub de la misma fuente también finalizaron correctamente. Se retiran las afirmaciones de verificación directa de grupos del primer flujo personalizado: ese paso falló, fue eliminado y no es el procedimiento vigente. El job nativo realiza la subida y solicita TestFlight; el postprocesamiento de Apple es posterior y no queda acreditado por el check de GitHub por sí solo.
