@@ -26,7 +26,13 @@ function database(extra = {}) {
   const writes = [];
   let version = 0;
   let retries = 0;
-  const doc = path => ({ path, id: path.split('/').at(-1) });
+  const doc = path => ({
+    path, id: path.split('/').at(-1),
+    async get() {
+      const value = state.get(path);
+      return { id: path.split('/').at(-1), exists: value !== undefined, data: () => value };
+    },
+  });
   const query = (path, filters = [], limit = Infinity) => ({
     path, filters, count: limit,
     doc: (id = randomUUID()) => doc(`${path}/${id}`),
