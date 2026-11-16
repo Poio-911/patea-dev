@@ -7,7 +7,7 @@
  * The Zod schemas for input/output are defined in 'src/lib/types.ts' to avoid build errors.
  */
 
-import { ai } from '@/ai/genkit';
+import { chronicleAI as ai } from '@/ai/genkit';
 import { GenerateMatchChronicleInputSchema, GenerateMatchChronicleOutputSchema, type GenerateMatchChronicleInput } from '@/lib/types';
 import { getCachedOrGenerate, generateCacheKey } from '@/lib/ai-cache';
 
@@ -94,7 +94,10 @@ export const generateMatchChronicleFlow = ai.defineFlow(
     const output = await getCachedOrGenerate(
       cacheKey,
       async () => {
-        const { output } = await prompt(input, { model: 'googleai/gemini-3-flash-preview' });
+        const { output } = await prompt(input, {
+          model: 'vertexai/gemini-3.1-flash-lite',
+          config: { maxOutputTokens: 2048, thinkingConfig: { thinkingLevel: 'MINIMAL' } },
+        });
         if (!output) {
           throw new Error('La IA no pudo generar la crónica del partido.');
         }

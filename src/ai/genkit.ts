@@ -1,6 +1,6 @@
 
 import { genkit, Genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { googleAI, vertexAI } from '@genkit-ai/google-genai';
 
 // Deshabilitar completamente el servidor de reflexión de Genkit y la conexión al emulador
 // Usamos notación de corchetes para evitar que Next.js reemplace las variables en tiempo de compilación
@@ -14,6 +14,20 @@ process.env['GENKIT_PORT'] = '';
 // Lazy initialization - solo crear instancia cuando se use
 // Esto evita errores de build cuando la API key no está disponible
 let _ai: Genkit | null = null;
+let _vertex: Genkit | null = null;
+
+// Chronicle-only Vertex instance: ADC/service identity, never an AI Studio key.
+export const chronicleAI = new Proxy({} as Genkit, {
+  get(_, prop) {
+    _vertex ??= genkit({
+      plugins: [vertexAI({
+        projectId: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || 'mil-disculpis',
+        location: 'global',
+      })],
+    });
+    return (_vertex as any)[prop];
+  },
+});
 
 export function getAI(): Genkit {
   if (_ai) return _ai;

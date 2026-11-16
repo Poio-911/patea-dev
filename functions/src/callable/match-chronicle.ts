@@ -1,7 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenAI, ThinkingLevel, Type as SchemaType } from '@google/genai';
 
 /**
  * Crónica del partido con IA.
@@ -18,9 +17,8 @@ import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
  * quedan en `evaluations`. Todo eso entraba a Firestore y moría ahí.
  */
 
-export const GOOGLE_GENAI_API_KEY = defineSecret('GOOGLE_GENAI_API_KEY');
-
-const MODEL_NAME = 'gemini-3.1-pro-preview';
+// Cheapest compatible Flash-Lite available to this Vertex AI project.
+const MODEL_NAME = 'gemini-3.1-flash-lite';
 
 const RESPONSE_SCHEMA = {
   type: SchemaType.OBJECT,
@@ -60,7 +58,7 @@ type ChronicleInput = {
  * datos se inyectan con Handlebars; acá se arman a mano porque no hay Genkit.
  * Si se toca el de la web, hay que tocar este.
  */
-function buildPrompt(input: ChronicleInput): string {
+export function buildPrompt(input: ChronicleInput): string {
   const lines: string[] = [];
 
   lines.push(`
@@ -137,7 +135,7 @@ function buildPrompt(input: ChronicleInput): string {
 }
 
 export const generateMatchChronicle = onCall(
-  { region: 'us-central1', secrets: [GOOGLE_GENAI_API_KEY], timeoutSeconds: 120 },
+  { region: 'us-central1', timeoutSeconds: 120 },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Debés iniciar sesión.');
 
@@ -152,12 +150,6 @@ export const generateMatchChronicle = onCall(
 
     const match = matchSnap.data() as Record<string, any>;
 
-    // Una crónica ya escrita no se vuelve a pedir: el partido no cambia más y
-    // cada generación cuesta. `force` existe para regenerarla a mano.
-    if (!force && match.chronicle) {
-      return { chronicle: match.chronicle, cached: true };
-    }
-
     const teams = Array.isArray(match.teams) ? match.teams : [];
     if (match.status !== 'evaluated' || teams.length < 2) {
       throw new HttpsError(
@@ -170,6 +162,11 @@ export const generateMatchChronicle = onCall(
     const playerUids: string[] = Array.isArray(match.playerUids) ? match.playerUids : [];
     if (match.ownerUid !== request.auth.uid && !playerUids.includes(request.auth.uid)) {
       throw new HttpsError('permission-denied', 'Solo quienes jugaron pueden pedir la crónica.');
+    }
+
+    // Check participation before returning persisted content, too.
+    if (!force && match.chronicle) {
+      return { chronicle: match.chronicle, cached: true };
     }
 
     const [evalsSnap, selfEvalsSnap] = await Promise.all([
@@ -324,21 +321,29 @@ export const generateMatchChronicle = onCall(
       topPerformanceTags: topPerformanceTags.length ? topPerformanceTags : undefined,
     };
 
-    const genAI = new GoogleGenerativeAI(GOOGLE_GENAI_API_KEY.value());
-    const model = genAI.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA as never,
-      },
+    const genAI = new GoogleGenAI({
+      vertexai: true,
+      project: process.env.GCLOUD_PROJECT || admin.app().options.projectId,
+      location: 'global',
     });
 
     let chronicle: Record<string, unknown>;
     try {
-      const result = await model.generateContent(buildPrompt(input));
-      chronicle = JSON.parse(result.response.text());
+      const result = await genAI.models.generateContent({
+        model: MODEL_NAME,
+        contents: buildPrompt(input),
+        config: {
+          maxOutputTokens: 2048,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          responseMimeType: 'application/json',
+          responseSchema: RESPONSE_SCHEMA,
+          httpOptions: { timeout: 90000 },
+        },
+      });
+      chronicle = parseChronicle(result.text, result.candidates?.[0]?.finishReason);
     } catch (err) {
-      throw new HttpsError('internal', `La IA no pudo escribir la crónica: ${err}`);
+      console.error('Chronicle Vertex generation failed', { message: err instanceof Error ? err.message : 'Unknown error' });
+      throw new HttpsError('internal', 'La IA no pudo escribir la crónica. Intentá de nuevo más tarde.');
     }
 
     await matchRef.update({
@@ -349,3 +354,21 @@ export const generateMatchChronicle = onCall(
     return { chronicle, cached: false };
   }
 );
+
+export function parseChronicle(text: string | undefined, finishReason: string | undefined): Record<string, any> {
+  if (finishReason !== 'STOP') throw new Error('Respuesta incompleta de la IA.');
+  const chronicle = JSON.parse(text || '');
+  if (!chronicle || Array.isArray(chronicle) ||
+      typeof chronicle.headline !== 'string' || !chronicle.headline.trim() ||
+      typeof chronicle.story !== 'string' || !chronicle.story.trim() ||
+      (chronicle.playerVoices !== undefined && (!Array.isArray(chronicle.playerVoices) ||
+        !chronicle.playerVoices.every((voice: any) => voice && typeof voice.playerName === 'string' && typeof voice.quote === 'string')))) {
+    throw new Error('Formato de crónica inválido.');
+  }
+  // Persist only the public contract, never arbitrary model-generated fields.
+  return {
+    headline: chronicle.headline,
+    story: chronicle.story,
+    ...(chronicle.playerVoices === undefined ? {} : { playerVoices: chronicle.playerVoices.map((voice: any) => ({ playerName: voice.playerName, quote: voice.quote })) }),
+  };
+}

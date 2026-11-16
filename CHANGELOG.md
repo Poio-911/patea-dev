@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased] — crónicas en Vertex AI, 2026-11-16
+
+- Callable móvil de crónicas migrada de AI Studio a Vertex AI con Flash-Lite 3.1 y credenciales de servicio; Flash-Lite 2.5 no está disponible para el proyecto.
+- Salida limitada a 2048 tokens, pensamiento mínimo y validación de JSON/finalización antes de persistir. Permisos verificados también para contenido cacheado.
+- Flow web adaptado localmente al mismo proveedor, pendiente despliegue web. No se distribuyen nuevos binarios móviles.
+- Prueba real: costo estimado de USD 0,00112725 con prompt completo y datos ficticios. [Contrato y validación](docs/technical/ai-flows/generate-match-chronicle.md).
+
 ## [1.0.10] — 2026-11-15 — revisión local, sin distribuir
 
 Incluye las iteraciones locales 1.0.7–1.0.10: tipografía legible, ficha «Marcador lateral», OVR y atributo máximo ámbar, edición y grilla accesibles, superficies opacas y fondo de cancha sutil. Creación de partidos con horario definido o consulta al grupo, calendario español y hora de 24 horas; controles de carga con contraste y movimiento reducido.
