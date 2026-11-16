@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -167,7 +168,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
       // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
       // Scaffold pinta su color opaco encima y tapa la foto de cancha.
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text('EVALUAR PARTIDO', style: AppTypography.headline(size: 16, weight: FontWeight.w800))),
+      appBar: AppBar(title: Text('Evaluar partido', style: AppTypography.headline(size: 16, weight: FontWeight.w800))),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null
@@ -211,20 +212,20 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('TU RENDIMIENTO', style: AppTypography.headline(size: 13, color: context.c.primary)),
+              Text('Tu rendimiento', style: AppTypography.headline(size: 13, color: context.c.primary)),
               const SizedBox(height: 4),
-              Text('Registrá tus estadísticas personales del partido.', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+              Text('Registrá tus estadísticas personales del partido.', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _CounterDial(label: 'GOLES', value: _evaluatorGoals, onChanged: (v) => setState(() => _evaluatorGoals = v))),
+                  Expanded(child: _CounterDial(label: 'Goles', value: _evaluatorGoals, onChanged: (v) => setState(() => _evaluatorGoals = v))),
                   const SizedBox(width: 12),
-                  Expanded(child: _CounterDial(label: 'ASISTENCIAS', value: _evaluatorAssists, onChanged: (v) => setState(() => _evaluatorAssists = v))),
+                  Expanded(child: _CounterDial(label: 'Asistencias', value: _evaluatorAssists, onChanged: (v) => setState(() => _evaluatorAssists = v))),
                 ],
               ),
               if (mvpCandidates.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                Text('VOTO MVP', style: AppTypography.headline(size: 12, weight: FontWeight.w800)),
+                Text('Voto al MVP', style: AppTypography.headline(size: 12, weight: FontWeight.w800)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
@@ -251,7 +252,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Text('JUGADORES A EVALUAR', style: AppTypography.headline(size: 14, weight: FontWeight.w800)),
+        Text('Jugadores a evaluar', style: AppTypography.headline(size: 14, weight: FontWeight.w800)),
         const SizedBox(height: 12),
         ..._drafts.map((d) => _PlayerEvaluationCard(draft: d, onChanged: () => setState(() {}))),
         const SizedBox(height: 8),
@@ -261,9 +262,9 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
             onPressed: _isSubmitting ? null : _submit,
             style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
             icon: _isSubmitting
-                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
                 : const Icon(Icons.save_outlined),
-            label: Text(_isSubmitting ? 'Enviando...' : 'ENVIAR EVALUACIONES'),
+            label: Text(_isSubmitting ? 'Enviando...' : 'Enviar evaluaciones'),
           ),
         ),
       ],
@@ -318,7 +319,7 @@ class _CounterDial extends StatelessWidget {
              padding: const EdgeInsets.symmetric(vertical: 14),
              child: Column(
         children: [
-          Text(label, style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
+          Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary)),
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -422,7 +423,7 @@ class _TypeToggle extends StatelessWidget {
                borderColor: selected ? context.c.primary : Colors.transparent,
                padding: const EdgeInsets.symmetric(vertical: 8),
                alignment: Alignment.center,
-               child: Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w700, color: selected ? context.c.primary : context.c.textSecondary)),
+               child: Text(label, style: AppTypography.action(size: 14, color: selected ? context.c.primary : context.c.textSecondary)),
              ),
     );
   }
@@ -471,7 +472,7 @@ class _TagsEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Elegí al menos 3 (${draft.performanceTags.length} elegidas)', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+        Text('Elegí al menos 3 (${draft.performanceTags.length} elegidas)', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
         const SizedBox(height: 8),
         ...draft.tagPool.map((tag) {
           final isChecked = draft.performanceTags.any((t) => t.id == tag.id);
@@ -502,8 +503,8 @@ class _TagsEditor extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(tag.name, style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w700)),
-                          Text(tag.description, style: AppTypography.body(size: 10, color: context.c.textSecondary)),
+                          Text(tag.name, style: AppTypography.body(color: context.c.textPrimary, size: 14, weight: FontWeight.w600)),
+                          Text(tag.description, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                           const SizedBox(height: 4),
                           Wrap(
                             spacing: 6,
@@ -511,7 +512,7 @@ class _TagsEditor extends StatelessWidget {
                               final positive = e.value > 0;
                               return Text(
                                 '${positive ? '+' : ''}${e.value} ${e.key.toUpperCase()}',
-                                style: AppTypography.code(size: 9, weight: FontWeight.w700, color: positive ? context.c.success : context.c.destructive),
+                                style: AppTypography.body(size: 12, weight: FontWeight.w600, color: positive ? context.c.success : context.c.destructive),
                               );
                             }).toList(),
                           ),

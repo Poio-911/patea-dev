@@ -35,14 +35,14 @@ class PlayerTeamsList extends ConsumerWidget {
                 Icon(Icons.checkroom, size: 18, color: context.c.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'EQUIPOS ACTUALES',
+                  'Equipos actuales',
                   style: AppTypography.headline(size: 14, weight: FontWeight.w700),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 104,
+              height: 82 + MediaQuery.textScalerOf(context).scale(40),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: teams.length,
@@ -81,8 +81,8 @@ class PlayerTeamsList extends ConsumerWidget {
                                   ),
                                   child: Text(
                                     number > 0 ? '$number' : '#',
-                                    style: AppTypography.code(
-                                      size: 10,
+                                    style: AppTypography.body(
+                                      size: 12,
                                       color: context.c.textPrimary,
                                     ),
                                   ),
@@ -93,11 +93,11 @@ class PlayerTeamsList extends ConsumerWidget {
                           const SizedBox(height: 10),
                           Text(
                             team.name,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: AppTypography.body(
-                              size: 11,
+                              size: 12,
                               weight: FontWeight.w600,
                               color: context.c.textSecondary,
                             ),

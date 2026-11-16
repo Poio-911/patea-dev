@@ -47,15 +47,13 @@ class PlayerPositionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = context.c.positionColor(position);
-    final texto = showFullName
-        ? _fullName.toUpperCase()
-        : position.toUpperCase();
+    final texto = showFullName ? _fullName : position.toUpperCase();
 
     if (dense) {
       return Text(
         texto,
-        style: AppTypography.code(
-          size: fontSize,
+        style: AppTypography.body(
+          size: fontSize < 12 ? 12 : fontSize,
           weight: FontWeight.w700,
           color: color,
         ),
@@ -63,19 +61,19 @@ class PlayerPositionBadge extends StatelessWidget {
     }
 
     return PateaCard(
-             color: color.withValues(alpha: 0.18),
-             radius: AppRadii.chipAll,
-             borderColor: color.withValues(alpha: 0.8),
-             borderWidth: 1,
-             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-             child: Text(
+      color: color.withValues(alpha: 0.18),
+      radius: AppRadii.chipAll,
+      borderColor: color.withValues(alpha: 0.8),
+      borderWidth: 1,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Text(
         texto,
         style: AppTypography.headline(
-          size: fontSize,
+          size: fontSize < 12 ? 12 : fontSize,
           weight: FontWeight.w700,
           color: color,
         ),
       ),
-           );
+    );
   }
 }

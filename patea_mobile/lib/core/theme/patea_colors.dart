@@ -253,6 +253,11 @@ class PateaColors extends ThemeExtension<PateaColors> {
     posPor: Color(0xFFF5993D),
   );
 
+  /// Puntaje y mejor atributo de las fichas; conserva contraste en ambos temas.
+  Color get ratingAccent => isDarkSurface
+      ? const Color(0xFFFFD56A)
+      : const Color(0xFF885800);
+
   Color positionColor(String position) {
     switch (position.toUpperCase().trim()) {
       case 'DEL':

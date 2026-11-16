@@ -69,7 +69,7 @@ void main() {
     expect(find.text('OVR PROM. 77.0'), findsOneWidget);
     expect(find.text('OVR PROM. 81.0'), findsOneWidget);
     // Sticky Action Bar
-    expect(find.text('ANOTARME AL PARTIDO'), findsOneWidget);
+    expect(find.text('Anotarme al partido'), findsOneWidget);
   });
 
   testWidgets('Detalle de Partido: Partido completed muestra estado y boton EVALUAR PARTIDO', (tester) async {
@@ -112,7 +112,7 @@ void main() {
     // hacer scroll. Sin scroll el del AppBar está montado con opacidad 0.
     expect(find.text('FINAL DE COPA'), findsNWidgets(2));
     expect(find.text('Complejo Central'), findsOneWidget);
-    expect(find.text('EVALUAR PARTIDO'), findsOneWidget);
+    expect(find.text('Evaluar partido'), findsOneWidget);
   });
 
   testWidgets('Detalle de Partido: Partido evaluated muestra marcador final con ganador destacado y badges', (tester) async {

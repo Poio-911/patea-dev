@@ -1,15 +1,21 @@
 # ⚽ Pateá Mobile — Flutter App
 
+## Revisión local 1.0.10 (11) — 15/11/2026
+
+APK release `android-x64` instalado en el emulador conservando sesión. Sin distribución a testers ni TestFlight. Crear partido ofrece horario definido o consulta al grupo, campos opacos, calendario español y hora de 24 horas. Acciones legibles, indicadores con contraste y transiciones con movimiento reducido.
+
+Validación: `flutter test` (161 aprobadas), `flutter analyze --no-fatal-infos` (0 errores, 0 advertencias, 15 infos previos). [Notas completas](../docs/technical/RELEASE_1.0.10_2026-11-15.md) y [guía visual](../docs/design/UX_BRAND_2026-11-15.md).
+
 > **Tu carrera amateur, profesionalizada.**  
-> Aplicación móvil nativa desarrollada en **Flutter 3.41+ / Dart 3.11+**, conectada en tiempo real a **Firebase (`mil-disculpis`)**, con sistema de diseño deportivo (Game Theme), cartas coleccionables 3D con auras de OVR, y cálculo de progresión anti-inflación.
+> Aplicación móvil nativa desarrollada en **Flutter 3.41+ / Dart 3.11+**, conectada en tiempo real a **Firebase (`mil-disculpis`)**, con sistema de diseño deportivo (Game Theme), fichas deportivas con OVR integrado, y cálculo de progresión anti-inflación.
 
 ---
 
 ## 📱 Capturas y Vistas Principales
 
-| Dashboard Deportivo | El Vestuario (Cartas 3D) | Minuto a Minuto en Vivo |
+| Dashboard Deportivo | El Vestuario (Fichas) | Minuto a Minuto en Vivo |
 | :---: | :---: | :---: |
-| Próximo partido, alertas en vivo y estadísticas | Cartas FIFA con tiers y 6 atributos | Marcador y registro de goles en tiempo real |
+| Próximo partido, alertas en vivo y estadísticas | Fichas con retrato, OVR y 6 atributos | Marcador y registro de goles en tiempo real |
 
 ---
 
@@ -47,8 +53,8 @@ patea_mobile/
 │   │   └── widgets/
 │   │       ├── attributes_radar_chart.dart # Polígono de radar con fl_chart
 │   │       ├── jersey_painter.dart         # Renderizador vectorial de 6 camisetas
-│   │       ├── patea_background.dart       # Fondo carbon con ambient radial glow
-│   │       ├── player_card_widget.dart     # Carta coleccionable con física táctil 3D
+│   │       ├── patea_background.dart       # Lienzo tonal con líneas de cancha sutiles
+│   │       ├── player_card_widget.dart     # Ficha deportiva con marcador lateral
 │   │       └── player_position_badge.dart  # Badges posicionales DEL, MED, DEF, POR
 │   ├── features/
 │   │   ├── auth/                           # Pantalla de Login / Registro
@@ -67,15 +73,12 @@ patea_mobile/
 
 ## ⚡ Características Principales
 
-1. **Cartas Coleccionables 3D y Auras de Rareza**:
-   - Rotación y perspectiva táctil en tiempo real mediante `Transform` y `Matrix4`.
-   - Auras de resplandor dinámicas (`RadialGradient`) según el tier de OVR (Platino Elite, Oro, Plata, Bronce).
-   - Bordes sutiles de `1.0px` con `box-shadow` suave por tier.
-   - Badges de posición en cápsula translúcida con borde oficial (`DEL`, `MED`, `DEF`, `POR`).
-   - Número OVR clasificado con el color de su rareza (Platino, Dorado, Plateado, Bronce cálido).
-   - Aro de avatar circular con resplandor atado al tier.
-   - Grid de 6 atributos (`RIT`, `TIR`, `PAS`, `REG`, `DEF`, `FIS`) con cajas translúcidas individuales, barras de progreso y atributo clave resaltado.
-   - Marca de agua vectorial oficial de la posición en el fondo.
+1. **Fichas deportivas integradas**:
+   - Retrato con nombre superpuesto y degradado hasta atributos.
+   - Posición recta y OVR ámbar conectados por línea y punto.
+   - Máximo de atributos destacado, incluidos empates; correspondencia para arqueros.
+   - Fotos y zoom conservados, edición legible y grilla adaptable al texto.
+   - Ambos temas y movimiento reducido; sin foil ni inclinación 3D.
 
 2. **Shell Glassmórfico y Header Interactivo**:
    - Experiencia Edge-to-Edge nativa con barra de estado y gestos transparentes.

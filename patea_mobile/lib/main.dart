@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -110,6 +111,13 @@ class PateaApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Pateá',
+      locale: const Locale('es', 'UY'),
+      supportedLocales: const [Locale('es', 'UY'), Locale('es')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       debugShowCheckedModeBanner: false,
       // Los dos esquemas quedan declarados desde ahora, aunque todavia no haya
       // forma de elegir el claro: eso es la Fase 5. Lo importante de esta fase

@@ -1,5 +1,9 @@
 # Pateá — Briefing Técnico para Revisión y Corrección
 
+## Estado vigente — 15/11/2026
+
+La revisión móvil actual es **1.0.10 (11)**, instalada únicamente en el emulador Android para revisión. Los cambios de tipografía, fichas, creación de partidos y contraste están verificados con 161 pruebas; análisis sin errores ni advertencias (15 avisos informativos previos). La distribución continúa detenida. Firebase CLI y Google Cloud SDK están disponibles para operaciones autorizadas. El contenido histórico siguiente debe leerse junto con las [notas actuales](docs/technical/RELEASE_1.0.10_2026-11-15.md).
+
 ## Contexto del Proyecto
 
 **Pateá** es una aplicación Next.js 14 (App Router) para gestión de fútbol amateur. Usa Firebase (Firestore, Auth, Storage), TypeScript, Tailwind CSS y shadcn/ui.

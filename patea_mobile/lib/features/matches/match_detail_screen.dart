@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
@@ -223,7 +224,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     },
               style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
               child: submitting
-                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                  ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
                   : const Text('Guardar'),
             ),
           ],
@@ -312,7 +313,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     },
               style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
               child: submitting
-                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                  ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
                   : const Text('Guardar'),
             ),
           ],
@@ -378,7 +379,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
               duration: const Duration(milliseconds: 180),
               child: Text(
                 match.title.toUpperCase(),
-                style: AppTypography.jersey(
+                style: AppTypography.headline(
                   size: 18,
                   color: context.c.textPrimary,
                   letterSpacing: 0.8,
@@ -638,12 +639,12 @@ class _HeroCard extends StatelessWidget {
                 Text(
                   categoryText,
                   style: AppTypography.code(
-                    size: 11,
-                    weight: FontWeight.w800,
+                    size: 12,
+                    weight: FontWeight.w600,
                     color: isLive
                         ? context.c.destructive
                         : (context.c.isDarkSurface ? context.c.primary : context.c.onPhoto),
-                  ).copyWith(letterSpacing: 2.0),
+                  ).copyWith(letterSpacing: 0.4),
                 ),
                 const SizedBox(height: 8),
 
@@ -673,10 +674,10 @@ class _HeroCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        dateTimeStr.toUpperCase(),
-                        style: AppTypography.jersey(
-                          size: 18,
-                          letterSpacing: 0.8,
+                        dateTimeStr,
+                        style: AppTypography.body(
+                          size: 16,
+                          weight: FontWeight.w600,
                           color: context.c.onPhoto,
                         ),
                       ),
@@ -752,8 +753,7 @@ class _TeamsRoster extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '${match.players.length} JUGADORES',
-              style: AppTypography.code(size: 9, weight: FontWeight.w700, color: context.c.textSecondary)
-                  .copyWith(letterSpacing: 1.6),
+              style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
             ),
           ],
         ),
@@ -843,7 +843,7 @@ class _TeamBlock extends ConsumerWidget {
                               team.name.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTypography.jersey(size: 22, letterSpacing: 0.3),
+                              style: AppTypography.headline(size: 18, weight: FontWeight.w700),
                             ),
                           ),
                           if (match.hasFinalScore) ...[
@@ -868,8 +868,7 @@ class _TeamBlock extends ConsumerWidget {
                         children: [
                           Text(
                             '${team.players.length} JUGADORES',
-                            style: AppTypography.code(size: 8.5, weight: FontWeight.w700, color: context.c.textSecondary)
-                                .copyWith(letterSpacing: 1.4),
+                            style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
                           ),
                           if (avgOvr != null) ...[
                             PateaCard(
@@ -880,7 +879,7 @@ class _TeamBlock extends ConsumerWidget {
                               child: Text(
                                 'OVR PROM. ${avgOvr.toStringAsFixed(1)}',
                                 style: AppTypography.code(
-                                  size: 8,
+                                  size: 12,
                                   weight: FontWeight.w800,
                                   color: context.c.primary,
                                 ),
@@ -999,10 +998,10 @@ class _MosaicPlayer extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      player.displayName.toUpperCase(),
+                      player.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.condensed(size: 15, weight: FontWeight.w700, letterSpacing: 0.3),
+                      style: AppTypography.headline(size: 15, weight: FontWeight.w600),
                     ),
                     const SizedBox(height: 2),
                     Row(
@@ -1013,7 +1012,7 @@ class _MosaicPlayer extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.code(
-                              size: 10,
+                              size: 12,
                               weight: FontWeight.w800,
                               color: context.c.positionColor(player.position),
                             ),
@@ -1023,7 +1022,7 @@ class _MosaicPlayer extends StatelessWidget {
                           const SizedBox(width: 5),
                           Text(
                             '${player.ovr}',
-                            style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.textSecondary),
+                            style: AppTypography.code(size: 12, weight: FontWeight.w600, color: context.c.textSecondary),
                           ),
                         ],
                       ],
@@ -1125,7 +1124,7 @@ class _MiniBadge extends StatelessWidget {
              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
              child: Text(
         label,
-        style: AppTypography.code(size: 8, weight: FontWeight.w700, color: color),
+        style: AppTypography.body(size: 12, weight: FontWeight.w600, color: color),
       ),
            );
   }
@@ -1151,12 +1150,12 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
             children: [
               Icon(Icons.groups_outlined, size: 18, color: context.c.textSecondary),
               const SizedBox(width: 8),
-              Text('Jugadores Confirmados', style: AppTypography.headline(size: 15)),
-              const Spacer(),
+              Expanded(child: Text('Jugadores confirmados', style: AppTypography.headline(size: 15), maxLines: 2)),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.surfaceAll),
-                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: context.c.textSecondary, size: 11, weight: FontWeight.w700)),
+                child: Text('${match.players.length}/${match.matchSize}', style: AppTypography.code(color: context.c.textSecondary, size: 12, weight: FontWeight.w600)),
               ),
             ],
           ),
@@ -1170,7 +1169,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
             )
           else
             SizedBox(
-              height: 102,
+              height: 126,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: match.players.length,
@@ -1185,7 +1184,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: SizedBox(
-                          width: 62,
+                          width: 76,
                           child: Column(
                             children: [
                               PateaAvatar(
@@ -1195,15 +1194,17 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                               ),
                               const SizedBox(height: 5),
                               Text(
-                                p.displayName.split(' ').first.toUpperCase(),
+                                p.displayName.split(' ').first,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
-                                style: AppTypography.condensed(size: 12, weight: FontWeight.w600),
+                                style: AppTypography.headline(size: 14, weight: FontWeight.w600),
                               ),
                               Text(
                                 '${p.position} ${p.ovr > 0 ? p.ovr : ""}'.trim(),
-                                style: AppTypography.code(size: 8.5, color: context.c.positionColor(p.position)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.code(size: 12, color: context.c.positionColor(p.position)),
                               ),
                             ],
                           ),
@@ -1271,11 +1272,10 @@ class _OrganizerPanel extends StatelessWidget {
                 child: Icon(Icons.admin_panel_settings_rounded, size: 16, color: context.c.primary),
               ),
               const SizedBox(width: 8),
-              Text(
-                'PANEL DEL ORGANIZADOR',
-                style: AppTypography.code(size: 10, weight: FontWeight.w800, color: context.c.primary)
-                    .copyWith(letterSpacing: 1.4),
-              ),
+              Expanded(child: Text(
+                'Panel del organizador',
+                style: AppTypography.headline(size: 15, weight: FontWeight.w600, color: context.c.primary),
+              )),
             ],
           ),
           const SizedBox(height: 14),
@@ -1352,9 +1352,9 @@ class _OrganizerPanel extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: isFinishing ? null : onFinish,
                     icon: isFinishing
-                        ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
-                        : Icon(Icons.check_circle_outline, size: 15, color: context.c.onPrimary),
-                    label: Text('Finalizar Partido', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.onPrimary)),
+                        ? SizedBox(width: 14, height: 14, child: const PateaButtonProgress())
+                        : Icon(Icons.check_circle_outline, size: 15),
+                    label: Text('Finalizar Partido', style: AppTypography.action(size: 14, weight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.c.primary,
                       foregroundColor: context.c.onPrimary,
@@ -1367,7 +1367,7 @@ class _OrganizerPanel extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () => context.push('/matches/${match.id}/evaluate'),
                   icon: Icon(Icons.fact_check_rounded, size: 15, color: context.c.onPrimary),
-                  label: Text('Ver Evaluaciones', style: AppTypography.body(size: 13, weight: FontWeight.w700, color: context.c.onPrimary)),
+                  label: Text('Ver Evaluaciones', style: AppTypography.action(size: 14, weight: FontWeight.w700, color: context.c.onPrimary)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.c.primary,
                     foregroundColor: context.c.onPrimary,
@@ -1379,7 +1379,7 @@ class _OrganizerPanel extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onDelete,
                 icon: Icon(Icons.delete_outline_rounded, size: 15, color: context.c.destructive),
-                label: Text('Eliminar Partido', style: AppTypography.body(size: 13, color: context.c.destructive)),
+                label: Text('Eliminar Partido', style: AppTypography.action(size: 14, color: context.c.destructive)),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: context.c.cardSurface.withValues(alpha: 0.5),
                   foregroundColor: context.c.destructive,
@@ -1442,8 +1442,8 @@ class _StickyActionBar extends StatelessWidget {
         ),
         icon: Icon(Icons.sensors_rounded, size: 20, color: context.c.textPrimary),
         label: Text(
-          isOwner ? 'DIRIGIR EN VIVO' : 'SEGUIR EN VIVO',
-          style: AppTypography.jersey(size: 16, color: context.c.textPrimary, letterSpacing: 1.2),
+          isOwner ? 'Dirigir en vivo' : 'Seguir en vivo',
+          style: AppTypography.action(size: 16, color: context.c.textPrimary),
         ),
       );
     } else if (isCompleted && !isCompetition) {
@@ -1458,8 +1458,8 @@ class _StickyActionBar extends StatelessWidget {
         ),
         icon: Icon(isOwner ? Icons.fact_check_rounded : Icons.rate_review_rounded, size: 20, color: context.c.onPrimary),
         label: Text(
-          isOwner ? 'VER EVALUACIONES' : 'EVALUAR PARTIDO',
-          style: AppTypography.jersey(size: 16, color: context.c.onPrimary, letterSpacing: 1.2),
+          isOwner ? 'Ver evaluaciones' : 'Evaluar partido',
+          style: AppTypography.action(size: 16, color: context.c.onPrimary),
         ),
       );
     } else if (match.status == 'upcoming' && !isCompetition) {
@@ -1477,7 +1477,7 @@ class _StickyActionBar extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                label: Text('DIRIGIR', style: AppTypography.jersey(size: 15, color: context.c.textPrimary)),
+                label: Text('Dirigir', style: AppTypography.action(size: 15, color: context.c.textPrimary)),
               ),
             ),
             if (canFinalize) ...[
@@ -1492,9 +1492,9 @@ class _StickyActionBar extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   icon: isFinishing
-                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
-                      : Icon(Icons.check_circle_outline, size: 18, color: context.c.onPrimary),
-                  label: Text('FINALIZAR', style: AppTypography.jersey(size: 15, color: context.c.onPrimary)),
+                      ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
+                      : Icon(Icons.check_circle_outline, size: 18),
+                  label: Text('Finalizar', style: AppTypography.action(size: 15)),
                 ),
               ),
             ],
@@ -1516,8 +1516,8 @@ class _StickyActionBar extends StatelessWidget {
                     Icon(Icons.check_circle_rounded, size: 16, color: context.c.primary),
                     const SizedBox(width: 7),
                     Text(
-                      'ANOTADO',
-                      style: AppTypography.code(size: 11, weight: FontWeight.w800, color: context.c.primary).copyWith(letterSpacing: 0.8),
+                      'Anotado',
+                      style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.primary),
                     ),
                   ],
                 ),
@@ -1538,7 +1538,7 @@ class _StickyActionBar extends StatelessWidget {
                       : Icon(Icons.logout_rounded, size: 16, color: context.c.textSecondary),
                   label: Text(
                     'Darme de baja',
-                    style: AppTypography.body(size: 13, weight: FontWeight.w600, color: context.c.textSecondary),
+                    style: AppTypography.action(size: 15, weight: FontWeight.w600, color: context.c.textSecondary),
                   ),
                 ),
               ),
@@ -1555,7 +1555,7 @@ class _StickyActionBar extends StatelessWidget {
               children: [
                 Icon(Icons.hourglass_top_rounded, size: 18, color: context.c.primary),
                 const SizedBox(width: 8),
-                Text('SOLICITUD ENVIADA', style: AppTypography.jersey(size: 14, color: context.c.primary, letterSpacing: 0.8)),
+                Text('Solicitud enviada', style: AppTypography.action(size: 14, color: context.c.primary)),
               ],
             ),
                          );
@@ -1566,7 +1566,7 @@ class _StickyActionBar extends StatelessWidget {
                            borderColor: context.c.border.withValues(alpha: 0.3),
                            padding: const EdgeInsets.symmetric(vertical: 13),
                            child: Center(
-              child: Text('PARTIDO COMPLETO', style: AppTypography.jersey(size: 15, color: context.c.textSecondary, letterSpacing: 1)),
+              child: Text('Partido completo', style: AppTypography.action(size: 15, color: context.c.textSecondary)),
             ),
                          );
         } else {
@@ -1580,11 +1580,11 @@ class _StickyActionBar extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
             ),
             icon: isJoining
-                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
-                : Icon(needsApproval ? Icons.how_to_reg_rounded : Icons.sports_soccer_rounded, size: 20, color: context.c.onPrimary),
+                ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
+                : Icon(needsApproval ? Icons.how_to_reg_rounded : Icons.sports_soccer_rounded, size: 20),
             label: Text(
-              needsApproval ? 'PEDIR LUGAR' : 'ANOTARME AL PARTIDO',
-              style: AppTypography.jersey(size: 16, color: context.c.onPrimary, letterSpacing: 1.2),
+              needsApproval ? 'Pedir lugar' : 'Anotarme al partido',
+              style: AppTypography.action(size: 16),
             ),
           );
         }
@@ -1669,9 +1669,8 @@ class _ChatPreviewCard extends ConsumerWidget {
                         borderRadius: AppRadii.cardAll,
                       ),
                       child: Text(
-                        'ABRIR',
-                        style: AppTypography.code(size: 9.5, weight: FontWeight.w800, color: context.c.primary)
-                            .copyWith(letterSpacing: 1),
+                        'Abrir',
+                        style: AppTypography.action(size: 14, color: context.c.primary),
                       ),
                     ),
                   ],
@@ -1744,7 +1743,7 @@ void _showPlayerCardModal(BuildContext context, WidgetRef ref, MatchPlayerEntry 
 
                 return SizedBox(
                   width: 255,
-                  height: 365,
+                  height: 382.5,
                   child: PlayerCardWidget(
                     player: effectivePlayer,
                     photoStyle: CardPhotoStyle.halfTop,
@@ -1905,7 +1904,7 @@ class _ChatModalSheetState extends State<_ChatModalSheet> {
                             if (!isMine)
                               Text(
                                 data['senderName'] as String? ?? 'Usuario',
-                                style: AppTypography.body(size: 10.5, weight: FontWeight.w700, color: context.c.primary),
+                                style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.primary),
                               ),
                             Text(data['text'] as String? ?? '', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
                           ],

@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -170,7 +171,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                           onPressed: (completedAssignments.isEmpty || _isFinalizing) ? null : _finalize,
                           style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
                           icon: _isFinalizing
-                              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                              ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
                               : const Icon(Icons.emoji_events_outlined),
                           label: Text(_isFinalizing ? 'Finalizando...' : 'FINALIZAR EVALUACIÓN'),
                         ),

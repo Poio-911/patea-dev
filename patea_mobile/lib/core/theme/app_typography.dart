@@ -15,6 +15,22 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 class AppTypography {
+  /// Controles: ancho normal, peso medio y aire suficiente entre líneas.
+  /// Las fuentes de camiseta quedan reservadas para títulos grandes.
+  static TextStyle action({
+    double size = 15,
+    FontWeight weight = FontWeight.w600,
+    Color? color,
+  }) {
+    return GoogleFonts.spaceGrotesk(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      height: 1.25,
+      letterSpacing: 0.1,
+    );
+  }
+
   /// Space Grotesk: títulos, botones, cualquier cosa que mande.
   static TextStyle headline({
     double size = 20,
@@ -55,7 +71,7 @@ class AppTypography {
       fontSize: size,
       fontWeight: weight,
       color: color,
-      letterSpacing: -1.0,
+      letterSpacing: size < 20 ? 0 : -1.0,
     );
   }
 
@@ -158,11 +174,27 @@ class AppTypography {
   }) {
     return TextTheme(
       displayLarge: headline(size: 40, weight: FontWeight.w800, color: primary),
-      displayMedium: headline(size: 34, weight: FontWeight.w800, color: primary),
+      displayMedium: headline(
+        size: 34,
+        weight: FontWeight.w800,
+        color: primary,
+      ),
       displaySmall: headline(size: 28, weight: FontWeight.w700, color: primary),
-      headlineLarge: headline(size: 26, weight: FontWeight.w700, color: primary),
-      headlineMedium: headline(size: 22, weight: FontWeight.w700, color: primary),
-      headlineSmall: headline(size: 20, weight: FontWeight.w700, color: primary),
+      headlineLarge: headline(
+        size: 26,
+        weight: FontWeight.w700,
+        color: primary,
+      ),
+      headlineMedium: headline(
+        size: 22,
+        weight: FontWeight.w700,
+        color: primary,
+      ),
+      headlineSmall: headline(
+        size: 20,
+        weight: FontWeight.w700,
+        color: primary,
+      ),
       titleLarge: headline(size: 18, weight: FontWeight.w700, color: primary),
       titleMedium: headline(size: 16, weight: FontWeight.w600, color: primary),
       titleSmall: headline(size: 14, weight: FontWeight.w600, color: primary),
@@ -172,9 +204,9 @@ class AppTypography {
       // aclaración al pie.
       bodyMedium: body(size: 14, color: primary),
       bodySmall: body(size: 12, color: secondary),
-      labelLarge: headline(size: 15, weight: FontWeight.w700, color: primary),
+      labelLarge: action(color: primary),
       labelMedium: body(size: 12, weight: FontWeight.w600, color: secondary),
-      labelSmall: code(size: 11, color: secondary),
+      labelSmall: body(size: 12, weight: FontWeight.w600, color: secondary),
     );
   }
 }

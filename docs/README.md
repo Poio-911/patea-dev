@@ -1,5 +1,9 @@
 # Pateá - Documentación Completa de la Aplicación
 
+## Estado vigente — 15/11/2026
+
+La revisión móvil actual es **1.0.10 (11)**, instalada únicamente en el emulador Android para revisión. Los cambios de tipografía, fichas, creación de partidos y contraste están verificados con 161 pruebas; análisis sin errores ni advertencias (15 avisos informativos previos). La distribución continúa detenida. Firebase CLI y Google Cloud SDK están disponibles para operaciones autorizadas. El contenido histórico siguiente debe leerse junto con las [notas actuales](technical/RELEASE_1.0.10_2026-11-15.md).
+
 ## Descripción General
 
 **Pateá** es una aplicación web de gestión de fútbol amateur que permite a grupos de amigos organizar partidos, gestionar jugadores, evaluar rendimientos, y utilizar inteligencia artificial para mejorar la experiencia deportiva.

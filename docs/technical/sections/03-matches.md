@@ -1,5 +1,11 @@
 # Partidos - Gestión de Matches
 
+## App Flutter — actualización 15/11/2026
+
+Crear partido usa tres pasos: cancha y horario, configuración y selección. «Ya tengo horario» muestra calendario español y hora de 24 horas; «Consultar al grupo» usa la planificación existente con fecha y hora vacías. La cancha debe confirmarse desde las sugerencias. Los datos se conservan al retroceder; requestId y bloqueo durante envío evitan creaciones duplicadas. Las superficies son opacas y el pronóstico aparece al tener cancha y horario definidos.
+
+El balanceo de equipos actual es determinista y valida perfiles e identidades en servidor; las referencias históricas a generación con IA no describen ese motor.
+
 ## Descripción General
 Sistema completo de creación, gestión y evaluación de partidos de fútbol amateur con 3 tipos: Manual, Colaborativo y Por Equipos.
 

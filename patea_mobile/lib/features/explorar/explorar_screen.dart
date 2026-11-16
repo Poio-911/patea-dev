@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/player_position_badge.dart';
@@ -804,12 +805,12 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                   ? SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary),
+                      child: const PateaButtonProgress(),
                     )
                   : const Icon(Icons.person_add_alt_1, size: 18),
               label: Text(
                 'Invitar a mi partido',
-                style: AppTypography.headline(size: 14, weight: FontWeight.w800, color: context.c.onPrimary),
+                style: AppTypography.headline(size: 14, weight: FontWeight.w800),
               ),
             ),
         ],

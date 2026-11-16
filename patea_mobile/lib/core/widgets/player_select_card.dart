@@ -7,7 +7,7 @@ import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 
-/// Tarjeta moderna estilo FIFA / Gaming para la selección de jugadores en
+/// Ficha de selección de jugadores para
 /// convocatorias, armado de partidos y reclutamiento.
 class PlayerSelectCard extends StatelessWidget {
   final String name;
@@ -35,17 +35,12 @@ class PlayerSelectCard extends StatelessWidget {
     this.disabled = false,
   });
 
-  Color _tierColor(BuildContext context) {
-    if (ovr >= 85) return context.c.eliteBorder;
-    if (ovr >= 75) return context.c.goldBorder;
-    if (ovr >= 60) return context.c.silverBorder;
-    return context.c.bronzeBorder;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final tierCol = _tierColor(context);
-    final posCol = context.c.positionColor(position);
+    final tierCol = context.c.ratingAccent;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
 
     final isDark = context.c.isDarkSurface;
     final primaryCol = context.c.primary;
@@ -62,7 +57,7 @@ class PlayerSelectCard extends StatelessWidget {
     return Opacity(
       opacity: disabled && !selected ? 0.45 : 1.0,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: duration,
         margin: EdgeInsets.only(bottom: dense ? 6 : 8),
         child: InkWell(
           onTap: disabled && !selected
@@ -90,7 +85,10 @@ class PlayerSelectCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: tierCol.withValues(alpha: 0.12),
                     borderRadius: AppRadii.surfaceAll,
-                    border: Border.all(color: tierCol.withValues(alpha: 0.6), width: 1.2),
+                    border: Border.all(
+                      color: tierCol.withValues(alpha: 0.6),
+                      width: 1.2,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -109,9 +107,7 @@ class PlayerSelectCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: selected
-                          ? primaryCol
-                          : posCol.withValues(alpha: 0.5),
+                      color: selected ? primaryCol : context.c.border,
                       width: 1.5,
                     ),
                   ),
@@ -137,18 +133,20 @@ class PlayerSelectCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppTypography.headline(
-                                size: dense ? 13 : 14,
+                                size: 14,
                                 weight: FontWeight.w700,
                                 color: selected
                                     ? context.c.textPrimary
-                                    : context.c.textPrimary.withValues(alpha: 0.95),
+                                    : context.c.textPrimary.withValues(
+                                        alpha: 0.95,
+                                      ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 6),
                           PlayerPositionBadge(
                             position: position,
-                            fontSize: 9.5,
+                            fontSize: 12,
                             dense: true,
                           ),
                         ],
@@ -159,7 +157,10 @@ class PlayerSelectCard extends StatelessWidget {
                           subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                          style: AppTypography.body(
+                            size: 12,
+                            color: context.c.textSecondary,
+                          ),
                         )
                       else if (stats != null && stats!.isNotEmpty)
                         _StatsPreviewRow(stats: stats!, position: position)
@@ -168,7 +169,10 @@ class PlayerSelectCard extends StatelessWidget {
                           children: [
                             Text(
                               _positionLabel(position),
-                              style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                              style: AppTypography.body(
+                                size: 12,
+                                color: context.c.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -178,7 +182,7 @@ class PlayerSelectCard extends StatelessWidget {
 
                 // 4. Indicador de Selección
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
+                  duration: duration,
                   width: dense ? 24 : 28,
                   height: dense ? 24 : 28,
                   decoration: BoxDecoration(
@@ -190,15 +194,6 @@ class PlayerSelectCard extends StatelessWidget {
                           : context.c.textSecondary.withValues(alpha: 0.4),
                       width: selected ? 2 : 1.5,
                     ),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: primaryCol.withValues(alpha: isDark ? 0.35 : 0.25),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ]
-                        : null,
                   ),
                   child: selected
                       ? Icon(
@@ -241,30 +236,38 @@ class _StatsPreviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isGk = position.toUpperCase() == 'POR';
-    final keys = isGk
-        ? ['ref', 'est', 'par']
-        : ['pac', 'sho', 'pas'];
+    final keys = isGk ? ['ref', 'est', 'par'] : ['pac', 'sho', 'pas'];
 
     final labels = isGk
         ? {'ref': 'REF', 'est': 'EST', 'par': 'PAR'}
         : {'pac': 'RIT', 'sho': 'TIR', 'pas': 'PAS'};
 
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 3,
       children: keys.map((k) {
         final val = stats[k] ?? 50;
         final lbl = labels[k] ?? k.toUpperCase();
         return Padding(
-          padding: const EdgeInsets.only(right: 8),
+          padding: EdgeInsets.zero,
           child: Text.rich(
             TextSpan(
               children: [
                 TextSpan(
                   text: '$lbl ',
-                  style: AppTypography.code(size: 9.5, color: context.c.textSecondary, weight: FontWeight.w600),
+                  style: AppTypography.code(
+                    size: 12,
+                    color: context.c.textSecondary,
+                    weight: FontWeight.w600,
+                  ),
                 ),
                 TextSpan(
                   text: '$val',
-                  style: AppTypography.code(size: 10, color: context.c.textPrimary, weight: FontWeight.w800),
+                  style: AppTypography.code(
+                    size: 12,
+                    color: context.c.textPrimary,
+                    weight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),

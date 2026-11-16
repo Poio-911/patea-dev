@@ -141,8 +141,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                         decoration: InputDecoration(
                           hintText: 'Buscar jugador...',
                           hintStyle: TextStyle(
-                            color: context.c.overlayStrong,
-                            fontSize: 13,
+                            color: context.c.textSecondary,
+                            fontSize: 14,
                           ),
                           prefixIcon: Icon(Icons.search,
                               size: 20, color: context.c.overlayStrong),
@@ -153,8 +153,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text('POSICIÓN',
-                        style: AppTypography.code(size: 10, color: context.c.textSecondary)),
+                    Text('Posición',
+                        style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -171,8 +171,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    Text('ORDENAR POR',
-                        style: AppTypography.code(size: 10, color: context.c.textSecondary)),
+                    Text('Ordenar por',
+                        style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -201,8 +201,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                               borderRadius: AppRadii.cardAll),
                         ),
                         child: Text('Ver jugadores',
-                            style: AppTypography.headline(
-                                size: 14, weight: FontWeight.w700, color: context.c.onPrimary)),
+                            style: AppTypography.action(
+                                size: 15, color: context.c.onPrimary)),
                       ),
                     ),
                   ],
@@ -241,6 +241,14 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    final minimumCardWidth = MediaQuery.textScalerOf(context).scale(14) > 20
+        ? 260.0
+        : 150.0;
+    final columns = ((MediaQuery.sizeOf(context).width - 18) /
+            (minimumCardWidth + 10))
+        .floor()
+        .clamp(1, 4);
     // Jugadores del grupo activo, no de toda la plataforma. Sin grupo activo
     // no se consulta nada — igual que `players/page.tsx:44` en la web.
     final playersAsync = ref.watch(activeGroupPlayersProvider);
@@ -341,8 +349,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(14, 6, 14, bottomInset(context, extra: 24)),
                     sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
                         childAspectRatio: 2.0 / 3.0,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 12,
@@ -350,7 +358,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final player = filtered[index];
-                          return Hero(
+                          final card = Hero(
                             // La carta vuela de la grilla a la ficha en vez de
                             // cortar. El tag lleva el criterio de orden porque
                             // si no, al reordenar quedan dos Heros con el
@@ -367,7 +375,9 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                               highlightStat: _sortBy == 'OVR' ? null : _sortBy,
                               onTap: () => context.push('/players/${player.id}'),
                             ),
-                          )
+                          );
+                          if (reducedMotion) return card;
+                          return card
                               // Al cambiar el orden las cartas entran
                               // escalonadas: se lee como que el plantel se
                               // reacomodó, no como un salto de contenido.

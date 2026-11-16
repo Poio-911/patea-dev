@@ -22,7 +22,7 @@ class PlayerHistoryScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'HISTORIAL DE PARTIDOS',
+          'Historial de partidos',
           style: AppTypography.headline(size: 16, weight: FontWeight.w700),
         ),
       ),

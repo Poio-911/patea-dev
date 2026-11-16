@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -119,7 +120,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                             : (_selectedPlayerIds.isNotEmpty ? _handleCreate : null),
                     style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                     child: _isSubmitting
-                        ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                        ? SizedBox(height: 20, width: 20, child: const PateaButtonProgress())
                         : Text(_step == 1 ? 'Siguiente' : 'CREAR EQUIPO'),
                   ),
                 ),

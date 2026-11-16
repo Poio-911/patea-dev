@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'dart:io';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -18,7 +19,7 @@ import 'crop_photo_screen.dart';
 /// Edición del perfil propio.
 ///
 /// Toma los campos de `EditProfileDialog` de la web, pero no su forma: en vez
-/// de un formulario dentro de un modal, la carta del jugador queda fija arriba
+/// de un formulario dentro de un modal, la ficha y los campos se desplazan juntos
 /// y se actualiza mientras editás — cambiás la posición y cambia el color de
 /// la carta, cambiás la foto y la ves en la carta, no en un recuadro aparte.
 ///
@@ -93,7 +94,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       await HapticFeedback.selectionClick();
       setState(() => _pickedPhoto = File(picked.path));
     } catch (e) {
-      if (mounted) setState(() => _error = 'No se pudo abrir la cámara o la galería.');
+      if (mounted) {
+        setState(() => _error = 'No se pudo abrir la cámara o la galería.');
+      }
     }
   }
 
@@ -102,10 +105,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => PateaCard(
-                                   color: context.c.popover,
-                                   radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-                                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-                                   child: SafeArea(
+        color: context.c.popover,
+        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        child: SafeArea(
           top: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -140,7 +143,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               _SheetAction(
                 icon: Icons.auto_awesome_outlined,
                 label: 'Generar con IA',
-                subtitle: 'Convierte tu foto en un retrato de estudio. Usa 1 crédito.',
+                subtitle:
+                    'Convierte tu foto en un retrato de estudio. Usa 1 crédito.',
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _generateWithAi();
@@ -149,7 +153,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ],
           ),
         ),
-                                 ),
+      ),
     );
   }
 
@@ -188,7 +192,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       return;
     }
     if (_pickedPhoto != null) {
-      setState(() => _error = 'Guardá la foto nueva antes de ajustar el encuadre.');
+      setState(
+        () => _error = 'Guardá la foto nueva antes de ajustar el encuadre.',
+      );
       return;
     }
     await Navigator.of(context).push(
@@ -212,14 +218,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => PateaCard(
-                                   color: context.c.popover,
-                                   radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-                                   height: 320,
-                                   child: Column(
+        color: context.c.popover,
+        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+        height: 320,
+        child: Column(
           children: [
             const SizedBox(height: 14),
-            Text('Año de nacimiento',
-                style: AppTypography.headline(size: 15, weight: FontWeight.w700)),
+            Text(
+              'Año de nacimiento',
+              style: AppTypography.headline(size: 15, weight: FontWeight.w700),
+            ),
             const SizedBox(height: 10),
             Expanded(
               child: ListWheelScrollView.useDelegate(
@@ -246,7 +254,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           ],
         ),
-                                 ),
+      ),
     );
 
     if (chosen != null) setState(() => _birthYear = chosen);
@@ -302,19 +310,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('EDITAR PERFIL',
-            style: AppTypography.headline(size: 16, weight: FontWeight.w700)),
+        title: Text(
+          'Editar perfil',
+          style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+        ),
       ),
       body: playerAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: context.c.primary)),
         error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: context.c.textSecondary)),
+          child: Text(
+            'Error: $err',
+            style: AppTypography.body(color: context.c.textSecondary),
+          ),
         ),
         data: (player) {
           if (player == null) {
             return Center(
-              child: Text('No se encontró tu perfil.',
-                  style: AppTypography.body(color: context.c.textSecondary)),
+              child: Text(
+                'No se encontró tu perfil.',
+                style: AppTypography.body(color: context.c.textSecondary),
+              ),
             );
           }
           _seed(player);
@@ -343,29 +359,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             stats: player.stats,
           );
 
-          return Column(
+          return ListView(
+            padding: EdgeInsets.zero,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-                child: Row(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // La carta se dibuja a su tamaño natural y se escala con
-                    // FittedBox. Meterla en una caja chica la desbordaba: el
-                    // contenido interno (avatar y grilla de atributos) tiene
-                    // medidas fijas y no entra a 128 px de ancho.
-                    SizedBox(
-                      width: 130,
-                      height: 190,
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: SizedBox(
-                          width: 260,
-                          height: 380,
-                          // La previsualización tiene que mostrar la carta
-                          // real: si acá se ve circular y en el plantel con la
-                          // foto arriba, el usuario elige el encuadre mirando
-                          // algo que no es lo que va a quedar.
+                    Center(
+                      child: SizedBox(
+                        width: 260,
+                        child: AspectRatio(
+                          aspectRatio: 2 / 3,
                           child: PlayerCardWidget(
                             player: preview,
                             localPhoto: _pickedPhoto,
@@ -374,70 +380,80 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          Text('Así te ven',
-                              style: AppTypography.headline(size: 13, weight: FontWeight.w700)),
-                          const SizedBox(height: 4),
-                          Text(
-                            'La carta se actualiza mientras editás.',
-                            style: AppTypography.body(size: 11, color: context.c.textSecondary, height: 1.4),
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: (_saving || _generating) ? null : _openPhotoSheet,
-                            icon: _generating
-                                ? SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: context.c.primary),
-                                  )
-                                : const Icon(Icons.photo_camera_outlined, size: 16),
-                            label: Text(
-                              _generating ? 'Generando…' : 'Cambiar foto',
-                              style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w600),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          OutlinedButton.icon(
-                            onPressed: (_saving || _generating) ? null : () => _openCrop(player),
-                            icon: const Icon(Icons.crop_free, size: 16),
-                            label: Text(
-                              'Ajustar encuadre',
-                              style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w600),
-                            ),
-                          ),
-                          if (_pickedPhoto != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                'Foto nueva sin guardar',
-                                style: AppTypography.code(size: 9, color: context.c.primary),
-                              ),
-                            ),
-                          if (_notice != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                _notice!,
-                                style: AppTypography.code(size: 9, color: context.c.success),
-                              ),
-                            ),
-                        ],
+                    const SizedBox(height: 16),
+                    Text('Así te ven', style: AppTypography.headline(size: 16)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'La ficha se actualiza mientras editás.',
+                      style: AppTypography.body(
+                        size: 13,
+                        color: context.c.textSecondary,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: (_saving || _generating)
+                              ? null
+                              : _openPhotoSheet,
+                          icon: _generating
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: context.c.primary,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.photo_camera_outlined,
+                                  size: 18,
+                                ),
+                          label: Text(
+                            _generating ? 'Generando…' : 'Cambiar foto',
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: (_saving || _generating)
+                              ? null
+                              : () => _openCrop(player),
+                          icon: const Icon(Icons.crop_free, size: 18),
+                          label: const Text('Ajustar encuadre'),
+                        ),
+                      ],
+                    ),
+                    if (_pickedPhoto != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Foto nueva sin guardar',
+                          style: AppTypography.body(
+                            size: 12,
+                            color: context.c.primary,
+                          ),
+                        ),
+                      ),
+                    if (_notice != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          _notice!,
+                          style: AppTypography.body(
+                            size: 12,
+                            color: context.c.success,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 6, 18, 32),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 6, 18, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _Label('Nombre o apodo'),
                     _Field(
@@ -480,11 +496,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               color: context.c.primary,
                               onTap: () {
                                 HapticFeedback.selectionClick();
-                                setState(() => _foot = _foot == entry.key ? null : entry.key);
+                                setState(
+                                  () => _foot = _foot == entry.key
+                                      ? null
+                                      : entry.key,
+                                );
                               },
                             ),
                           ),
-                          if (entry.key != _feet.keys.last) const SizedBox(width: 8),
+                          if (entry.key != _feet.keys.last)
+                            const SizedBox(width: 8),
                         ],
                       ],
                     ),
@@ -495,13 +516,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       onTap: _saving ? null : _openBirthYearPicker,
                       borderRadius: AppRadii.cardAll,
                       child: PateaCard(
-                               color: context.c.card,
-                               radius: AppRadii.cardAll,
-                               borderColor: context.c.overlayLine,
-                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-                               child: Row(
+                        color: context.c.card,
+                        radius: AppRadii.cardAll,
+                        borderColor: context.c.overlayLine,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 15,
+                        ),
+                        child: Row(
                           children: [
-                            Icon(Icons.cake_outlined, size: 17, color: context.c.textSecondary),
+                            Icon(
+                              Icons.cake_outlined,
+                              size: 17,
+                              color: context.c.textSecondary,
+                            ),
                             const SizedBox(width: 10),
                             Text(
                               _birthYear != null
@@ -518,18 +546,30 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             if (_birthYear != null)
                               GestureDetector(
                                 onTap: () => setState(() => _birthYear = null),
-                                child: Icon(Icons.close, size: 16, color: context.c.textSecondary),
+                                child: Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: context.c.textSecondary,
+                                ),
                               )
                             else
-                              Icon(Icons.chevron_right, size: 18, color: context.c.textSecondary),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 18,
+                                color: context.c.textSecondary,
+                              ),
                           ],
                         ),
-                             ),
+                      ),
                     ),
 
                     const SizedBox(height: 20),
                     _Label('Nacionalidad'),
-                    _Field(controller: _nationalityController, hint: 'Uruguay', maxLength: 40),
+                    _Field(
+                      controller: _nationalityController,
+                      hint: 'Uruguay',
+                      maxLength: 40,
+                    ),
 
                     const SizedBox(height: 20),
                     _Label('Bio'),
@@ -544,8 +584,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       alignment: Alignment.centerRight,
                       child: Text(
                         '${_bioController.text.characters.length}/$_maxBio',
-                        style: AppTypography.code(
-                          size: 10,
+                        style: AppTypography.body(
+                          size: 12,
                           color: _bioController.text.characters.length > _maxBio
                               ? context.c.destructive
                               : context.c.textSecondary,
@@ -558,15 +598,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       PateaCard(
                         color: context.c.destructive.withValues(alpha: 0.1),
                         radius: AppRadii.cardAll,
-                        borderColor: context.c.destructive.withValues(alpha: 0.3),
+                        borderColor: context.c.destructive.withValues(
+                          alpha: 0.3,
+                        ),
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline, size: 16, color: context.c.destructive),
+                            Icon(
+                              Icons.error_outline,
+                              size: 16,
+                              color: context.c.destructive,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(_error!,
-                                  style: AppTypography.body(size: 12, color: context.c.destructive)),
+                              child: Text(
+                                _error!,
+                                style: AppTypography.body(
+                                  size: 12,
+                                  color: context.c.destructive,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -590,7 +641,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             ? SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary),
+                                child: const PateaButtonProgress(),
                               )
                             : const Icon(Icons.check, size: 18),
                         label: Text(
@@ -598,7 +649,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           style: AppTypography.headline(
                             size: 14,
                             weight: FontWeight.w700,
-                            color: context.c.onPrimary,
                           ),
                         ),
                       ),
@@ -624,8 +674,12 @@ class _Label extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
-        text.toUpperCase(),
-        style: AppTypography.code(size: 10, color: context.c.textSecondary),
+        text,
+        style: AppTypography.body(
+          size: 14,
+          weight: FontWeight.w600,
+          color: context.c.textSecondary,
+        ),
       ),
     );
   }
@@ -649,10 +703,10 @@ class _Field extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PateaCard(
-             color: context.c.card,
-             radius: AppRadii.cardAll,
-             borderColor: context.c.overlayLine,
-             child: TextField(
+      color: context.c.card,
+      radius: AppRadii.cardAll,
+      borderColor: context.c.overlayLine,
+      child: TextField(
         controller: controller,
         maxLines: maxLines,
         maxLength: maxLength,
@@ -663,10 +717,13 @@ class _Field extends StatelessWidget {
           counterText: '',
           hintStyle: TextStyle(color: context.c.overlayStrong, fontSize: 13),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
         ),
       ),
-           );
+    );
   }
 }
 
@@ -703,9 +760,9 @@ class _ChoiceChip extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTypography.headline(
-            size: 11,
-            weight: selected ? FontWeight.w800 : FontWeight.w600,
+          style: AppTypography.body(
+            size: 12,
+            weight: selected ? FontWeight.w600 : FontWeight.w600,
             color: selected ? color : context.c.textSecondary,
           ),
         ),
@@ -750,11 +807,22 @@ class _SheetAction extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: AppTypography.headline(size: 15, weight: FontWeight.w600)),
+                  Text(
+                    label,
+                    style: AppTypography.headline(
+                      size: 15,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(subtitle!,
-                        style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                    Text(
+                      subtitle!,
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                   ],
                 ],
               ),

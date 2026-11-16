@@ -1,4 +1,8 @@
 # Ruta: /players/[id]
+
+## Ficha Flutter vigente — 15/11/2026
+
+La ficha «Marcador lateral» integra posición recta y OVR ámbar mediante una línea fina. Nombre y estado quedan sobre el retrato, con degradado hasta los seis atributos; el mayor valor destaca en ámbar (incluidos empates). Ordenación y selección mantienen indicación independiente. La edición conserva fotos, encuadre y zoom hasta 4; la grilla se adapta al texto grande y ambos temas. Se retiraron foil, rarezas e inclinación 3D de esta ficha.
 ## Propósito General
 Esta ruta está diseñada para mostrar el perfil detallado de un jugador específico. Permite a los usuarios ver la información individual de un jugador, incluyendo sus datos personales y, si pertenece a un equipo, el dorsal de su camiseta. La página maneja estados de carga, errores de ID no válidos y situaciones donde el jugador no es encontrado, proporcionando una experiencia de usuario robusta.
 

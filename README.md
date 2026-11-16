@@ -1,5 +1,9 @@
 # Pateá ⚽
 
+## Estado actual — 15/11/2026
+
+El repositorio incluye la web Next.js, el backend Firebase y la app Flutter en `patea_mobile/`. La revisión móvil **1.0.10 (11)** está instalada localmente en Android para revisión; la distribución permanece detenida. Incluye fichas deportivas, mejoras de legibilidad y creación de partidos. Véanse [notas y validación](docs/technical/RELEASE_1.0.10_2026-11-15.md), [documentación móvil](patea_mobile/README.md) y [criterios visuales](docs/design/UX_BRAND_2026-11-15.md).
+
 **Plataforma web de gestión de fútbol amateur con inteligencia artificial**
 
 Pateá es una aplicación Next.js que permite a grupos de amigos organizar partidos, gestionar jugadores con sistema de atributos tipo FIFA, evaluar rendimientos, y utilizar inteligencia artificial para mejorar la experiencia deportiva.
@@ -8,7 +12,7 @@ Pateá es una aplicación Next.js que permite a grupos de amigos organizar parti
 
 - **Gestión de Jugadores**: Perfiles con atributos (PAC, SHO, PAS, DRI, DEF, PHY) y sistema de OVR dinámico
 - **Organización de Partidos**: Partidos amistosos, ligas, copas y desafíos entre equipos
-- **Equipos Balanceados con IA**: Generación automática de equipos equilibrados usando Gemini AI
+- **Equipos equilibrados**: Reparto determinista con perfiles validados en servidor; búsqueda exacta para dos equipos de hasta 22 jugadores y heurística para planteles mayores
 - **Evaluación Post-Partido**: Sistema de evaluación con 150+ tags de rendimiento
 - **Progresión de Jugadores**: Atributos que evolucionan basados en evaluaciones reales
 - **13 Flujos de IA**: Asistente virtual, análisis de progresión, generación de imágenes, crónicas de partidos

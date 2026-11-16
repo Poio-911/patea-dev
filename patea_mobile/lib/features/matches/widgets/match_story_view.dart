@@ -1,3 +1,4 @@
+import '../../../core/widgets/patea_button_progress.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -193,7 +194,7 @@ class _Masthead extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                   child: Text(
                     '${match.teamA!.score} - ${match.teamB!.score}',
-                    style: AppTypography.jersey(size: 15, color: context.c.textPrimary),
+                    style: AppTypography.sportNumber(size: 18, color: context.c.textPrimary),
                   ),
                 ),
               ],
@@ -270,7 +271,7 @@ class _MvpMedallion extends StatelessWidget {
                     player.displayName.toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.condensed(size: 15, weight: FontWeight.w700),
+                    style: AppTypography.headline(size: 15, weight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -368,12 +369,11 @@ class _StoryState extends State<_Story> {
                 color: context.c.primary,
               ),
               label: Text(
-                _expanded ? 'MOSTRAR MENOS' : 'LEER CRÓNICA COMPLETA',
-                style: AppTypography.code(
-                  size: 10,
-                  weight: FontWeight.w800,
+                _expanded ? 'Mostrar menos' : 'Leer crónica completa',
+                style: AppTypography.action(
+                  size: 14,
                   color: context.c.primary,
-                ).copyWith(letterSpacing: 1.4),
+                ),
               ),
               style: TextButton.styleFrom(
                 foregroundColor: context.c.primary,
@@ -481,8 +481,7 @@ class _TallyHeader extends StatelessWidget {
         Icon(icon, size: 12, color: color),
         const SizedBox(width: 6),
         Text(text,
-            style: AppTypography.condensed(
-                size: 12, weight: FontWeight.w700, color: color, letterSpacing: 1.4)),
+            style: AppTypography.headline(size: 14, weight: FontWeight.w600, color: color)),
       ],
     );
   }
@@ -520,7 +519,7 @@ class _TallyLine extends StatelessWidget {
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.condensed(size: 15, weight: FontWeight.w600),
+              style: AppTypography.headline(size: 15, weight: FontWeight.w600),
             ),
           ),
           Icon(icon, size: 14, color: color),
@@ -752,12 +751,12 @@ class _CoverPending extends StatelessWidget {
                   ? SizedBox(
                       width: 15,
                       height: 15,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary),
+                      child: const PateaButtonProgress(),
                     )
-                  : Icon(Icons.auto_awesome, size: 16, color: context.c.onPrimary),
+                  : Icon(Icons.auto_awesome, size: 16),
               label: Text(
-                generating ? 'ESCRIBIENDO RELATO...' : 'GENERAR CRÓNICA CON IA',
-                style: AppTypography.jersey(size: 14, color: context.c.onPrimary, letterSpacing: 1),
+                generating ? 'Escribiendo relato…' : 'Generar crónica con IA',
+                style: AppTypography.action(size: 15),
               ),
             ),
           ),

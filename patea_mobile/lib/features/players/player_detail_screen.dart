@@ -50,7 +50,7 @@ class PlayerDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          asOwnProfile ? 'MI PERFIL' : 'PERFIL DEL JUGADOR',
+          asOwnProfile ? 'Mi perfil' : 'Perfil del jugador',
           style: AppTypography.headline(size: 16, weight: FontWeight.w700),
         ),
       ),
@@ -86,7 +86,7 @@ class PlayerDetailScreen extends ConsumerWidget {
               Center(
                 child: SizedBox(
                   width: 260,
-                  height: 380,
+                  height: 390,
                   // Otro extremo del Hero de la grilla: la carta crece desde
                   // su lugar en el plantel hasta acá.
                   child: Hero(
@@ -163,7 +163,7 @@ class PlayerDetailScreen extends ConsumerWidget {
 
               const SizedBox(height: 28),
               Text(
-                'ESTADÍSTICAS',
+                'Estadísticas',
                 style: AppTypography.headline(size: 14, weight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
@@ -171,7 +171,7 @@ class PlayerDetailScreen extends ConsumerWidget {
 
               const SizedBox(height: 30),
               Text(
-                'HISTORIAL DE PARTIDOS',
+                'Historial de partidos',
                 style: AppTypography.headline(size: 14, weight: FontWeight.w700),
               ),
               const SizedBox(height: 14),
@@ -272,7 +272,7 @@ class _ActionCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 description,
-                style: AppTypography.body(size: 10, color: context.c.textSecondary, height: 1.4),
+                style: AppTypography.body(size: 12, color: context.c.textSecondary, height: 1.4),
               ),
             ],
           ),
@@ -323,7 +323,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               title,
-              style: AppTypography.code(size: 10, color: context.c.textSecondary),
+              style: AppTypography.body(size: 12, color: context.c.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

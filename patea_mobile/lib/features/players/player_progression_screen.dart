@@ -25,7 +25,7 @@ class PlayerProgressionScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'PROGRESIÓN DE OVR',
+          'Progresión de OVR',
           style: AppTypography.headline(size: 16, weight: FontWeight.w700),
         ),
       ),

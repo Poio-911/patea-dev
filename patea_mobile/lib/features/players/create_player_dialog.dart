@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
@@ -231,10 +232,11 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header con OVR Badge
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                // El OVR pasa a otra línea cuando el texto necesita más ancho.
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Row(
                       children: [
@@ -252,12 +254,12 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'NUEVO JUGADOR',
+                              'Nuevo jugador',
                               style: AppTypography.headline(size: 16, weight: FontWeight.w800, letterSpacing: 0.5),
                             ),
                             Text(
                               'Añadí un jugador al plantel',
-                              style: AppTypography.body(size: 11, color: c.textSecondary),
+                              style: AppTypography.body(size: 12, color: c.textSecondary),
                             ),
                           ],
                         ),
@@ -284,7 +286,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                         children: [
                           Text(
                             'OVR',
-                            style: AppTypography.code(size: 10, weight: FontWeight.w900, color: ovrColor),
+                            style: AppTypography.body(size: 12, weight: FontWeight.w600, color: ovrColor),
                           ),
                           const SizedBox(width: 5),
                           Text(
@@ -326,12 +328,12 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'POSICIÓN',
-                      style: AppTypography.code(size: 11, weight: FontWeight.w800, color: c.textSecondary),
+                      'Posición',
+                      style: AppTypography.body(size: 12, weight: FontWeight.w600, color: c.textSecondary),
                     ),
                     Text(
                       isGk ? 'Guantes y reflejos 🧤' : 'Jugador de campo ⚽',
-                      style: AppTypography.body(size: 10, color: c.textSecondary),
+                      style: AppTypography.body(size: 12, color: c.textSecondary),
                     ),
                   ],
                 ),
@@ -389,10 +391,10 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Text(
-                        isGk ? 'ATRIBUTOS DE ARQUERO' : 'ATRIBUTOS BASE',
-                        style: AppTypography.code(
-                          size: 10,
-                          weight: FontWeight.w900,
+                        isGk ? 'Atributos de arquero' : 'Atributos base',
+                        style: AppTypography.body(
+                          size: 12,
+                          weight: FontWeight.w600,
                           color: c.textSecondary,
                         ),
                       ),
@@ -428,10 +430,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                       ? SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: c.onPrimary,
-                          ),
+                          child: const PateaButtonProgress(),
                         )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -439,11 +438,10 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                             const Icon(Icons.check_circle_outline_rounded, size: 18),
                             const SizedBox(width: 8),
                             Text(
-                              'GUARDAR JUGADOR',
-                              style: AppTypography.headline(
-                                size: 13,
-                                weight: FontWeight.w800,
-                                letterSpacing: 0.6,
+                              'Guardar jugador',
+                              style: AppTypography.action(
+                                size: 15,
+                                weight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -492,9 +490,9 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
               child: Center(
                 child: Text(
                   code,
-                  style: AppTypography.code(
-                    size: 10,
-                    weight: FontWeight.w900,
+                  style: AppTypography.body(
+                    size: 12,
+                    weight: FontWeight.w600,
                     color: isKey ? c.primary : c.textPrimary,
                   ),
                 ),
@@ -508,7 +506,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
               child: Text(
                 label,
                 style: AppTypography.body(
-                  size: 11,
+                  size: 12,
                   weight: isKey ? FontWeight.w700 : FontWeight.w500,
                   color: isKey ? c.textPrimary : c.textSecondary,
                 ),

@@ -307,7 +307,7 @@ class _NotificationRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       message,
-                      style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -316,7 +316,7 @@ class _NotificationRow extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       when,
-                      style: AppTypography.body(size: 10, color: context.c.textSecondary),
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
                     ),
                   ],
                 ],

@@ -131,10 +131,17 @@ void main() {
 
     final manifiesto = await AssetManifest.loadFromAssetBundle(rootBundle);
     for (final clave in manifiesto.listAssets()) {
+      if (clave.endsWith('plain-pink-football-shirt-svgrepo-com.svg')) {
+        // Cachear texto con reloj real: un Future cacheado dentro del primer
+        // test conserva su zona de reloj falso y bloquea el tema siguiente.
+        await rootBundle.loadString(clave);
+        continue;
+      }
       if (!clave.endsWith('.jpg') &&
           !clave.endsWith('.png') &&
-          !clave.endsWith('.webp'))
+          !clave.endsWith('.webp')) {
         continue;
+      }
       final listo = Completer<void>();
       void terminar() {
         if (!listo.isCompleted) listo.complete();
@@ -159,17 +166,30 @@ void main() {
 
   for (final (nombre, construir) in _pantallas) {
     Widget construirParaPrueba() => nombre == 'panel'
-        ? Builder(builder: (context) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: construir(),
-          ))
+        ? Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: construir(),
+            ),
+          )
         : construir();
     for (final (tema, sufijo) in [
       (AppTheme.darkTheme, 'game'),
       (AppTheme.lightTheme, 'claro'),
     ]) {
       testWidgets('$nombre · $sufijo', (tester) async {
-        final errores = await montarPantalla(tester, construirParaPrueba(), tema: tema);
+        if (nombre == 'panel') {
+          // Cada tema monta un árbol nuevo: el motor SVG conserva estado de
+          // decodificación si la segunda prueba reutiliza el árbol anterior.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          svg.cache.clear();
+        }
+        final errores = await montarPantalla(
+          tester,
+          construirParaPrueba(),
+          tema: tema,
+        );
 
         if (nombre == 'panel') {
           // Bundle → SVG bytes → vector decode son etapas asincrónicas separadas.
@@ -177,7 +197,9 @@ void main() {
           for (var frame = 0; frame < 3; frame++) {
             await tester.runAsync(() async {
               for (final element in find.byType(SvgPicture).evaluate()) {
-                await (element.widget as SvgPicture).bytesLoader.loadBytes(element);
+                await (element.widget as SvgPicture).bytesLoader.loadBytes(
+                  element,
+                );
               }
               await vg.waitForPendingDecodes();
             });

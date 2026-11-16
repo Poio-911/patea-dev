@@ -150,9 +150,9 @@ class PateaPageHeader extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       'Filtros',
-                      style: AppTypography.headline(
-                        size: 12,
-                        weight: FontWeight.w700,
+                      style: AppTypography.action(
+                        size: 14,
+                        weight: FontWeight.w600,
                         color: activeFilterCount > 0 ? context.c.primary : context.c.textPrimary,
                       ),
                     ),

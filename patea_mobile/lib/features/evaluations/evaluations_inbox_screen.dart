@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -204,7 +205,7 @@ class _StatBox extends StatelessWidget {
              child: Column(
         children: [
           Text(value, style: AppTypography.headline(size: 20, weight: FontWeight.w900, color: color ?? context.c.textPrimary)),
-          Text(label.toUpperCase(), style: AppTypography.code(size: 9, weight: FontWeight.w700, color: context.c.textSecondary)),
+          Text(label, style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary)),
         ],
       ),
            );
@@ -270,7 +271,7 @@ class _PendingList extends StatelessWidget {
                     decoration: BoxDecoration(color: context.c.cardSurface, borderRadius: AppRadii.chipAll),
                     child: Column(
                       children: [
-                        Text(fmtMonthShort(item.matchDate), style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.primary)),
+                        Text(fmtMonthShort(item.matchDate), style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.primary)),
                         Text(fmtDayNumber(item.matchDate), style: AppTypography.headline(size: 16, weight: FontWeight.w900)),
                       ],
                     ),
@@ -286,7 +287,7 @@ class _PendingList extends StatelessWidget {
                             margin: const EdgeInsets.only(top: 4),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(color: urgency.color.withValues(alpha: 0.12), borderRadius: AppRadii.surfaceAll),
-                            child: Text(urgency.label, style: AppTypography.code(size: 10, weight: FontWeight.w700, color: urgency.color)),
+                            child: Text(urgency.label, style: AppTypography.body(size: 12, weight: FontWeight.w600, color: urgency.color)),
                           ),
                       ],
                     ),
@@ -295,7 +296,7 @@ class _PendingList extends StatelessWidget {
               ),
               if (item.assignedPlayers.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text('EVALUÁS A', style: AppTypography.code(size: 9, weight: FontWeight.w800, color: context.c.textSecondary)),
+                Text('Evaluás a', style: AppTypography.body(size: 12, weight: FontWeight.w600, color: context.c.textSecondary)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -313,7 +314,7 @@ class _PendingList extends StatelessWidget {
                             size: 18,
                           ),
                           const SizedBox(width: 6),
-                          Text(p.name.split(' ').first, style: AppTypography.body(color: context.c.textSecondary, size: 11, weight: FontWeight.w600)),
+                          Text(p.name.split(' ').first, style: AppTypography.body(color: context.c.textSecondary, size: 12, weight: FontWeight.w600)),
                         ],
                       ),
                     );
@@ -327,7 +328,7 @@ class _PendingList extends StatelessWidget {
                   onPressed: () => context.push('/evaluations/${item.matchId}'),
                   style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                   icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: const Text('EVALUAR AHORA'),
+                  label: const Text('Evaluar ahora'),
                 ),
               ),
             ],
@@ -371,7 +372,7 @@ class _HistoryList extends StatelessWidget {
                     Text(
                       'Evaluaste ${item.submittedEvaluationsCount ?? 0} jugador(es)'
                       '${item.submittedGoals != null ? ' · ${item.submittedGoals} goles · ${item.submittedAssists ?? 0} asis.' : ''}',
-                      style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
                     ),
                   ],
                 ),
@@ -470,7 +471,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(r.fromPlayerName, style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700)),
-                    Text(r.matchTitle, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                    Text(r.matchTitle, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                   ],
                 ),
               ),
@@ -479,23 +480,20 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
           const SizedBox(height: 10),
           Text('${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó.', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
           const SizedBox(height: 12),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _loading != null ? null : () => _respond('rejected'),
-                  icon: _loading == 'rejected' ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.visibility_off_outlined, size: 14),
-                  label: const Text('Mantener anonimato', style: TextStyle(fontSize: 11)),
-                ),
+              OutlinedButton.icon(
+                onPressed: _loading != null ? null : () => _respond('rejected'),
+                icon: _loading == 'rejected' ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.visibility_off_outlined, size: 18),
+                label: Text('Mantener anonimato', style: AppTypography.action(size: 14)),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _loading != null ? null : () => _respond('accepted'),
-                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
-                  icon: _loading == 'accepted' ? SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary)) : const Icon(Icons.visibility_outlined, size: 14),
-                  label: const Text('Revelar identidad', style: TextStyle(fontSize: 11)),
-                ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: _loading != null ? null : () => _respond('accepted'),
+                style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+                icon: _loading == 'accepted' ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress()) : const Icon(Icons.visibility_outlined, size: 18),
+                label: Text('Revelar identidad', style: AppTypography.action(size: 14)),
               ),
             ],
           ),

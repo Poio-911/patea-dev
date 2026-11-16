@@ -1,4 +1,8 @@
 # Ruta: /players
+
+## Ficha Flutter vigente — 15/11/2026
+
+La ficha «Marcador lateral» integra posición recta y OVR ámbar mediante una línea fina. Nombre y estado quedan sobre el retrato, con degradado hasta los seis atributos; el mayor valor destaca en ámbar (incluidos empates). Ordenación y selección mantienen indicación independiente. La edición conserva fotos, encuadre y zoom hasta 4; la grilla se adapta al texto grande y ambos temas. Se retiraron foil, rarezas e inclinación 3D de esta ficha.
 ## Propósito General
 Esta ruta (`/players`) sirve como la página principal para gestionar y visualizar el plantel de jugadores del grupo activo del usuario. Permite a los usuarios ver una lista de todos los jugadores asociados a su grupo, agregar nuevos jugadores (manuales), filtrar la lista por posición y rango de OVR (Overall Rating), y acceder a detalles de cada jugador. La página también maneja varios estados, como la carga de datos, la ausencia de un grupo activo, la falta de jugadores en el grupo y la ausencia de jugadores que coincidan con los filtros aplicados.
 

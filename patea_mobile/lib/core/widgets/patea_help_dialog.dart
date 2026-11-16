@@ -75,7 +75,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
           boxShadow: [
             BoxShadow(
               // Una sombra es negra en los dos temas.
-color: Colors.black.withValues(alpha: 0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -139,33 +139,33 @@ color: Colors.black.withValues(alpha: 0.6),
                         width: 1,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(step.icon, color: context.c.primary, size: 30),
-                        const SizedBox(height: 8),
-                        Text(
-                          step.title,
-                          style: AppTypography.headline(
-                            size: 15,
-                            weight: FontWeight.w800,
-                            color: context.c.textPrimary,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(step.icon, color: context.c.primary, size: 30),
+                          const SizedBox(height: 8),
+                          Text(
+                            step.title,
+                            style: AppTypography.headline(
+                              size: 15,
+                              weight: FontWeight.w800,
+                              color: context.c.textPrimary,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          step.content,
-                          style: AppTypography.body(
-                            size: 12,
-                            color: context.c.textSecondary,
+                          const SizedBox(height: 8),
+                          Text(
+                            step.content,
+                            style: AppTypography.body(
+                              size: 14,
+                              color: context.c.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -184,7 +184,9 @@ color: Colors.black.withValues(alpha: 0.6),
                   width: isCurrent ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: isCurrent ? context.c.primary : context.c.overlayStrong,
+                    color: isCurrent
+                        ? context.c.primary
+                        : context.c.overlayStrong,
                     borderRadius: AppRadii.hairAll,
                   ),
                 );
@@ -195,7 +197,7 @@ color: Colors.black.withValues(alpha: 0.6),
             // Botón de acción principal
             SizedBox(
               width: double.infinity,
-              height: 46,
+              height: MediaQuery.textScalerOf(context).scale(46),
               child: ElevatedButton(
                 onPressed: () {
                   if (_currentPage < _steps.length - 1) {
@@ -209,18 +211,18 @@ color: Colors.black.withValues(alpha: 0.6),
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.c.primary,
-                  foregroundColor: context.c.background,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadii.cardAll,
-                  ),
+                  foregroundColor: context.c.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   elevation: 0,
                 ),
                 child: Text(
-                  _currentPage < _steps.length - 1 ? 'Siguiente' : '¡Entendido!',
-                  style: AppTypography.headline(
-                    size: 14,
-                    weight: FontWeight.w900,
-                    color: context.c.background,
+                  _currentPage < _steps.length - 1
+                      ? 'Siguiente'
+                      : '¡Entendido!',
+                  style: AppTypography.action(
+                    size: 15,
+                    weight: FontWeight.w600,
+                    color: context.c.onPrimary,
                   ),
                 ),
               ),

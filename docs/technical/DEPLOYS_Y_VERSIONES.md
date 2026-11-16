@@ -4,16 +4,13 @@ Cómo llega Pateá a un teléfono, en las dos plataformas, y de dónde sale cada
 número. Para el detalle de la clave de firma de Android y su respaldo, ver
 [ANDROID_RELEASE_SIGNING.md](./ANDROID_RELEASE_SIGNING.md).
 
-## En una línea
+## Estado vigente — 15/11/2026
 
-Un push a `feat/flutter-mobile-app` que toque `patea_mobile/` o
-`codemagic.yaml` dispara la build de Codemagic: el IPA va a TestFlight. No hay
-que subir números a mano ni correr nada localmente.
+**Distribución detenida para revisión del usuario.** La versión local es `1.0.10+11`, instalada como APK release `android-x64` en el emulador. No se distribuyó esta revisión ni se generó un nuevo IPA.
 
-El workflow de Android está escrito y listo en `codemagic.yaml`, pero
-**comentado**, porque le faltan dos secretos que tiene que cargar una persona
-(ver *Lo que hay que cargar una sola vez*). En cuanto estén, se descomenta y
-el mismo push despliega las dos plataformas.
+El workflow `ios-testflight` conserva su nombre histórico y genera artefactos, pero ya no contiene publicación automática a Apple. El workflow Android continúa comentado. Un push no equivale a autorizar una distribución. [Notas y validación actuales](RELEASE_1.0.10_2026-11-15.md).
+
+Las instrucciones siguientes conservan el procedimiento histórico de compilación y entrega; cualquier publicación debe respetar el estado vigente anterior. El APK local usa el código `11` del pubspec; CI puede reemplazarlo según cada plataforma.
 
 ## Versiones
 
@@ -39,8 +36,7 @@ subidas con el mismo número para un mismo nombre de versión, así que ahí el
 único origen confiable es la propia TestFlight; en Android alcanza con un
 contador que sólo suba. No hay que intentar alinearlos.
 
-Para publicar una versión nueva alcanza con cambiar el `1.0.2` del pubspec y
-pushear. El `+3` quedó ahí por historia y no lo usa el CI.
+Cambiar el nombre de versión prepara una nueva compilación. La publicación requiere autorización y un mecanismo de entrega habilitado; actualmente está detenida.
 
 ## iOS → TestFlight
 
@@ -192,9 +188,11 @@ trampas de esta máquina que **no** aplican en CI:
   `D:\dev\patea_mobile` con robocopy antes de compilar. Ojo que robocopy
   excluye `.dart_tool`, así que un paquete nuevo pide `flutter pub get` también
   en el espejo.
-- `flutter build apk --release` falla localmente con un error críptico
+- Incidencia histórica: `flutter build apk --release` fallaba localmente con un error críptico
   (`"25.0.2"`); `./gradlew.bat assembleRelease` anda. En Codemagic el comando
   de Flutter funciona sin problema.
+
+Con JDK 17, la compilación local `flutter build apk --release --target-platform android-x64 --no-pub` se verificó para 1.0.10 desde este worktree, sin usar un espejo.
 
 Para iOS no hay camino manual desde acá: hace falta una Mac, y para eso está
 Codemagic.

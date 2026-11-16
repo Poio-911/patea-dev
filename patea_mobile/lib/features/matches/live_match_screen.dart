@@ -207,7 +207,7 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
                   ),
                   icon: const Icon(Icons.star_rate_rounded, size: 20),
                   label: Text('Evaluar a tus compañeros',
-                      style: AppTypography.headline(
+                      style: AppTypography.action(
                           size: 14, weight: FontWeight.w800, color: context.c.background)),
                 ),
                 const SizedBox(height: 18),

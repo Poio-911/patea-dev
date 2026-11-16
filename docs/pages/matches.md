@@ -1,4 +1,10 @@
 # Ruta: /matches
+
+## App Flutter — actualización 15/11/2026
+
+Crear partido usa tres pasos: cancha y horario, configuración y selección. «Ya tengo horario» muestra calendario español y hora de 24 horas; «Consultar al grupo» usa la planificación existente con fecha y hora vacías. La cancha debe confirmarse desde las sugerencias. Los datos se conservan al retroceder; requestId y bloqueo durante envío evitan creaciones duplicadas. Las superficies son opacas y el pronóstico aparece al tener cancha y horario definidos.
+
+El balanceo de equipos actual es determinista y valida perfiles e identidades en servidor; las referencias históricas a generación con IA no describen ese motor.
 ## Propósito General
 La ruta `/matches` sirve como el centro principal para que los usuarios de un grupo gestionen y visualicen los partidos. Se enfoca específicamente en los "amistosos" (partidos manuales, colaborativos, por equipos e intergrupo). Permite a los usuarios ver partidos próximos, el historial, filtrar por tipo, estado y si son creados por ellos, así como cambiar el modo de visualización. También maneja la lógica para la finalización de partidos pendientes y la persistencia de las preferencias del usuario.
 

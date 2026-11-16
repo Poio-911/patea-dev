@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.10] — 2026-11-15 — revisión local, sin distribuir
+
+Incluye las iteraciones locales 1.0.7–1.0.10: tipografía legible, ficha «Marcador lateral», OVR y atributo máximo ámbar, edición y grilla accesibles, superficies opacas y fondo de cancha sutil. Creación de partidos con horario definido o consulta al grupo, calendario español y hora de 24 horas; controles de carga con contraste y movimiento reducido.
+
+Validación: 161 pruebas, análisis sin errores ni advertencias y APK firmado instalado en emulador conservando sesión. [Detalle de cambios y límites de entrega](docs/technical/RELEASE_1.0.10_2026-11-15.md).
+
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),

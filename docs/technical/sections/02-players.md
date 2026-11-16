@@ -1,5 +1,9 @@
 # Jugadores - Sistema de Gestión de Plantel
 
+## Ficha Flutter vigente — 15/11/2026
+
+La ficha «Marcador lateral» integra posición recta y OVR ámbar mediante una línea fina. Nombre y estado quedan sobre el retrato, con degradado hasta los seis atributos; el mayor valor destaca en ámbar (incluidos empates). Ordenación y selección mantienen indicación independiente. La edición conserva fotos, encuadre y zoom hasta 4; la grilla se adapta al texto grande y ambos temas. Se retiraron foil, rarezas e inclinación 3D de esta ficha.
+
 ## Descripción General
 
 El sistema de jugadores es el corazón de Pateá. Permite gestionar perfiles de jugadores con un sistema completo de atributos, evaluaciones, estadísticas y progresión. Cada jugador tiene atributos tipo FIFA (PAC, SHO, PAS, DRI, DEF, PHY) que evolucionan basados en evaluaciones de partidos.

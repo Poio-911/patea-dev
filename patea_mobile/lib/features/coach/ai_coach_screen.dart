@@ -57,7 +57,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
             Icon(Icons.smart_toy_outlined, color: context.c.primary),
             const SizedBox(width: 8),
             Text(
-              'DT VIRTUAL IA',
+              'DT virtual',
               style: AppTypography.headline(size: 18, weight: FontWeight.w800),
             ),
           ],
@@ -105,7 +105,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'El DT está escribiendo...',
-                  style: AppTypography.code(size: 11, color: context.c.textSecondary),
+                  style: AppTypography.body(size: 12, color: context.c.textSecondary),
                 ),
               ),
             ),

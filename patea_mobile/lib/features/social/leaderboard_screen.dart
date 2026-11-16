@@ -22,7 +22,7 @@ class LeaderboardScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'RANKINGS & TABLAS',
+          'Rankings y tablas',
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),
         ),
       ),
@@ -74,7 +74,7 @@ class LeaderboardScreen extends ConsumerWidget {
                           ),
                           Text(
                             '${player.stats.goals} Goles • ${player.stats.matchesPlayed} PJ',
-                            style: AppTypography.code(size: 11, color: context.c.textSecondary),
+                            style: AppTypography.body(size: 12, color: context.c.textSecondary),
                           ),
                         ],
                       ),

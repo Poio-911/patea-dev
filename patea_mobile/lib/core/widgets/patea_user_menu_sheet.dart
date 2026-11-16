@@ -107,9 +107,9 @@ class PateaUserMenuSheet extends ConsumerWidget {
                           const SizedBox(height: 3),
                           Text(
                             position.toUpperCase(),
-                            style: AppTypography.headline(
-                              size: 10,
-                              weight: FontWeight.w800,
+                            style: AppTypography.body(
+                              size: 12,
+                              weight: FontWeight.w600,
                               color: context.c.positionColor(position),
                             ),
                           ),
@@ -352,7 +352,7 @@ class _MenuItem extends StatelessWidget {
             const SizedBox(width: 14),
             Text(
               label,
-              style: AppTypography.headline(size: 14, weight: FontWeight.w700, color: tint),
+              style: AppTypography.action(size: 15, color: tint),
             ),
           ],
         ),

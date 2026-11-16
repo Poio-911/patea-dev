@@ -701,9 +701,9 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                         _shortLocation(match.location),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.code(
-                          size: 10,
-                          weight: FontWeight.w700,
+                        style: AppTypography.body(
+                          size: 12,
+                          weight: FontWeight.w600,
                           color: context.c.textSecondary,
                         ),
                       ),
@@ -723,9 +723,9 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
                   const SizedBox(width: 6),
                   Text(
                     '${match.playerUids.length}/${match.matchSize > 0 ? match.matchSize : 14} CONVOCADOS',
-                    style: AppTypography.code(
-                      size: 10,
-                      weight: FontWeight.w800,
+                    style: AppTypography.body(
+                      size: 12,
+                      weight: FontWeight.w600,
                       color: context.c.primary,
                     ),
                   ),
@@ -740,7 +740,7 @@ class _TunnelMatchHeroState extends State<_TunnelMatchHero>
 }
 
 String _shortLocation(String? loc) {
-  if (loc == null || loc.trim().isEmpty) return 'CANCHA A DEFINIR';
+  if (loc == null || loc.trim().isEmpty) return 'Cancha a definir';
   final first = loc.split(',').first.trim();
   return (first.isNotEmpty ? first : loc).toUpperCase();
 }
@@ -970,10 +970,10 @@ class _PlayerPerformanceMural extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'TU OVR ACTUAL',
-                style: AppTypography.code(
-                  size: 9,
-                  weight: FontWeight.w800,
+                'Tu OVR actual',
+                style: AppTypography.body(
+                  size: 12,
+                  weight: FontWeight.w600,
                   color: context.c.textSecondary,
                 ),
               ),
@@ -1003,9 +1003,9 @@ class _PlayerPerformanceMural extends StatelessWidget {
               ),
               Text(
                 'TIER ${player.tier.toUpperCase()}',
-                style: AppTypography.code(
-                  size: 9,
-                  weight: FontWeight.w800,
+                style: AppTypography.body(
+                  size: 12,
+                  weight: FontWeight.w600,
                   color: context.c.ovrBorderColor(player.ovr),
                 ),
               ),
@@ -1038,9 +1038,9 @@ class _PlayerPerformanceMural extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'PROMEDIO: $avg G/PJ',
-                style: AppTypography.code(
-                  size: 10,
-                  weight: FontWeight.w700,
+                style: AppTypography.body(
+                  size: 12,
+                  weight: FontWeight.w600,
                   color: context.c.textPrimary,
                 ),
               ),
@@ -1081,9 +1081,9 @@ class _LastResultMural extends StatelessWidget {
               children: [
                 Text(
                   'ÚLTIMO JUGADO · ${fmtDate(match.date).toUpperCase()}',
-                  style: AppTypography.code(
-                    size: 9,
-                    weight: FontWeight.w800,
+                  style: AppTypography.body(
+                    size: 12,
+                    weight: FontWeight.w600,
                     color: context.c.textSecondary,
                   ),
                 ),
@@ -1101,7 +1101,7 @@ class _LastResultMural extends StatelessWidget {
                 Text(
                   'Toque para ver crónica y calificaciones',
                   style: AppTypography.body(
-                    size: 11,
+                    size: 12,
                     color: context.c.textSecondary,
                   ),
                 ),
@@ -1137,7 +1137,7 @@ class _GrupoTab extends ConsumerWidget {
       data: (groupId) {
         if (groupId == null) {
           return _EmptyMural(
-            label: 'SIN GRUPO ACTIVO',
+            label: 'Sin grupo activo',
             message:
                 'Unite o creá tu grupo para ver las estadísticas del cuadro.',
             actionLabel: 'Ir a Mis Grupos',
@@ -1189,7 +1189,7 @@ class _GrupoTabBody extends ConsumerWidget {
       data: (group) {
         if (group == null) {
           return _EmptyMural(
-            label: 'GRUPO NO ENCONTRADO',
+            label: 'Grupo no encontrado',
             message: 'El grupo no existe o fue eliminado.',
             actionLabel: 'Explorar Grupos',
             onAction: () => context.push('/groups'),
@@ -1235,10 +1235,10 @@ class _GrupoTabBody extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'TU CUADRO',
-                        style: AppTypography.code(
-                          size: 9,
-                          weight: FontWeight.w800,
+                        'Tu cuadro',
+                        style: AppTypography.body(
+                          size: 12,
+                          weight: FontWeight.w600,
                           color: context.c.textSecondary,
                         ),
                       ),
@@ -1273,8 +1273,8 @@ class _GrupoTabBody extends ConsumerWidget {
                           children: [
                             Text(
                               'CÓDIGO: ',
-                              style: AppTypography.code(
-                                size: 11,
+                              style: AppTypography.body(
+                                size: 12,
                                 color: context.c.textSecondary,
                               ),
                             ),
@@ -1314,10 +1314,10 @@ class _GrupoTabBody extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'PLANTEL TOTAL',
-                      style: AppTypography.code(
-                        size: 9,
-                        weight: FontWeight.w800,
+                      'Plantel total',
+                      style: AppTypography.body(
+                        size: 12,
+                        weight: FontWeight.w600,
                         color: context.c.textSecondary,
                       ),
                     ),
@@ -1328,7 +1328,7 @@ class _GrupoTabBody extends ConsumerWidget {
                     Text(
                       'jugadores registrados',
                       style: AppTypography.body(
-                        size: 11,
+                        size: 12,
                         color: context.c.textSecondary,
                       ),
                     ),
@@ -1338,10 +1338,10 @@ class _GrupoTabBody extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'PARTIDOS JUGADOS',
-                      style: AppTypography.code(
-                        size: 9,
-                        weight: FontWeight.w800,
+                      'Partidos jugados',
+                      style: AppTypography.body(
+                        size: 12,
+                        weight: FontWeight.w600,
                         color: context.c.textSecondary,
                       ),
                     ),
@@ -1355,7 +1355,7 @@ class _GrupoTabBody extends ConsumerWidget {
                     Text(
                       'en el historial',
                       style: AppTypography.body(
-                        size: 11,
+                        size: 12,
                         color: context.c.textSecondary,
                       ),
                     ),
@@ -1370,10 +1370,10 @@ class _GrupoTabBody extends ConsumerWidget {
 
             // ── 3. DESTACADOS DEL PLANTEL (MEJOR OVR Y GOLEADOR) ────────
             Text(
-              'FIGURAS DEL PLANTEL',
-              style: AppTypography.code(
-                size: 9,
-                weight: FontWeight.w800,
+              'Figuras del plantel',
+              style: AppTypography.body(
+                size: 12,
+                weight: FontWeight.w600,
                 color: context.c.textSecondary,
               ),
             ),
@@ -1392,7 +1392,7 @@ class _GrupoTabBody extends ConsumerWidget {
             if (topScorer != null) ...[
               const SizedBox(height: 10),
               _GroupFigureRow(
-                label: 'MÁXIMO GOLEADOR',
+                label: 'Máximo goleador',
                 name: topScorer.name,
                 value: '${topScorer.stats.goals} G',
                 valueColor: context.c.primary,
@@ -1407,10 +1407,10 @@ class _GrupoTabBody extends ConsumerWidget {
 
             // ── 4. EN AGENDA (LISTA ABIERTA) ─────────────────────────────
             Text(
-              'EN AGENDA',
-              style: AppTypography.code(
-                size: 9,
-                weight: FontWeight.w800,
+              'En agenda',
+              style: AppTypography.body(
+                size: 12,
+                weight: FontWeight.w600,
                 color: context.c.textSecondary,
               ),
             ),
@@ -1454,9 +1454,9 @@ class _GrupoTabBody extends ConsumerWidget {
                               m.time == null
                                   ? fmtDate(m.date)
                                   : '${fmtDate(m.date)} · ${m.time}',
-                              style: AppTypography.code(
-                                size: 10,
-                                weight: FontWeight.w800,
+                              style: AppTypography.body(
+                                size: 12,
+                                weight: FontWeight.w600,
                                 color: context.c.primary,
                               ),
                             ),
@@ -1609,8 +1609,8 @@ class _GroupFigureRow extends StatelessWidget {
                   ),
                   Text(
                     label,
-                    style: AppTypography.code(
-                      size: 9,
+                    style: AppTypography.body(
+                      size: 12,
                       color: context.c.textSecondary,
                     ),
                   ),
@@ -1653,9 +1653,9 @@ class _EmptyMural extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.code(
-              size: 9,
-              weight: FontWeight.w800,
+            style: AppTypography.body(
+              size: 12,
+              weight: FontWeight.w600,
               color: context.c.textSecondary,
             ),
           ),
@@ -1716,11 +1716,10 @@ class _WelcomeEmptyState extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             'Tu cuadro empieza acá',
-            style: AppTypography.headline(
-              size: 11,
-              weight: FontWeight.w800,
+            style: AppTypography.body(
+              size: 12,
+              weight: FontWeight.w600,
               color: context.c.textSecondary,
-              letterSpacing: 1.2,
             ),
           ),
           const SizedBox(height: 8),

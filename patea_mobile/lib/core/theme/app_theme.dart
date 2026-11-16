@@ -18,7 +18,8 @@ class AppTheme {
   static ThemeData get darkTheme => _build(PateaColors.game, Brightness.dark);
 
   /// El tema claro, que en la web es el que viene por defecto.
-  static ThemeData get lightTheme => _build(PateaColors.light, Brightness.light);
+  static ThemeData get lightTheme =>
+      _build(PateaColors.light, Brightness.light);
 
   static ThemeData _build(PateaColors c, Brightness brightness) {
     final textTheme = AppTypography.textTheme(
@@ -78,23 +79,35 @@ class AppTheme {
         // El velo del status bar sigue al tema. Antes se fijaba una sola vez
         // en `main()` con los iconos en claro, que sobre un fondo claro son
         // invisibles.
-        systemOverlayStyle:
-            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
       ),
 
       iconTheme: IconThemeData(color: c.textPrimary),
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: c.input.withValues(alpha: 0.35),
+        fillColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.disabled)
+              ? Color.lerp(c.cardSurface, c.background, 0.4)!
+              : c.cardSurface,
+        ),
         hintStyle: AppTypography.body(color: c.textSecondary),
         labelStyle: AppTypography.body(color: c.textSecondary),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: AppRadii.cardAll,
           borderSide: BorderSide(color: c.border),
         ),
         enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadii.cardAll,
+          borderSide: BorderSide(color: c.border),
+        ),
+        disabledBorder: OutlineInputBorder(
           borderRadius: AppRadii.cardAll,
           borderSide: BorderSide(color: c.border),
         ),
@@ -112,7 +125,9 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: c.primary,
           foregroundColor: c.onPrimary,
-          textStyle: AppTypography.headline(size: 15, weight: FontWeight.w700),
+          disabledBackgroundColor: c.cardSurface,
+          disabledForegroundColor: c.textSecondary,
+          textStyle: AppTypography.action(),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
           elevation: 0,
@@ -122,8 +137,9 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: c.textPrimary,
+          disabledForegroundColor: c.textSecondary,
           side: BorderSide(color: c.border),
-          textStyle: AppTypography.headline(size: 14, weight: FontWeight.w600),
+          textStyle: AppTypography.action(),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
@@ -135,11 +151,11 @@ class AppTheme {
       // `bottomNavigationBarTheme` sí existían, y se borraron: en toda la app
       // hay 0 widgets `Card` y la barra inferior es un `Row` propio en el
       // shell, así que no pintaban nada.
-
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: c.primary,
-          textStyle: AppTypography.headline(size: 14, weight: FontWeight.w600),
+          disabledForegroundColor: c.textSecondary,
+          textStyle: AppTypography.action(),
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
         ),
       ),
@@ -148,7 +164,9 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: c.primary,
           foregroundColor: c.onPrimary,
-          textStyle: AppTypography.headline(size: 15, weight: FontWeight.w700),
+          disabledBackgroundColor: c.cardSurface,
+          disabledForegroundColor: c.textSecondary,
+          textStyle: AppTypography.action(),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
@@ -216,25 +234,41 @@ class AppTheme {
         unselectedLabelColor: c.textSecondary,
         indicatorColor: c.primary,
         labelStyle: AppTypography.body(size: 14, weight: FontWeight.w700),
-        unselectedLabelStyle:
-            AppTypography.body(size: 14, weight: FontWeight.w700),
+        unselectedLabelStyle: AppTypography.body(
+          size: 14,
+          weight: FontWeight.w700,
+        ),
         dividerColor: c.border.withValues(alpha: 0.3),
       ),
 
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? c.primary : c.textSecondary,
+          (s) => s.contains(WidgetState.disabled)
+              ? c.textSecondary
+              : s.contains(WidgetState.selected)
+              ? c.onPrimary
+              : c.textSecondary,
         ),
         trackColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected)
-              ? c.primary.withValues(alpha: 0.35)
+          (s) =>
+              s.contains(WidgetState.selected) &&
+                  !s.contains(WidgetState.disabled)
+              ? c.primary
               : c.cardSurface,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (s) =>
+              s.contains(WidgetState.selected) &&
+                  !s.contains(WidgetState.disabled)
+              ? Colors.transparent
+              : c.border,
         ),
       ),
 
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? c.primary : Colors.transparent,
+          (s) =>
+              s.contains(WidgetState.selected) ? c.primary : Colors.transparent,
         ),
         checkColor: WidgetStateProperty.all(c.onPrimary),
         side: BorderSide(color: c.border, width: 1.5),
@@ -284,7 +318,6 @@ class AppTheme {
         dialBackgroundColor: c.cardSurface,
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceAll),
       ),
-
     );
   }
 }

@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:flutter/material.dart';
@@ -103,7 +104,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('AJUSTAR FOTO',
+        title: Text('Ajustar foto',
             style: AppTypography.headline(size: 16, weight: FontWeight.w700)),
         actions: [
           if (!isDefault)
@@ -193,7 +194,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
           ),
           Text(
             '${_zoom.toStringAsFixed(1)}×',
-            style: AppTypography.code(size: 11, color: context.c.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
 
           const Spacer(),
@@ -224,13 +225,13 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     ? SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary),
+                        child: const PateaButtonProgress(),
                       )
                     : const Icon(Icons.check, size: 18),
                 label: Text(
                   _saving ? 'Guardando…' : 'Usar este encuadre',
                   style: AppTypography.headline(
-                      size: 14, weight: FontWeight.w700, color: context.c.onPrimary),
+                      size: 14, weight: FontWeight.w700),
                 ),
               ),
             ),

@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/theme/app_radii.dart';
 import '../../core/constants/sections.dart';
@@ -35,15 +36,15 @@ const Map<String, String> _statusLabels = {
 String _actionLabel(String status) {
   switch (status) {
     case 'active':
-      return 'Ver En Vivo ⚡';
+      return 'Ver en vivo ⚡';
     case 'evaluated':
-      return 'Ver Resultado';
+      return 'Ver resultado';
     case 'completed':
-      return 'Ver Resumen';
+      return 'Ver resumen';
     case 'planning':
-      return 'Ver y Confirmar';
+      return 'Ver y confirmar';
     default:
-      return 'Ver Detalles';
+      return 'Ver detalles';
   }
 }
 
@@ -227,7 +228,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                         },
                   style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                   icon: isLoading
-                      ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                      ? SizedBox(width: 14, height: 14, child: const PateaButtonProgress())
                       : const Icon(Icons.check_circle_outline, size: 18),
                   label: Text(pending.length == 1 ? 'Finalizar Partido' : 'Finalizar ${pending.length} Partidos'),
                 ),
@@ -364,8 +365,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                         ),
                         icon: const Icon(Icons.add_circle, size: 18),
                         label: Text(
-                          'Armar Partido',
-                          style: AppTypography.headline(size: 13, weight: FontWeight.w700, color: context.c.onPrimary),
+                          'Armar partido',
+                          style: AppTypography.action(size: 14, weight: FontWeight.w700, color: context.c.onPrimary),
                         ),
                       ),
                     ),
@@ -840,7 +841,7 @@ color: Colors.black.withValues(alpha: 0.4),
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                       ),
-                      icon: const Text('Ver Detalles'),
+                      icon: const Text('Ver detalles'),
                       label: const Icon(Icons.arrow_forward, size: 16),
                     ),
                   ),
@@ -1262,7 +1263,7 @@ color: Colors.black.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 icon: const Icon(Icons.visibility_outlined, size: 18),
-                label: Text(_actionLabel(match.status), style: AppTypography.headline(size: 13, color: isLive ? context.c.textPrimary : context.c.onPrimary)),
+                label: Text(_actionLabel(match.status), style: AppTypography.action(size: 14, color: isLive ? context.c.textPrimary : context.c.onPrimary)),
               ),
             ),
           ],

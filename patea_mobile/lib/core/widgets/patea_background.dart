@@ -5,89 +5,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/fondo_claro.dart';
 import '../theme/patea_colors.dart';
 
-/// La web (`GameModeBackground`, montado UNA vez en `client-providers.tsx`)
-/// elige una foto al azar (1-9) una sola vez por carga de página y la
-/// mantiene fija para toda la sesión — es el mismo fondo detrás de TODAS
-/// las secciones, no una foto distinta por pantalla. Este provider replica
-/// eso: se computa una sola vez (no por-widget) y se comparte entre
-/// cualquier pantalla que use `PateaBackground`.
+/// Índice conservado para el fondo fotográfico opcional del tema claro.
 final backgroundIndexProvider = Provider<int>((ref) => Random().nextInt(9) + 1);
 
-/// Azul noche idéntico al blue-950 de Tailwind / globals.css web
-const _blue950 = Color(0xFF040E24);
-
-/// Fondo de la aplicación idéntico a GameModeBackground de la webapp
-/// Incluye imagen de césped de cancha real desenfocada + viñetas azul noche / carbon
+/// Lienzo de la aplicación. La fotografía queda en piezas protagonistas;
+/// los campos y las listas descansan sobre una superficie estable.
 class PateaBackground extends ConsumerWidget {
   final Widget child;
   final int? backgroundIndex;
 
-  const PateaBackground({
-    super.key,
-    required this.child,
-    this.backgroundIndex,
-  });
+  const PateaBackground({super.key, required this.child, this.backgroundIndex});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // En claro no hay foto de cancha. No es una simplificación: es lo que hace
-    // la web, donde `ThemeBackground` devuelve `null` fuera del tema `game` y
-    // el fondo es el degradado suave del `body`. Con la foto puesta, el texto
-    // oscuro del tema claro queda ilegible sobre el césped.
-    final int index = backgroundIndex ?? ref.watch(backgroundIndexProvider);
-    final int clampedIndex = index < 1 ? 1 : (index > 9 ? 9 : index);
-
-    if (!context.c.isDarkSurface) {
-      // Cual de las tres variantes candidatas se dibuja lo decide
-      // `fondoClaroProvider`, y el selector vive en `/dev/gallery`. Es
-      // andamio para poder comparar en el telefono: cuando este elegida,
-      // aca queda una sola y `fondo_claro.dart` se borra.
+    final c = context.c;
+    if (!c.isDarkSurface) {
+      // Se conserva la preferencia explícita de fondo del tema claro.
+      final index = (backgroundIndex ?? ref.watch<int>(backgroundIndexProvider))
+          .clamp(1, 9);
       return Stack(
         children: [
-          Positioned.fill(child: FondoClaroWidget(indiceFoto: clampedIndex)),
+          Positioned.fill(child: FondoClaroWidget(indiceFoto: index)),
           child,
         ],
       );
     }
-
-    final bgAsset = 'assets/backgrounds/fondo_$clampedIndex.jpg';
-
     return Stack(
       children: [
-        // 1. Color base muy oscuro
-        Positioned.fill(child: ColoredBox(color: context.c.background)),
-
-        // 2. Fotografía real de estadio / césped desenfocada
-        Positioned.fill(
-          child: Opacity(
-            opacity: 0.40,
-            child: Image.asset(
-              bgAsset,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const SizedBox(),
-            ),
-          ),
-        ),
-
-        // 3. Overlay viñeta azul noche (from-blue-950/40 via-transparent to-blue-950/60)
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  _blue950.withValues(alpha: 0.40),
-                  _blue950.withValues(alpha: 0.0),
-                  _blue950.withValues(alpha: 0.60),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // 4. Overlay sutil neón en esquina y oscurecido hacia abajo
-        // (from-primary/5 via-transparent to-background/80)
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -95,18 +39,75 @@ class PateaBackground extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  context.c.brandVolt.withValues(alpha: 0.05),
-                  context.c.brandVolt.withValues(alpha: 0.0),
-                  context.c.background.withValues(alpha: 0.80),
+                  Color.alphaBlend(
+                    c.primary.withValues(alpha: 0.025),
+                    c.background,
+                  ),
+                  c.background,
+                  Color.alphaBlend(
+                    c.accent.withValues(alpha: 0.015),
+                    c.background,
+                  ),
                 ],
+                stops: const [0, 0.55, 1],
               ),
             ),
           ),
         ),
-
-        // 5. Contenido de la pantalla
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: _PitchLines(c.textSecondary.withValues(alpha: 0.045)),
+              ),
+            ),
+          ),
+        ),
         child,
       ],
     );
   }
+}
+
+class _PitchLines extends CustomPainter {
+  final Color color;
+  const _PitchLines(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final width = size.width * 0.86;
+    final height = width * 1.4;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.translate(size.width * 0.64, size.height * 0.76);
+    canvas.rotate(-0.22);
+    final field = Rect.fromCenter(
+      center: Offset.zero,
+      width: width,
+      height: height,
+    );
+    canvas.drawRect(field, paint);
+    canvas.drawLine(Offset(field.left, 0), Offset(field.right, 0), paint);
+    canvas.drawCircle(Offset.zero, width * 0.16, paint);
+    for (final bottom in [false, true]) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          -width * 0.29,
+          bottom ? field.bottom - height * 0.16 : field.top,
+          width * 0.58,
+          height * 0.16,
+        ),
+        paint,
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _PitchLines oldDelegate) =>
+      oldDelegate.color != color;
 }

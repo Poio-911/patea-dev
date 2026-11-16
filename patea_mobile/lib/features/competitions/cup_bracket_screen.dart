@@ -142,7 +142,7 @@ class CupBracketScreen extends ConsumerWidget {
                             }
                           }
                         },
-                  child: const Text('GUARDAR Y AVANZAR'),
+                  child: const Text('Guardar y avanzar'),
                 ),
               ],
             );

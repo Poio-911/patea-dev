@@ -236,9 +236,9 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                       if (userPosition != null)
                                         Text(
                                           userPosition.toUpperCase(),
-                                          style: AppTypography.headline(
-                                            size: 10,
-                                            weight: FontWeight.w800,
+                                          style: AppTypography.body(
+                                            size: 12,
+                                            weight: FontWeight.w600,
                                             color: context.c.positionColor(
                                               userPosition,
                                             ),

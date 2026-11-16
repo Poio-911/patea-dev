@@ -20,7 +20,7 @@ class SocialFeedScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'COMUNIDAD PATEÁ',
+          'Comunidad Pateá',
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),
         ),
       ),
@@ -76,7 +76,7 @@ class SocialFeedScreen extends ConsumerWidget {
                               ),
                               Text(
                                 type == 'ovr_updated' ? 'Actualización de OVR' : 'Actividad deportiva',
-                                style: AppTypography.code(size: 11, color: context.c.textSecondary),
+                                style: AppTypography.body(size: 12, color: context.c.textSecondary),
                               ),
                             ],
                           ),
@@ -106,8 +106,9 @@ class SocialFeedScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 14),
                     Divider(color: context.c.border),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
                       children: [
                         _ReactionButton(icon: '🔥', label: 'Fuego'),
                         _ReactionButton(icon: '👏', label: 'Aplausos'),
@@ -151,8 +152,8 @@ class _ReactionButtonState extends State<_ReactionButton> {
             const SizedBox(width: 6),
             Text(
               count > 0 ? '$count' : widget.label,
-              style: AppTypography.code(
-                size: 11,
+              style: AppTypography.action(
+                size: 14,
                 color: count > 0 ? context.c.primary : context.c.textSecondary,
               ),
             ),

@@ -1,3 +1,4 @@
+import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/player_position_badge.dart';
 import '../../core/theme/app_radii.dart';
@@ -120,7 +121,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                         },
                   style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
                   child: submitting
-                      ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.c.onPrimary))
+                      ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
                       : const Text('Guardar'),
                 ),
               ],

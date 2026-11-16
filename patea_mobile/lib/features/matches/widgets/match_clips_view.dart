@@ -50,8 +50,8 @@ class MatchClipsView extends ConsumerWidget {
                 onPressed: () => ClipCaptureSheet.show(context, match),
                 icon: const Icon(Icons.videocam_outlined, size: 16),
                 label: Text('Subir',
-                    style: AppTypography.headline(
-                        size: 12, weight: FontWeight.w700, color: context.c.primary)),
+                    style: AppTypography.action(
+                        size: 14, weight: FontWeight.w700, color: context.c.primary)),
                 style: TextButton.styleFrom(
                   foregroundColor: context.c.primary,
                   padding: const EdgeInsets.symmetric(horizontal: 8),

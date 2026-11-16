@@ -141,10 +141,10 @@ class _Stat extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  label.toUpperCase(),
-                  maxLines: 1,
+                  label,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.code(size: 9, color: context.c.textSecondary),
+                  style: AppTypography.body(size: 12, color: context.c.textSecondary),
                 ),
               ),
             ],
@@ -198,7 +198,7 @@ class _MatchCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         [_dateLabel, feedback.locationName].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
-                        style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                        style: AppTypography.body(size: 12, color: context.c.textSecondary),
                       ),
                     ],
                   ],
@@ -230,8 +230,8 @@ class _MatchCard extends StatelessWidget {
             Divider(color: context.c.border.withValues(alpha: 0.4), height: 1),
             const SizedBox(height: 12),
             Text(
-              'QUÉ DIJERON TUS COMPAÑEROS',
-              style: AppTypography.code(size: 9, color: context.c.textSecondary),
+              'Qué dijeron tus compañeros',
+              style: AppTypography.body(size: 12, color: context.c.textSecondary),
             ),
             const SizedBox(height: 10),
             for (final ev in feedback.peerEvaluations) _PeerEvalTile(evaluation: ev),
@@ -262,7 +262,7 @@ class _OvrBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             '${ovr.previousOvr} → ${ovr.newOvr}',
-            style: AppTypography.code(size: 11, color: color),
+            style: AppTypography.body(size: 12, color: color),
           ),
         ],
       ),
@@ -283,7 +283,7 @@ class _MiniStat extends StatelessWidget {
         children: [
           Text(value, style: AppTypography.sportNumber(size: 17, color: context.c.primary)),
           const SizedBox(height: 2),
-          Text(label.toUpperCase(), style: AppTypography.code(size: 9, color: context.c.textSecondary)),
+          Text(label, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
         ],
       ),
     );
@@ -325,7 +325,7 @@ class _AttributeDeltas extends StatelessWidget {
                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                  child: Text(
             '${_labels[e.key] ?? e.key.toUpperCase()} ${up ? '+' : ''}${e.value}',
-            style: AppTypography.code(size: 10, color: color),
+            style: AppTypography.body(size: 12, color: color),
           ),
                );
       }).toList(),
@@ -375,7 +375,7 @@ class _PeerEvalTile extends StatelessWidget {
                   ? Icon(Icons.visibility_off_outlined, size: 13, color: context.c.textSecondary)
                   : Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: AppTypography.code(size: 11, color: context.c.textSecondary),
+                      style: AppTypography.body(size: 12, color: context.c.textSecondary),
                     ),
             )
           else
@@ -421,7 +421,7 @@ class _PeerEvalTile extends StatelessWidget {
                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                child: Text(
                           t.name,
-                          style: AppTypography.body(size: 10, weight: FontWeight.w600, color: color),
+                          style: AppTypography.body(size: 12, weight: FontWeight.w600, color: color),
                         ),
                              );
                     }).toList(),
@@ -431,7 +431,7 @@ class _PeerEvalTile extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     (evaluation.aiSummary ?? evaluation.textDescription)!,
-                    style: AppTypography.body(size: 11, color: context.c.textSecondary, height: 1.45),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary, height: 1.45),
                   ),
                 ],
               ],

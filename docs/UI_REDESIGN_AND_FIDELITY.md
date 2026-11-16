@@ -1,5 +1,9 @@
 # Rediseño de UI, Glassmorphism y Fidelidad Visual — Pateá Mobile
 
+## Implementación vigente — 15/11/2026
+
+La referencia actual de Flutter es la [guía visual](design/UX_BRAND_2026-11-15.md): ficha «Marcador lateral», acciones con tipografía de ancho normal, fondo tonal sin fotografía detrás de formularios y controles con contraste en ambos temas. Los planes históricos siguientes no sustituyen estas decisiones. [Validación y estado local 1.0.10](technical/RELEASE_1.0.10_2026-11-15.md).
+
 Este documento recopila todas las mejoras, decisiones de diseño, correcciones de espaciado y detalles de implementación realizados para alinear `patea_mobile` con la webapp real de Pateá.
 
 ---
