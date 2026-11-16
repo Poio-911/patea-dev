@@ -46,18 +46,18 @@ class GroupsScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'MIS GRUPOS',
-          style: AppTypography.headline(size: 18, weight: FontWeight.w800),
+          'Mis grupos',
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.login, size: 20),
-            tooltip: 'Unirse a Grupo',
+            tooltip: 'Unirse a grupo',
             onPressed: () => _showJoinGroupDialog(context, ref),
           ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Crear Grupo',
+            tooltip: 'Crear grupo',
             onPressed: () => _showCreateGroupDialog(context, ref),
           ),
         ],
@@ -77,7 +77,7 @@ class GroupsScreen extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: context.c.card,
-          title: Text('Crear Grupo', style: AppTypography.headline(size: 16)),
+          title: Text('Crear grupo', style: AppTypography.headline(size: 20)),
           content: TextField(
             controller: controller,
             decoration: const InputDecoration(
@@ -137,8 +137,8 @@ class GroupsScreen extends ConsumerWidget {
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: context.c.card,
           title: Text(
-            'Unirse a Grupo',
-            style: AppTypography.headline(size: 16),
+            'Unirse a grupo',
+            style: AppTypography.headline(size: 20),
           ),
           content: TextField(
             controller: controller,
@@ -219,9 +219,9 @@ class _NoActiveGroupView extends ConsumerWidget {
       padding: const EdgeInsets.all(18),
       children: [
         PateaCard(
-          color: context.c.brandVolt.withValues(alpha: 0.08),
+          color: context.c.primary.withValues(alpha: 0.08),
           radius: AppRadii.cardAll,
-          borderColor: context.c.brandVolt.withValues(alpha: 0.3),
+          borderColor: context.c.primary.withValues(alpha: 0.3),
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -388,7 +388,7 @@ class _ActiveGroupView extends ConsumerWidget {
             if (myGroups.length > 1) ...[
               _Section(
                 icon: Icons.swap_horiz,
-                title: 'CAMBIAR DE GRUPO',
+                title: 'Cambiar de grupo',
                 child: Column(
                   children: myGroups
                       .map(
@@ -424,7 +424,7 @@ class _ActiveGroupView extends ConsumerWidget {
 
             _Section(
               icon: Icons.shield_outlined,
-              title: 'EQUIPOS GUARDADOS',
+              title: 'Equipos',
               // Sin permiso el botón no va: `createTeam` lo rechaza igual y el
               // usuario se comería un error después de llenar el formulario.
               action: canCreateTeam
@@ -477,15 +477,15 @@ class _ActiveGroupView extends ConsumerWidget {
                                         Text(
                                           team.name,
                                           style: AppTypography.body(
-                                            color: context.c.textSecondary,
-                                            size: 14,
+                                            color: context.c.textPrimary,
+                                            size: 16,
                                             weight: FontWeight.w700,
                                           ),
                                         ),
                                         Text(
                                           _rosterLine(team),
                                           style: AppTypography.body(
-                                            size: 11,
+                                            size: 12,
                                             color: context.c.textSecondary,
                                           ),
                                         ),
@@ -516,7 +516,7 @@ class _ActiveGroupView extends ConsumerWidget {
 
             _Section(
               icon: Icons.newspaper_outlined,
-              title: 'EN AGENDA',
+              title: 'En agenda',
               child: upcoming.isEmpty
                   ? Text(
                       'No hay partidos próximos.',
@@ -544,7 +544,7 @@ class _ActiveGroupView extends ConsumerWidget {
 
             _Section(
               icon: Icons.history,
-              title: 'ÚLTIMOS PARTIDOS',
+              title: 'Últimos partidos',
               action: recent.isEmpty
                   ? null
                   : TextButton(
@@ -578,7 +578,7 @@ class _ActiveGroupView extends ConsumerWidget {
               const SizedBox(height: 20),
               _Section(
                 icon: Icons.handshake_outlined,
-                title: 'AMISTOSOS INTERGRUPOS',
+                title: 'Amistosos entre grupos',
                 child: Column(
                   children: friendlies
                       .take(5)
@@ -629,11 +629,8 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PateaCard(
-      color: context.c.card,
-      radius: AppRadii.cardAll,
-      borderColor: context.c.border.withValues(alpha: 0.4),
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -645,9 +642,9 @@ class _Section extends StatelessWidget {
                 child: Text(
                   title,
                   style: AppTypography.headline(
-                    size: 13,
+                    size: 19,
                     weight: FontWeight.w800,
-                    color: context.c.primary,
+                    color: context.c.textPrimary,
                   ),
                 ),
               ),
@@ -707,9 +704,9 @@ class _GroupSwitchRow extends StatelessWidget {
             ),
             if (active)
               Text(
-                'ACTIVO',
-                style: AppTypography.code(
-                  size: 9,
+                'Activo',
+                style: AppTypography.body(
+                  size: 12,
                   weight: FontWeight.w800,
                   color: context.c.primary,
                 ),
@@ -756,7 +753,7 @@ class _MatchLine extends StatelessWidget {
             Text(
               trailing,
               style: AppTypography.body(
-                size: 11,
+                size: 12,
                 color: context.c.textSecondary,
               ),
             ),
@@ -819,7 +816,7 @@ class _PlayedMatchRow extends StatelessWidget {
                 Text(
                   fmtDate(match.date),
                   style: AppTypography.body(
-                    size: 11,
+                    size: 12,
                     color: context.c.textSecondary,
                   ),
                 ),
@@ -847,8 +844,8 @@ class _PlayedMatchRow extends StatelessWidget {
                       'MVP · ${mvpName!}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.code(
-                        size: 10,
+                      style: AppTypography.body(
+                        size: 12,
                         color: context.c.goldBorder,
                       ),
                     ),
@@ -866,10 +863,7 @@ class _PlayedMatchRow extends StatelessWidget {
 class _GroupHeroCard extends StatelessWidget {
   final GroupModel group;
   final GroupRole? role;
-  final int? playersCount;
-  final int? teamsCount;
-  final int? playedCount;
-
+  final int? playersCount, teamsCount, playedCount;
   const _GroupHeroCard({
     required this.group,
     this.role,
@@ -877,145 +871,92 @@ class _GroupHeroCard extends StatelessWidget {
     this.teamsCount,
     this.playedCount,
   });
-
   Future<void> _shareInvite(BuildContext context) async {
     final text =
         '¡Sumate a nuestro grupo de fútbol "${group.name}" en Pateá! Usá este código para unirte: ${group.inviteCode}';
     final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
-    if (await canLaunchUrl(uri))
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [context.c.card, context.c.cardSurface],
-        ),
-        borderRadius: AppRadii.surfaceAll,
-        border: Border.all(
-          color: context.c.border.withValues(alpha: 0.5),
-          width: 1.5,
-        ),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      PateaActivityCover(
+        image: PateaSectionScene.groups,
+        title: group.name,
+        details: [
+          if (playersCount != null) '$playersCount jugadores',
+          if (teamsCount != null) '$teamsCount equipos',
+          if (playedCount != null) '$playedCount partidos jugados',
+        ].join(' · '),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      const SizedBox(height: 14),
+      Wrap(
+        spacing: 14,
+        runSpacing: 6,
         children: [
-          PateaActivityCover(
-            image: PateaSectionScene.groups,
-            title: group.name,
-            details: [
-              if (playersCount != null) '$playersCount jugadores',
-              if (teamsCount != null) '$teamsCount equipos',
-              if (playedCount != null) '$playedCount partidos jugados',
-            ].join(' · '),
+          Text(
+            'Grupo activo',
+            style: AppTypography.body(
+              size: 13,
+              weight: FontWeight.w700,
+              color: context.c.primary,
+            ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.groups_2_outlined, size: 14, color: context.c.primary),
-              const SizedBox(width: 6),
-              Text(
-                'GRUPO ACTIVO',
-                style: AppTypography.code(
-                  size: 10,
-                  weight: FontWeight.w800,
-                  color: context.c.primary,
-                ),
+          if (role != null)
+            Text(
+              roleLabel(role!),
+              style: AppTypography.body(
+                size: 13,
+                color: context.c.textSecondary,
               ),
-              if (role != null) ...[
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
+            ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Código de invitación',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
                   ),
-                  decoration: BoxDecoration(
-                    color: context.c.overlaySubtle,
-                    borderRadius: AppRadii.surfaceAll,
-                  ),
-                  child: Text(
-                    roleLabel(role!).toUpperCase(),
-                    style: AppTypography.code(
-                      size: 9,
-                      weight: FontWeight.w800,
-                      color: context.c.textSecondary,
-                    ),
-                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  group.inviteCode,
+                  style: AppTypography.body(size: 17, weight: FontWeight.w700),
                 ),
               ],
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: group.inviteCode));
-                    PateaSnack.ok(context, '¡Código copiado!');
-                  },
-                  borderRadius: AppRadii.chipAll,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.c.background,
-                      borderRadius: AppRadii.chipAll,
-                      border: Border.all(color: context.c.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          'CÓDIGO',
-                          style: AppTypography.body(
-                            size: 10,
-                            color: context.c.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            group.inviteCode,
-                            style: AppTypography.code(
-                              color: context.c.textSecondary,
-                              size: 14,
-                              weight: FontWeight.w800,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Icon(
-                          Icons.copy,
-                          size: 14,
-                          color: context.c.textSecondary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () => _shareInvite(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                  foregroundColor: context.c.textPrimary,
-                ),
-                icon: const Icon(Icons.share, size: 16),
-                label: const Text('Invitar'),
-              ),
-            ],
+          IconButton(
+            tooltip: 'Copiar código de invitación',
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: group.inviteCode));
+              if (context.mounted) PateaSnack.ok(context, '¡Código copiado!');
+            },
+            icon: const Icon(Icons.copy_outlined, size: 21),
           ),
         ],
       ),
-    );
-  }
+      const SizedBox(height: 12),
+      FilledButton.icon(
+        onPressed: () => _shareInvite(context),
+        icon: const Icon(Icons.share_outlined, size: 19),
+        label: const Text('Invitar al grupo'),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+      ),
+    ],
+  );
 }

@@ -1,3 +1,4 @@
+import '../../core/utils/dates.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/player_position_badge.dart';
@@ -47,13 +48,24 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-          title: Text('¿Eliminar "${team.name}"?', style: AppTypography.headline(size: 16)),
-        content: Text('Esta acción es permanente.', style: AppTypography.body(color: context.c.textSecondary, size: 13)),
+        title: Text(
+          '¿Eliminar "${team.name}"?',
+          style: AppTypography.headline(size: 20),
+        ),
+        content: Text(
+          'Esta acción es permanente.',
+          style: AppTypography.body(color: context.c.textSecondary, size: 13),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: context.c.destructive),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.c.destructive,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -82,22 +94,36 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       context: context,
       backgroundColor: context.c.card,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadii.surface),
+        ),
+      ),
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Padding(
           padding: EdgeInsets.only(
-            left: 20, right: 20, top: 20,
+            left: 20,
+            right: 20,
+            top: 20,
             bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
           ),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Editar Equipo', style: AppTypography.headline(size: 16)),
+                Text('Editar equipo', style: AppTypography.headline(size: 20)),
                 const SizedBox(height: 16),
-                TextField(controller: controller, decoration: const InputDecoration(labelText: 'Nombre del Equipo')),
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre del equipo',
+                  ),
+                ),
                 const SizedBox(height: 20),
-                JerseyDesigner(value: jersey, onChanged: (j) => setSheetState(() => jersey = j)),
+                JerseyDesigner(
+                  value: jersey,
+                  onChanged: (j) => setSheetState(() => jersey = j),
+                ),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: submitting
@@ -106,10 +132,16 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                           if (controller.text.trim().length < 2) return;
                           setSheetState(() => submitting = true);
                           try {
-                            await ref.read(groupServiceProvider).updateTeam(
+                            await ref
+                                .read(groupServiceProvider)
+                                .updateTeam(
                                   teamId: team.id,
                                   name: controller.text.trim(),
-                                  jersey: {'type': jersey.pattern, 'primaryColor': jersey.primaryColor, 'secondaryColor': jersey.secondaryColor},
+                                  jersey: {
+                                    'type': jersey.pattern,
+                                    'primaryColor': jersey.primaryColor,
+                                    'secondaryColor': jersey.secondaryColor,
+                                  },
                                 );
                             if (context.mounted) Navigator.pop(context);
                           } catch (e) {
@@ -119,9 +151,16 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                             }
                           }
                         },
-                  style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.c.primary,
+                    foregroundColor: context.c.onPrimary,
+                  ),
                   child: submitting
-                      ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: const PateaButtonProgress(),
+                        )
                       : const Text('Guardar'),
                 ),
               ],
@@ -132,7 +171,10 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
     );
   }
 
-  Future<void> _showEditMembersSheet(GroupTeamModel team, List<PlayerModel> groupPlayers) async {
+  Future<void> _showEditMembersSheet(
+    GroupTeamModel team,
+    List<PlayerModel> groupPlayers,
+  ) async {
     final members = await showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -146,10 +188,9 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
     if (members == null || !mounted) return;
 
     try {
-      await ref.read(groupServiceProvider).updateTeamMembers(
-            teamId: team.id,
-            members: members,
-          );
+      await ref
+          .read(groupServiceProvider)
+          .updateTeamMembers(teamId: team.id, members: members);
       if (mounted) {
         PateaSnack.info(context, 'Plantel actualizado');
       }
@@ -172,27 +213,33 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('EQUIPO',
-            style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
+        title: Text(
+          'Equipo',
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
+        ),
       ),
       body: teamAsync.when(
-        loading: () => Center(
-            child: CircularProgressIndicator(color: context.c.primary)),
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: context.c.primary)),
         error: (e, _) => Center(
-          child: Text('No se pudo cargar el equipo.',
-              style: AppTypography.body(color: context.c.textSecondary)),
+          child: Text(
+            'No se pudo cargar el equipo.',
+            style: AppTypography.body(color: context.c.textSecondary),
+          ),
         ),
         data: (team) {
           if (team == null) {
             return Center(
-              child: Text('Equipo no encontrado.',
-                  style: AppTypography.body(color: context.c.textSecondary)),
+              child: Text(
+                'Equipo no encontrado.',
+                style: AppTypography.body(color: context.c.textSecondary),
+              ),
             );
           }
 
           final groupPlayers =
               ref.watch(playersStreamProvider(team.groupId)).value ??
-                  const <PlayerModel>[];
+              const <PlayerModel>[];
           final playersById = {for (final p in groupPlayers) p.id: p};
 
           // El mismo criterio del servidor: el creador siempre puede, y si no,
@@ -231,8 +278,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
           final agenda = matches.where((m) {
             if (m.status != 'upcoming' && m.status != 'active') return false;
             return m.teamA?.name == team.name || m.teamB?.name == team.name;
-          }).toList()
-            ..sort((a, b) => a.date.compareTo(b.date));
+          }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 28),
@@ -255,7 +301,9 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
               if (agenda.isNotEmpty) ...[
                 _SectionLabel(text: 'PRÓXIMOS PARTIDOS', count: agenda.length),
                 const SizedBox(height: 8),
-                ...agenda.take(4).map(
+                ...agenda
+                    .take(4)
+                    .map(
                       (m) => _AgendaRow(
                         match: m,
                         teamName: team.name,
@@ -274,11 +322,13 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                       : 'El once no está armado todavía.',
                 )
               else
-                ...starters.map((m) => _RosterTile(
-                      member: m,
-                      player: playersById[m.playerId],
-                      starter: true,
-                    )),
+                ...starters.map(
+                  (m) => _RosterTile(
+                    member: m,
+                    player: playersById[m.playerId],
+                    starter: true,
+                  ),
+                ),
 
               const SizedBox(height: 18),
               _SectionLabel(text: 'SUPLENTES', count: subs.length),
@@ -286,11 +336,13 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
               if (subs.isEmpty)
                 const _EmptyLine(text: 'Sin suplentes.')
               else
-                ...subs.map((m) => _RosterTile(
-                      member: m,
-                      player: playersById[m.playerId],
-                      starter: false,
-                    )),
+                ...subs.map(
+                  (m) => _RosterTile(
+                    member: m,
+                    player: playersById[m.playerId],
+                    starter: false,
+                  ),
+                ),
             ],
           );
         },
@@ -303,87 +355,69 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
 class _TeamBanner extends StatelessWidget {
   final GroupTeamModel team;
   final List<TeamTrophy> trophies;
-
   const _TeamBanner({required this.team, required this.trophies});
-
   @override
   Widget build(BuildContext context) {
     final accent = _parseColor(team.jersey.primaryColor, context.c.primary);
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      decoration: BoxDecoration(
-        borderRadius: AppRadii.cardAll,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.28),
-            context.c.background,
-          ],
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          JerseyWidget(jersey: team.jersey, size: 76),
-          const SizedBox(width: 14),
+          SizedBox(
+            width: 86,
+            child: JerseyWidget(jersey: team.jersey, size: 80),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  team.name.toUpperCase(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  team.name,
                   style: AppTypography.headline(
-                      size: 23, weight: FontWeight.w900, letterSpacing: -0.4),
+                    size: 25,
+                    weight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 6),
                 Text(
                   '${team.members.length} ${team.members.length == 1 ? 'jugador' : 'jugadores'}',
-                  style:
-                      AppTypography.body(size: 12, color: context.c.textSecondary),
-                ),
-                if (trophies.isNotEmpty) ...[
-                  const SizedBox(height: 9),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: trophies
-                        .map((t) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: context.c.goldBorder
-                                    .withValues(alpha: 0.14),
-                                borderRadius: AppRadii.surfaceAll,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    t.isCup
-                                        ? Icons.emoji_events_rounded
-                                        : Icons.workspace_premium_rounded,
-                                    size: 12,
-                                    color: context.c.goldBorder,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    t.name.isEmpty
-                                        ? (t.isCup ? 'Copa' : 'Liga')
-                                        : t.name,
-                                    style: AppTypography.code(
-                                        size: 9,
-                                        weight: FontWeight.w700,
-                                        color: context.c.goldBorder),
-                                  ),
-                                ],
-                              ),
-                            ))
-                        .toList(),
+                  style: AppTypography.body(
+                    size: 14,
+                    color: context.c.textSecondary,
                   ),
-                ],
+                ),
+                for (final trophy in trophies)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          trophy.isCup
+                              ? Icons.emoji_events_outlined
+                              : Icons.workspace_premium_outlined,
+                          size: 18,
+                          color: context.c.goldBorder,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            trophy.name.isEmpty
+                                ? (trophy.isCup ? 'Copa' : 'Liga')
+                                : trophy.name,
+                            style: AppTypography.body(
+                              size: 13,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Container(width: 32, height: 3, color: accent),
               ],
             ),
           ),
@@ -466,45 +500,50 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = danger
-        ? context.c.destructive
-        : primary
-            ? context.c.onPrimary
-            : context.c.textPrimary;
-    final bg = danger
-        ? context.c.destructive.withValues(alpha: 0.12)
-        : primary
-            ? context.c.primary
-            : context.c.overlaySubtle;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadii.cardAll,
-      child: PateaCard(
-               color: bg,
-               radius: AppRadii.cardAll,
-               height: 44,
-               padding: EdgeInsets.symmetric(horizontal: label == null ? 14 : 12),
-               alignment: Alignment.center,
-               child: busy
-            ? SizedBox(
-                width: 15,
-                height: 15,
-                child: CircularProgressIndicator(strokeWidth: 2, color: fg),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 17, color: fg),
-                  if (label != null) ...[
-                    const SizedBox(width: 7),
-                    Text(label!,
-                        style: AppTypography.headline(
-                            size: 13, weight: FontWeight.w700, color: fg)),
-                  ],
-                ],
-              ),
-             ),
+    final child = busy
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Icon(icon, size: 20);
+    if (label == null)
+      return IconButton(
+        tooltip: danger ? 'Eliminar equipo' : 'Opciones',
+        onPressed: onTap,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          foregroundColor: danger
+              ? context.c.destructive
+              : context.c.textPrimary,
+        ),
+        icon: child,
+      );
+    final content = Text(
+      label!,
+      style: AppTypography.body(
+        size: 14,
+        weight: FontWeight.w700,
+        color: primary ? context.c.onPrimary : context.c.textPrimary,
+      ),
+    );
+    if (primary) {
+      return FilledButton.icon(
+        onPressed: onTap,
+        icon: child,
+        label: content,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+        ),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: child,
+      label: content,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+      ),
     );
   }
 }
@@ -516,22 +555,20 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.text, required this.count});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(width: 3, height: 13, color: context.c.primary),
-        const SizedBox(width: 8),
-        Text(text,
-            style: AppTypography.code(
-                size: 10,
-                weight: FontWeight.w800,
-                color: context.c.textSecondary)),
-        const SizedBox(width: 7),
-        Text('$count',
-            style: AppTypography.code(size: 10, color: context.c.textSecondary)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          text.isEmpty ? text : text[0] + text.substring(1).toLowerCase(),
+          style: AppTypography.headline(size: 19, weight: FontWeight.w700),
+        ),
+      ),
+      Text(
+        '$count',
+        style: AppTypography.body(size: 13, color: context.c.textSecondary),
+      ),
+    ],
+  );
 }
 
 class _EmptyLine extends StatelessWidget {
@@ -543,8 +580,10 @@ class _EmptyLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-      child: Text(text,
-          style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+      child: Text(
+        text,
+        style: AppTypography.body(size: 12, color: context.c.textSecondary),
+      ),
     );
   }
 }
@@ -564,61 +603,77 @@ class _RosterTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = player;
-    final photo = p?.photoUrl;
-
-    return Opacity(
-      opacity: starter ? 1 : 0.72,
-      child: InkWell(
-        onTap: p == null ? null : () => context.push('/players/${p.id}'),
-        borderRadius: AppRadii.cardAll,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 5),
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-          decoration: BoxDecoration(
-            color: context.c.background,
-            borderRadius: AppRadii.cardAll,
-            border: starter
-                ? Border(
-                    left: BorderSide(color: context.c.primary, width: 2.5))
-                : null,
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 26,
-                child: Text(
-                  member.number == 0 ? '—' : '${member.number}',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.sportNumber(
-                    size: 17,
-                    color: member.number == 0
-                        ? context.c.textSecondary
-                        : context.c.textPrimary,
+    return InkWell(
+      onTap: p == null ? null : () => context.push('/players/${p.id}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 30,
+              child: Text(
+                member.number == 0 ? '—' : '${member.number}',
+                textAlign: TextAlign.center,
+                style: AppTypography.sportNumber(
+                  size: 21,
+                  color: context.c.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            PateaAvatar(
+              photoUrl: p?.photoUrl,
+              seed: p?.id ?? member.playerId,
+              size: 42,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p?.name ?? 'Jugador sin datos',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      size: 15,
+                      weight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                  if (p != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: PlayerPositionBadge(
+                        position: p.position,
+                        dense: true,
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
               ),
+            ),
+            if (p != null) ...[
               const SizedBox(width: 10),
-              PateaAvatar(
-                photoUrl: photo,
-                seed: p?.name ?? '',
-                size: 32,
+              Column(
+                children: [
+                  Text(
+                    '${p.ovr}',
+                    style: AppTypography.sportNumber(
+                      size: 24,
+                      color: context.c.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'OVR',
+                    style: AppTypography.body(
+                      size: 10,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Text(
-                  p?.name ?? 'Jugador sin datos',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w600),
-                ),
-              ),
-              if (p != null) ...[
-                PlayerPositionBadge(position: p.position, fontSize: 9, dense: true),
-                const SizedBox(width: 9),
-                Text('${p.ovr}', style: AppTypography.sportNumber(size: 16)),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -639,26 +694,29 @@ class _AgendaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rival =
-        match.teamA?.name == teamName ? match.teamB?.name : match.teamA?.name;
+    final rival = match.teamA?.name == teamName
+        ? match.teamB?.name
+        : match.teamA?.name;
     final live = match.status == 'active';
 
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
       child: PateaCard(
-               color: context.c.background,
-               radius: AppRadii.cardAll,
-               margin: const EdgeInsets.only(bottom: 5),
-               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-               child: Row(
+        color: context.c.background,
+        radius: AppRadii.cardAll,
+        margin: const EdgeInsets.only(bottom: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+        child: Row(
           children: [
             if (live) ...[
               Container(
                 width: 7,
                 height: 7,
                 decoration: BoxDecoration(
-                    color: context.c.destructive, shape: BoxShape.circle),
+                  color: context.c.destructive,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 8),
             ],
@@ -670,29 +728,37 @@ class _AgendaRow extends StatelessWidget {
                     rival == null || rival.isEmpty ? match.title : 'vs $rival',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style:
-                        AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700),
+                    style: AppTypography.body(
+                      color: context.c.textSecondary,
+                      size: 13,
+                      weight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     live
-                        ? 'EN JUEGO'
+                        ? 'En vivo'
                         : match.time == null
-                            ? match.date
-                            : '${match.date} · ${match.time}',
-                    style: AppTypography.code(
+                        ? fmtDate(match.date)
+                        : '${fmtDate(match.date)} · ${match.time}',
+                    style: AppTypography.body(
                       size: 9,
-                      color: live ? context.c.destructive : context.c.textSecondary,
+                      color: live
+                          ? context.c.destructive
+                          : context.c.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded,
-                size: 18, color: context.c.textSecondary),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: context.c.textSecondary,
+            ),
           ],
         ),
-             ),
+      ),
     );
   }
 }

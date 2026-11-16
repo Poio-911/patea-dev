@@ -1,3 +1,4 @@
+import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/patea_card.dart';
 import '../../../core/theme/app_radii.dart';
@@ -55,24 +56,26 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
   @override
   void initState() {
     super.initState();
-    _entries = widget.groupPlayers.map((p) {
-      final member = widget.current.where((m) => m.playerId == p.id).firstOrNull;
-      return RosterEntry(
-        player: p,
-        number: member?.number ?? 0,
-        starter: (member?.status ?? 'titular') == 'titular',
-        included: member != null,
-      );
-    }).toList()
-      ..sort((a, b) {
-        if (a.included != b.included) return a.included ? -1 : 1;
-        if (a.number != b.number) {
-          if (a.number == 0) return 1;
-          if (b.number == 0) return -1;
-          return a.number.compareTo(b.number);
-        }
-        return a.player.name.compareTo(b.player.name);
-      });
+    _entries =
+        widget.groupPlayers.map((p) {
+          final member = widget.current
+              .where((m) => m.playerId == p.id)
+              .firstOrNull;
+          return RosterEntry(
+            player: p,
+            number: member?.number ?? 0,
+            starter: (member?.status ?? 'titular') == 'titular',
+            included: member != null,
+          );
+        }).toList()..sort((a, b) {
+          if (a.included != b.included) return a.included ? -1 : 1;
+          if (a.number != b.number) {
+            if (a.number == 0) return 1;
+            if (b.number == 0) return -1;
+            return a.number.compareTo(b.number);
+          }
+          return a.player.name.compareTo(b.player.name);
+        });
   }
 
   /// Números repetidos entre los jugadores incluidos. El 0 significa "sin
@@ -86,7 +89,8 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
     return counts.entries.where((e) => e.value > 1).map((e) => e.key).toSet();
   }
 
-  int get _starterCount => _entries.where((e) => e.included && e.starter).length;
+  int get _starterCount =>
+      _entries.where((e) => e.included && e.starter).length;
   int get _subCount => _entries.where((e) => e.included && !e.starter).length;
 
   /// Reparte los números libres más bajos entre quienes no tienen.
@@ -114,21 +118,25 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => PateaCard(
-                          color: context.c.popover,
-                          radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-                          height: 300,
-                          child: Column(
+        color: context.c.popover,
+        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+        height: 300,
+        child: Column(
           children: [
             const SizedBox(height: 14),
-            Text('Número de ${entry.player.name}',
-                style: AppTypography.headline(size: 15, weight: FontWeight.w700)),
+            Text(
+              'Número de ${entry.player.name}',
+              style: AppTypography.headline(size: 15, weight: FontWeight.w700),
+            ),
             const SizedBox(height: 8),
             Expanded(
               child: ListWheelScrollView.useDelegate(
                 itemExtent: 46,
                 perspective: 0.004,
                 physics: const FixedExtentScrollPhysics(),
-                controller: FixedExtentScrollController(initialItem: entry.number),
+                controller: FixedExtentScrollController(
+                  initialItem: entry.number,
+                ),
                 onSelectedItemChanged: (_) => HapticFeedback.selectionClick(),
                 childDelegate: ListWheelChildBuilderDelegate(
                   childCount: 100,
@@ -139,7 +147,9 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                         i == 0 ? 'sin número' : '$i',
                         style: AppTypography.sportNumber(
                           size: i == 0 ? 16 : 24,
-                          color: i == 0 ? context.c.textSecondary : context.c.textPrimary,
+                          color: i == 0
+                              ? context.c.textSecondary
+                              : context.c.textPrimary,
                         ),
                       ),
                     ),
@@ -149,7 +159,7 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
             ),
           ],
         ),
-                        ),
+      ),
     );
     if (chosen != null) setState(() => entry.number = chosen);
   }
@@ -157,12 +167,14 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
   void _save() {
     final members = _entries
         .where((e) => e.included)
-        .map((e) => {
-              'playerId': e.player.id,
-              'number': e.number,
-              // Acá estaba el bug: antes iba 'titular' fijo para todos.
-              'status': e.starter ? 'titular' : 'suplente',
-            })
+        .map(
+          (e) => {
+            'playerId': e.player.id,
+            'number': e.number,
+            // Acá estaba el bug: antes iba 'titular' fijo para todos.
+            'status': e.starter ? 'titular' : 'suplente',
+          },
+        )
         .toList();
     Navigator.pop(context, members);
   }
@@ -177,9 +189,9 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => PateaCard(
-                                                color: context.c.popover,
-                                                radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-                                                child: Column(
+        color: context.c.popover,
+        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
+        child: Column(
           children: [
             const SizedBox(height: 12),
             Container(
@@ -198,11 +210,19 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Plantel',
-                            style: AppTypography.headline(size: 19, weight: FontWeight.w800)),
+                        Text(
+                          'Plantel de ${widget.teamName}',
+                          style: AppTypography.headline(
+                            size: 19,
+                            weight: FontWeight.w800,
+                          ),
+                        ),
                         Text(
                           '$_starterCount ${_starterCount == 1 ? 'titular' : 'titulares'} · $_subCount ${_subCount == 1 ? 'suplente' : 'suplentes'}',
-                          style: AppTypography.body(size: 12, color: context.c.textSecondary),
+                          style: AppTypography.body(
+                            size: 12,
+                            color: context.c.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -210,9 +230,17 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                   TextButton.icon(
                     onPressed: _autoNumber,
                     icon: const Icon(Icons.auto_fix_high, size: 15),
-                    label: Text('Autonumerar',
-                        style: AppTypography.action(color: context.c.textSecondary, size: 14, weight: FontWeight.w600)),
-                    style: TextButton.styleFrom(foregroundColor: context.c.primary),
+                    label: Text(
+                      'Autonumerar',
+                      style: AppTypography.body(
+                        color: context.c.textSecondary,
+                        size: 14,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.c.primary,
+                    ),
                   ),
                 ],
               ),
@@ -222,7 +250,10 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
                 decoration: BoxDecoration(
                   color: context.c.warning.withValues(alpha: 0.12),
                   borderRadius: AppRadii.chipAll,
@@ -241,7 +272,8 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                 separatorBuilder: (_, _) => const SizedBox(height: 4),
                 itemBuilder: (context, i) => _RosterRow(
                   entry: _entries[i],
-                  duplicated: _entries[i].included &&
+                  duplicated:
+                      _entries[i].included &&
                       _entries[i].number > 0 &&
                       dups.contains(_entries[i].number),
                   onToggleIncluded: () => setState(() {
@@ -259,7 +291,11 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
 
             Padding(
               padding: EdgeInsets.fromLTRB(
-                  20, 6, 20, 16 + MediaQuery.of(context).padding.bottom),
+                20,
+                6,
+                20,
+                16 + MediaQuery.of(context).padding.bottom,
+              ),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -268,17 +304,24 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                     backgroundColor: context.c.primary,
                     foregroundColor: context.c.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.cardAll,
+                    ),
                   ),
-                  child: Text('Guardar plantel',
-                      style: AppTypography.headline(
-                          size: 14, weight: FontWeight.w700, color: context.c.onPrimary)),
+                  child: Text(
+                    'Guardar plantel',
+                    style: AppTypography.headline(
+                      size: 14,
+                      weight: FontWeight.w700,
+                      color: context.c.onPrimary,
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
-                                              ),
+      ),
     );
   }
 }
@@ -299,91 +342,71 @@ class _RosterRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final inTeam = entry.included;
-
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 150),
-      opacity: inTeam ? 1 : 0.45,
-      child: PateaCard(
-               color: context.c.background,
-               radius: AppRadii.cardAll,
-               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-               child: Row(
-          children: [
-            // Dentro / fuera del equipo.
-            GestureDetector(
-              onTap: onToggleIncluded,
-              child: Icon(
-                inTeam ? Icons.check_circle : Icons.add_circle_outline,
-                size: 21,
-                color: inTeam ? context.c.primary : context.c.textSecondary,
+  Widget build(BuildContext context) => AnimatedOpacity(
+    duration: const Duration(milliseconds: 150),
+    opacity: entry.included ? 1 : .6,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              PateaAvatar(
+                photoUrl: entry.player.photoUrl,
+                seed: entry.player.id,
+                size: 40,
               ),
-            ),
-            const SizedBox(width: 11),
-
-            Expanded(
-              child: Text(
-                entry.player.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w600),
-              ),
-            ),
-
-            if (inTeam) ...[
-              // Titular o suplente, tocando.
-              GestureDetector(
-                onTap: onToggleStarter,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: entry.starter
-                        ? context.c.brandVolt.withValues(alpha: 0.16)
-                        : context.c.overlaySubtle,
-                    borderRadius: AppRadii.chipAll,
-                  ),
-                  child: Text(
-                    entry.starter ? 'TITULAR' : 'SUPLENTE',
-                    style: AppTypography.code(
-                      size: 9,
-                      weight: FontWeight.w700,
-                      color: entry.starter ? context.c.primary : context.c.textSecondary,
-                    ),
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  entry.player.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body(size: 15, weight: FontWeight.w600),
                 ),
               ),
-              const SizedBox(width: 9),
-
-              // Número.
-              GestureDetector(
-                onTap: onPickNumber,
-                child: Container(
-                  width: 38,
-                  height: 30,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: duplicated
-                        ? context.c.warning.withValues(alpha: 0.18)
-                        : context.c.overlaySubtle,
-                    borderRadius: AppRadii.chipAll,
-                    border: duplicated
-                        ? Border.all(color: context.c.warning.withValues(alpha: 0.7))
-                        : null,
-                  ),
-                  child: Text(
-                    entry.number == 0 ? '—' : '${entry.number}',
-                    style: AppTypography.sportNumber(
-                      size: 14,
-                      color: entry.number == 0 ? context.c.textSecondary : context.c.textPrimary,
-                    ),
-                  ),
-                ),
+              Checkbox(
+                value: entry.included,
+                onChanged: (_) => onToggleIncluded(),
               ),
             ],
-          ],
-        ),
-             ),
-    );
-  }
+          ),
+          if (entry.included)
+            Padding(
+              padding: const EdgeInsets.only(left: 48),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                children: [
+                  TextButton.icon(
+                    onPressed: onToggleStarter,
+                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                    label: Text(entry.starter ? 'Titular' : 'Suplente'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                      foregroundColor: context.c.textPrimary,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: onPickNumber,
+                    icon: const Icon(Icons.numbers_rounded, size: 18),
+                    label: Text(
+                      entry.number == 0
+                          ? 'Sin dorsal'
+                          : 'Dorsal ${entry.number}',
+                    ),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                      foregroundColor: duplicated
+                          ? context.c.warning
+                          : context.c.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 }

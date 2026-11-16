@@ -1,6 +1,5 @@
 import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
-import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
@@ -38,7 +37,11 @@ class CreateTeamScreen extends ConsumerStatefulWidget {
 class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   int _step = 1;
   final _nameController = TextEditingController();
-  JerseyModel _jersey = JerseyModel(pattern: 'plain', primaryColor: popularTeamColors[1]['hex']!, secondaryColor: popularTeamColors[5]['hex']!);
+  JerseyModel _jersey = JerseyModel(
+    pattern: 'plain',
+    primaryColor: popularTeamColors[1]['hex']!,
+    secondaryColor: popularTeamColors[5]['hex']!,
+  );
   final Set<String> _selectedPlayerIds = {};
   String _playerSearch = '';
   bool _isSubmitting = false;
@@ -52,19 +55,32 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   bool get _canGoToStep2 => _nameController.text.trim().length >= 2;
 
   Future<void> _handleCreate() async {
+    if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     try {
       final members = _selectedPlayerIds
           .toList()
           .asMap()
           .entries
-          .map((e) => {'playerId': e.value, 'number': e.key + 1, 'status': 'titular'})
+          .map(
+            (e) => {
+              'playerId': e.value,
+              'number': e.key + 1,
+              'status': 'titular',
+            },
+          )
           .toList();
 
-      await ref.read(groupServiceProvider).createTeam(
+      await ref
+          .read(groupServiceProvider)
+          .createTeam(
             groupId: widget.groupId,
             name: _nameController.text.trim(),
-            jersey: {'type': _jersey.pattern, 'primaryColor': _jersey.primaryColor, 'secondaryColor': _jersey.secondaryColor},
+            jersey: {
+              'type': _jersey.pattern,
+              'primaryColor': _jersey.primaryColor,
+              'secondaryColor': _jersey.secondaryColor,
+            },
             members: members,
           );
 
@@ -88,43 +104,82 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('CREAR EQUIPO', style: AppTypography.headline(size: 18, weight: FontWeight.w800)),
-        leading: _step > 1 ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() => _step -= 1)) : null,
+        title: Text(
+          'Crear equipo',
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
+        ),
+        leading: _step > 1
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => setState(() => _step -= 1),
+              )
+            : null,
       ),
       body: Column(
         children: [
           _StepIndicator(step: _step),
           Expanded(
             child: playersAsync.when(
-              data: (players) => _step == 1 ? _buildStep1() : _buildStep2(players),
+              data: (players) =>
+                  _step == 1 ? _buildStep1() : _buildStep2(players),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => PateaError(error: e),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(border: Border(top: BorderSide(color: context.c.border.withValues(alpha: 0.3)))),
-            child: Row(
-              children: [
-                if (_step > 1)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: OutlinedButton(onPressed: _isSubmitting ? null : () => setState(() => _step -= 1), child: const Text('Atrás')),
-                  ),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : _step == 1
-                            ? (_canGoToStep2 ? () => setState(() => _step = 2) : null)
-                            : (_selectedPlayerIds.isNotEmpty ? _handleCreate : null),
-                    style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary),
-                    child: _isSubmitting
-                        ? SizedBox(height: 20, width: 20, child: const PateaButtonProgress())
-                        : Text(_step == 1 ? 'Siguiente' : 'CREAR EQUIPO'),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: context.c.border.withValues(alpha: 0.3),
                   ),
                 ),
-              ],
+              ),
+              child: Row(
+                children: [
+                  if (_step > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: OutlinedButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => setState(() => _step -= 1),
+                        child: const Text('Atrás'),
+                      ),
+                    ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : _step == 1
+                          ? (_canGoToStep2
+                                ? () {
+                                    FocusScope.of(context).unfocus();
+                                    setState(() => _step = 2);
+                                  }
+                                : null)
+                          : (_selectedPlayerIds.isNotEmpty
+                                ? _handleCreate
+                                : null),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.c.primary,
+                        foregroundColor: context.c.onPrimary,
+                      ),
+                      child: _isSubmitting
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: const PateaButtonProgress(),
+                            )
+                          : Text(
+                              _step == 1 ? 'Elegir jugadores' : 'Crear equipo',
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -141,17 +196,27 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           TextField(
             controller: _nameController,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(labelText: 'Nombre del Equipo', prefixIcon: Icon(Icons.shield_outlined)),
+            decoration: const InputDecoration(
+              labelText: 'Nombre del equipo',
+              prefixIcon: Icon(Icons.shield_outlined),
+            ),
           ),
           const SizedBox(height: 24),
-          JerseyDesigner(value: _jersey, onChanged: (j) => setState(() => _jersey = j)),
+          JerseyDesigner(
+            value: _jersey,
+            onChanged: (j) => setState(() => _jersey = j),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildStep2(List<PlayerModel> allPlayers) {
-    final filtered = allPlayers.where((p) => p.name.toLowerCase().contains(_playerSearch.toLowerCase())).toList();
+    final filtered = allPlayers
+        .where(
+          (p) => p.name.toLowerCase().contains(_playerSearch.toLowerCase()),
+        )
+        .toList();
 
     return Column(
       children: [
@@ -162,14 +227,30 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('PLANTEL', style: AppTypography.headline(size: 13, color: context.c.textSecondary)),
-                  Text('${_selectedPlayerIds.length} seleccionados', style: AppTypography.body(size: 12, color: context.c.textSecondary)),
+                  Text(
+                    'Elegí el plantel',
+                    style: AppTypography.headline(
+                      size: 13,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    '${_selectedPlayerIds.length} seleccionados',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
               TextField(
                 onChanged: (v) => setState(() => _playerSearch = v),
-                decoration: const InputDecoration(hintText: 'Buscar jugador...', prefixIcon: Icon(Icons.search, size: 20), isDense: true),
+                decoration: const InputDecoration(
+                  hintText: 'Buscar jugador...',
+                  prefixIcon: Icon(Icons.search, size: 20),
+                  isDense: true,
+                ),
               ),
             ],
           ),
@@ -177,46 +258,60 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         const Divider(height: 1),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text('No hay jugadores en este grupo.', style: AppTypography.body(color: context.c.textSecondary)))
+              ? Center(
+                  child: Text(
+                    _playerSearch.isEmpty
+                        ? 'No hay jugadores en este grupo.'
+                        : 'No encontramos jugadores con ese nombre.',
+                    style: AppTypography.body(color: context.c.textSecondary),
+                  ),
+                )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final p = filtered[index];
                     final selected = _selectedPlayerIds.contains(p.id);
-                    return InkWell(
-                      onTap: () => setState(() => selected ? _selectedPlayerIds.remove(p.id) : _selectedPlayerIds.add(p.id)),
-                      borderRadius: AppRadii.cardAll,
-                      child: PateaCard(
-                               color: selected ? context.c.primary.withValues(alpha: 0.1) : Colors.transparent,
-                               radius: AppRadii.cardAll,
-                               borderColor: selected ? context.c.primary : context.c.border.withValues(alpha: 0.4),
-                               margin: const EdgeInsets.only(bottom: 6),
-                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                               child: Row(
-                          children: [
-                            PateaAvatar(
-                              photoUrl: p.photoUrl,
-                              seed: p.name,
-                              size: 32,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(child: Text(p.name, style: AppTypography.body(color: context.c.textSecondary, size: 13, weight: FontWeight.w700))),
-                            Text('OVR ${p.ovr}', style: AppTypography.body(size: 11, color: context.c.textSecondary)),
-                            const SizedBox(width: 10),
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: selected ? context.c.primary : Colors.transparent,
-                                borderRadius: AppRadii.hairAll,
-                                border: Border.all(color: selected ? context.c.primary : context.c.textSecondary),
-                              ),
-                              child: selected ? Icon(Icons.check, size: 16, color: context.c.onPrimary) : null,
-                            ),
-                          ],
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: CheckboxListTile(
+                        value: selected,
+                        selected: selected,
+                        selectedTileColor: context.c.primary.withValues(
+                          alpha: .08,
                         ),
-                             ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
+                        onChanged: (_) => setState(
+                          () => selected
+                              ? _selectedPlayerIds.remove(p.id)
+                              : _selectedPlayerIds.add(p.id),
+                        ),
+                        secondary: PateaAvatar(
+                          photoUrl: p.photoUrl,
+                          seed: p.id,
+                          size: 40,
+                        ),
+                        title: Text(
+                          p.name,
+                          style: AppTypography.body(
+                            size: 15,
+                            weight: FontWeight.w600,
+                            color: context.c.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${p.position} · OVR ${p.ovr}',
+                          style: AppTypography.body(
+                            size: 12,
+                            color: context.c.textSecondary,
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -228,26 +323,48 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
 
 class _StepIndicator extends StatelessWidget {
   final int step;
-
   const _StepIndicator({required this.step});
-
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: List.generate(2, (i) {
-          final isActive = i < step;
-          return Expanded(
-            child: PateaCard(
-                     color: isActive ? context.c.primary : context.c.cardSurface,
-                     radius: AppRadii.hairAll,
-                     margin: EdgeInsets.only(right: i < 1 ? 6 : 0),
-                     height: 4,
-                   ),
-          );
-        }),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '1. Identidad',
+                style: AppTypography.body(
+                  size: 14,
+                  weight: step == 1 ? FontWeight.w700 : FontWeight.w400,
+                  color: step == 1
+                      ? context.c.textPrimary
+                      : context.c.textSecondary,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                '2. Plantel',
+                style: AppTypography.body(
+                  size: 14,
+                  weight: step == 2 ? FontWeight.w700 : FontWeight.w400,
+                  color: step == 2
+                      ? context.c.textPrimary
+                      : context.c.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        LinearProgressIndicator(
+          value: step / 2,
+          minHeight: 3,
+          color: context.c.primary,
+          backgroundColor: context.c.border,
+        ),
+      ],
+    ),
+  );
 }

@@ -27,6 +27,9 @@
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
 
+import 'package:patea_mobile/features/groups/create_team_screen.dart';
+import 'package:patea_mobile/features/groups/widgets/manage_roster_sheet.dart';
+
 import 'package:patea_mobile/features/players/widgets/player_match_debrief.dart';
 
 import 'package:patea_mobile/features/evaluations/evaluation_form_screen.dart';
@@ -79,6 +82,8 @@ final List<Caso> _pantallas = [
   ('evaluar_partido', () => const EvaluationFormScreen(matchId: idPartido)),
   ('menu_usuario', () => const Scaffold(backgroundColor: Colors.transparent, body: Align(alignment: Alignment.bottomCenter, child: PateaUserMenuSheet()))),
   ('evaluaciones', () => const EvaluationsInboxScreen()),
+  ('crear_equipo', () => const CreateTeamScreen(groupId: idGrupo)),
+  ('gestionar_plantel', () => Scaffold(backgroundColor: Colors.transparent, body: ManageRosterSheet(teamName: equipos.first.name, groupPlayers: jugadores, current: equipos.first.members))),
   ('grupos', () => const GroupsScreen()),
   ('equipo_detalle', () => const TeamDetailScreen(teamId: 'team-1')),
   ('perfil_devoluciones', () => const Scaffold(backgroundColor: Colors.transparent, body: SafeArea(child: SingleChildScrollView(child: Padding(padding: EdgeInsets.all(18), child: PlayerMatchDebrief(playerId: 'feedback-review')))))),
@@ -150,7 +155,7 @@ void main() {
 
     final manifiesto = await AssetManifest.loadFromAssetBundle(rootBundle);
     for (final clave in manifiesto.listAssets()) {
-      if (clave.endsWith('plain-pink-football-shirt-svgrepo-com.svg')) {
+      if (clave.startsWith('assets/jerseys/') && clave.endsWith('.svg')) {
         // Cachear texto con reloj real: un Future cacheado dentro del primer
         // test conserva su zona de reloj falso y bloquea el tema siguiente.
         await rootBundle.loadString(clave);
@@ -197,7 +202,7 @@ void main() {
       (AppTheme.lightTheme, 'claro'),
     ]) {
       testWidgets('$nombre · $sufijo', (tester) async {
-        if (nombre == 'panel') {
+        if (['panel', 'grupos', 'equipo_detalle', 'crear_equipo', 'gestionar_plantel'].contains(nombre)) {
           // Cada tema monta un árbol nuevo: el motor SVG conserva estado de
           // decodificación si la segunda prueba reutiliza el árbol anterior.
           await tester.pumpWidget(const SizedBox.shrink());
@@ -210,7 +215,7 @@ void main() {
           tema: tema,
         );
 
-        if (nombre == 'panel') {
+        if (['panel', 'grupos', 'equipo_detalle', 'crear_equipo', 'gestionar_plantel'].contains(nombre)) {
           // Bundle → SVG bytes → vector decode son etapas asincrónicas separadas.
           // Avanzar cada etapa antes de la captura evita camisetas intermitentes.
           for (var frame = 0; frame < 3; frame++) {
