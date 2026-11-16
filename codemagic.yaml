@@ -1,5 +1,5 @@
-# Builds de Pateá móvil: iOS a TestFlight y Android a Firebase App
-# Distribution, las dos disparadas por un push.
+# iOS a TestFlight sólo con etiqueta explícita ios-testflight-*.
+# Android App Distribution permanece desactivado.
 #
 # Vive en la raíz del repo porque Codemagic sólo busca `codemagic.yaml` ahí,
 # aunque la app Flutter esté en `patea_mobile/` — de eso se encarga el
@@ -128,16 +128,16 @@ workflows:
             --build-number="$BUILD_NUMBER" \
             --export-options-plist=/Users/builder/export_options.plist
 
-      - name: Publicar y verificar TestFlight interno
-        script: python3 ../scripts/publish_testflight_internal.py
-
     artifacts:
-      - build/ios/testflight-delivery.json
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
-    # La publicación y la comprobación de grupos se ejecutan en el paso anterior.
-    # No hay envío a revisión externa ni a App Store.
+    # Publicador nativo previamente usado por Pateá. No añade grupos externos.
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
 
   # ──────────────────────────────────────────────────────────────────────────
   # Android → Firebase App Distribution
