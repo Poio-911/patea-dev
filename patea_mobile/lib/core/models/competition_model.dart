@@ -27,13 +27,14 @@ class StandingRow {
     return StandingRow(
       teamId: map['teamId'] ?? '',
       teamName: map['teamName'] ?? 'Equipo',
-      played: (map['played'] as num?)?.toInt() ?? 0,
-      won: (map['won'] as num?)?.toInt() ?? 0,
-      drawn: (map['drawn'] as num?)?.toInt() ?? 0,
-      lost: (map['lost'] as num?)?.toInt() ?? 0,
+      played: ((map['played'] ?? map['matchesPlayed']) as num?)?.toInt() ?? 0,
+      won: ((map['won'] ?? map['wins']) as num?)?.toInt() ?? 0,
+      drawn: ((map['drawn'] ?? map['draws']) as num?)?.toInt() ?? 0,
+      lost: ((map['lost'] ?? map['losses']) as num?)?.toInt() ?? 0,
       goalsFor: (map['goalsFor'] as num?)?.toInt() ?? 0,
       goalsAgainst: (map['goalsAgainst'] as num?)?.toInt() ?? 0,
-      goalDiff: (map['goalDiff'] as num?)?.toInt() ?? 0,
+      goalDiff:
+          ((map['goalDiff'] ?? map['goalDifference']) as num?)?.toInt() ?? 0,
       points: (map['points'] as num?)?.toInt() ?? 0,
     );
   }
@@ -91,6 +92,8 @@ class CompetitionModel {
   final String status; // draft, published, in_progress, completed
   final String ownerUid;
   final String? description;
+  final String? groupId;
+  final List<String> teamIds;
   final List<BracketMatchModel> bracket;
   final List<StandingRow> standings;
 
@@ -101,11 +104,17 @@ class CompetitionModel {
     required this.status,
     required this.ownerUid,
     this.description,
+    this.groupId,
+    this.teamIds = const [],
     this.bracket = const [],
     this.standings = const [],
   });
 
-  factory CompetitionModel.fromFirestore(Map<String, dynamic> data, String id, String type) {
+  factory CompetitionModel.fromFirestore(
+    Map<String, dynamic> data,
+    String id,
+    String type,
+  ) {
     final rawBracket = data['bracket'] as List<dynamic>? ?? [];
     final rawStandings = data['standings'] as List<dynamic>? ?? [];
 
@@ -116,8 +125,16 @@ class CompetitionModel {
       status: data['status'] ?? 'draft',
       ownerUid: data['ownerUid'] ?? '',
       description: data['description'],
-      bracket: rawBracket.map((b) => BracketMatchModel.fromMap(b as Map<String, dynamic>)).toList(),
-      standings: rawStandings.map((s) => StandingRow.fromMap(s as Map<String, dynamic>)).toList(),
+      groupId: data['groupId'] as String?,
+      teamIds: ((data['teams'] as List?) ?? [])
+          .map((t) => t is String ? t : (t as Map)['id'].toString())
+          .toList(),
+      bracket: rawBracket
+          .map((b) => BracketMatchModel.fromMap(b as Map<String, dynamic>))
+          .toList(),
+      standings: rawStandings
+          .map((s) => StandingRow.fromMap(s as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

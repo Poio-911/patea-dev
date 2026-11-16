@@ -1,3 +1,4 @@
+import '../../features/competitions/league_detail_screen.dart';
 import 'dart:async';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
@@ -265,6 +266,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id'] ?? '';
           return _withBackground(MatchEvaluateScreen(matchId: id));
         },
+      ),
+      GoRoute(
+        path: '/competitions/league/:id',
+        builder: (context, state) => _withBackground(
+          LeagueDetailScreen(leagueId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/competitions/cup/:id',

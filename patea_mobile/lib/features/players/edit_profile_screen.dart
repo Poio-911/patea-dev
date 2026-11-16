@@ -90,8 +90,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         maxHeight: 1080,
         imageQuality: 88,
       );
-      if (picked == null) return;
+      if (picked == null || !mounted) return;
       await HapticFeedback.selectionClick();
+      if (!mounted) return;
       setState(() => _pickedPhoto = File(picked.path));
     } catch (e) {
       if (mounted) {
@@ -257,10 +258,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
     );
 
-    if (chosen != null) setState(() => _birthYear = chosen);
+    if (chosen != null && mounted) setState(() => _birthYear = chosen);
   }
 
   Future<void> _save() async {
+    if (_saving || _generating) return;
+    FocusScope.of(context).unfocus();
     final name = _nameController.text.trim();
     if (name.length < 3) {
       setState(() => _error = 'El nombre debe tener al menos 3 caracteres.');
@@ -287,6 +290,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         preferredFoot: _foot,
         bio: _bioController.text.trim(),
         birthYear: _birthYear,
+        clearPreferredFoot: _foot == null,
+        clearBirthYear: _birthYear == null,
         nationality: _nationalityController.text.trim(),
       );
 
@@ -312,9 +317,32 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         backgroundColor: Colors.transparent,
         title: Text(
           'Editar perfil',
-          style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
       ),
+      bottomNavigationBar: playerAsync.value == null
+          ? null
+          : Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+                  child: FilledButton.icon(
+                    onPressed: _saving || _generating ? null : _save,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: PateaButtonProgress(),
+                          )
+                        : const Icon(Icons.check),
+                    label: Text(_saving ? 'Guardando…' : 'Guardar cambios'),
+                  ),
+                ),
+              ),
+            ),
       body: playerAsync.when(
         loading: () =>
             Center(child: CircularProgressIndicator(color: context.c.primary)),
@@ -367,28 +395,39 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: SizedBox(
-                        width: 260,
-                        child: AspectRatio(
-                          aspectRatio: 2 / 3,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 110,
+                          height: 165,
                           child: PlayerCardWidget(
                             player: preview,
                             localPhoto: _pickedPhoto,
                             photoStyle: CardPhotoStyle.halfTop,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Así te ven', style: AppTypography.headline(size: 16)),
-                    const SizedBox(height: 4),
-                    Text(
-                      'La ficha se actualiza mientras editás.',
-                      style: AppTypography.body(
-                        size: 13,
-                        color: context.c.textSecondary,
-                      ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tu identidad en la cancha',
+                                style: AppTypography.headline(size: 21),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Actualizá tu foto y tus datos. Los cambios se ven en tu ficha.',
+                                style: AppTypography.body(
+                                  size: 14,
+                                  color: context.c.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -465,48 +504,47 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     const SizedBox(height: 20),
                     _Label('Posición'),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        for (final p in _positions) ...[
-                          Expanded(
-                            child: _ChoiceChip(
-                              label: p,
-                              selected: _position == p,
-                              color: context.c.positionColor(p),
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() => _position = p);
-                              },
-                            ),
+                        for (final p in _positions)
+                          _ChoiceChip(
+                            label: p,
+                            selected: _position == p,
+                            color: context.c.positionColor(p),
+                            onTap: _saving
+                                ? () {}
+                                : () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _position = p);
+                                  },
                           ),
-                          if (p != _positions.last) const SizedBox(width: 8),
-                        ],
                       ],
                     ),
 
                     const SizedBox(height: 20),
                     _Label('Pie hábil'),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        for (final entry in _feet.entries) ...[
-                          Expanded(
-                            child: _ChoiceChip(
-                              label: entry.value,
-                              selected: _foot == entry.key,
-                              color: context.c.primary,
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(
-                                  () => _foot = _foot == entry.key
-                                      ? null
-                                      : entry.key,
-                                );
-                              },
-                            ),
+                        for (final entry in _feet.entries)
+                          _ChoiceChip(
+                            label: entry.value,
+                            selected: _foot == entry.key,
+                            color: context.c.primary,
+                            onTap: _saving
+                                ? () {}
+                                : () {
+                                    HapticFeedback.selectionClick();
+                                    setState(
+                                      () => _foot = _foot == entry.key
+                                          ? null
+                                          : entry.key,
+                                    );
+                                  },
                           ),
-                          if (entry.key != _feet.keys.last)
-                            const SizedBox(width: 8),
-                        ],
                       ],
                     ),
 
@@ -545,7 +583,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             const Spacer(),
                             if (_birthYear != null)
                               GestureDetector(
-                                onTap: () => setState(() => _birthYear = null),
+                                onTap: _saving
+                                    ? null
+                                    : () => setState(() => _birthYear = null),
                                 child: Icon(
                                   Icons.close,
                                   size: 16,
@@ -623,36 +663,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                       ),
                     ],
-
-                    const SizedBox(height: 26),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _saving ? null : _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.c.primary,
-                          foregroundColor: context.c.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                        icon: _saving
-                            ? SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: const PateaButtonProgress(),
-                              )
-                            : const Icon(Icons.check, size: 18),
-                        label: Text(
-                          _saving ? 'Guardando…' : 'Guardar cambios',
-                          style: AppTypography.headline(
-                            size: 14,
-                            weight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -746,23 +756,21 @@ class _ChoiceChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.16) : context.c.card,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(
-            color: selected ? color : context.c.overlayLine,
-            width: selected ? 1.5 : 1,
+          color: Colors.transparent,
+          border: Border(
+            bottom: BorderSide(
+              color: selected ? color : context.c.overlayLine,
+              width: selected ? 1.5 : 1,
+            ),
           ),
         ),
         child: Text(
           label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: AppTypography.body(
-            size: 12,
-            weight: selected ? FontWeight.w600 : FontWeight.w600,
+            size: 13,
+            weight: FontWeight.w600,
             color: selected ? color : context.c.textSecondary,
           ),
         ),

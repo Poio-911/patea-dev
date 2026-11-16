@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'callable_functions.dart';
 
-final profileServiceProvider = Provider<ProfileService>((ref) => ProfileService());
+final profileServiceProvider = Provider<ProfileService>(
+  (ref) => ProfileService(),
+);
 
 /// Escrituras del perfil propio.
 ///
@@ -31,8 +33,9 @@ class ProfileService {
       _ => 'image/jpeg',
     };
 
-    final ref = FirebaseStorage.instance
-        .ref('profile-images/$uid/profile_${DateTime.now().millisecondsSinceEpoch}.$ext');
+    final ref = FirebaseStorage.instance.ref(
+      'profile-images/$uid/profile_${DateTime.now().millisecondsSinceEpoch}.$ext',
+    );
 
     await ref.putFile(file, SettableMetadata(contentType: contentType));
     return ref.getDownloadURL();
@@ -59,15 +62,15 @@ class ProfileService {
   }
 
   /// Guarda sólo el encuadre de la foto.
-  Future<void> updateCrop({required double x, required double y, required double zoom}) async {
-    await callFunction(
-      'updateProfile',
-      {
-        'cropPosition': {'x': x, 'y': y},
-        'cropZoom': zoom,
-      },
-      timeout: const Duration(seconds: 30),
-    );
+  Future<void> updateCrop({
+    required double x,
+    required double y,
+    required double zoom,
+  }) async {
+    await callFunction('updateProfile', {
+      'cropPosition': {'x': x, 'y': y},
+      'cropZoom': zoom,
+    }, timeout: const Duration(seconds: 30));
   }
 
   /// Guarda los campos del perfil. Sólo se mandan los que cambiaron.
@@ -80,19 +83,26 @@ class ProfileService {
     int? birthYear,
     String? nationality,
     String? phoneNumber,
+    bool clearPreferredFoot = false,
+    bool clearBirthYear = false,
   }) async {
     final data = <String, dynamic>{};
     if (displayName != null) data['displayName'] = displayName;
     if (photoUrl != null) data['photoUrl'] = photoUrl;
     if (position != null) data['position'] = position;
-    if (preferredFoot != null) data['preferredFoot'] = preferredFoot;
+    if (preferredFoot != null || clearPreferredFoot)
+      data['preferredFoot'] = preferredFoot;
     if (bio != null) data['bio'] = bio;
-    if (birthYear != null) data['birthYear'] = birthYear;
+    if (birthYear != null || clearBirthYear) data['birthYear'] = birthYear;
     if (nationality != null) data['nationality'] = nationality;
     if (phoneNumber != null) data['phoneNumber'] = phoneNumber;
 
     if (data.isEmpty) return;
 
-    await callFunction('updateProfile', data, timeout: const Duration(seconds: 30));
+    await callFunction(
+      'updateProfile',
+      data,
+      timeout: const Duration(seconds: 30),
+    );
   }
 }

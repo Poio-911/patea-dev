@@ -1,3 +1,4 @@
+import { optionalProfileFields } from '../lib/profile-optional-fields';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 
@@ -23,14 +24,10 @@ import * as admin from 'firebase-admin';
  */
 
 const POSITIONS = ['DEL', 'MED', 'DEF', 'POR'] as const;
-const FEET = ['derecho', 'izquierdo', 'ambidiestro'] as const;
 
 const MIN_NAME = 3;
 const MAX_NAME = 40;
 const MAX_BIO = 160;
-const MIN_BIRTH_YEAR = 1950;
-/** Igual que la web: no se admite alguien de menos de 5 años. */
-const MIN_AGE = 5;
 
 type Updates = Record<string, unknown>;
 
@@ -83,28 +80,13 @@ export const updateProfile = onCall({ region: 'us-central1' }, async (request) =
     playerUpdates.position = pos;
   }
 
-  // ── Pie hábil ───────────────────────────────────────────────────────────
-  if (data.preferredFoot !== undefined && data.preferredFoot !== null) {
-    const foot = String(data.preferredFoot).toLowerCase();
-    if (!FEET.includes(foot as typeof FEET[number])) invalid('Pie hábil inválido.');
-    playerUpdates.preferredFoot = foot;
-  }
+  Object.assign(playerUpdates, optionalProfileFields(data));
 
   // ── Bio ─────────────────────────────────────────────────────────────────
   if (data.bio !== undefined) {
     const bio = String(data.bio).trim();
     if (bio.length > MAX_BIO) invalid(`La bio no puede superar los ${MAX_BIO} caracteres.`);
     playerUpdates.bio = bio;
-  }
-
-  // ── Año de nacimiento ───────────────────────────────────────────────────
-  if (data.birthYear !== undefined && data.birthYear !== null && data.birthYear !== '') {
-    const year = Number(data.birthYear);
-    const maxYear = new Date().getFullYear() - MIN_AGE;
-    if (!Number.isInteger(year) || year < MIN_BIRTH_YEAR || year > maxYear) {
-      invalid(`El año de nacimiento debe estar entre ${MIN_BIRTH_YEAR} y ${maxYear}.`);
-    }
-    playerUpdates.birthYear = year;
   }
 
   // ── Nacionalidad y teléfono ─────────────────────────────────────────────

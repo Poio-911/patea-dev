@@ -27,6 +27,10 @@
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
 
+import 'package:patea_mobile/features/competitions/competition_management.dart';
+import 'package:patea_mobile/features/players/edit_profile_screen.dart';
+
+
 import 'package:patea_mobile/features/groups/create_team_screen.dart';
 import 'package:patea_mobile/features/groups/widgets/manage_roster_sheet.dart';
 
@@ -78,6 +82,9 @@ final List<Caso> _pantallas = [
   ('partidos', () => const MatchesScreen()),
   ('partido_detalle', () => const MatchDetailScreen(matchId: idPartido)),
   ('competiciones', () => const CompetitionsScreen()),
+  ('crear_liga', () => const CreateCompetitionScreen(isCup: false, groupId: idGrupo)),
+  ('crear_copa', () => const CreateCompetitionScreen(isCup: true, groupId: idGrupo)),
+  ('editar_perfil', () => const EditProfileScreen(playerId: uidYo)),
   ('explorar', () => const ExplorarScreen()),
   ('evaluar_partido', () => const EvaluationFormScreen(matchId: idPartido)),
   ('menu_usuario', () => const Scaffold(backgroundColor: Colors.transparent, body: Align(alignment: Alignment.bottomCenter, child: PateaUserMenuSheet()))),

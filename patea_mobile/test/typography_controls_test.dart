@@ -89,7 +89,7 @@ void main() {
           await tester.tap(find.text('Siguiente'));
           await tester.pumpAndSettle();
         }
-        expect(find.text('¡Entendido!').hitTestable(), findsOneWidget);
+        expect(find.text('Empezar a jugar').hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

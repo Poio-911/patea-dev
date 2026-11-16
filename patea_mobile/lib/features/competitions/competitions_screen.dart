@@ -1,3 +1,6 @@
+import '../../core/theme/app_insets.dart';
+import 'competition_management.dart';
+import 'league_detail_screen.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
@@ -37,6 +40,12 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen>
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final leaguesAsync = ref.watch(leaguesStreamProvider);
     final cupsAsync = ref.watch(cupsStreamProvider);
@@ -48,7 +57,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          spec(Section.competitions).title.toUpperCase(),
+          spec(Section.competitions).title,
           style: AppTypography.headline(size: 18, weight: FontWeight.w800),
         ),
         // Antes era el `TabBar` de Material sin tocar, que en medio de la app
@@ -67,6 +76,32 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen>
               },
             ),
           ),
+        ),
+      ),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
+        child: FloatingActionButton.extended(
+          onPressed: () async {
+            final groupId = ref.read(activeGroupIdProvider).value;
+            if (groupId == null || groupId.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Elegí un grupo desde Gestionar grupos para crear un torneo.',
+                  ),
+                ),
+              );
+              return;
+            }
+            await Navigator.of(context).push(
+              MaterialPageRoute<bool>(
+                builder: (_) =>
+                    CreateCompetitionScreen(isCup: _tab == 1, groupId: groupId),
+              ),
+            );
+          },
+          icon: const Icon(Icons.add),
+          label: Text(_tab == 1 ? 'Crear copa' : 'Crear liga'),
         ),
       ),
       body: TabBarView(
@@ -91,14 +126,14 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen>
   }
 }
 
-class _CompetitionsList extends StatelessWidget {
+class _CompetitionsList extends ConsumerWidget {
   final List<CompetitionModel> competitions;
   final bool isCup;
 
   const _CompetitionsList({required this.competitions, required this.isCup});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (competitions.isEmpty) {
       return SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -114,11 +149,16 @@ class _CompetitionsList extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        bottomInset(context, extra: 100),
+      ),
       itemCount: competitions.length + 1,
       separatorBuilder: (_, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        if (index == 0)
+        if (index == 0) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: PateaSectionScene(
@@ -131,11 +171,14 @@ class _CompetitionsList extends StatelessWidget {
                   : 'Seguí cada fecha y los resultados de tus equipos.',
             ),
           );
+        }
         final comp = competitions[index - 1];
         return InkWell(
           onTap: () {
             if (isCup) {
               context.push('/competitions/cup/${comp.id}');
+            } else {
+              context.push('/competitions/league/${comp.id}');
             }
           },
           borderRadius: AppRadii.cardAll,
@@ -172,15 +215,31 @@ class _CompetitionsList extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        comp.status.toUpperCase(),
-                        style: AppTypography.code(
-                          size: 11,
+                        competitionStatusLabel(comp.status),
+                        style: AppTypography.body(
+                          size: 12,
                           color: context.c.primary,
                         ),
                       ),
                     ],
                   ),
                 ),
+                if (ref.watch(currentUidProvider) == comp.ownerUid)
+                  IconButton(
+                    tooltip: 'Eliminar torneo',
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      try {
+                        await confirmDeleteCompetition(context, ref, comp);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('No se pudo eliminar: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
                 Icon(Icons.chevron_right, color: context.c.textSecondary),
               ],
             ),

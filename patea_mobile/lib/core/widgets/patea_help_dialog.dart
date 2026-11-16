@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../theme/patea_colors.dart';
+
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
-import 'soccer_runner_icon.dart';
+import '../theme/patea_colors.dart';
+import 'patea_brand.dart';
 
-/// Modal de Ayuda y Tutorial de Pateá (port de src/components/help-dialog.tsx)
+/// Modal de Ayuda y Tutorial de Pateá con escenas editoriales reales.
 class PateaHelpDialog extends StatefulWidget {
   const PateaHelpDialog({super.key});
 
@@ -18,40 +19,46 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
 
   static const List<_TutorialStep> _steps = [
     _TutorialStep(
-      icon: Icons.groups_2_rounded,
+      assetPath: 'assets/brand/patea_groups.webp',
+      eyebrow: 'Paso 1 · Comunidad',
       title: 'Tu grupo, tu punto de encuentro',
       content:
           'Creá un grupo o unite con su código. Ahí encontrás al plantel y organizás los partidos con tu gente.',
     ),
     _TutorialStep(
-      icon: Icons.checkroom_rounded,
-      title: 'Equipos con identidad',
+      assetPath: 'assets/brand/patea_locker_room.webp',
+      eyebrow: 'Paso 2 · Identidad',
+      title: 'Equipos con identidad propia',
       content:
-          'Diseñá la camiseta y elegí el plantel de tu equipo. Podés usarlo para organizar partidos por equipos sin volver a elegir a cada jugador.',
+          'Diseñá la camiseta y definí el plantel de tu equipo para armar cruces sin elegir jugador por jugador.',
     ),
     _TutorialStep(
-      icon: Icons.sports_soccer_rounded,
+      assetPath: 'assets/brand/patea_matchday.webp',
+      eyebrow: 'Paso 3 · Convocatoria',
       title: 'Elegí cómo se arma el partido',
       content:
-          'Elegí cómo jugar: Manual (invitación directa), Colaborativo (inscripción abierta para el grupo) o Por Equipos (duelos clásicos con plantillas cerradas).',
+          'Jugá en modo Manual, Colaborativo o Por Equipos, con horario fijo o votación entre los convocados.',
     ),
     _TutorialStep(
-      icon: Icons.lock_clock_rounded,
-      title: 'Jugá, evaluá y seguí tu progreso',
+      assetPath: 'assets/brand/patea_evaluations.webp',
+      eyebrow: 'Paso 4 · Tercer tiempo',
+      title: 'Evaluá por nota, etiquetas o reseña',
       content:
-          'Después de jugar, puntuá a tus amigos para que su OVR y atributos evolucionen. ¡Tranquilo! Las evaluaciones son anónimas y seguras hasta que decidas revelar tu identidad.',
+          'Después del partido valorá a tus compañeros de forma anónima para actualizar su OVR y sus atributos.',
     ),
     _TutorialStep(
-      icon: Icons.travel_explore_rounded,
+      assetPath: 'assets/brand/patea_explore.webp',
+      eyebrow: 'Paso 5 · Explorar',
       title: 'Encontrá a quien falta',
       content:
-          'Encontrá jugadores libres para completar tu equipo o anotarte en partidos públicos compatibles con tu nivel. ¡Hacete ver y dejá tu huella en la cancha!',
+          'Sumá jugadores disponibles cerca tuyo o anotate en partidos abiertos cuando quieras jugar.',
     ),
     _TutorialStep(
-      icon: Icons.emoji_events_rounded,
-      title: 'Volvé a ver cómo jugaste',
+      assetPath: 'assets/brand/patea_ranking.webp',
+      eyebrow: 'Paso 6 · Carrera',
+      title: 'Seguí tu evolución y tu historial',
       content:
-          'En tu perfil tenés el historial de partidos, las evaluaciones y la evolución de tu OVR. La tabla de tu grupo te permite comparar el progreso con tus compañeros.',
+          'Consultá tu ficha, tus devoluciones partido a partido y tu lugar en el ranking del plantel.',
     ),
   ];
 
@@ -63,171 +70,184 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final scaler = MediaQuery.textScalerOf(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-      child: Container(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
+      child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
-        decoration: BoxDecoration(
-          color: context.c.popover,
-          borderRadius: AppRadii.surfaceAll,
-          border: Border.all(color: context.c.overlayLine, width: 1),
-          boxShadow: [
-            BoxShadow(
-              // Una sombra es negra en los dos temas.
-              color: Colors.black.withValues(alpha: 0.6),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Cabecera con runner icon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        child: Container(
+          decoration: BoxDecoration(
+            color: c.popover,
+            borderRadius: AppRadii.surfaceAll,
+            border: Border.all(color: c.border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SoccerRunnerIcon(size: 24, color: context.c.primary),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    '¡Bienvenid@ a Pateá!',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.headline(
-                      size: 20,
-                      weight: FontWeight.w900,
-                      color: context.c.textPrimary,
+                Row(
+                  children: [
+                    const Expanded(child: PateaBrand(height: 24)),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Cerrar',
+                        style: AppTypography.action(
+                          size: 13,
+                          color: c.textSecondary,
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: scaler.scale(250).clamp(240.0, 320.0),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _steps.length,
+                    onPageChanged: (idx) => setState(() => _currentPage = idx),
+                    itemBuilder: (context, index) {
+                      final step = _steps[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: c.card,
+                          borderRadius: AppRadii.cardAll,
+                          border: Border.all(color: c.border),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(
+                              height: 108,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.asset(
+                                    step.assetPath,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) =>
+                                        ColoredBox(color: c.cardSurface),
+                                  ),
+                                  DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.black.withValues(alpha: 0.15),
+                                          Colors.black.withValues(alpha: 0.65),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: 14,
+                                    bottom: 10,
+                                    child: Text(
+                                      step.eyebrow,
+                                      style: AppTypography.code(
+                                        size: 11,
+                                        weight: FontWeight.w700,
+                                        color: c.onPhoto,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      step.title,
+                                      style: AppTypography.headline(
+                                        size: 16,
+                                        weight: FontWeight.w700,
+                                        color: c.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      step.content,
+                                      style: AppTypography.body(
+                                        size: 13,
+                                        color: c.textSecondary,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_steps.length, (index) {
+                    final isCurrent = index == _currentPage;
+                    return AnimatedContainer(
+                      duration: reduced
+                          ? Duration.zero
+                          : const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: isCurrent ? 18 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: isCurrent ? c.primary : c.overlayStrong,
+                        borderRadius: AppRadii.hairAll,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () {
+                    if (_currentPage < _steps.length - 1) {
+                      if (reduced) {
+                        _pageController.jumpToPage(_currentPage + 1);
+                      } else {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 240),
+                          curve: Curves.easeOutCubic,
+                        );
+                      }
+                    } else {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.cardAll,
+                    ),
+                  ),
+                  child: Text(
+                    _currentPage < _steps.length - 1
+                        ? 'Siguiente'
+                        : 'Empezar a jugar',
+                    style: AppTypography.action(size: 15, color: c.onPrimary),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Guía rápida para sacarle todo el jugo a la app.',
-              style: AppTypography.body(
-                size: 13,
-                color: context.c.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 18),
-
-            // Carrusel de pasos
-            //
-            // La altura crece con la escala de texto del sistema. Era 180
-            // fijos y adentro hay tres líneas de texto: a 1,3× el paso
-            // desbordaba 44 px por abajo. Es el caso de manual del `height:`
-            // fijo con texto adentro.
-            SizedBox(
-              height: MediaQuery.textScalerOf(context).scale(180),
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _steps.length,
-                onPageChanged: (idx) => setState(() => _currentPage = idx),
-                itemBuilder: (context, index) {
-                  final step = _steps[index];
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: context.c.card,
-                      borderRadius: AppRadii.cardAll,
-                      border: Border.all(
-                        color: context.c.brandVolt.withValues(alpha: 0.25),
-                        width: 1,
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(step.icon, color: context.c.primary, size: 30),
-                          const SizedBox(height: 8),
-                          Text(
-                            step.title,
-                            style: AppTypography.headline(
-                              size: 15,
-                              weight: FontWeight.w800,
-                              color: context.c.textPrimary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            step.content,
-                            style: AppTypography.body(
-                              size: 14,
-                              color: context.c.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Indicadores de puntos
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_steps.length, (index) {
-                final isCurrent = index == _currentPage;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: isCurrent ? 18 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isCurrent
-                        ? context.c.primary
-                        : context.c.overlayStrong,
-                    borderRadius: AppRadii.hairAll,
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 20),
-
-            // Botón de acción principal
-            SizedBox(
-              width: double.infinity,
-              height: MediaQuery.textScalerOf(context).scale(46),
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_currentPage < _steps.length - 1) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  } else {
-                    Navigator.of(context).pop();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.c.primary,
-                  foregroundColor: context.c.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                  elevation: 0,
-                ),
-                child: Text(
-                  _currentPage < _steps.length - 1
-                      ? 'Siguiente'
-                      : '¡Entendido!',
-                  style: AppTypography.action(
-                    size: 15,
-                    weight: FontWeight.w600,
-                    color: context.c.onPrimary,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -235,12 +255,14 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
 }
 
 class _TutorialStep {
-  final IconData icon;
+  final String assetPath;
+  final String eyebrow;
   final String title;
   final String content;
 
   const _TutorialStep({
-    required this.icon,
+    required this.assetPath,
+    required this.eyebrow,
     required this.title,
     required this.content,
   });
