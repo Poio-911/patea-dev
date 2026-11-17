@@ -35,7 +35,6 @@ import 'widgets/match_story_view.dart';
 import 'widgets/match_cover.dart';
 import 'widgets/match_timeline.dart';
 import 'widgets/recruit_players_sheet.dart';
-import 'widgets/weather_alert.dart';
 
 /// Pantalla de Detalle de Partido: experiencia deportiva estilo broadcast de TV
 /// y fútbol callejero.
@@ -631,7 +630,6 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    MatchWeatherAlert(match: match),
                     if (isOwner && hasTeams) ...[
                       const SizedBox(height: 10),
                       DuplicatePlayersAlert(match: match),

@@ -11,7 +11,14 @@ import '../../../core/widgets/patea_card.dart';
 /// Venue + kickoff forecast. Saved historical weather is never a current alert.
 class MatchWeatherAlert extends ConsumerStatefulWidget {
   final MatchModel match;
-  const MatchWeatherAlert({super.key, required this.match});
+  final bool compact;
+  final bool onPhoto;
+  const MatchWeatherAlert({
+    super.key,
+    required this.match,
+    this.compact = false,
+    this.onPhoto = false,
+  });
 
   @override
   ConsumerState<MatchWeatherAlert> createState() => _MatchWeatherAlertState();
@@ -21,6 +28,7 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
     with WidgetsBindingObserver {
   MatchWeatherQuery? _query;
   bool _visible = false;
+  bool _sheetOpen = false;
 
   @override
   void initState() {
@@ -54,6 +62,7 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_sheetOpen) return;
     final query = _query;
     if (state != AppLifecycleState.resumed || query == null) return;
     final snapshot = ref.read(matchWeatherProvider(query)).asData?.value;
@@ -76,6 +85,12 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
     if (finished) {
       final saved = match.weather;
       if (saved == null) return const SizedBox.shrink();
+      if (widget.compact) {
+        return _compactLine(
+          context,
+          '${saved.temperature}° · Clima registrado',
+        );
+      }
       return _surface(
         context,
         Column(
@@ -173,6 +188,132 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
     );
   }
 
+  Future<void> _openSheet() async {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        backgroundColor: context.c.background,
+        builder: (sheetContext) => ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * .85,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            child: MatchWeatherAlert(match: widget.match),
+          ),
+        ),
+      );
+    } finally {
+      _sheetOpen = false;
+    }
+  }
+
+  Widget _compactLine(
+    BuildContext context,
+    String text, {
+    String? kind,
+    bool loading = false,
+    WeatherAdvisory? warning,
+  }) {
+    final ink = widget.onPhoto
+        ? const Color(0xFFF4F7F6)
+        : context.c.textPrimary;
+    final muted = widget.onPhoto
+        ? const Color(0xFFC3CDCA)
+        : context.c.textSecondary;
+    // Light theme still uses photographic ink over the shared dark cover.
+    final caution = widget.onPhoto
+        ? const Color(0xFFFFD56A)
+        : Theme.of(context).brightness == Brightness.light
+        ? context.c.textPrimary
+        : context.c.warning;
+    return Semantics(
+      button: true,
+      label: 'Ver detalle del clima',
+      child: InkWell(
+        key: const ValueKey('match-weather-inline'),
+        onTap: _openSheet,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 32),
+                child: Row(
+                  children: [
+                    if (loading)
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: muted,
+                        ),
+                      )
+                    else if (kind != null)
+                      SizedBox(
+                        width: 22,
+                        height: 26,
+                        child: FittedBox(child: _WeatherMotion(kind: kind)),
+                      )
+                    else
+                      Icon(Icons.cloud_outlined, size: 16, color: muted),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: AppTypography.body(
+                          size: 12,
+                          color: kind != null ? ink : muted,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.expand_more_rounded, size: 17, color: muted),
+                  ],
+                ),
+              ),
+              if (warning != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        warning.level == WeatherAdvisoryLevel.danger
+                            ? Icons.thunderstorm_outlined
+                            : Icons.warning_amber_rounded,
+                        size: 16,
+                        color: caution,
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          '${warning.title} · Ver aviso',
+                          style: AppTypography.body(
+                            size: 12,
+                            weight: FontWeight.w600,
+                            color: caution,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _surface(BuildContext context, Widget child) => Padding(
     padding: const EdgeInsets.only(top: 12),
     child: PateaCard(
@@ -189,45 +330,59 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
     String body, {
     bool loading = false,
     VoidCallback? retry,
-  }) => _surface(
-    context,
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            if (loading)
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              Icon(
-                Icons.cloud_outlined,
-                size: 22,
-                color: context.c.textSecondary,
+  }) {
+    if (widget.compact) {
+      final text = switch (title) {
+        'Falta confirmar el horario' => 'Clima al confirmar horario',
+        'Falta ubicar la cancha' => 'Clima al confirmar cancha',
+        'El clima se define más cerca' =>
+          'Clima disponible más cerca de la fecha',
+        'No pudimos consultar el clima' => 'Clima no disponible · Ver detalle',
+        'La fecha del partido ya pasó' => 'Clima · Revisar fecha del partido',
+        _ => title,
+      };
+      return _compactLine(context, text, loading: loading);
+    }
+    return _surface(
+      context,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (loading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Icon(
+                  Icons.cloud_outlined,
+                  size: 22,
+                  color: context.c.textSecondary,
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(title, style: AppTypography.headline(size: 15)),
               ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(title, style: AppTypography.headline(size: 15)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 9),
-        Text(
-          body,
-          style: AppTypography.body(size: 13, color: context.c.textSecondary),
-        ),
-        if (retry != null)
-          TextButton.icon(
-            onPressed: retry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reintentar clima'),
+            ],
           ),
-      ],
-    ),
-  );
+          const SizedBox(height: 9),
+          Text(
+            body,
+            style: AppTypography.body(size: 13, color: context.c.textSecondary),
+          ),
+          if (retry != null)
+            TextButton.icon(
+              onPressed: retry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar clima'),
+            ),
+        ],
+      ),
+    );
+  }
 
   Widget _forecast(
     BuildContext context,
@@ -236,6 +391,22 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
   ) {
     final weather = snapshot.forecast;
     final advisories = weatherAdvisories(weather);
+    if (widget.compact) {
+      final rain = weather.hasData('precipitation_probability')
+          ? '${weather.precipitation}%'
+          : 'sin dato';
+      final wind = weather.hasData('wind_speed_10m')
+          ? '${weather.windSpeed} km/h'
+          : 'sin dato';
+      return _compactLine(
+        context,
+        '${weather.temperature}° · Lluvia $rain · Viento $wind',
+        kind: weather.icon,
+        warning: advisories
+            .where((a) => a.level != WeatherAdvisoryLevel.information)
+            .firstOrNull,
+      );
+    }
     final time =
         '${query.kickoff.hour.toString().padLeft(2, '0')}:${query.kickoff.minute.toString().padLeft(2, '0')}';
     final updated =

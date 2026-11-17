@@ -2,11 +2,13 @@
 
 ## Presentación
 
-Bloque debajo de la portada del encuentro, integrado con Game y Claro. Incluye temperatura, condición, sensación térmica, probabilidad de lluvia, viento e índice UV para la hora de inicio. Open-Meteo y hora de actualización aparecen al pie. La consulta manual está en Actualizar clima.
+El acceso al clima está integrado dentro de la portada, debajo de la ubicación: icono animado pequeño, temperatura, lluvia y viento, sin tarjeta independiente. Al tocar la línea abre una hoja inferior desplazable con temperatura, condición, sensación térmica, probabilidad de lluvia, viento e índice UV para la hora de inicio. Open-Meteo y hora de actualización aparecen al pie. La consulta manual está en Actualizar clima dentro de la hoja.
 
 Sol con rotación lenta, nubes con desplazamiento leve y precipitación localizada dentro del icono. La tormenta no usa destellos ni glow. El movimiento respeta reducir animaciones, TickerMode y el ciclo de vida de la app.
 
-La advertencia de mayor prioridad permanece visible. Si coinciden varias condiciones, sus títulos se presentan en También y se pueden desplegar sus recomendaciones.
+Un aviso importante permanece visible en la portada como título y Ver aviso. En la hoja, la advertencia de mayor prioridad se presenta completa; si coinciden varias condiciones, sus títulos se presentan en También y se pueden desplegar sus recomendaciones. La información rutinaria queda dentro de la hoja.
+
+Sin horario confirmado, la portada muestra únicamente Clima al confirmar horario. Los demás estados pendientes o de error también se resumen en una línea; al tocarla se explica el motivo y se ofrece reintentar cuando corresponda. El clima histórico guardado se identifica como registrado.
 
 ## Consulta y estados
 
@@ -38,3 +40,4 @@ Referencias: [Open-Meteo](https://open-meteo.com/en/docs), [OMS: índice UV](htt
 - Pruebas del clima, creación e integración del detalle: riesgos combinados y prioridades, límites UV sin redondear, datos faltantes, error/reintento, caché por consulta, fechas sin alcance e historial; lectura a escala 2x y Game/Claro; animación que pausa y retoma con el ciclo de vida.
 - Capturas de demostración del bloque: `patea_mobile/build/weather-review`, generadas con `--dart-define=CAPTURE_MATCH_WEATHER=true`. No representan el tiempo meteorológico real ni modifican la base de datos.
 - Análisis estático de los archivos afectados sin observaciones.
+- Integración compacta: pruebas en Game/Claro de altura del resumen, apertura y cierre de la hoja, acceso a actualización, aviso importante visible a escala 2x y planificación sin consulta de red. 27 pruebas del clima y del detalle aprobadas.

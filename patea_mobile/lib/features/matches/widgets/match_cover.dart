@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/match_theme.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/widgets/jersey_painter.dart';
+import 'weather_alert.dart';
 
 /// Portada editorial compartida por todos los estados del encuentro.
 class MatchCover extends StatelessWidget {
@@ -134,6 +135,7 @@ class MatchCover extends StatelessWidget {
                     ),
                   ),
                 ),
+                MatchWeatherAlert(match: match, compact: true, onPhoto: true),
                 if (hasTeams) ...[
                   const SizedBox(height: 17),
                   Row(

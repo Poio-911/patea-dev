@@ -16,6 +16,7 @@ import 'package:patea_mobile/core/services/weather_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/theme/app_typography.dart';
 import 'package:patea_mobile/features/matches/widgets/weather_alert.dart';
+import 'package:patea_mobile/features/matches/widgets/match_cover.dart';
 
 WeatherForecast forecast({
   int code = 0,
@@ -98,6 +99,7 @@ Future<void> _mount(
   bool light = false,
   double scale = 1.3,
   bool animate = false,
+  bool cover = false,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 3;
@@ -122,7 +124,9 @@ Future<void> _mount(
           appBar: AppBar(title: const Text('Detalle del partido')),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: MatchWeatherAlert(match: value),
+            child: cover
+                ? MatchCover(match: value, onOpenMaps: () {})
+                : MatchWeatherAlert(match: value),
           ),
         ),
       ),
@@ -322,6 +326,64 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
   for (final light in [false, true]) {
+    testWidgets(
+      'cover keeps weather compact and opens full details, light=$light',
+      (tester) async {
+        await _mount(
+          tester,
+          match(),
+          _Weather(() async => forecast(uv: 1, rain: 10)),
+          light: light,
+          cover: true,
+        );
+        final inline = find.byKey(const ValueKey('match-weather-inline'));
+        expect(inline, findsOneWidget);
+        expect(tester.getSize(inline).height, lessThan(85));
+        expect(find.text('Clima para jugar'), findsNothing);
+        await capture(tester, light ? 'inline-light' : 'inline-game');
+        await tester.tap(inline);
+        await tester.pumpAndSettle();
+        expect(find.text('Clima para jugar'), findsOneWidget);
+        expect(find.byTooltip('Actualizar clima'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        Navigator.of(tester.element(find.text('Clima para jugar'))).pop();
+        await tester.pumpAndSettle();
+        expect(find.text('Clima para jugar'), findsNothing);
+        expect(inline, findsOneWidget);
+      },
+    );
+    testWidgets(
+      'cover shows important warnings without opening sheet, light=$light',
+      (tester) async {
+        await _mount(
+          tester,
+          match(),
+          _Weather(() async => forecast(code: 95, rain: 80)),
+          light: light,
+          cover: true,
+          scale: 2,
+        );
+        expect(find.text('Tormenta prevista · Ver aviso'), findsOneWidget);
+        expect(find.text('Clima para jugar'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+    testWidgets(
+      'planning cover uses one line and does not request weather, light=$light',
+      (tester) async {
+        final service = _Weather(() async => forecast());
+        await _mount(
+          tester,
+          match(time: null),
+          service,
+          light: light,
+          cover: true,
+        );
+        expect(find.text('Clima al confirmar horario'), findsOneWidget);
+        expect(find.byKey(const ValueKey('detail-weather')), findsNothing);
+        expect(service.calls, 0);
+      },
+    );
     testWidgets(
       'detail renders combined risks without overflow, light=$light',
       (tester) async {
