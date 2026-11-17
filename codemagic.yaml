@@ -44,6 +44,27 @@ definitions:
 
 workflows:
 
+  testflight-destinations:
+    name: Consultar destinos existentes de TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 10
+    working_directory: patea_mobile
+    triggering:
+      events: [tag]
+      tag_patterns:
+        - pattern: testflight-destinations-*
+          include: true
+    integrations:
+      app_store_connect: patea
+    environment:
+      groups: [patea_ios]
+    scripts:
+      - name: Consultar grupos y builds sin modificar Apple
+        script: |
+          set -e
+          python3 -m pip install --quiet 'PyJWT[crypto]>=2.4,<3' 'requests>=2.31,<3'
+          python3 ../scripts/testflight_delivery.py inspect
+
   # ──────────────────────────────────────────────────────────────────────────
   # iOS → TestFlight
   #

@@ -150,12 +150,23 @@ def verify(api, app_id, number, version, targets, output, timeout=1200):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['prepare', 'verify'])
+    parser.add_argument('action', choices=['prepare', 'verify', 'inspect'])
     args = parser.parse_args()
     api = Apple()
     app_id = os.environ['APP_STORE_APPLE_ID']
     targets = Path('build/ios/testflight-targets.json')
-    if args.action == 'prepare':
+    if args.action == 'inspect':
+        groups = api.all('/betaGroups', **{'filter[app]': app_id, 'limit': 200})
+        for group in groups:
+            attrs = group['attributes']
+            builds = api.all('/betaGroups/'+group['id']+'/builds', limit=10)
+            print(json.dumps({'id': group['id'], 'name': attrs['name'],
+                'internal': attrs.get('isInternalGroup'),
+                'automatic': attrs.get('hasAccessToAllBuilds'),
+                'recentBuilds': [{'id': b['id'], 'version': b['attributes']['version'],
+                    'processingState': b['attributes']['processingState']}
+                    for b in builds[:5]]}), flush=True)
+    elif args.action == 'prepare':
         prepare(api, app_id, targets)
     else:
         version = re.search(r'^version:\s*(\S+)', Path('pubspec.yaml').read_text(), re.M)[1].split('+')[0]
