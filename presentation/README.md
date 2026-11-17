@@ -32,3 +32,19 @@ Salida: `output/pdf/Patea_Game_Producto_y_Oportunidades.pdf`. Intermedios y hoja
 ## Recursos
 
 Logo oficial en `patea_mobile/assets/icons/logo_patea.svg`; iconos deportivos Tabler con su licencia MIT existente; imágenes en `assets/brand`; tipografías locales de la aplicación en `google_fonts`. Se usa la paleta actual de `lib/core/theme/patea_colors.dart`.
+
+## Guía de uso A4
+
+Entrega adicional: `output/pdf/Patea_Guia_de_Uso_Game_A4.pdf`.
+
+50 páginas A4 vertical: 39 procesos, índice con enlaces, marcadores, roles, estados, glosario, recorrido completo y resolución de problemas. El contenido está en `guide_content.py` y la maquetación en `build_user_guide.py`. Se limita a funciones actuales; distingue las pantallas integradas de los accesos disponibles (por ejemplo, Comunidad no tiene entrada directa desde la barra principal).
+
+Después de exportar las capturas y preparar los recursos:
+
+```powershell
+python presentation/build_user_guide.py
+python presentation/render_review.py --guide
+python presentation/check_user_guide.py
+```
+
+La revisión se guarda en `tmp/pdfs/guide`. Las capturas adicionales incluyen menú personal, creación de equipo y liga, disponibilidad y carga de clips. Los recortes del menú y del selector de clips sólo quitan espacio vacío para facilitar su lectura; no alteran controles. Todo usa datos de demostración y no escribe en servicios externos.

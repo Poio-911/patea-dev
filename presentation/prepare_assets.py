@@ -12,6 +12,13 @@ for source in (ROOT / 'patea_mobile/build/presentation_capture').glob('*.png'):
     image = Image.open(source).convert('RGB')
     image.thumbnail((720, 1600), Image.Resampling.LANCZOS)
     image.save(ASSETS / (source.stem + '.jpg'), quality=93, subsampling=0)
+    # Detail crops retain the real component and remove empty screen space.
+    if source.stem == 'user_menu':
+        image.crop((0, 430, image.width, image.height)).save(
+            ASSETS / 'user_menu_detail.jpg', quality=93, subsampling=0)
+    elif source.stem == 'clip_upload':
+        image.crop((0, 0, image.width, 470)).save(
+            ASSETS / 'clip_upload_detail.jpg', quality=93, subsampling=0)
 for source in (ROOT / 'patea_mobile/assets/brand').glob('*.webp'):
     Image.open(source).convert('RGB').save(ASSETS / (source.stem + '.jpg'), quality=93)
 script = r"""

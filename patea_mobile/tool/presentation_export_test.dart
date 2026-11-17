@@ -1,4 +1,8 @@
 import 'package:patea_mobile/core/services/match_result_service.dart';
+import 'package:patea_mobile/core/widgets/patea_user_menu_sheet.dart';
+import 'package:patea_mobile/features/competitions/competition_management.dart';
+import 'package:patea_mobile/features/groups/create_team_screen.dart';
+import 'package:patea_mobile/features/matches/widgets/match_clips_view.dart';
 import 'package:patea_mobile/core/services/firestore_service.dart';
 import 'package:patea_mobile/core/models/match_model.dart';
 import 'package:patea_mobile/features/auth/login_screen.dart';
@@ -119,6 +123,19 @@ final presentationPublicMatch = MatchModel(
   playerUids: partidos.first.playerUids.skip(1).take(6).toList(),
 );
 final cases = <String, Widget>{
+  'user_menu': const Scaffold(
+    body: Align(alignment: Alignment.bottomCenter, child: PateaUserMenuSheet()),
+  ),
+  'create_team': const CreateTeamScreen(groupId: idGrupo),
+  'create_league': const CreateCompetitionScreen(
+    isCup: false,
+    groupId: idGrupo,
+  ),
+  'availability': const ExplorarScreen(),
+  'clip_upload': Scaffold(
+    appBar: AppBar(title: const Text('Clips del partido')),
+    body: ClipCaptureSheet(match: partidos.first),
+  ),
   'login': const LoginScreen(),
   'planning': Scaffold(
     backgroundColor: Colors.transparent,
@@ -300,6 +317,10 @@ void main() {
         ],
       );
       expect(errors, isEmpty);
+      if (item.key == 'availability') {
+        await tester.tap(find.text('Publicá tu zona y tus horarios'));
+        await tester.pump(const Duration(milliseconds: 400));
+      }
       final tab = switch (item.key) {
         'league_table' => 'Tabla',
         'cup_bracket' => 'Cruces',
