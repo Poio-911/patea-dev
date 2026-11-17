@@ -23,15 +23,12 @@ class ParallaxBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundKey = GlobalKey();
     return Opacity(
       opacity: opacity,
       child: _Parallax(
-        backgroundKey: backgroundKey,
         amount: amount,
         child: Image.asset(
           asset,
-          key: backgroundKey,
           fit: BoxFit.cover,
           // Se dibuja más alta que la tarjeta para que al desplazarse no
           // aparezcan bordes vacíos.
@@ -43,12 +40,10 @@ class ParallaxBackground extends StatelessWidget {
 }
 
 class _Parallax extends SingleChildRenderObjectWidget {
-  final GlobalKey backgroundKey;
   final double amount;
 
   const _Parallax({
     required Widget super.child,
-    required this.backgroundKey,
     required this.amount,
   });
 
@@ -57,7 +52,6 @@ class _Parallax extends SingleChildRenderObjectWidget {
     return _RenderParallax(
       scrollable: Scrollable.of(context),
       listItemContext: context,
-      backgroundImageKey: backgroundKey,
       amount: amount,
     );
   }
@@ -67,7 +61,6 @@ class _Parallax extends SingleChildRenderObjectWidget {
     renderObject
       ..scrollable = Scrollable.of(context)
       ..listItemContext = context
-      ..backgroundImageKey = backgroundKey
       ..amount = amount;
   }
 }
@@ -79,32 +72,30 @@ class _RenderParallax extends RenderBox
   _RenderParallax({
     required ScrollableState scrollable,
     required this.listItemContext,
-    required this.backgroundImageKey,
     required this.amount,
   }) : _scrollable = scrollable;
 
   ScrollableState _scrollable;
   BuildContext listItemContext;
-  GlobalKey backgroundImageKey;
   double amount;
 
   ScrollableState get scrollable => _scrollable;
   set scrollable(ScrollableState value) {
     if (value == _scrollable) return;
-    if (attached) _scrollable.position.removeListener(markNeedsLayout);
+    if (attached) _scrollable.position.removeListener(markNeedsPaint);
     _scrollable = value;
-    if (attached) _scrollable.position.addListener(markNeedsLayout);
+    if (attached) _scrollable.position.addListener(markNeedsPaint);
   }
 
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
-    _scrollable.position.addListener(markNeedsLayout);
+    _scrollable.position.addListener(markNeedsPaint);
   }
 
   @override
   void detach() {
-    _scrollable.position.removeListener(markNeedsLayout);
+    _scrollable.position.removeListener(markNeedsPaint);
     super.detach();
   }
 

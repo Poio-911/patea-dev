@@ -897,26 +897,33 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         match.type == 'by_teams' && match.teamA != null && match.teamB != null;
     final dateObj = DateTime.tryParse(match.date)?.toLocal();
 
-    return ClipRRect(
-      borderRadius: AppRadii.cardAll,
-      child: Container(
-        height: 320,
-        decoration: BoxDecoration(
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(
-            color: theme.brandColor.withValues(alpha: 0.5),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              // Una sombra es negra en los dos temas.
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: AppRadii.cardAll,
+        boxShadow: [
+          BoxShadow(
+            // Una sombra es negra en los dos temas, más tenue en claro.
+            color: Colors.black.withValues(
+              alpha: context.c.isDarkSurface ? 0.35 : 0.12,
             ),
-          ],
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: context.c.photoFallback,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadii.cardAll,
+          side: BorderSide(
+            color: theme.brandColor.withValues(alpha: 0.45),
+            width: 1,
+          ),
         ),
-        child: Stack(
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          height: 320,
+          child: Stack(
           fit: StackFit.expand,
           children: [
             AnimatedSwitcher(
@@ -1117,6 +1124,7 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
           ],
         ),
       ),
+      ),
     );
   }
 }
@@ -1234,60 +1242,62 @@ class _BannerOrganizerBadge extends StatelessWidget {
   }
 }
 
-class _MatchCard extends StatelessWidget {
-  final MatchModel match;
-  const _MatchCard({required this.match});
+bool _showMatchTeams(MatchModel match, {required bool isLive, required bool isPast}) {
+  if (match.teamA == null || match.teamB == null) return false;
+  return match.type == 'by_teams' ||
+      match.type == 'league' ||
+      match.type == 'cup' ||
+      match.type == 'league_final' ||
+      match.type == 'intergroup_friendly' ||
+      isLive ||
+      isPast;
+}
+
+class _MatchCardFrame extends StatelessWidget {
+  final Color borderColor;
+  final double blurRadius;
+  final EdgeInsetsGeometry padding;
+  final VoidCallback onTap;
+  final Widget background;
+  final Widget child;
+
+  const _MatchCardFrame({
+    required this.borderColor,
+    required this.blurRadius,
+    required this.padding,
+    required this.onTap,
+    required this.background,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = getMatchTypeTheme(match.type);
-    final isLive = match.status == 'active';
-    // Un partido ya jugado se apaga: no compite por atención con los que
-    // todavía importan.
-    final isPast = match.status == 'completed' || match.status == 'evaluated';
-    final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
-    final hasTeams =
-        (match.type == 'by_teams' ||
-            match.type == 'league' ||
-            match.type == 'cup' ||
-            match.type == 'league_final') &&
-        match.teamA != null &&
-        match.teamB != null;
-
-    return InkWell(
-      onTap: () => context.push('/matches/${match.id}'),
-      borderRadius: AppRadii.cardAll,
-      child: ClipRRect(
+    final shadowAlpha = context.c.isDarkSurface ? 0.28 : 0.08;
+    return DecoratedBox(
+      decoration: BoxDecoration(
         borderRadius: AppRadii.cardAll,
-        child: Container(
-          decoration: BoxDecoration(
-            color: context.c.card,
-            borderRadius: AppRadii.cardAll,
-            border: Border.all(
-              color: theme.brandColor.withValues(alpha: 0.35),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                // Una sombra es negra en los dos temas.
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: shadowAlpha),
+            blurRadius: blurRadius,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: Material(
+        color: context.c.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadii.cardAll,
+          side: BorderSide(color: borderColor, width: 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
           child: Stack(
             children: [
-              // La foto conserva el tratamiento de las demás tarjetas.
-              // El estado en vivo se comunica con su etiqueta, sin halo.
+              Positioned.fill(child: background),
               Positioned.fill(
-                child: ParallaxBackground(
-                  asset: MatchPhotography.forMatch(match.id),
-                  opacity: isPast ? 0.10 : 0.22,
-                ),
-              ),
-              Positioned.fill(
-                child: Container(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
@@ -1300,242 +1310,267 @@ class _MatchCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Padding(padding: padding, child: child),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchStatusLabel extends StatelessWidget {
+  final bool isLive;
+  final bool isPast;
+  final String label;
+
+  const _MatchStatusLabel({
+    required this.isLive,
+    required this.isPast,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLive) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: context.c.destructive,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              'En vivo',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.body(
+                size: 12,
+                weight: FontWeight.w700,
+                color: context.c.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.right,
+      style: AppTypography.body(
+        size: 12,
+        weight: FontWeight.w600,
+        color: isPast ? context.c.textSecondary : context.c.primary,
+      ),
+    );
+  }
+}
+
+class _MatchCard extends StatelessWidget {
+  final MatchModel match;
+  const _MatchCard({required this.match});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = getMatchTypeTheme(match.type);
+    final isLive = match.status == 'active';
+    // Un partido ya jugado se apaga: no compite por atención con los que
+    // todavía importan.
+    final isPast = match.status == 'completed' || match.status == 'evaluated';
+    final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
+    final hasTeams = _showMatchTeams(match, isLive: isLive, isPast: isPast);
+
+    return _MatchCardFrame(
+      borderColor: theme.brandColor.withValues(alpha: 0.35),
+      blurRadius: 8,
+      padding: const EdgeInsets.all(16),
+      onTap: () => context.push('/matches/${match.id}'),
+      background: ParallaxBackground(
+        asset: MatchPhotography.forMatch(match.id),
+        opacity: isPast ? 0.10 : 0.22,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            match.title,
+            style: AppTypography.headline(size: 18, weight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          _OrganizerRow(ownerUid: match.ownerUid),
+          const SizedBox(height: 10),
+
+          // Tipo de partido (punto fijo + texto sin caja) y estado
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      match.title,
-                      style: AppTypography.headline(
-                        size: 17,
-                        weight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    _OrganizerRow(ownerUid: match.ownerUid),
-                    const SizedBox(height: 10),
-
-                    // Tipo de partido + estado
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.c.cardSurface,
-                            borderRadius: AppRadii.surfaceAll,
-                            border: Border.all(color: context.c.border),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: theme.brandColor,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.brandColor.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      blurRadius: 6,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                theme.label.toUpperCase(),
-                                style: AppTypography.code(
-                                  size: 10,
-                                  weight: FontWeight.w700,
-                                  color: context.c.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isLive
-                                ? context.c.cardSurface
-                                : context.c.brandVolt.withValues(alpha: 0.12),
-                            borderRadius: AppRadii.chipAll,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isLive) ...[
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  margin: const EdgeInsets.only(right: 6),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: context.c.destructive,
-                                  ),
-                                ),
-                              ],
-                              Text(
-                                isLive ? 'En vivo' : statusLabel.toUpperCase(),
-                                style: AppTypography.body(
-                                  size: 11,
-                                  weight: FontWeight.w700,
-                                  color: isLive
-                                      ? context.c.textPrimary
-                                      : context.c.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 14),
                     Container(
-                      height: 1,
-                      color: context.c.border.withValues(alpha: 0.3),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Fecha / hora. Los partidos en 'planning' todavía no tienen
-                    // fecha/hora confirmada (se define por votación) — igual que
-                    // match-card.tsx real, mostramos placeholders en vez de vacío.
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _InfoRow(
-                            icon: Icons.calendar_today_outlined,
-                            label: 'Fecha',
-                            value:
-                                (match.status == 'planning' ||
-                                    match.date.isEmpty)
-                                ? 'Por confirmar'
-                                : match.time == null
-                                ? fmtDateTime(match.date)
-                                : fmtDate(match.date),
-                          ),
-                        ),
-                        Expanded(
-                          child: _InfoRow(
-                            icon: Icons.access_time,
-                            label: 'Hora',
-                            value:
-                                (match.status == 'planning' ||
-                                    match.time == null)
-                                ? 'Por votar'
-                                : '${match.time} hs',
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (match.location != null) ...[
-                      const SizedBox(height: 10),
-                      _InfoRow(
-                        icon: Icons.location_on_outlined,
-                        label: 'Lugar',
-                        value: match.location!,
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.brandColor,
                       ),
-                    ],
-
-                    const SizedBox(height: 14),
-
-                    if (hasTeams)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _TeamJersey(team: match.teamA!),
-                          Column(
-                            children: [
-                              Text(
-                                'VS',
-                                style: AppTypography.code(
-                                  size: 12,
-                                  weight: FontWeight.w700,
-                                  color: context.c.textSecondary,
-                                ),
-                              ),
-                              if (match.status == 'completed' ||
-                                  match.status == 'evaluated')
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    '${match.teamA!.score} - ${match.teamB!.score}',
-                                    style: AppTypography.sportNumber(size: 18),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          _TeamJersey(team: match.teamB!),
-                        ],
-                      )
-                    else
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.groups_outlined,
-                            size: 20,
-                            color: context.c.textSecondary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            match.matchSize > 0
-                                ? '${match.playerUids.length} / ${match.matchSize}'
-                                : '${match.playerUids.length}',
-                            style: AppTypography.sportNumber(size: 18),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Jugadores',
-                            style: AppTypography.body(
-                              color: context.c.textSecondary,
-                              size: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.push('/matches/${match.id}'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.c.primary,
-                          foregroundColor: context.c.onPrimary,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                        icon: const Icon(Icons.visibility_outlined, size: 18),
-                        label: Text(
-                          _actionLabel(match.status),
-                          style: AppTypography.action(
-                            size: 14,
-                            color: context.c.onPrimary,
-                          ),
-                        ),
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      theme.label.toUpperCase(),
+                      style: AppTypography.code(
+                        size: 11,
+                        weight: FontWeight.w700,
+                        color: context.c.textSecondary,
                       ),
                     ),
                   ],
                 ),
+                _MatchStatusLabel(
+                  isLive: isLive,
+                  isPast: isPast,
+                  label: statusLabel,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+          Container(
+            height: 1,
+            color: context.c.border.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 14),
+
+          // Fecha / hora. Los partidos en 'planning' todavía no tienen
+          // fecha/hora confirmada (se define por votación) — igual que
+          // match-card.tsx real, mostramos placeholders en vez de vacío.
+          Row(
+            children: [
+              Expanded(
+                child: _InfoRow(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Fecha',
+                  value: (match.status == 'planning' || match.date.isEmpty)
+                      ? 'Por confirmar'
+                      : match.time == null
+                      ? fmtDateTime(match.date)
+                      : fmtDate(match.date),
+                ),
+              ),
+              Expanded(
+                child: _InfoRow(
+                  icon: Icons.access_time,
+                  label: 'Hora',
+                  value: (match.status == 'planning' || match.time == null)
+                      ? 'Por votar'
+                      : '${match.time} hs',
+                ),
               ),
             ],
           ),
-        ),
+          if (match.location != null) ...[
+            const SizedBox(height: 10),
+            _InfoRow(
+              icon: Icons.location_on_outlined,
+              label: 'Lugar',
+              value: match.location!,
+            ),
+          ],
+
+          const SizedBox(height: 14),
+
+          if (hasTeams)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _TeamJersey(team: match.teamA!),
+                Column(
+                  children: [
+                    Text(
+                      'VS',
+                      style: AppTypography.code(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                    if (isPast || isLive)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '${match.teamA!.score} - ${match.teamB!.score}',
+                          style: AppTypography.sportNumber(size: 18),
+                        ),
+                      ),
+                  ],
+                ),
+                _TeamJersey(team: match.teamB!),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Icon(
+                  Icons.groups_outlined,
+                  size: 20,
+                  color: context.c.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  match.matchSize > 0
+                      ? '${match.playerUids.length} / ${match.matchSize}'
+                      : '${match.playerUids.length}',
+                  style: AppTypography.sportNumber(size: 18),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Jugadores',
+                  style: AppTypography.body(
+                    color: context.c.textSecondary,
+                    size: 13,
+                  ),
+                ),
+              ],
+            ),
+
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.push('/matches/${match.id}'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.c.primary,
+                foregroundColor: context.c.onPrimary,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+              ),
+              icon: const Icon(Icons.visibility_outlined, size: 18),
+              label: Text(
+                _actionLabel(match.status),
+                style: AppTypography.action(
+                  size: 14,
+                  color: context.c.onPrimary,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1550,271 +1585,202 @@ class _CompactMatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = getMatchTypeTheme(match.type);
-    final isByTeams =
-        match.type == 'by_teams' && match.teamA != null && match.teamB != null;
-    final hasScore = match.status == 'completed' || match.status == 'evaluated';
+    final isLive = match.status == 'active';
+    final isPast = match.status == 'completed' || match.status == 'evaluated';
+    final isByTeams = _showMatchTeams(match, isLive: isLive, isPast: isPast);
     final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
     final isPlanning = match.status == 'planning';
 
-    return InkWell(
-      borderRadius: AppRadii.cardAll,
+    return _MatchCardFrame(
+      borderColor: theme.brandColor.withValues(alpha: 0.35),
+      blurRadius: 6,
+      padding: const EdgeInsets.all(12),
       onTap: () => context.push('/matches/${match.id}'),
-      child: ClipRRect(
-        borderRadius: AppRadii.cardAll,
-        child: Container(
-          decoration: BoxDecoration(
-            color: context.c.card,
-            borderRadius: AppRadii.cardAll,
-            border: Border.all(color: theme.brandColor.withValues(alpha: 0.35)),
-            boxShadow: [
-              BoxShadow(
-                // Una sombra es negra en los dos temas.
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+      background: Opacity(
+        opacity: isPast ? 0.10 : 0.22,
+        child: Image.asset(
+          MatchPhotography.forMatch(match.id),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Tooltip(
+                message: theme.label,
+                child: Semantics(
+                  label: theme.label,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.brandColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _MatchStatusLabel(
+                    isLive: isLive,
+                    isPast: isPast,
+                    label: statusLabel,
+                  ),
+                ),
               ),
             ],
           ),
-          child: Stack(
-            children: [
-              // Fondo de estadio
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.22,
-                  child: Image.asset(
-                    MatchPhotography.forMatch(match.id),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        context.c.card.withValues(alpha: 0.95),
-                        context.c.card.withValues(alpha: 0.65),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 10),
+          if (isByTeams)
+            Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: context.c.cardSurface,
-                              borderRadius: AppRadii.surfaceAll,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 5,
-                                  height: 5,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: theme.brandColor,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    theme.label.toUpperCase(),
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.code(
-                                      size: 8,
-                                      weight: FontWeight.w700,
-                                      color: context.c.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          statusLabel.toUpperCase(),
-                          style: AppTypography.code(
-                            size: 8,
-                            weight: FontWeight.w700,
-                            color: match.status == 'active'
-                                ? context.c.destructive
-                                : context.c.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (isByTeams)
-                      Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Expanded(
-                                child: match.teamA!.jersey != null
-                                    ? JerseyWidget(
-                                        jersey: match.teamA!.jersey!,
-                                        size: 32,
-                                      )
-                                    : Icon(
-                                        Icons.checkroom,
-                                        size: 28,
-                                        color: context.c.textSecondary,
-                                      ),
-                              ),
-                              Text(
-                                hasScore
-                                    ? '${match.teamA!.score}-${match.teamB!.score}'
-                                    : 'vs',
-                                style: AppTypography.body(
-                                  size: 11,
-                                  weight: FontWeight.w700,
-                                  color: context.c.textSecondary,
-                                ),
-                              ),
-                              Expanded(
-                                child: match.teamB!.jersey != null
-                                    ? JerseyWidget(
-                                        jersey: match.teamB!.jersey!,
-                                        size: 32,
-                                      )
-                                    : Icon(
-                                        Icons.checkroom,
-                                        size: 28,
-                                        color: context.c.textSecondary,
-                                      ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  match.teamA!.name,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.body(
-                                    color: context.c.textSecondary,
-                                    size: 9,
-                                    weight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  match.teamB!.name,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.body(
-                                    color: context.c.textSecondary,
-                                    size: 9,
-                                    weight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    else ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Center(
-                          child: Text(
-                            match.title,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.body(
+                    Expanded(
+                      child: match.teamA!.jersey != null
+                          ? JerseyWidget(jersey: match.teamA!.jersey!, size: 32)
+                          : Icon(
+                              Icons.checkroom,
+                              size: 28,
                               color: context.c.textSecondary,
+                            ),
+                    ),
+                    Text(
+                      (isPast || isLive)
+                          ? '${match.teamA!.score}-${match.teamB!.score}'
+                          : 'vs',
+                      style: (isPast || isLive)
+                          ? AppTypography.sportNumber(size: 14)
+                          : AppTypography.body(
                               size: 12,
                               weight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.groups_outlined,
-                            size: 11,
-                            color: context.c.textSecondary,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            match.matchSize > 0
-                                ? '${match.playerUids.length}/${match.matchSize} jugadores'
-                                : '${match.playerUids.length} jugadores',
-                            style: AppTypography.body(
-                              size: 9,
                               color: context.c.textSecondary,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _CompactInfoRow(
-                          icon: Icons.calendar_today_outlined,
-                          text: isPlanning
-                              ? 'Fecha por confirmar'
-                              : fmtDate(match.date),
-                        ),
-                        const SizedBox(height: 3),
-                        _CompactInfoRow(
-                          icon: Icons.access_time,
-                          text: isPlanning
-                              ? 'Por votar'
-                              : '${match.time ?? ''} hs',
-                        ),
-                        if (match.location != null) ...[
-                          const SizedBox(height: 3),
-                          _CompactInfoRow(
-                            icon: Icons.location_on_outlined,
-                            text: match.location!,
-                          ),
-                        ],
-                      ],
                     ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Icon(
-                        Icons.chevron_right,
-                        size: 14,
-                        color: context.c.textSecondary,
+                    Expanded(
+                      child: match.teamB!.jersey != null
+                          ? JerseyWidget(jersey: match.teamB!.jersey!, size: 32)
+                          : Icon(
+                              Icons.checkroom,
+                              size: 28,
+                              color: context.c.textSecondary,
+                            ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        match.teamA!.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body(
+                          color: context.c.textPrimary,
+                          size: 12,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        match.teamB!.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body(
+                          color: context.c.textPrimary,
+                          size: 12,
+                          weight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
+              ],
+            )
+          else ...[
+            Text(
+              match.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.headline(
+                size: 14,
+                weight: FontWeight.w700,
+                color: context.c.textPrimary,
               ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.groups_outlined,
+                  size: 14,
+                  color: context.c.textSecondary,
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    match.matchSize > 0
+                        ? '${match.playerUids.length}/${match.matchSize} jug.'
+                        : '${match.playerUids.length} jug.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _CompactInfoRow(
+                icon: Icons.calendar_today_outlined,
+                text: (isPlanning || match.date.isEmpty)
+                    ? 'Por confirmar'
+                    : fmtDate(match.date),
+              ),
+              const SizedBox(height: 4),
+              _CompactInfoRow(
+                icon: Icons.access_time,
+                text: (isPlanning || match.time == null)
+                    ? 'Por votar'
+                    : '${match.time} hs',
+              ),
+              if (match.location != null) ...[
+                const SizedBox(height: 4),
+                _CompactInfoRow(
+                  icon: Icons.location_on_outlined,
+                  text: match.location!,
+                ),
+              ],
             ],
           ),
-        ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: context.c.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1830,14 +1796,14 @@ class _CompactInfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 10, color: context.c.textSecondary),
-        const SizedBox(width: 4),
+        Icon(icon, size: 13, color: context.c.textSecondary),
+        const SizedBox(width: 5),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.body(size: 9, color: context.c.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
         ),
       ],
@@ -1870,7 +1836,7 @@ class _InfoRow extends StatelessWidget {
               Text(
                 label,
                 style: AppTypography.body(
-                  size: 11,
+                  size: 12,
                   color: context.c.textSecondary,
                 ),
               ),
@@ -1945,11 +1911,15 @@ class _OrganizerRow extends StatelessWidget {
           children: [
             PateaAvatar(photoUrl: photoUrl, seed: name, size: 20),
             const SizedBox(width: 6),
-            Text(
-              name,
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.body(
+                  size: 12,
+                  color: context.c.textSecondary,
+                ),
               ),
             ),
           ],
