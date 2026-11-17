@@ -231,7 +231,10 @@ void main() {
             return http.Response(
               jsonEncode({
                 'hourly': {
-                  'time': List.filled(24, '2026-11-18T21:00'),
+                  'time': List.filled(
+                    24,
+                    '${request.url.queryParameters['start_date']}T21:00',
+                  ),
                   'temperature_2m': List.filled(24, 23),
                   'precipitation_probability': List.filled(24, 30),
                   'wind_speed_10m': List.filled(24, 12),
@@ -260,7 +263,10 @@ void main() {
             http.Response(
               jsonEncode({
                 'hourly': {
-                  'time': List.filled(24, '2026-11-18T21:00'),
+                  'time': List.filled(
+                    24,
+                    '${DateTime.now().add(const Duration(days: 1)).toIso8601String().split('T').first}T21:00',
+                  ),
                   'temperature_2m': List.filled(24, 29),
                 },
               }),
