@@ -15,7 +15,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/match_model.dart';
-import '../../core/models/player_model.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/location_service.dart';
@@ -26,7 +25,7 @@ import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/player_avatar_fallback.dart';
-import '../../core/widgets/player_card_widget.dart';
+import '../../core/widgets/player_card_preview.dart';
 import 'widgets/edit_teams_sheet.dart';
 import 'widgets/join_requests_section.dart';
 import 'widgets/match_clips_view.dart';
@@ -1961,93 +1960,14 @@ class _ChatPreviewCard extends ConsumerWidget {
   }
 }
 
-/// Abre el modal de la Player Card 3D al tocar un jugador.
+/// Amplía la ficha directamente sobre el partido.
 void _showPlayerCardModal(
   BuildContext context,
   WidgetRef ref,
   MatchPlayerEntry entry, {
   String? photo,
 }) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      return PateaCard(
-        color: context.c.popover,
-        radius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadii.surface),
-        ),
-        borderColor: context.c.border.withValues(alpha: 0.4),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 38,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.c.overlayStrong,
-                borderRadius: AppRadii.hairAll,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Consumer(
-              builder: (context, ref, _) {
-                final snap = entry.uid.isNotEmpty
-                    ? ref.watch(singlePlayerStreamProvider(entry.uid))
-                    : null;
-                final fullPlayer = snap?.valueOrNull;
-
-                final effectivePlayer =
-                    fullPlayer ??
-                    Player(
-                      id: entry.uid,
-                      name: entry.displayName,
-                      position: entry.position.isNotEmpty
-                          ? entry.position
-                          : 'MED',
-                      ovr: entry.ovr > 0 ? entry.ovr : 60,
-                      pac: entry.ovr > 0 ? entry.ovr : 60,
-                      sho: entry.ovr > 0 ? entry.ovr : 60,
-                      pas: entry.ovr > 0 ? entry.ovr : 60,
-                      dri: entry.ovr > 0 ? entry.ovr : 60,
-                      def: entry.ovr > 0 ? entry.ovr : 60,
-                      phy: entry.ovr > 0 ? entry.ovr : 60,
-                      photoUrl: photo ?? entry.photoURL,
-                    );
-
-                return SizedBox(
-                  width: 255,
-                  height: 382.5,
-                  child: PlayerCardWidget(
-                    player: effectivePlayer,
-                    photoStyle: CardPhotoStyle.halfTop,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 18),
-            if (entry.uid.isNotEmpty)
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  context.push('/players/${entry.uid}');
-                },
-                icon: const Icon(Icons.badge_outlined, size: 16),
-                label: const Text('Ver perfil completo'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.c.textPrimary,
-                  side: BorderSide(
-                    color: context.c.border.withValues(alpha: 0.6),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
-    },
-  );
+  showPlayerCardPreview(context, entry, photo: photo);
 }
 
 void _openMatchChat(BuildContext context, MatchModel match) {

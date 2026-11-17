@@ -6,7 +6,6 @@ import '../../../core/models/weather_advisory.dart';
 import '../../../core/services/match_weather_provider.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/patea_card.dart';
 
 /// Venue + kickoff forecast. Saved historical weather is never a current alert.
 class MatchWeatherAlert extends ConsumerStatefulWidget {
@@ -197,13 +196,13 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
         isScrollControlled: true,
         useSafeArea: true,
         showDragHandle: true,
-        backgroundColor: context.c.background,
+        backgroundColor: context.c.popover,
         builder: (sheetContext) => ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.sizeOf(sheetContext).height * .85,
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: MatchWeatherAlert(match: widget.match),
           ),
         ),
@@ -315,13 +314,9 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
   }
 
   Widget _surface(BuildContext context, Widget child) => Padding(
-    padding: const EdgeInsets.only(top: 12),
-    child: PateaCard(
-      key: const ValueKey('detail-weather'),
-      color: context.c.card,
-      padding: const EdgeInsets.all(16),
-      child: child,
-    ),
+    key: const ValueKey('detail-weather'),
+    padding: const EdgeInsets.only(top: 4),
+    child: child,
   );
 
   Widget _message(

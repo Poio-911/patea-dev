@@ -4,6 +4,8 @@
 
 El acceso al clima está integrado dentro de la portada, debajo de la ubicación: icono animado pequeño, temperatura, lluvia y viento, sin tarjeta independiente. Al tocar la línea abre una hoja inferior desplazable con temperatura, condición, sensación térmica, probabilidad de lluvia, viento e índice UV para la hora de inicio. Open-Meteo y hora de actualización aparecen al pie. La consulta manual está en Actualizar clima dentro de la hoja.
 
+La hoja utiliza una única superficie: título, actualizar, pronóstico y métricas van directamente sobre el fondo, sin una tarjeta anidada. Mantiene el gesto de arrastre para cerrar y ajusta la altura al contenido hasta el máximo desplazable.
+
 Sol con rotación lenta, nubes con desplazamiento leve y precipitación localizada dentro del icono. La tormenta no usa destellos ni glow. El movimiento respeta reducir animaciones, TickerMode y el ciclo de vida de la app.
 
 Un aviso importante permanece visible en la portada como título y Ver aviso. En la hoja, la advertencia de mayor prioridad se presenta completa; si coinciden varias condiciones, sus títulos se presentan en También y se pueden desplegar sus recomendaciones. La información rutinaria queda dentro de la hoja.

@@ -15,6 +15,7 @@ import 'package:patea_mobile/core/services/match_weather_provider.dart';
 import 'package:patea_mobile/core/services/weather_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/theme/app_typography.dart';
+import 'package:patea_mobile/core/widgets/patea_card.dart';
 import 'package:patea_mobile/features/matches/widgets/weather_alert.dart';
 import 'package:patea_mobile/features/matches/widgets/match_cover.dart';
 
@@ -345,6 +346,17 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Clima para jugar'), findsOneWidget);
         expect(find.byTooltip('Actualizar clima'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.byType(PateaCard),
+          ),
+          findsNothing,
+        );
+        await capture(
+          tester,
+          light ? 'weather-panel-light' : 'weather-panel-game',
+        );
         expect(tester.takeException(), isNull);
         Navigator.of(tester.element(find.text('Clima para jugar'))).pop();
         await tester.pumpAndSettle();
