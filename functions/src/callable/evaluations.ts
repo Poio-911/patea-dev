@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { submissionKey, validateEvaluationSubmission } from '../lib/evaluation-submission';
+import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
  * Callables de Evaluaciones — port de src/lib/actions/evaluation-actions.ts.
@@ -423,7 +424,7 @@ export const submitEvaluationSubmission = onCall({ region: 'us-central1' }, asyn
   return { ok: true, alreadySubmitted };
 });
 
-/** Port de respondToIdentityRevealAction. Sin el envío push (FCM), ver header. */
+/** Port de respondToIdentityRevealAction con envío push (FCM). */
 export const respondToIdentityReveal = onCall({ region: 'us-central1' }, async (request) => {
   const evaluatorId = requireAuth(request);
   const evaluationId = String(request.data?.evaluationId ?? '');
@@ -459,15 +460,28 @@ export const respondToIdentityReveal = onCall({ region: 'us-central1' }, async (
       evaluatorPhotoUrl,
     });
 
+    const body = `${evaluatorDisplayName} aceptó revelar su identidad.`;
     await db.collection('users').doc(evaluation.playerId).collection('notifications').add({
       type: 'identity_reveal_requested',
       title: '✅ ¡Identidad revelada!',
-      message: `${evaluatorDisplayName} aceptó revelar su identidad.`,
+      message: body,
       link: `/players/${evaluation.playerId}`,
       isRead: false,
       createdAt: new Date().toISOString(),
       metadata: { evaluationId, evaluatorName: evaluatorDisplayName },
     });
+
+    await sendPushToUsers(
+      [String(evaluation.playerId)],
+      {
+        title: '✅ ¡Identidad revelada!',
+        body,
+        type: 'identity_reveal_requested',
+        link: `/players/${evaluation.playerId}`,
+        extraData: { evaluationId },
+      },
+      'RespondIdentityReveal',
+    );
   } else {
     await evalRef.update({
       identityRequestStatus: 'rejected',

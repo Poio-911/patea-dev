@@ -2,6 +2,7 @@ import { isGeneratingTeams, matchRosterIds, regenerateMatchTeams } from './match
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
+import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
  * Callables para el ciclo de vida de un partido (iniciar, sumarse/bajarse,
@@ -161,6 +162,8 @@ export const joinMatch = onCall({ region: 'us-central1' }, async (request) => {
   const db = admin.firestore();
   const ref = db.collection('matches').doc(matchId);
 
+  let joinedNotify: { ownerUid: string; title: string; body: string } | null = null;
+
   await db.runTransaction(async (transaction) => {
     const snap = await transaction.get(ref);
     if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
@@ -200,17 +203,38 @@ export const joinMatch = onCall({ region: 'us-central1' }, async (request) => {
     });
 
     if (match.ownerUid && match.ownerUid !== uid) {
+      const message = `${playerPayload.displayName} se ha apuntado a tu partido "${match.title ?? ''}".`;
       transaction.set(db.collection(`users/${match.ownerUid}/notifications`).doc(), {
         type: 'new_joiner',
         title: '¡Nuevo Jugador!',
-        message: `${playerPayload.displayName} se ha apuntado a tu partido "${match.title ?? ''}".`,
+        message,
         link: `/matches/${matchId}`,
         isRead: false,
         createdAt: new Date().toISOString(),
         metadata: { fromUserId: uid, matchId },
       });
+      joinedNotify = {
+        ownerUid: String(match.ownerUid),
+        title: '¡Nuevo Jugador!',
+        body: message,
+      };
     }
   });
+
+  if (joinedNotify) {
+    const notify: { ownerUid: string; title: string; body: string } = joinedNotify;
+    await sendPushToUsers(
+      [notify.ownerUid],
+      {
+        title: notify.title,
+        body: notify.body,
+        type: 'new_joiner',
+        link: `/matches/${matchId}`,
+        extraData: { matchId },
+      },
+      'JoinMatch',
+    );
+  }
 
   await maybeGenerateTeamsIfFull(matchId).catch((error) => {
     console.error('[joinMatch] Error generando equipos al completarse el cupo', error);
@@ -372,9 +396,7 @@ export function generateEvaluationAssignments(
  *     el marcador sale de los eventos en vivo, no se pasa acá),
  * (c) genera y escribe matches/{id}/assignments vía el mismo algoritmo de
  *     generateEvaluationAssignments, (d) notifica evaluation_pending a
- *     cada evaluador. El envío push (notifyEvaluationAvailableAction en la
- *     web) queda fuera: la infraestructura de push notifications todavía
- *     no está portada a Flutter (dominio 0% del plan de migración).
+ *     cada evaluador (in-app y push FCM).
  */
 export const finishMatch = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
@@ -418,6 +440,8 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
   const matchForAssignments = { id: matchId, playerUids, teams: finalTeams };
   const assignments = generateEvaluationAssignments(matchForAssignments, allPlayers);
 
+  let evaluatorsToPush: string[] = [];
+
   await db.runTransaction(async batch => {
     const fresh = (await batch.get(ref)).data();
     if (!fresh) throw new HttpsError('not-found', 'El partido no existe.');
@@ -434,6 +458,7 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
     });
 
     const uniqueEvaluatorIds = [...new Set(assignments.map((assignment) => assignment.evaluatorId))];
+    evaluatorsToPush = uniqueEvaluatorIds;
     uniqueEvaluatorIds.forEach((evaluatorId) => {
       const notificationRef = db.collection(`users/${evaluatorId}/notifications`).doc();
       batch.set(notificationRef, {
@@ -447,6 +472,20 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
       });
     });
   });
+
+  if (evaluatorsToPush.length > 0) {
+    await sendPushToUsers(
+      evaluatorsToPush,
+      {
+        title: '¡Evaluación pendiente!',
+        body: `Es hora de evaluar a tus compañeros del partido "${data.title ?? ''}".`,
+        type: 'evaluation_pending',
+        link: `/evaluations/${matchId}`,
+        extraData: { matchId },
+      },
+      'FinishMatch',
+    );
+  }
 
   return { ok: true, assignmentsCount: assignments.length };
 });

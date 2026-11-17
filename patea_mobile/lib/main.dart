@@ -108,8 +108,11 @@ class PateaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final auth = ref.read(authRouterStateProvider);
+    NotificationsService.attachNavigation(router: router, auth: auth);
 
     return MaterialApp.router(
+      scaffoldMessengerKey: NotificationsService.messengerKey,
       title: 'Pateá',
       locale: const Locale('es', 'UY'),
       supportedLocales: const [Locale('es', 'UY'), Locale('es')],

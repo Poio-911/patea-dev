@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
  * Solicitudes de unión a un partido, con aprobación del organizador.
@@ -85,6 +86,20 @@ export const requestJoinMatch = onCall({ region: 'us-central1' }, async (request
   }
 
   await batch.commit();
+
+  if (match.ownerUid) {
+    await sendPushToUsers(
+      [String(match.ownerUid)],
+      {
+        title: '📋 Nueva solicitud',
+        body: `${player.name ?? 'Un jugador'} quiere unirse a "${match.title ?? ''}".`,
+        type: 'join_request',
+        link: `/matches/${matchId}`,
+        extraData: { matchId },
+      },
+      'RequestJoinMatch',
+    );
+  }
   return { ok: true, alreadyPending: false };
 });
 
@@ -140,12 +155,16 @@ export const respondJoinRequest = onCall({ region: 'us-central1' }, async (reque
 
   batch.delete(requestRef);
 
+  const title = accepted ? '¡Solicitud aceptada! 🎉' : 'Solicitud rechazada';
+  const message = accepted
+    ? `Fuiste aceptado en "${match.title ?? ''}". ¡Ya estás en la lista!`
+    : `Tu solicitud para "${match.title ?? ''}" fue rechazada.`;
+  const type = accepted ? 'join_accepted' : 'join_rejected';
+
   batch.set(db.collection(`users/${requesterId}/notifications`).doc(), {
-    type: accepted ? 'join_accepted' : 'join_rejected',
-    title: accepted ? '¡Solicitud aceptada! 🎉' : 'Solicitud rechazada',
-    message: accepted
-      ? `Fuiste aceptado en "${match.title ?? ''}". ¡Ya estás en la lista!`
-      : `Tu solicitud para "${match.title ?? ''}" fue rechazada.`,
+    type,
+    title,
+    message,
     link: `/matches/${matchId}`,
     isRead: false,
     createdAt: new Date().toISOString(),
@@ -153,5 +172,17 @@ export const respondJoinRequest = onCall({ region: 'us-central1' }, async (reque
   });
 
   await batch.commit();
+
+  await sendPushToUsers(
+    [requesterId],
+    {
+      title,
+      body: message,
+      type,
+      link: `/matches/${matchId}`,
+      extraData: { matchId },
+    },
+    'RespondJoinRequest',
+  );
   return { ok: true };
 });

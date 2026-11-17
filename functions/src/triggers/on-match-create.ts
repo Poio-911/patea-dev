@@ -1,6 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
-import { getTokensForUsers, pruneInvalidTokens, isDeadTokenError } from '../lib/fcm-tokens';
+import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
  * Cloud Function that processes notifications off the main thread when a match is created.
@@ -10,14 +10,13 @@ import { getTokensForUsers, pruneInvalidTokens, isDeadTokenError } from '../lib/
  * Process:
  * 1. Read the newly created match data
  * 2. Send in-app notifications to all invited participants
- * 3. Fetch their FCM tokens and dispatch asynchronous Push Notifications
+ * 3. Dispatch asynchronous Push Notifications via FCM
  */
 export const onMatchCreate = onDocumentCreated({
     document: 'matches/{matchId}',
     region: 'us-central1',
 }, async (event) => {
     const db = admin.firestore();
-    const messaging = admin.messaging();
     const matchId = event.params.matchId;
     const matchData = event.data?.data();
 
@@ -112,100 +111,28 @@ export const onMatchCreate = onDocumentCreated({
         console.error(`[OnMatchCreate] Error sending in-app notifications for match ${matchId}:`, error);
     }
 
-    try {
-        // 2. Push notifications (FCM)
-        //
-        // Los tokens salen de la subcolección privada `users/{uid}/fcmTokens`
-        // (ver lib/fcm-tokens.ts). Antes se leían del campo array del documento
-        // de usuario, que cualquier autenticado puede leer.
-        const tokens: string[] = [];
-        const tokenToUserId = new Map<string, string>();
-
-        const tokensByUser = await getTokensForUsers([...participantIds, ...groupIds]);
-        const isConvocado = new Set(participantIds);
-        tokensByUser.forEach((userTokens, uid) => {
-            userTokens.forEach((token) => {
-                tokens.push(token);
-                tokenToUserId.set(token, uid);
-            });
-        });
-
-        if (tokens.length > 0) {
-            // Dos mensajes distintos sobre el mismo partido: al convocado se
-            // le avisa que juega, al resto del grupo que hay partido. Mandar
-            // "te convocaron" a quien no fue convocado es peor que no avisar.
-            const convocadoTokens = tokens.filter((t) => isConvocado.has(tokenToUserId.get(t) ?? ''));
-            const grupoTokens = tokens.filter((t) => !isConvocado.has(tokenToUserId.get(t) ?? ''));
-
-            const sendTo = (targets: string[], pushTitle: string, body: string, notifType: string) =>
-                messaging.sendEachForMulticast({
-                    tokens: targets,
-                    notification: { title: pushTitle, body },
-                    webpush: {
-                        fcmOptions: { link: `/matches/${matchId}` },
-                        notification: {
-                            icon: '/icons/icon-192x192.png',
-                            badge: '/icons/icon-48x48.png',
-                        },
-                    },
-                    data: {
-                        type: notifType,
-                        link: `/matches/${matchId}`,
-                        matchTitle: title,
-                    },
-                });
-
-            const batches = await Promise.all([
-                convocadoTokens.length
-                    ? sendTo(convocadoTokens, '⚽ ¡Te convocaron!', `Te sumaron al partido "${title}"`, 'match_invite')
-                    : null,
-                grupoTokens.length
-                    ? sendTo(grupoTokens, '⚽ Hay partido', groupBody, 'match_organized')
-                    : null,
-            ]);
-
-            const response = {
-                successCount: batches.reduce((acc, b) => acc + (b?.successCount ?? 0), 0),
-                failureCount: batches.reduce((acc, b) => acc + (b?.failureCount ?? 0), 0),
-                responses: [
-                    ...(batches[0]?.responses ?? []),
-                    ...(batches[1]?.responses ?? []),
-                ],
-            };
-            // El orden de `responses` sigue el de los dos lotes, no el de
-            // `tokens`: para limpiar tokens muertos hay que mirar la misma
-            // secuencia.
-            const orderedTokens = [...convocadoTokens, ...grupoTokens];
-
-            console.info(`[OnMatchCreate] Push notifications sent. Success: ${response.successCount}, Failure: ${response.failureCount}`);
-
-            // Cleanup invalid tokens silently
-            const tokensToRemoveByUserId = new Map<string, string[]>();
-            response.responses.forEach((resp, idx) => {
-                if (!resp.success && isDeadTokenError(resp.error?.code)) {
-                    const badToken = orderedTokens[idx];
-                    const uId = tokenToUserId.get(badToken);
-                    if (uId) {
-                        if (!tokensToRemoveByUserId.has(uId)) {
-                            tokensToRemoveByUserId.set(uId, []);
-                        }
-                        tokensToRemoveByUserId.get(uId)!.push(badToken);
-                    }
-                }
-            });
-
-            if (tokensToRemoveByUserId.size > 0) {
-                await Promise.all(
-                    [...tokensToRemoveByUserId].map(([uid, badTokens]) =>
-                        pruneInvalidTokens(uid, badTokens)
-                    )
-                );
-                console.info(`[OnMatchCreate] Cleaned up ${response.failureCount} stale FCM tokens.`);
-            }
-        } else {
-            console.info(`[OnMatchCreate] No FCM tokens found for participants of match ${matchId}`);
-        }
-    } catch (error) {
-        console.error(`[OnMatchCreate] Error sending push notifications for match ${matchId}:`, error);
-    }
+    await Promise.all([
+        sendPushToUsers(
+            participantIds,
+            {
+                title: '⚽ ¡Te convocaron!',
+                body: `Te sumaron al partido "${title}"`,
+                type: 'match_invite',
+                link: `/matches/${matchId}`,
+                extraData: { matchTitle: String(title) },
+            },
+            'OnMatchCreate',
+        ),
+        sendPushToUsers(
+            groupIds,
+            {
+                title: '⚽ Hay partido',
+                body: groupBody,
+                type: 'match_organized',
+                link: `/matches/${matchId}`,
+                extraData: { matchTitle: String(title) },
+            },
+            'OnMatchCreate',
+        ),
+    ]);
 });

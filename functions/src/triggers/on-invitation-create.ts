@@ -1,6 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
-import { getTokensForUser } from '../lib/fcm-tokens';
+import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
  * Cloud Function that sends notifications when a match invitation is created.
@@ -14,7 +14,6 @@ export const onInvitationCreate = onDocumentCreated({
     region: 'us-central1',
 }, async (event) => {
     const db = admin.firestore();
-    const messaging = admin.messaging();
     const { matchId } = event.params;
     const invData = event.data?.data();
 
@@ -50,30 +49,17 @@ export const onInvitationCreate = onDocumentCreated({
             metadata: { matchId },
         });
 
-        // Push notification — los tokens salen de la subcolección privada
-        // `users/{uid}/fcmTokens`, no del campo array del documento de usuario
-        // (que es legible por cualquier autenticado). Ver lib/fcm-tokens.ts.
-        const tokens = await getTokensForUser(playerId);
-
-        if (tokens.length > 0) {
-            await messaging.sendEachForMulticast({
-                tokens,
-                notification: {
-                    title: '⚽ ¡Te invitaron!',
-                    body: pushBody,
-                },
-                webpush: {
-                    fcmOptions: { link: `/matches/${matchId}` },
-                    notification: {
-                        icon: '/icons/icon-192x192.png',
-                        badge: '/icons/icon-48x48.png',
-                    },
-                },
-                data: { type: 'match_invite', link: `/matches/${matchId}`, matchTitle },
-            });
-
-            console.log(`[OnInvitationCreate] Notified ${playerId} for match "${matchTitle}" (${matchId})`);
-        }
+        await sendPushToUsers(
+            [playerId],
+            {
+                title: '⚽ ¡Te invitaron!',
+                body: pushBody,
+                type: 'match_invite',
+                link: `/matches/${matchId}`,
+                extraData: { matchTitle: String(matchTitle) },
+            },
+            'OnInvitationCreate',
+        );
     } catch (err) {
         console.error(`[OnInvitationCreate] Error:`, err);
     }

@@ -10,6 +10,7 @@ import {
   validScore,
 } from "../lib/competition-engine";
 import { buildMatchDateTime } from "../lib/match-date";
+import { sendPushToUsers } from "../lib/fcm-push";
 import { generateEvaluationAssignments } from "./match-lifecycle";
 const editable = ["draft", "open_for_applications"];
 const closed = ["completed", "evaluated", "cancelled"];
@@ -229,7 +230,8 @@ export async function manageCompetitionCore(
         ? `${isCup ? "cup" : "league"}_${uid}_${id(d.requestId)}`
         : id(d.id),
     );
-  return db.runTransaction(async (tx) => {
+  let evalPush: { uids: string[]; matchId: string; title: string } | null = null;
+  const result = await db.runTransaction(async (tx) => {
     const existing = (await tx.get(ref)).data();
     if (action === "create") {
       if (existing) {
@@ -648,7 +650,10 @@ export async function manageCompetitionCore(
       });
       for (const a of assignments)
         tx.set(mref.collection("assignments").doc(), a);
-      for (const evaluator of new Set(assignments.map((a) => a.evaluatorId)))
+      const evaluators = [
+        ...new Set(assignments.map((a) => String(a.evaluatorId))),
+      ];
+      for (const evaluator of evaluators)
         tx.set(
           db
             .collection(`users/${evaluator}/notifications`)
@@ -663,6 +668,13 @@ export async function manageCompetitionCore(
             metadata: { fromUserId: uid },
           },
         );
+      if (evaluators.length > 0) {
+        evalPush = {
+          uids: evaluators,
+          matchId: mref.id,
+          title: String(match.title ?? ""),
+        };
+      }
       return {
         ok: true,
         needsFinish: false,
@@ -774,6 +786,21 @@ export async function manageCompetitionCore(
     }
     fail("Acción no reconocida.");
   });
+  if (evalPush && admin.apps.length > 0) {
+    const push: { uids: string[]; matchId: string; title: string } = evalPush;
+    await sendPushToUsers(
+      push.uids,
+      {
+        title: "¡Evaluación pendiente!",
+        body: `Es hora de evaluar el partido "${push.title}".`,
+        type: "evaluation_pending",
+        link: `/evaluations/${push.matchId}`,
+        extraData: { matchId: push.matchId },
+      },
+      "RecordCompetitionResult",
+    );
+  }
+  return result;
 }
 export const syncCompetitionResult = onDocumentWritten(
   { document: "matches/{matchId}", region: "us-central1", retry: true },
