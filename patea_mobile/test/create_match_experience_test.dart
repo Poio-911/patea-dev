@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -188,6 +189,105 @@ void main() {
     }
   });
   for (final light in [false, true]) {
+    testWidgets(
+      'weather stays visible and retries a failed forecast, light=$light',
+      (tester) async {
+        var weatherCalls = 0;
+        await http.runWithClient(
+          () async {
+            await _mount(tester, light, _Matches());
+            expect(find.text('Clima para el partido'), findsOneWidget);
+            await _location(tester);
+            await tester.pump(const Duration(seconds: 1));
+            await tester.pumpAndSettle();
+            await _tap(tester, find.text('Reintentar clima'));
+            await tester.pump(const Duration(seconds: 1));
+            await tester.pumpAndSettle();
+            expect(find.text('23°C'), findsOneWidget);
+            expect(find.text('Lluvia 30% · Viento 12 km/h'), findsOneWidget);
+            await tester.enterText(
+              find.byType(TextField).at(1),
+              'Otra dirección',
+            );
+            await tester.pump();
+            expect(find.text('23°C'), findsNothing);
+            expect(
+              find.text(
+                'Elegí una dirección de la lista para ver el clima de la cancha.',
+              ),
+              findsOneWidget,
+            );
+            await tester.pumpWidget(const SizedBox.shrink());
+          },
+          () => MockClient((request) async {
+            if (request.url.host.contains('nominatim')) {
+              return http.Response(
+                '[{"display_name":"Cancha de prueba","lat":"-34.8","lon":"-56.1","osm_type":"way","osm_id":1}]',
+                200,
+              );
+            }
+            weatherCalls++;
+            if (weatherCalls == 1) return http.Response('{}', 503);
+            return http.Response(
+              jsonEncode({
+                'hourly': {
+                  'time': List.filled(24, '2026-11-18T21:00'),
+                  'temperature_2m': List.filled(24, 23),
+                  'precipitation_probability': List.filled(24, 30),
+                  'wind_speed_10m': List.filled(24, 12),
+                },
+              }),
+              200,
+            );
+          }),
+        );
+      },
+    );
+    testWidgets('late forecast cannot replace a cleared location, light=$light', (
+      tester,
+    ) async {
+      final pendingWeather = Completer<http.Response>();
+      await http.runWithClient(
+        () async {
+          await _mount(tester, light, _Matches());
+          await _location(tester);
+          await tester.pump(const Duration(seconds: 1));
+          await tester.enterText(
+            find.byType(TextField).at(1),
+            'Otra dirección',
+          );
+          pendingWeather.complete(
+            http.Response(
+              jsonEncode({
+                'hourly': {
+                  'time': List.filled(24, '2026-11-18T21:00'),
+                  'temperature_2m': List.filled(24, 29),
+                },
+              }),
+              200,
+            ),
+          );
+          await tester.pump();
+          expect(find.text('29°C'), findsNothing);
+          expect(
+            find.text(
+              'Elegí una dirección de la lista para ver el clima de la cancha.',
+            ),
+            findsOneWidget,
+          );
+          await tester.pumpWidget(const SizedBox.shrink());
+        },
+        () => MockClient((request) async {
+          if (request.url.host.contains('nominatim')) {
+            return http.Response(
+              '[{"display_name":"Cancha de prueba","lat":"-34.8","lon":"-56.1","osm_type":"way","osm_id":1}]',
+              200,
+            );
+          }
+          return pendingWeather.future;
+        }),
+      );
+    });
     testWidgets(
       'teams require two different choices and preserve home order, light=$light',
       (tester) async {

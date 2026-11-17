@@ -76,6 +76,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   WeatherForecast? _weather;
   bool _loadingWeather = false;
   Timer? _weatherDebounce;
+  int _weatherRequestId = 0;
+  String? _weatherError;
+  bool _weatherOutsideRange = false;
 
   // Paso 2
   int _matchSize = 10;
@@ -134,38 +137,55 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   void _scheduleWeatherFetch() {
     _weatherDebounce?.cancel();
+    final requestId = ++_weatherRequestId;
+    setState(() {
+      _weather = null;
+      _loadingWeather = false;
+      _weatherError = null;
+      _weatherOutsideRange = false;
+    });
     if (_isPlanning ||
         _selectedLocation == null ||
         _selectedDate == null ||
         _selectedTime == null) {
-      setState(() => _weather = null);
       return;
     }
+    final location = _selectedLocation!;
+    final date = _selectedDate!;
+    final time = _selectedTime!;
+    final now = DateTime.now();
+    final lastDay = DateTime(now.year, now.month, now.day + 15);
+    if (DateTime(date.year, date.month, date.day).isAfter(lastDay)) {
+      setState(() => _weatherOutsideRange = true);
+      return;
+    }
+    setState(() => _loadingWeather = true);
     _weatherDebounce = Timer(const Duration(seconds: 1), () async {
-      setState(() {
-        _loadingWeather = true;
-        _weather = null;
-      });
       try {
         final dt = DateTime(
-          _selectedDate!.year,
-          _selectedDate!.month,
-          _selectedDate!.day,
-          _selectedTime!.hour,
-          _selectedTime!.minute,
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
         );
         final forecast = await _weatherService.getForecast(
-          lat: _selectedLocation!.lat,
-          lng: _selectedLocation!.lng,
+          lat: location.lat,
+          lng: location.lng,
           dateTime: dt,
         );
-        if (!mounted) return;
+        if (!mounted || requestId != _weatherRequestId) return;
         setState(() => _weather = forecast);
       } catch (_) {
-        if (!mounted) return;
-        setState(() => _weather = null);
+        if (!mounted || requestId != _weatherRequestId) return;
+        setState(
+          () =>
+              _weatherError = 'No pudimos consultar el clima. Probá de nuevo.',
+        );
       } finally {
-        if (mounted) setState(() => _loadingWeather = false);
+        if (mounted && requestId == _weatherRequestId) {
+          setState(() => _loadingWeather = false);
+        }
       }
     });
   }
@@ -537,6 +557,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               }
               setState(() {});
               _onLocationChanged(v);
+              _scheduleWeatherFetch();
             },
             style: AppTypography.body(color: context.c.textPrimary),
             decoration: InputDecoration(
@@ -667,72 +688,105 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             ),
           ],
 
-          if (!_isPlanning && _selectedLocation != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              constraints: const BoxConstraints(minHeight: 44),
-              decoration: BoxDecoration(
-                color: context.c.cardSurface,
-                borderRadius: AppRadii.cardAll,
-              ),
-              child: Center(
-                child: _loadingWeather
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            height: 14,
-                            width: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Viendo el pronóstico...',
-                            style: AppTypography.body(
-                              size: 12,
-                              color: context.c.textSecondary,
-                            ),
-                          ),
-                        ],
-                      )
-                    : _weather != null
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _weatherIcon(_weather!.icon),
-                            color: context.c.primary,
-                            size: 26,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '${_weather!.temperature}°C',
-                            style: AppTypography.sportNumber(size: 18),
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              _weather!.description,
-                              style: AppTypography.body(
-                                color: context.c.textSecondary,
-                                size: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Text(
-                        'El pronóstico aún no está disponible para esta fecha.',
-                        style: AppTypography.body(
-                          size: 12,
-                          color: context.c.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+          const SizedBox(height: 16),
+          _weatherPanel(),
+        ],
+      ),
+    );
+  }
+
+  Widget _weatherPanel() {
+    final forecast = _weather;
+    final message = _isPlanning
+        ? 'El clima aparecerá cuando confirmes la cancha y el horario.'
+        : _selectedLocation == null
+        ? 'Elegí una dirección de la lista para ver el clima de la cancha.'
+        : _selectedDate == null || _selectedTime == null
+        ? 'Elegí fecha y hora para consultar el pronóstico.'
+        : _weatherOutsideRange
+        ? 'El pronóstico llega hasta los próximos 16 días. Consultalo más cerca de la fecha.'
+        : _weatherError;
+    return PateaCard(
+      key: const ValueKey('match-weather'),
+      color: context.c.cardSurface,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Clima para el partido',
+            style: AppTypography.headline(size: 14),
+          ),
+          const SizedBox(height: 10),
+          if (_loadingWeather)
+            Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Consultando el pronóstico…',
+                    style: AppTypography.body(size: 13),
+                  ),
+                ),
+              ],
+            )
+          else if (forecast != null) ...[
+            Row(
+              children: [
+                Icon(
+                  _weatherIcon(forecast.icon),
+                  color: context.c.primary,
+                  size: 28,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '${forecast.temperature}°C',
+                  style: AppTypography.sportNumber(size: 23),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    forecast.description,
+                    style: AppTypography.body(size: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Lluvia ${forecast.precipitation}% · Viento ${forecast.windSpeed} km/h',
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
               ),
             ),
-          ],
+            const SizedBox(height: 5),
+            Text(
+              'Para el lugar y la hora elegidos · Open-Meteo',
+              style: AppTypography.body(
+                size: 11,
+                color: context.c.textSecondary,
+              ),
+            ),
+          ] else
+            Text(
+              message ?? 'Completá lugar, fecha y hora para ver el pronóstico.',
+              style: AppTypography.body(
+                size: 13,
+                color: context.c.textSecondary,
+              ),
+            ),
+          if (_weatherError != null)
+            TextButton.icon(
+              onPressed: _scheduleWeatherFetch,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar clima'),
+            ),
         ],
       ),
     );
