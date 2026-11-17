@@ -12,6 +12,15 @@ import time
 from urllib.parse import urlparse
 
 
+def integration_value(value):
+    """Resolve Codemagic CLI's @file:/@env: secret references in memory."""
+    if value.startswith('@file:'):
+        value = Path(os.path.expandvars(value[6:])).expanduser().read_text()
+    elif value.startswith('@env:'):
+        value = os.environ[value[5:]]
+    return value.strip()
+
+
 def select_groups(groups, previous_ids=()):
     internal = [g for g in groups if g['attributes'].get('isInternalGroup') is True]
     automatic = [g for g in internal if g['attributes'].get('hasAccessToAllBuilds') is True]
@@ -32,7 +41,7 @@ class Apple:
         self.session = requests.Session()
         self.issuer = os.environ['APP_STORE_CONNECT_ISSUER_ID']
         self.key_id = os.environ['APP_STORE_CONNECT_KEY_IDENTIFIER']
-        self.key = os.environ['APP_STORE_CONNECT_PRIVATE_KEY']
+        self.key = integration_value(os.environ['APP_STORE_CONNECT_PRIVATE_KEY'])
 
     def request(self, method, path, **kwargs):
         url = path if path.startswith('https://') else self.origin + '/v1' + path

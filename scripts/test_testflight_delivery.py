@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
-from testflight_delivery import select_groups, verify
+from testflight_delivery import integration_value, select_groups, verify
 
 
 def group(id='internal', internal=True, automatic=False):
@@ -40,6 +40,19 @@ class FakeApple:
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_integration_secret_file_reference(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'fixture.p8'
+            path.write_text('fixture-key\n')
+            self.assertEqual(integration_value('@file:'+str(path)), 'fixture-key')
+
+    def test_integration_secret_environment_reference(self):
+        with patch.dict('os.environ', {'FIXTURE_KEY': 'fixture-key\n'}):
+            self.assertEqual(integration_value('@env:FIXTURE_KEY'), 'fixture-key')
+
+    def test_integration_literal_secret(self):
+        self.assertEqual(integration_value('fixture-key\n'), 'fixture-key')
+
     def test_automatic_internal_groups_exclude_external_groups(self):
         chosen = select_groups([group('one', automatic=True), group('two'),
             group('external', internal=False, automatic=True)])
