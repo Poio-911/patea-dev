@@ -327,12 +327,43 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
             Positioned(
               top: compact ? 8 : 12,
               left: inset,
-              child: Text(
-                'MANUAL',
-                style: AppTypography.code(
-                  size: compact ? 9 : 10,
-                  color: c.textSecondary,
-                ),
+              child: Builder(
+                builder: (context) {
+                  final overPhoto = widget.photoStyle == CardPhotoStyle.halfTop;
+                  final manualColor = overPhoto ? c.onPhoto : c.textPrimary;
+                  final manualShadows = overPhoto
+                      ? const [
+                          Shadow(
+                            color: Color(0xBF000000),
+                            blurRadius: 6,
+                            offset: Offset(0, 1),
+                          ),
+                        ]
+                      : null;
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.edit_note_rounded,
+                        size: compact ? 14 : 15,
+                        color: manualColor,
+                        shadows: manualShadows,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        'MANUAL',
+                        style: AppTypography.code(
+                          size: compact ? 10.5 : 11.5,
+                          weight: FontWeight.w800,
+                          color: manualColor,
+                        ).copyWith(
+                          letterSpacing: 0.9,
+                          shadows: manualShadows,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           Positioned(
