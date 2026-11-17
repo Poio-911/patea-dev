@@ -300,6 +300,8 @@ void main() {
     }
   });
 
+  // This export harness runs with flutter test despite living under tool/.
+  // ignore: invalid_use_of_visible_for_testing_member
   setUp(() => SharedPreferences.setMockInitialValues({'welcomeShown': true}));
   for (final item in cases.entries) {
     testWidgets('export ' + item.key, (tester) async {
