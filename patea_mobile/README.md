@@ -1,8 +1,8 @@
 # ⚽ Pateá Mobile — Flutter App
 
-## Revisión local 1.0.31+32 — 17/11/2026
+## Revisión local 1.0.32+33 — 17/11/2026
 
-Ligas y copas con diseño nativo propio, mi equipo, próximo encuentro, calendario y llaves, tabla, planteles, estadísticas e inscripciones. El organizador configura, sortea, programa, confirma resultados y archiva conservando el historial. El cierre se sincroniza desde Firebase y genera evaluaciones de forma atómica.
+Partidos compactos con altura según contenido y encabezado adaptable a texto ampliado. Ligas y copas con diseño nativo propio, mi equipo, próximo encuentro, calendario y llaves, tabla, planteles, estadísticas e inscripciones. El organizador configura, sortea, programa, confirma resultados y archiva conservando el historial. El cierre se sincroniza desde Firebase y genera evaluaciones de forma atómica.
 
 [Funciones y validación](../docs/design/COMPETITIONS_NATIVE_2026-11-17.md) y [guía visual vigente](../docs/design/UX_BRAND_2026-11-15.md). Esta revisión de Android no implica una distribución nueva en TestFlight.
 

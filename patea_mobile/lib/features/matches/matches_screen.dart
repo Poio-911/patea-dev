@@ -569,20 +569,29 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                     16,
                     bottomInset(context, extra: 24),
                   ),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.72,
-                        ),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      return _CompactMatchCard(match: filtered[index])
-                          .animate(delay: (index * 50).ms)
-                          .fadeIn(duration: 300.ms)
-                          .slideY(begin: 0.05, end: 0, duration: 300.ms);
-                    }, childCount: filtered.length),
+                  sliver: SliverList.separated(
+                    itemCount: (filtered.length + 1) ~/ 2,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, row) => IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var column = 0; column < 2; column++) ...[
+                            if (column > 0) const SizedBox(width: 10),
+                            Expanded(
+                              child: row * 2 + column < filtered.length
+                                  ? _CompactMatchCard(
+                                      key: ValueKey(
+                                        'compact-match-${filtered[row * 2 + column].id}',
+                                      ),
+                                      match: filtered[row * 2 + column],
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -949,44 +958,49 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: AppRadii.surfaceAll,
-                          border: Border.all(color: context.c.onPhotoLine),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: theme.brandColor,
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: AppRadii.surfaceAll,
+                            border: Border.all(color: context.c.onPhotoLine),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: theme.brandColor,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              theme.label.toUpperCase(),
-                              style: AppTypography.code(
-                                size: 9,
-                                weight: FontWeight.w800,
-                                color: context.c.onPhoto,
+                              const SizedBox(width: 6),
+                              Text(
+                                theme.label.toUpperCase(),
+                                style: AppTypography.code(
+                                  size: 9,
+                                  weight: FontWeight.w800,
+                                  color: context.c.onPhoto,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      _BannerOrganizerBadge(ownerUid: match.ownerUid),
-                    ],
+                        _BannerOrganizerBadge(ownerUid: match.ownerUid),
+                      ],
+                    ),
                   ),
                   Expanded(
                     child: Center(
@@ -1377,7 +1391,9 @@ class _MatchCard extends StatelessWidget {
                                 style: AppTypography.body(
                                   size: 11,
                                   weight: FontWeight.w700,
-                                  color: isLive ? context.c.textPrimary : context.c.primary,
+                                  color: isLive
+                                      ? context.c.textPrimary
+                                      : context.c.primary,
                                 ),
                               ),
                             ],
@@ -1529,7 +1545,7 @@ class _MatchCard extends StatelessWidget {
 class _CompactMatchCard extends StatelessWidget {
   final MatchModel match;
 
-  const _CompactMatchCard({required this.match});
+  const _CompactMatchCard({super.key, required this.match});
 
   @override
   Widget build(BuildContext context) {
@@ -1720,8 +1736,8 @@ class _CompactMatchCard extends StatelessWidget {
                         ],
                       )
                     else ...[
-                      SizedBox(
-                        height: 32,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Center(
                           child: Text(
                             match.title,
