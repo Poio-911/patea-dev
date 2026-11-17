@@ -117,6 +117,12 @@ workflows:
           - patea_appstore
 
     scripts:
+      - name: Confirmar grupos internos de TestFlight
+        script: |
+          set -e
+          python3 -m pip install --quiet 'PyJWT[crypto]>=2.4,<3' 'requests>=2.31,<3'
+          python3 ../scripts/testflight_delivery.py prepare
+
       - name: Dependencias de Flutter
         script: flutter pub get
 
@@ -142,12 +148,6 @@ workflows:
             BUILD_NUMBER=$((LATEST + 1))
           fi
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
-
-      - name: Confirmar grupos internos de TestFlight
-        script: |
-          set -e
-          python3 -m pip install --quiet 'PyJWT[crypto]>=2.4,<3' 'requests>=2.31,<3'
-          python3 ../scripts/testflight_delivery.py prepare
 
       - name: Compilar el IPA
         script: |

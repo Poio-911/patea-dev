@@ -76,6 +76,11 @@ class Apple:
 
 def prepare(api, app_id, path):
     groups = api.all('/betaGroups', **{'filter[app]': app_id, 'limit': 200})
+    print('TESTFLIGHT_APP '+app_id+' GROUPS '+json.dumps([
+        {'id': g['id'], 'name': g['attributes'].get('name'),
+         'internal': g['attributes'].get('isInternalGroup'),
+         'automatic': g['attributes'].get('hasAccessToAllBuilds')}
+        for g in groups]), flush=True)
     internal = [g for g in groups if g['attributes'].get('isInternalGroup') is True]
     previous_ids = []
     if len(internal) > 1 and not any(g['attributes'].get('hasAccessToAllBuilds') for g in internal):
@@ -156,6 +161,7 @@ def main():
     app_id = os.environ['APP_STORE_APPLE_ID']
     targets = Path('build/ios/testflight-targets.json')
     if args.action == 'inspect':
+        prepare(api, app_id, targets)
         groups = api.all('/betaGroups', **{'filter[app]': app_id, 'limit': 200})
         for group in groups:
             attrs = group['attributes']
