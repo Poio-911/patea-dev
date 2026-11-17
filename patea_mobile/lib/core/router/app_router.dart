@@ -1,3 +1,4 @@
+import '../widgets/section_icon.dart';
 import '../../features/competitions/league_detail_screen.dart';
 import 'dart:async';
 import '../../core/theme/app_radii.dart';
@@ -380,9 +381,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
                 ),
               ),
               _PartidosSheetItem(
-                icon: isMatchesActive
-                    ? spec(Section.matches).activeIcon
-                    : spec(Section.matches).icon,
+                section: Section.matches,
                 label: 'Mis Partidos',
                 isActive: isMatchesActive,
                 onTap: () {
@@ -391,9 +390,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
                 },
               ),
               _PartidosSheetItem(
-                icon: isCompetitionsActive
-                    ? spec(Section.competitions).activeIcon
-                    : spec(Section.competitions).icon,
+                section: Section.competitions,
                 label: spec(Section.competitions).navLabel,
                 isActive: isCompetitionsActive,
                 onTap: () {
@@ -450,37 +447,27 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _NavItem(
-                      icon: spec(Section.panel).icon,
-                      activeIcon: spec(Section.panel).activeIcon,
-                      label: spec(Section.panel).navLabel,
+                      section: Section.panel,
                       isSelected: current == _Branch.panel,
                       onTap: () => _goBranch(_Branch.panel),
                     ),
                     _NavItem(
-                      icon: spec(Section.players).icon,
-                      activeIcon: spec(Section.players).activeIcon,
-                      label: spec(Section.players).navLabel,
+                      section: Section.players,
                       isSelected: current == _Branch.players,
                       onTap: () => _goBranch(_Branch.players),
                     ),
                     _NavItem(
-                      icon: spec(Section.matches).icon,
-                      activeIcon: spec(Section.matches).activeIcon,
-                      label: spec(Section.matches).navLabel,
+                      section: Section.matches,
                       isSelected: isMatchesActive,
                       onTap: () => _openPartidosSheet(context),
                     ),
                     _NavItem(
-                      icon: spec(Section.explorar).icon,
-                      activeIcon: spec(Section.explorar).activeIcon,
-                      label: spec(Section.explorar).navLabel,
+                      section: Section.explorar,
                       isSelected: current == _Branch.explorar,
                       onTap: () => _goBranch(_Branch.explorar),
                     ),
                     _NavItem(
-                      icon: spec(Section.evaluations).icon,
-                      activeIcon: spec(Section.evaluations).activeIcon,
-                      label: spec(Section.evaluations).navLabel,
+                      section: Section.evaluations,
                       isSelected: current == _Branch.evaluations,
                       onTap: () => _goBranch(_Branch.evaluations),
                     ),
@@ -496,16 +483,12 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
+  final Section section;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
+    required this.section,
     required this.isSelected,
     required this.onTap,
   });
@@ -513,6 +496,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
+    final label = spec(section).navLabel;
     return Expanded(
       child: Semantics(
         selected: isSelected,
@@ -545,9 +529,10 @@ class _NavItem extends StatelessWidget {
                           ? context.c.primary.withValues(alpha: 0.13)
                           : Colors.transparent,
                     ),
-                    child: Icon(
-                      isSelected ? activeIcon : icon,
-                      size: 21,
+                    child: SectionIcon(
+                      section: section,
+                      active: isSelected,
+                      size: 24,
                       color: isSelected
                           ? context.c.primary
                           : context.c.textSecondary,
@@ -577,13 +562,13 @@ class _NavItem extends StatelessWidget {
 }
 
 class _PartidosSheetItem extends StatelessWidget {
-  final IconData icon;
+  final Section section;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
 
   const _PartidosSheetItem({
-    required this.icon,
+    required this.section,
     required this.label,
     required this.isActive,
     required this.onTap,
@@ -600,8 +585,9 @@ class _PartidosSheetItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
         child: Row(
           children: [
-            Icon(
-              icon,
+            SectionIcon(
+              section: section,
+              active: isActive,
               size: 20,
               color: isActive ? context.c.primary : context.c.textSecondary,
             ),
@@ -613,11 +599,7 @@ class _PartidosSheetItem extends StatelessWidget {
               ),
             ),
             if (isActive)
-              Icon(
-                Icons.check_rounded,
-                size: 18,
-                color: context.c.primary,
-              ),
+              Icon(Icons.check_rounded, size: 18, color: context.c.primary),
           ],
         ),
       ),

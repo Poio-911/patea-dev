@@ -51,6 +51,7 @@ class SectionSpec {
 
   final IconData icon;
   final IconData activeIcon;
+  final String? iconAsset;
 
   /// El rótulo del botón de acción del encabezado, si la sección tiene uno.
   final String? action;
@@ -62,6 +63,7 @@ class SectionSpec {
     required this.title,
     required this.icon,
     required this.activeIcon,
+    this.iconAsset,
     this.description,
     this.action,
   });
@@ -69,6 +71,7 @@ class SectionSpec {
 
 const sections = <Section, SectionSpec>{
   Section.panel: SectionSpec(
+    iconAsset: 'assets/icons/nav-soccer-field.svg',
     branch: 0,
     route: '/',
     navLabel: 'Panel',
@@ -78,6 +81,7 @@ const sections = <Section, SectionSpec>{
     activeIcon: Icons.dashboard_rounded,
   ),
   Section.players: SectionSpec(
+    iconAsset: 'assets/icons/nav-shirt-sport.svg',
     branch: 1,
     route: '/players',
     // Distintos a propósito: así lo hace la web. Ver el doc de arriba.
@@ -90,6 +94,7 @@ const sections = <Section, SectionSpec>{
     action: 'Agregar Jugador',
   ),
   Section.matches: SectionSpec(
+    iconAsset: 'assets/icons/nav-ball-football.svg',
     branch: 2,
     route: '/matches',
     navLabel: 'Partidos',
@@ -108,16 +113,17 @@ const sections = <Section, SectionSpec>{
     activeIcon: Icons.emoji_events,
   ),
   Section.explorar: SectionSpec(
+    iconAsset: 'assets/icons/nav-map-search.svg',
     branch: 5,
     route: '/explorar',
     navLabel: 'Explorar',
     title: 'Explorar',
-    description:
-        'Encontrá jugadores cerca o un partido para sumarte.',
+    description: 'Encontrá jugadores cerca o un partido para sumarte.',
     icon: Icons.public_outlined,
     activeIcon: Icons.public,
   ),
   Section.evaluations: SectionSpec(
+    iconAsset: 'assets/icons/nav-clipboard-check.svg',
     branch: 6,
     route: '/evaluations',
     navLabel: 'Evaluaciones',

@@ -15,3 +15,22 @@ Las variantes son propuestas visuales; el menú instalado conserva sus iconos ha
 | De cancha | Terreno | Camiseta | Duelo | Radar | Estrella |
 
 Las tres mantienen trazos consistentes, etiquetas visibles y estado activo del tema. La propuesta Mixta reemplaza persona individual y globo por plantel y búsqueda, y vincula evaluar con completar una planilla. Las variantes se entregan en una comparación interactiva dentro del chat.
+
+
+## Selección aplicada — 1.0.33+34
+
+El usuario eligió **opción 1, Tabler deportivo** de las nuevas familias. Sustituye las propuestas anteriores de iconos. El menú usa los SVG originales de Tabler, con viewBox 24×24, trazo 2 y color semántico del tema:
+
+| Sección | Archivo Tabler |
+| --- | --- |
+| Panel | soccer-field |
+| Jugadores | shirt-sport |
+| Partidos | ball-football |
+| Explorar | map-search |
+| Evaluaciones | clipboard-check |
+
+Se empaquetan en `patea_mobile/assets/icons/nav-*.svg`; no requieren red. `SectionIcon` centraliza tamaño, tintado y alternativa Material para secciones sin SVG. La barra mantiene rutas, etiquetas, selección accesible y animación existente; Mis Partidos usa la misma pelota en el menú desplegable. Competiciones conserva su copa.
+
+Fuentes originales: https://github.com/tabler/tabler-icons/tree/main/icons/outline. Licencia MIT de Paweł Kuna conservada en `assets/icons/TABLER_LICENSE.txt`. Los trazados no se redibujaron ni deformaron.
+
+Verificación: 13 pruebas existentes de navegación, identidad de secciones y flujos de perfil/competiciones aprobadas; análisis sin errores ni advertencias (avisos informativos de estilo previos). APK release local 1.0.33+34 para revisión Android; no implica una distribución nueva en TestFlight.

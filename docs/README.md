@@ -2,7 +2,7 @@
 
 ## Estado vigente — 17/11/2026
 
-La revisión móvil **1.0.32+33** corrige la altura sobrante de los partidos compactos y conserva la ampliación de ligas y copas con una experiencia nativa propia: equipo y próximo partido, calendario, cruces conectados a partidos reales, clasificación, estadísticas, inscripciones y gestión del organizador. Ver [implementación y pruebas](design/COMPETITIONS_NATIVE_2026-11-17.md) y [guía visual vigente](design/UX_BRAND_2026-11-15.md).
+La revisión móvil **1.0.33+34** incorpora el menú Tabler deportivo elegido, corrige la altura sobrante de los partidos compactos y conserva la ampliación de ligas y copas con una experiencia nativa propia: equipo y próximo partido, calendario, cruces conectados a partidos reales, clasificación, estadísticas, inscripciones y gestión del organizador. Ver [implementación y pruebas](design/COMPETITIONS_NATIVE_2026-11-17.md) y [guía visual vigente](design/UX_BRAND_2026-11-15.md).
 
 El servidor se despliega mediante Firebase CLI en `mil-disculpis`. Esta revisión prepara Android local; no sustituye la entrega iOS 1.0.30 ni implica distribución nueva a TestFlight. El contenido histórico siguiente describe también funciones exclusivas de la PWA.
 
