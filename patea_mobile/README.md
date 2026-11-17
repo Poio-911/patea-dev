@@ -1,10 +1,10 @@
 # ⚽ Pateá Mobile — Flutter App
 
-## Revisión local 1.0.10 (11) — 15/11/2026
+## Revisión local 1.0.31+32 — 17/11/2026
 
-APK release `android-x64` instalado en el emulador conservando sesión. Sin distribución a testers ni TestFlight. Crear partido ofrece horario definido o consulta al grupo, campos opacos, calendario español y hora de 24 horas. Acciones legibles, indicadores con contraste y transiciones con movimiento reducido.
+Ligas y copas con diseño nativo propio, mi equipo, próximo encuentro, calendario y llaves, tabla, planteles, estadísticas e inscripciones. El organizador configura, sortea, programa, confirma resultados y archiva conservando el historial. El cierre se sincroniza desde Firebase y genera evaluaciones de forma atómica.
 
-Validación: `flutter test` (161 aprobadas), `flutter analyze --no-fatal-infos` (0 errores, 0 advertencias, 15 infos previos). [Notas completas](../docs/technical/RELEASE_1.0.10_2026-11-15.md) y [guía visual](../docs/design/UX_BRAND_2026-11-15.md).
+[Funciones y validación](../docs/design/COMPETITIONS_NATIVE_2026-11-17.md) y [guía visual vigente](../docs/design/UX_BRAND_2026-11-15.md). Esta revisión de Android no implica una distribución nueva en TestFlight.
 
 > **Tu carrera amateur, profesionalizada.**  
 > Aplicación móvil nativa desarrollada en **Flutter 3.41+ / Dart 3.11+**, conectada en tiempo real a **Firebase (`mil-disculpis`)**, con sistema de diseño deportivo (Game Theme), fichas deportivas con OVR integrado, y cálculo de progresión anti-inflación.

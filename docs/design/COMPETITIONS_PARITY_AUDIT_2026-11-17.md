@@ -2,6 +2,10 @@
 
 Fecha: 17/11/2026. Rama: `feat/flutter-mobile-app`.
 
+## Implementación posterior
+
+La ampliación autorizada se documenta en [Ligas y copas nativas 1.0.31+32](COMPETITIONS_NATIVE_2026-11-17.md). Este informe conserva el diagnóstico previo; sus carencias no describen automáticamente el estado de la nueva implementación.
+
 ## Base revisada
 
 Se analiza el árbol local, incluidas las modificaciones aún no confirmadas en el menú de Partidos, creación y listado de competiciones, detalle de liga y cuadro de copa. Son 12 archivos, contando pruebas y referencias visuales. Esos cambios no forman parte de la entrega TestFlight etiquetada `ios-testflight-1.0.30-20261116-r2`. No se modifican ni se incorporan a este commit de análisis.

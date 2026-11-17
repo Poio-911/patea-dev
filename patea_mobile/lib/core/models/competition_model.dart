@@ -164,21 +164,32 @@ class CompetitionModel {
       status: data['status'] ?? 'draft',
       ownerUid: data['ownerUid'] ?? '',
       description: data['description'],
-      format: data['format'] as String? ?? (type == 'cup' ? 'single_elimination' : 'round_robin'),
+      format:
+          data['format'] as String? ??
+          (type == 'cup' ? 'single_elimination' : 'round_robin'),
       isPublic: data['isPublic'] == true,
       isArchived: data['isArchived'] == true,
       logoUrl: data['logoUrl'] as String?,
       startDate: data['startDate'] as String?,
       matchTime: data['matchTime'] as String? ?? '21:00',
       matchFrequency: data['matchFrequency'] as String? ?? 'weekly',
-      defaultLocation: Map<String, dynamic>.from(data['defaultLocation'] as Map? ?? {}),
-      rules: Map<String, dynamic>.from(data['rules'] as Map? ?? {'pointsForWin': 3, 'pointsForDraw': 1}),
-      teamSnapshots: Map<String, dynamic>.from(data['teamSnapshots'] as Map? ?? {}),
+      defaultLocation: Map<String, dynamic>.from(
+        data['defaultLocation'] as Map? ?? {},
+      ),
+      rules: Map<String, dynamic>.from(
+        data['rules'] as Map? ?? {'pointsForWin': 3, 'pointsForDraw': 1},
+      ),
+      teamSnapshots: Map<String, dynamic>.from(
+        data['teamSnapshots'] as Map? ?? {},
+      ),
       championTeamId: data['championTeamId'] as String?,
       championTeamName: data['championTeamName'] as String?,
       currentRound: data['currentRound'] as String?,
-      maxTeams: (data['maxTeams'] as num?)?.toInt() ?? (type == 'cup' ? 32 : 16),
-      resultConflict: data['resultConflict'] is Map ? Map<String, dynamic>.from(data['resultConflict']) : null,
+      maxTeams:
+          (data['maxTeams'] as num?)?.toInt() ?? (type == 'cup' ? 32 : 16),
+      resultConflict: data['resultConflict'] is Map
+          ? Map<String, dynamic>.from(data['resultConflict'])
+          : null,
       groupId: data['groupId'] as String?,
       teamIds: ((data['teams'] as List?) ?? [])
           .map((t) => t is String ? t : (t as Map)['id'].toString())

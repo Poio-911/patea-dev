@@ -26,8 +26,10 @@ import 'package:patea_mobile/core/services/match_result_service.dart';
 import 'package:patea_mobile/core/services/match_presence_service.dart';
 import 'package:patea_mobile/core/services/match_chat_service.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseFirestore;
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show FirebaseFirestore, DocumentSnapshot;
 import 'package:firebase_auth/firebase_auth.dart' show User;
+import 'package:patea_mobile/core/services/competition_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -391,6 +393,14 @@ final List<CompetitionModel> ligas = [
     status: 'in_progress',
     ownerUid: uidYo,
     description: 'Todos contra todos, ida y vuelta.',
+    groupId: idGrupo,
+    format: 'double_round_robin',
+    teamIds: equipos.map((t) => t.id).toList(),
+    maxTeams: 8,
+    teamSnapshots: {
+      for (final t in equipos)
+        t.id: {'name': t.name, 'jersey': t.jersey.toMap()},
+    },
   ),
   CompetitionModel(
     id: 'liga-2',
@@ -408,7 +418,28 @@ final List<CompetitionModel> copas = [
     type: 'cup',
     status: 'in_progress',
     ownerUid: uidYo,
-    description: 'Eliminación directa, ocho equipos.',
+    description: 'La final del encuentro del barrio.',
+    groupId: idGrupo,
+    format: 'single_elimination',
+    teamIds: equipos.map((t) => t.id).toList(),
+    maxTeams: 8,
+    currentRound: 'final',
+    teamSnapshots: {
+      for (final t in equipos)
+        t.id: {'name': t.name, 'jersey': t.jersey.toMap()},
+    },
+    bracket: [
+      BracketMatchModel(
+        id: 'final',
+        round: 'final',
+        matchNumber: 1,
+        team1Id: equipos.first.id,
+        team2Id: equipos.last.id,
+        team1Name: equipos.first.name,
+        team2Name: equipos.last.name,
+        matchId: 'competition-cup-next',
+      ),
+    ],
   ),
 ];
 
@@ -561,11 +592,22 @@ class _EvaluacionesFalso implements EvaluationService {
   @override
   Future<bool> hasSubmittedFor(String matchId, String uid) async => false;
   @override
-  Future<List<EvaluationAssignmentModel>> getPendingAssignmentsForMatch(String matchId, String uid) async => [
-    for (final p in jugadores.skip(1).take(2)) EvaluationAssignmentModel(id: 'assignment-${p.id}', matchId: matchId, evaluatorId: uid, subjectId: p.id, status: 'pending'),
+  Future<List<EvaluationAssignmentModel>> getPendingAssignmentsForMatch(
+    String matchId,
+    String uid,
+  ) async => [
+    for (final p in jugadores.skip(1).take(2))
+      EvaluationAssignmentModel(
+        id: 'assignment-${p.id}',
+        matchId: matchId,
+        evaluatorId: uid,
+        subjectId: p.id,
+        status: 'pending',
+      ),
   ];
   @override
-  Future<List<PlayerModel>> getPlayersByIds(List<String> ids) async => jugadores.where((p) => ids.contains(p.id)).toList();
+  Future<List<PlayerModel>> getPlayersByIds(List<String> ids) async =>
+      jugadores.where((p) => ids.contains(p.id)).toList();
 
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
@@ -581,43 +623,259 @@ class _EvaluacionesFalso implements EvaluationService {
 /// agregue un `ref.watch` nuevo, el test que falla dice qué falta y se agrega
 /// acá una vez.
 final partidoDirigir = MatchModel(
-  id: 'match-director-review', title: 'Clásico del Barrio', date: '2026-09-12',
-  time: '21:30', type: 'manual', status: 'active', matchSize: 10,
-  ownerUid: uidYo, playerUids: jugadores.map((p) => p.id).toList(),
-  players: partidos.first.players, teamA: partidos.first.teamA, teamB: partidos.first.teamB,
-  liveStatus: 'first_half', currentMinute: 12,
-  events: [MatchEvent(type: 'goal', playerId: uidYo, playerName: 'Santiago Fernández', minute: 8)],
+  id: 'match-director-review',
+  title: 'Clásico del Barrio',
+  date: '2026-09-12',
+  time: '21:30',
+  type: 'manual',
+  status: 'active',
+  matchSize: 10,
+  ownerUid: uidYo,
+  playerUids: jugadores.map((p) => p.id).toList(),
+  players: partidos.first.players,
+  teamA: partidos.first.teamA,
+  teamB: partidos.first.teamB,
+  liveStatus: 'first_half',
+  currentMinute: 12,
+  events: [
+    MatchEvent(
+      type: 'goal',
+      playerId: uidYo,
+      playerName: 'Santiago Fernández',
+      minute: 8,
+    ),
+  ],
 );
 final mensajesChat = [
-  MatchChatMessage(id: 'message-3', text: 'Dale, llevo la pelota. Nos vemos ahí.',
-    senderId: uidYo, senderName: 'Santiago Fernández', createdAt: DateTime(2026, 9, 12, 20, 36)),
-  MatchChatMessage(id: 'message-2', text: '¿Quién lleva pelota hoy?', senderId: 'uid-2',
-    senderName: 'Juan Ignacio Rodríguez Etchegaray', createdAt: DateTime(2026, 9, 12, 20, 35)),
-  MatchChatMessage(id: 'message-1', text: 'Llego un rato antes para reservar la cancha.',
-    senderId: 'uid-3', senderName: 'Mateo Rossi', createdAt: DateTime(2026, 9, 12, 20, 30)),
+  MatchChatMessage(
+    id: 'message-3',
+    text: 'Dale, llevo la pelota. Nos vemos ahí.',
+    senderId: uidYo,
+    senderName: 'Santiago Fernández',
+    createdAt: DateTime(2026, 9, 12, 20, 36),
+  ),
+  MatchChatMessage(
+    id: 'message-2',
+    text: '¿Quién lleva pelota hoy?',
+    senderId: 'uid-2',
+    senderName: 'Juan Ignacio Rodríguez Etchegaray',
+    createdAt: DateTime(2026, 9, 12, 20, 35),
+  ),
+  MatchChatMessage(
+    id: 'message-1',
+    text: 'Llego un rato antes para reservar la cancha.',
+    senderId: 'uid-3',
+    senderName: 'Mateo Rossi',
+    createdAt: DateTime(2026, 9, 12, 20, 30),
+  ),
 ];
 
-const feedbackDePerfil = MatchFeedback(matchId: 'feedback-review', title: 'Amistoso Fecha 2 · Puntos y etiquetas',
-  date: '2026-09-06', locationName: 'Av. Corrientes 4500, CABA',
-  selfEvaluation: SelfEvaluationSummary(goals: 2, assists: 0), ovrUpdate: OvrUpdate(previousOvr: 55, newOvr: 56),
+const feedbackDePerfil = MatchFeedback(
+  matchId: 'feedback-review',
+  title: 'Amistoso Fecha 2 · Puntos y etiquetas',
+  date: '2026-09-06',
+  locationName: 'Av. Corrientes 4500, CABA',
+  selfEvaluation: SelfEvaluationSummary(goals: 2, assists: 0),
+  ovrUpdate: OvrUpdate(previousOvr: 55, newOvr: 56),
   peerEvaluations: [
-    PeerEvaluation(id: 'peer-1', evaluatorId: 'anonymous', isAnonymous: true, rating: 7, performanceTags: [
-      EvaluationTag(id: 'area', name: 'El Terror del Área', impact: 'positive', effects: [AttributeChange(attribute: 'dri', change: 2), AttributeChange(attribute: 'def', change: -2)]),
-      EvaluationTag(id: 'assist', name: 'Asistidor Serial', impact: 'positive', effects: [AttributeChange(attribute: 'pas', change: 2)]),
-    ]),
-    PeerEvaluation(id: 'peer-2', evaluatorId: 'anonymous', isAnonymous: true, rating: 7, performanceTags: [
-      EvaluationTag(id: 'area', name: 'El Terror del Área', impact: 'positive', effects: [AttributeChange(attribute: 'dri', change: 2), AttributeChange(attribute: 'def', change: -2)]),
-      EvaluationTag(id: 'assist', name: 'Asistidor Serial', impact: 'positive', effects: [AttributeChange(attribute: 'pas', change: 2)]),
-    ]),
-  ]);
+    PeerEvaluation(
+      id: 'peer-1',
+      evaluatorId: 'anonymous',
+      isAnonymous: true,
+      rating: 7,
+      performanceTags: [
+        EvaluationTag(
+          id: 'area',
+          name: 'El Terror del Área',
+          impact: 'positive',
+          effects: [
+            AttributeChange(attribute: 'dri', change: 2),
+            AttributeChange(attribute: 'def', change: -2),
+          ],
+        ),
+        EvaluationTag(
+          id: 'assist',
+          name: 'Asistidor Serial',
+          impact: 'positive',
+          effects: [AttributeChange(attribute: 'pas', change: 2)],
+        ),
+      ],
+    ),
+    PeerEvaluation(
+      id: 'peer-2',
+      evaluatorId: 'anonymous',
+      isAnonymous: true,
+      rating: 7,
+      performanceTags: [
+        EvaluationTag(
+          id: 'area',
+          name: 'El Terror del Área',
+          impact: 'positive',
+          effects: [
+            AttributeChange(attribute: 'dri', change: 2),
+            AttributeChange(attribute: 'def', change: -2),
+          ],
+        ),
+        EvaluationTag(
+          id: 'assist',
+          name: 'Asistidor Serial',
+          impact: 'positive',
+          effects: [AttributeChange(attribute: 'pas', change: 2)],
+        ),
+      ],
+    ),
+  ],
+);
+
+List<Map<String, dynamic>> competitionFixtureMatches(
+  String collection,
+  String id,
+) {
+  List<Map<String, dynamic>> sides() => [
+    for (final t in equipos)
+      {
+        'id': t.id,
+        'name': t.name,
+        'jersey': t.jersey.toMap(),
+        'score': 0,
+        'players': [
+          for (final p in jugadores.where((p) => t.playerIds.contains(p.id)))
+            {
+              'uid': p.id,
+              'displayName': p.name,
+              'position': p.position,
+              'ovr': p.ovr,
+            },
+        ],
+      },
+  ];
+  return [
+    if (collection == 'leagues')
+      {
+        'id': 'competition-league-finished',
+        'type': 'league',
+        'title': 'Los Galácticos vs La Furia Roja',
+        'status': 'completed',
+        'ownerUid': uidYo,
+        'date': '2026-11-16',
+        'time': '21:00',
+        'participantTeamIds': equipos.map((t) => t.id).toList(),
+        'teams': sides(),
+        'finalScore': {'team1': 2, 'team2': 1},
+        'leagueInfo': {'leagueId': id, 'round': 1},
+        'location': {'name': 'El Galpón Fútbol 5'},
+        'events': [
+          {
+            'id': '1',
+            'type': 'goal',
+            'playerId': uidYo,
+            'playerName': 'Santiago Fernández',
+            'assistId': 'uid-2',
+            'assistName': 'Briseida',
+          },
+          {
+            'id': '2',
+            'type': 'goal',
+            'playerId': 'uid-2',
+            'playerName': 'Briseida',
+          },
+          {
+            'id': '3',
+            'type': 'card',
+            'playerId': 'uid-6',
+            'playerName': 'Matías',
+            'cardType': 'yellow',
+          },
+        ],
+      },
+    {
+      'id': collection == 'cups'
+          ? 'competition-cup-next'
+          : 'competition-league-next',
+      'type': collection == 'cups' ? 'cup' : 'league',
+      'title': 'Los Galácticos vs La Furia Roja',
+      'status': 'upcoming',
+      'ownerUid': uidYo,
+      'date': '2032-11-20',
+      'time': '21:00',
+      'participantTeamIds': equipos.map((t) => t.id).toList(),
+      'teams': sides(),
+      'leagueInfo': {'leagueId': id, 'round': 2},
+      'location': {'name': 'El Galpón Fútbol 5'},
+      'events': [],
+    },
+  ];
+}
+
+class CompetitionServiceFake extends CompetitionService {
+  CompetitionServiceFake() : super(_FirestoreFalso());
+  @override
+  Future<CompetitionPage> page({
+    required String collection,
+    required String scope,
+    required String? uid,
+    required String? groupId,
+    DocumentSnapshot<Map<String, dynamic>>? after,
+  }) async => CompetitionPage(collection == 'cups' ? copas : ligas);
+  @override
+  Stream<CompetitionModel?> watchCompetition(String collection, String id) =>
+      Stream.value(
+        (collection == 'cups' ? copas : ligas)
+            .where((c) => c.id == id)
+            .firstOrNull,
+      );
+  @override
+  Stream<List<Map<String, dynamic>>> watchMatches(
+    String collection,
+    String id,
+  ) => Stream.value(competitionFixtureMatches(collection, id));
+  @override
+  Stream<List<GroupTeamModel>> watchTeams(
+    String collection,
+    String id,
+    List<String> ids,
+  ) => Stream.value(equipos.where((t) => ids.contains(t.id)).toList());
+  @override
+  Stream<List<GroupTeamModel>> watchOwnedTeams(String uid) =>
+      Stream.value(equipos.where((t) => t.createdBy == uid).toList());
+  @override
+  Stream<List<Map<String, dynamic>>> watchApplications(
+    String collection,
+    String id, {
+    String? submittedBy,
+  }) => Stream.value([]);
+  @override
+  Future<Map<String, dynamic>> command(
+    String collection,
+    String id,
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) async => {
+    'ok': true,
+    'id': 'created-competition',
+    'matchId': 'competition-cup-next',
+  };
+}
 
 List<Override> overridesDelArnes() {
   return [
-    playerActivityProvider('feedback-review').overrideWith((ref) async => [feedbackDePerfil]),
-    singleMatchStreamProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(partidoDirigir)),
-    matchClipsProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(const [])),
-    matchPresenceProvider(partidoDirigir.id).overrideWith((ref) => Stream.value(MatchPresence.none)),
-    matchChatMessagesProvider((matchId: idPartido, limit: 60)).overrideWith((ref) => Stream.value(mensajesChat)),
+    competitionServiceProvider.overrideWithValue(CompetitionServiceFake()),
+    playerActivityProvider(
+      'feedback-review',
+    ).overrideWith((ref) async => [feedbackDePerfil]),
+    singleMatchStreamProvider(
+      partidoDirigir.id,
+    ).overrideWith((ref) => Stream.value(partidoDirigir)),
+    matchClipsProvider(
+      partidoDirigir.id,
+    ).overrideWith((ref) => Stream.value(const [])),
+    matchPresenceProvider(
+      partidoDirigir.id,
+    ).overrideWith((ref) => Stream.value(MatchPresence.none)),
+    matchChatMessagesProvider((
+      matchId: idPartido,
+      limit: 60,
+    )).overrideWith((ref) => Stream.value(mensajesChat)),
     // Sesión
     authServiceProvider.overrideWithValue(_AuthFalso()),
     authStateProvider.overrideWith((ref) => Stream.value(_UsuarioFalso())),
@@ -675,7 +933,9 @@ List<Override> overridesDelArnes() {
     publicMatchesStreamProvider.overrideWith(
       (ref) => Stream.value(partidos.take(2).toList()),
     ),
-    ownedUpcomingMatchesProvider(uidYo).overrideWith((ref) => Stream.value([partidos.first])),
+    ownedUpcomingMatchesProvider(
+      uidYo,
+    ).overrideWith((ref) => Stream.value([partidos.first])),
     userUpcomingMatchesStreamProvider(
       uidYo,
     ).overrideWith((ref) => Stream.value([partidos.first])),

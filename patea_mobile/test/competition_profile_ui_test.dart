@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:patea_mobile/core/services/profile_service.dart';
-import 'package:patea_mobile/core/services/tournament_service.dart';
+import 'package:patea_mobile/core/services/competition_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/features/competitions/competition_management.dart';
 import 'package:patea_mobile/features/players/edit_profile_screen.dart';
@@ -35,19 +35,17 @@ class ProfileFake extends Fake implements ProfileService {
   }
 }
 
-class TournamentFake extends Fake implements TournamentService {
+class TournamentFake extends CompetitionServiceFake {
   int sends = 0;
   List<String>? ids;
   @override
-  Future<String> createCompetition({
-    required bool isCup,
-    required String name,
-    required String groupId,
-    required List<String> teamIds,
-    bool homeAndAway = false,
+  Future<String> create({
+    required String collection,
+    required String requestId,
+    required Map<String, dynamic> data,
   }) async {
     sends++;
-    ids = teamIds;
+    ids = List<String>.from(data['teams']);
     throw StateError('Error de prueba recuperable');
   }
 }
@@ -94,19 +92,25 @@ void main() {
         tema: claro ? AppTheme.lightTheme : AppTheme.darkTheme,
         tamano: const Size(960, 2400),
         escala: 1.3,
-        extraOverrides: [tournamentServiceProvider.overrideWithValue(fake)],
+        extraOverrides: [competitionServiceProvider.overrideWithValue(fake)],
       );
       expect(errors, isEmpty);
-      await tester.enterText(find.byType(TextField), 'Copa del barrio');
+      await tester.enterText(find.byType(TextField).first, 'Copa del barrio');
       tester.testTextInput.hide();
-      final checks = find.byType(Checkbox);
-      await tester.ensureVisible(checks.first);
-      await tester.tap(checks.first);
+      await tester.tap(find.text('Continuar'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Crear copa'));
+      final checks = find.byType(CheckboxListTile);
+      for (var i = 0; i < 2; i++) {
+        await tester.ensureVisible(checks.at(i));
+        await tester.tap(checks.at(i));
+        await tester.pump();
+      }
+      await tester.tap(find.text('Continuar'));
+      await tester.pump();
+      await tester.tap(find.text('Guardar torneo'));
       await tester.pump(const Duration(milliseconds: 350));
       expect(fake.sends, 1);
-      expect(fake.ids!.length, 1);
+      expect(fake.ids!.length, 2);
       await tester.ensureVisible(find.text('Error de prueba recuperable'));
       expect(find.text('Error de prueba recuperable'), findsOneWidget);
       expect(tester.takeException(), isNull);

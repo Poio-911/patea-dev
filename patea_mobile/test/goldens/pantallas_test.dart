@@ -27,9 +27,10 @@
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
 
+import 'package:patea_mobile/features/competitions/competition_hub_screen.dart';
+
 import 'package:patea_mobile/features/competitions/competition_management.dart';
 import 'package:patea_mobile/features/players/edit_profile_screen.dart';
-
 
 import 'package:patea_mobile/features/groups/create_team_screen.dart';
 import 'package:patea_mobile/features/groups/widgets/manage_roster_sheet.dart';
@@ -40,7 +41,6 @@ import 'package:patea_mobile/features/evaluations/evaluation_form_screen.dart';
 import 'package:patea_mobile/core/widgets/patea_user_menu_sheet.dart';
 
 import 'package:patea_mobile/features/dashboard/widgets/dashboard_match_hero.dart';
-
 
 import 'dart:async';
 
@@ -77,23 +77,80 @@ typedef Caso = (String, Widget Function());
 
 final List<Caso> _pantallas = [
   ('panel', () => const DashboardScreen()),
-  ('panel_en_vivo', () => Scaffold(backgroundColor: Colors.transparent, body: SingleChildScrollView(child: Padding(padding: const EdgeInsets.all(20), child: DashboardMatchHero(match: partidoDirigir, isLive: true))))),
+  (
+    'panel_en_vivo',
+    () => Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: DashboardMatchHero(match: partidoDirigir, isLive: true),
+        ),
+      ),
+    ),
+  ),
   ('plantel', () => const PlayersListScreen()),
   ('partidos', () => const MatchesScreen()),
   ('partido_detalle', () => const MatchDetailScreen(matchId: idPartido)),
   ('competiciones', () => const CompetitionsScreen()),
-  ('crear_liga', () => const CreateCompetitionScreen(isCup: false, groupId: idGrupo)),
-  ('crear_copa', () => const CreateCompetitionScreen(isCup: true, groupId: idGrupo)),
+  (
+    'liga_detalle',
+    () => const CompetitionHubScreen(collection: 'leagues', id: 'liga-1'),
+  ),
+  (
+    'copa_detalle',
+    () => const CompetitionHubScreen(collection: 'cups', id: 'copa-1'),
+  ),
+  (
+    'crear_liga',
+    () => const CreateCompetitionScreen(isCup: false, groupId: idGrupo),
+  ),
+  (
+    'crear_copa',
+    () => const CreateCompetitionScreen(isCup: true, groupId: idGrupo),
+  ),
   ('editar_perfil', () => const EditProfileScreen(playerId: uidYo)),
   ('explorar', () => const ExplorarScreen()),
   ('evaluar_partido', () => const EvaluationFormScreen(matchId: idPartido)),
-  ('menu_usuario', () => const Scaffold(backgroundColor: Colors.transparent, body: Align(alignment: Alignment.bottomCenter, child: PateaUserMenuSheet()))),
+  (
+    'menu_usuario',
+    () => const Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Align(
+        alignment: Alignment.bottomCenter,
+        child: PateaUserMenuSheet(),
+      ),
+    ),
+  ),
   ('evaluaciones', () => const EvaluationsInboxScreen()),
   ('crear_equipo', () => const CreateTeamScreen(groupId: idGrupo)),
-  ('gestionar_plantel', () => Scaffold(backgroundColor: Colors.transparent, body: ManageRosterSheet(teamName: equipos.first.name, groupPlayers: jugadores, current: equipos.first.members))),
+  (
+    'gestionar_plantel',
+    () => Scaffold(
+      backgroundColor: Colors.transparent,
+      body: ManageRosterSheet(
+        teamName: equipos.first.name,
+        groupPlayers: jugadores,
+        current: equipos.first.members,
+      ),
+    ),
+  ),
   ('grupos', () => const GroupsScreen()),
   ('equipo_detalle', () => const TeamDetailScreen(teamId: 'team-1')),
-  ('perfil_devoluciones', () => const Scaffold(backgroundColor: Colors.transparent, body: SafeArea(child: SingleChildScrollView(child: Padding(padding: EdgeInsets.all(18), child: PlayerMatchDebrief(playerId: 'feedback-review')))))),
+  (
+    'perfil_devoluciones',
+    () => const Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(18),
+            child: PlayerMatchDebrief(playerId: 'feedback-review'),
+          ),
+        ),
+      ),
+    ),
+  ),
   ('jugador_detalle', () => const PlayerDetailScreen(playerId: uidYo)),
   ('dirigir', () => LiveMatchScreen(matchId: partidoDirigir.id)),
   ('chat', () => MatchChatScreen(match: partidos.first)),
@@ -209,7 +266,13 @@ void main() {
       (AppTheme.lightTheme, 'claro'),
     ]) {
       testWidgets('$nombre · $sufijo', (tester) async {
-        if (['panel', 'grupos', 'equipo_detalle', 'crear_equipo', 'gestionar_plantel'].contains(nombre)) {
+        if ([
+          'panel',
+          'grupos',
+          'equipo_detalle',
+          'crear_equipo',
+          'gestionar_plantel',
+        ].contains(nombre)) {
           // Cada tema monta un árbol nuevo: el motor SVG conserva estado de
           // decodificación si la segunda prueba reutiliza el árbol anterior.
           await tester.pumpWidget(const SizedBox.shrink());
@@ -222,7 +285,13 @@ void main() {
           tema: tema,
         );
 
-        if (['panel', 'grupos', 'equipo_detalle', 'crear_equipo', 'gestionar_plantel'].contains(nombre)) {
+        if ([
+          'panel',
+          'grupos',
+          'equipo_detalle',
+          'crear_equipo',
+          'gestionar_plantel',
+        ].contains(nombre)) {
           // Bundle → SVG bytes → vector decode son etapas asincrónicas separadas.
           // Avanzar cada etapa antes de la captura evita camisetas intermitentes.
           for (var frame = 0; frame < 3; frame++) {
@@ -243,7 +312,8 @@ void main() {
           find.byType(MaterialApp),
           matchesGoldenFile('pantalla_${nombre}_$sufijo.png'),
         );
-        if (nombre == 'dirigir') await tester.pumpWidget(const SizedBox.shrink());
+        if (nombre == 'dirigir')
+          await tester.pumpWidget(const SizedBox.shrink());
       });
     }
 
@@ -263,7 +333,8 @@ void main() {
           isEmpty,
           reason: '\n$nombre · $cual · 1,3×\n${resumirErrores(errores)}\n',
         );
-        if (nombre == 'dirigir') await tester.pumpWidget(const SizedBox.shrink());
+        if (nombre == 'dirigir')
+          await tester.pumpWidget(const SizedBox.shrink());
       }
     });
   }

@@ -1,8 +1,10 @@
 # Pateá - Documentación Completa de la Aplicación
 
-## Estado vigente — 15/11/2026
+## Estado vigente — 17/11/2026
 
-La revisión móvil actual es **1.0.10 (11)**, instalada únicamente en el emulador Android para revisión. Los cambios de tipografía, fichas, creación de partidos y contraste están verificados con 161 pruebas; análisis sin errores ni advertencias (15 avisos informativos previos). La distribución continúa detenida. Firebase CLI y Google Cloud SDK están disponibles para operaciones autorizadas. El contenido histórico siguiente debe leerse junto con las [notas actuales](technical/RELEASE_1.0.10_2026-11-15.md).
+La revisión móvil **1.0.31+32** amplía ligas y copas con una experiencia nativa propia: equipo y próximo partido, calendario, cruces conectados a partidos reales, clasificación, estadísticas, inscripciones y gestión del organizador. Ver [implementación y pruebas](design/COMPETITIONS_NATIVE_2026-11-17.md) y [guía visual vigente](design/UX_BRAND_2026-11-15.md).
+
+El servidor se despliega mediante Firebase CLI en `mil-disculpis`. Esta revisión prepara Android local; no sustituye la entrega iOS 1.0.30 ni implica distribución nueva a TestFlight. El contenido histórico siguiente describe también funciones exclusivas de la PWA.
 
 ## Descripción General
 

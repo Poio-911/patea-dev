@@ -253,34 +253,32 @@ export const leaveMatch = onCall({ region: 'us-central1' }, async (request) => {
 });
 
 export const recordLiveEvent = onCall({ region: 'us-central1' }, async (request) => {
-  const uid = requireAuth(request);
-  const matchId = String(request.data?.matchId ?? '');
-  const event = request.data?.event as Record<string, unknown> | undefined;
-  if (!event) throw new HttpsError('invalid-argument', 'Falta el evento.');
-  const teamAScore = request.data?.teamAScore as number | undefined;
-  const teamBScore = request.data?.teamBScore as number | undefined;
-
-  const { ref, data } = await getMatchOrThrow(matchId);
-  if (data.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Solo el organizador puede registrar eventos en vivo.');
-  }
-
-  const updates: Record<string, unknown> = {
-    events: admin.firestore.FieldValue.arrayUnion(event),
-  };
-
-  if (event.type === 'goal' && (teamAScore !== undefined || teamBScore !== undefined)) {
-    const teams = Array.isArray(data.teams) ? [...data.teams] : [];
-    if (teams.length >= 2) {
-      if (teamAScore !== undefined) teams[0] = { ...teams[0], score: teamAScore };
-      if (teamBScore !== undefined) teams[1] = { ...teams[1], score: teamBScore };
-      updates.teams = teams;
-    }
-  }
-
-  await ref.update(updates);
-  return { ok: true };
+  const uid=requireAuth(request), matchId=String(request.data?.matchId??''), event=request.data?.event as Record<string, any> | undefined;
+  if(!matchId || matchId.includes('/') || !event || typeof event.type!=='string') throw new HttpsError('invalid-argument','Evento inválido.');
+  return recordLiveEventCore(admin.firestore(),uid,matchId,event);
 });
+export async function recordLiveEventCore(db: admin.firestore.Firestore,uid: string,matchId: string,event: Record<string,any>) {
+  const ref=db.collection('matches').doc(matchId);
+  return db.runTransaction(async tx=>{
+    const match=(await tx.get(ref)).data();
+    if(!match) throw new HttpsError('not-found','El partido no existe.');
+    if(match.ownerUid!==uid) throw new HttpsError('permission-denied','Sólo el organizador registra eventos.');
+    if(match.status!=='active') throw new HttpsError('failed-precondition','El partido debe estar en vivo y sin cerrar.');
+    const events=Array.isArray(match.events)?match.events:[];
+    if(events.some((e:any)=>event.id ? e.id===event.id : JSON.stringify(e)===JSON.stringify(event))) return {ok:true};
+    const sides=Array.isArray(match.teams)?match.teams.map((t:any)=>({...t})):[];
+    const index=sides.findIndex((t:any)=>t.players?.some((p:any)=>(p.uid??p.id)===event.playerId));
+    if(index<0 || index>1) throw new HttpsError('failed-precondition','El jugador no está en el partido.');
+    const updates:Record<string,unknown>={events:admin.firestore.FieldValue.arrayUnion({...event,recordedBy:uid})};
+    if(event.type==='goal') {
+      const scoring=event.goalType==='own_goal'?1-index:index;
+      const current=Number(sides[scoring].score??0);
+      if(!Number.isInteger(current) || current<0 || current>=999) throw new HttpsError('failed-precondition','Marcador inválido.');
+      sides[scoring].score=current+1;updates.teams=sides;
+    }
+    tx.update(ref,updates);return {ok:true};
+  });
+}
 
 type LifecyclePlayer = {
   id: string;
@@ -308,7 +306,7 @@ function isRealUser(player: LifecyclePlayer): boolean {
  * algoritmo, la web depende de este mismo shuffle+round-robin para que las
  * asignaciones de evaluación (matches/{id}/assignments) salgan parejas.
  */
-function generateEvaluationAssignments(
+export function generateEvaluationAssignments(
   match: { id: string; playerUids: string[]; teams?: LifecycleTeam[] },
   allPlayers: LifecyclePlayer[]
 ): { matchId: string; evaluatorId: string; subjectId: string; status: 'pending' }[] {
