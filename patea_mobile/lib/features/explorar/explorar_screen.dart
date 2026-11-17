@@ -1,9 +1,9 @@
+import '../../core/utils/availability_labels.dart';
 import '../../core/utils/explore_filters.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/widgets/patea_card.dart';
-import '../../core/widgets/player_position_badge.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
@@ -244,72 +244,111 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
         children: [
-          PateaCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selected?.id ?? '',
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Buscar para'),
-                  items: [
-                    const DropdownMenuItem(
-                      value: '',
-                      child: Text('Mi zona · sin partido'),
-                    ),
-                    ...matches.map(
-                      (m) => DropdownMenuItem(
-                        value: m.id,
-                        child: Text(m.title, overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) => setState(() {
-                    _selectedMatchId = v == '' ? null : v;
-                    _zone = null;
-                  }),
-                ),
-                if (selected != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0 ? 'Cupo abierto' : '${selected.matchSize - selected.playerUids.length} lugares'}',
-                      style: AppTypography.body(
-                        size: 12,
-                        color: context.c.textSecondary,
-                      ),
-                    ),
-                  ),
-                if (owned.hasError)
-                  const Text(
-                    'No pudimos cargar tus partidos. Podés seguir buscando en tu zona.',
-                  ),
-                const SizedBox(height: 10),
-                _ZoneControl(
-                  zone: zone,
-                  radius: _radius,
-                  onZone: (z) => setState(() => _zone = z),
-                  onRadius: (v) => setState(() => _radius = v),
-                ),
-              ],
-            ),
+          Text(
+            'Buscar jugadores para',
+            style: AppTypography.body(size: 11, color: context.c.textSecondary),
           ),
-          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                selected == null ? Icons.travel_explore : Icons.sports_soccer,
+                size: 19,
+                color: context.c.textSecondary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selected?.id ?? '',
+                    isExpanded: true,
+                    style: AppTypography.body(
+                      size: 14,
+                      weight: FontWeight.w600,
+                      color: context.c.textPrimary,
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: '',
+                        child: Text('En mi zona'),
+                      ),
+                      ...matches.map(
+                        (m) => DropdownMenuItem(
+                          value: m.id,
+                          child: Text(
+                            m.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() {
+                      _selectedMatchId = v == '' ? null : v;
+                      _zone = null;
+                    }),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (selected != null)
+            Text(
+              '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0
+                      ? 'Cupo abierto'
+                      : '${selected.matchSize - selected.playerUids.length} lugares'}',
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
+              ),
+            ),
+          if (owned.hasError)
+            Text(
+              'No pudimos cargar tus partidos. Podés buscar en tu zona.',
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
+              ),
+            ),
+          const SizedBox(height: 8),
+          _ZoneControl(
+            zone: zone,
+            radius: _radius,
+            suggested: _zone == null && saved == null && loc == null,
+            onZone: (z) => setState(() => _zone = z),
+            onRadius: (v) => setState(() => _radius = v),
+          ),
+          const SizedBox(height: 14),
+          Divider(height: 1, color: context.c.overlayLine),
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            key: const ValueKey('my-explore-availability'),
+            contentPadding: EdgeInsets.zero,
             leading: Icon(
               Icons.person_search_outlined,
-              color: context.c.primary,
+              size: 23,
+              color: context.c.textSecondary,
             ),
             title: Text(
-              available.value != null
-                  ? 'Estás disponible para jugar'
-                  : '¿Querés que te encuentren?',
-              style: AppTypography.body(size: 14, weight: FontWeight.w700),
+              'Tu disponibilidad',
+              style: AppTypography.body(size: 14, weight: FontWeight.w600),
             ),
-            subtitle: const Text('Publicá tu zona y tus horarios'),
-            trailing: const Icon(Icons.chevron_right),
+            subtitle: Text(
+              available.isLoading
+                  ? 'Consultando tu estado…'
+                  : available.hasError
+                  ? 'No pudimos consultar tu estado'
+                  : available.value != null
+                  ? 'Disponible · Editar horarios'
+                  : 'Sin publicar · Elegir horarios',
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
+              ),
+            ),
+            trailing: Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: context.c.textSecondary,
+            ),
             onTap: () => showModalBottomSheet<void>(
               context: context,
               useRootNavigator: true,
@@ -318,31 +357,56 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
               builder: (_) => _AvailabilitySheet(uid: widget.uid),
             ),
           ),
+          Divider(height: 1, color: context.c.overlayLine),
+          const SizedBox(height: 24),
+          Text(
+            _loading
+                ? 'Buscando jugadores…'
+                : players.length.toString() +
+                      (players.length == 1
+                          ? ' jugador cerca'
+                          : ' jugadores cerca'),
+            style: AppTypography.headline(size: 17),
+          ),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 for (final pos in ['Todos', 'POR', 'DEF', 'MED', 'DEL'])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(pos),
-                      selected: _position == (pos == 'Todos' ? null : pos),
-                      onSelected: (_) => setState(
-                        () => _position = pos == 'Todos' ? null : pos,
+                  Semantics(
+                    selected: _position == (pos == 'Todos' ? null : pos),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            width: 2,
+                            color: _position == (pos == 'Todos' ? null : pos)
+                                ? context.c.primary
+                                : Colors.transparent,
+                          ),
+                        ),
+                      ),
+                      child: TextButton(
+                        onPressed: () => setState(
+                          () => _position = pos == 'Todos' ? null : pos,
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor:
+                              _position == (pos == 'Todos' ? null : pos)
+                              ? context.c.textPrimary
+                              : context.c.textSecondary,
+                          minimumSize: const Size(55, 44),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        child: Text(pos, style: AppTypography.action(size: 12)),
                       ),
                     ),
                   ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            '${players.length} jugadores cerca',
-            style: AppTypography.body(size: 14, weight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(32),
@@ -369,13 +433,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
             )
           else
             for (final player in players)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _DiscoveryPlayerRow(
-                  player: player,
-                  matchId: selected?.id,
-                ),
-              ),
+              _DiscoveryPlayerRow(player: player, matchId: selected?.id),
         ],
       ),
     );
@@ -384,88 +442,128 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
 
 LocationSuggestion _savedZone(Map<String, dynamic>? saved) =>
     LocationSuggestion(
-      label: saved?['label'] as String? ?? 'Montevideo · zona inicial',
+      label: saved?['label'] as String? ?? 'Montevideo',
       lat: (saved?['lat'] as num?)?.toDouble() ?? -34.9011,
       lng: (saved?['lng'] as num?)?.toDouble() ?? -56.1645,
       placeId: '',
     );
+
+Color _discoveryOvrColor(BuildContext context) =>
+    context.c.isDarkSurface ? const Color(0xFFFFD56A) : const Color(0xFF885800);
+
+Color _discoveryPositionColor(BuildContext context, String position) =>
+    context.c.isDarkSurface
+    ? context.c.positionColor(position)
+    : Color.lerp(context.c.positionColor(position), context.c.textPrimary, .4)!;
 
 class _DiscoveryPlayerRow extends StatelessWidget {
   final AvailablePlayerModel player;
   final String? matchId;
   const _DiscoveryPlayerRow({required this.player, this.matchId});
   @override
-  Widget build(BuildContext context) => PateaCard(
-    padding: const EdgeInsets.all(14),
-    child: InkWell(
-      onTap: () => showModalBottomSheet<void>(
-        context: context,
-        useRootNavigator: true,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => _FreeAgentDetailSheet(player: player, matchId: matchId),
-      ),
-      child: Row(
+  Widget build(BuildContext context) => InkWell(
+    onTap: () => showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: context.c.popover,
+      builder: (_) => _FreeAgentDetailSheet(player: player, matchId: matchId),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.only(top: 15),
+      child: Column(
         children: [
-          PateaAvatar(seed: player.uid, photoUrl: player.photoUrl, size: 58),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  player.displayName,
-                  style: AppTypography.body(size: 15, weight: FontWeight.w700),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${player.position} · ${player.distanceKm?.toStringAsFixed(1) ?? '—'} km',
-                  style: AppTypography.body(
-                    size: 12,
-                    color: context.c.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  player.availability.isEmpty
-                      ? 'Consultá sus horarios'
-                      : player.availability.keys
-                            .map(
-                              (d) =>
-                                  _days
-                                      .where((v) => v['id'] == d)
-                                      .firstOrNull?['short'] ??
-                                  d,
-                            )
-                            .join(' · '),
-                  style: AppTypography.body(
-                    size: 11,
-                    color: context.c.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
+          Row(
             children: [
-              Text(
-                '${player.ovr}',
-                style: AppTypography.headline(
-                  size: 27,
-                  color: context.c.primary,
+              PateaAvatar(
+                seed: player.uid,
+                photoUrl: player.photoUrl,
+                size: 64,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      player.displayName,
+                      style: AppTypography.body(
+                        size: 15,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 3,
+                      children: [
+                        Text(
+                          player.position.isEmpty
+                              ? 'Posición a consultar'
+                              : player.position,
+                          style: AppTypography.body(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: _discoveryPositionColor(
+                              context,
+                              player.position,
+                            ),
+                          ),
+                        ),
+                        if (player.distanceKm != null)
+                          Text(
+                            '${player.distanceKm!.toStringAsFixed(1)} km',
+                            style: AppTypography.body(
+                              size: 12,
+                              color: context.c.textSecondary,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      availabilitySummary(player.availability),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(
+                        size: 11,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'OVR',
-                style: AppTypography.body(
-                  size: 10,
-                  color: context.c.textSecondary,
-                ),
+              const SizedBox(width: 10),
+              Column(
+                children: [
+                  Text(
+                    player.ovr > 0 ? player.ovr.toString() : '—',
+                    style: AppTypography.sportNumber(
+                      size: 23,
+                      color: _discoveryOvrColor(context),
+                    ),
+                  ),
+                  Text(
+                    'OVR',
+                    style: AppTypography.body(
+                      size: 9,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right,
+                size: 17,
+                color: context.c.textSecondary,
               ),
             ],
           ),
-          const SizedBox(width: 8),
-          const Icon(Icons.chevron_right, size: 18),
+          const SizedBox(height: 15),
+          Divider(height: 1, color: context.c.overlayLine),
         ],
       ),
     ),
@@ -475,6 +573,7 @@ class _DiscoveryPlayerRow extends StatelessWidget {
 class _ZoneControl extends StatelessWidget {
   final LocationSuggestion zone;
   final double radius;
+  final bool suggested;
   final ValueChanged<LocationSuggestion> onZone;
   final ValueChanged<double> onRadius;
   const _ZoneControl({
@@ -482,39 +581,107 @@ class _ZoneControl extends StatelessWidget {
     required this.radius,
     required this.onZone,
     required this.onRadius,
+    this.suggested = false,
   });
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      TextButton.icon(
-        onPressed: () async {
-          final value = await showModalBottomSheet<LocationSuggestion>(
-            context: context,
-            isScrollControlled: true,
-            useRootNavigator: true,
-            builder: (_) => const _DiscoveryZoneSheet(),
-          );
-          if (value != null) onZone(value);
-        },
-        icon: const Icon(Icons.location_on_outlined, size: 18),
-        label: Text(zone.label, maxLines: 2, overflow: TextOverflow.ellipsis),
-      ),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final km in [5.0, 15.0, 30.0, 50.0])
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  showCheckmark: false,
-                  label: Text('${km.toInt()} km'),
-                  selected: radius == km,
-                  onSelected: (_) => onRadius(km),
+      Expanded(
+        flex: 3,
+        child: TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: context.c.textPrimary,
+            alignment: Alignment.centerLeft,
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(48, 48),
+          ),
+          onPressed: () async {
+            final value = await showModalBottomSheet<LocationSuggestion>(
+              context: context,
+              isScrollControlled: true,
+              useRootNavigator: true,
+              builder: (_) => const _DiscoveryZoneSheet(),
+            );
+            if (value != null) onZone(value);
+          },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: 19,
+                color: context.c.textSecondary,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      zone.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(
+                        size: 13,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      suggested ? 'Zona sugerida · Cambiar' : 'Cambiar zona',
+                      style: AppTypography.body(
+                        size: 10,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(width: 10),
+      Flexible(
+        flex: 2,
+        child: PopupMenuButton<double>(
+          tooltip: 'Distancia de búsqueda',
+          initialValue: radius,
+          onSelected: onRadius,
+          itemBuilder: (_) => [
+            if (radius == 0)
+              const PopupMenuItem(value: 0, child: Text('Todas las zonas')),
+            for (final km in [5.0, 15.0, 30.0, 50.0])
+              PopupMenuItem(
+                value: km,
+                child: Text('${km.toInt()} km'),
+              ),
           ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    radius == 0
+                        ? 'Todas las zonas'
+                        : 'Hasta ${radius.toInt()} km',
+                    style: AppTypography.body(
+                      size: 12,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.expand_more,
+                  size: 18,
+                  color: context.c.textSecondary,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     ],
@@ -758,223 +925,177 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
     }
   }
 
-  Color _tierColor(BuildContext context, int ovr) {
-    if (ovr >= 85) return context.c.eliteBorder;
-    if (ovr >= 75) return context.c.goldBorder;
-    if (ovr >= 60) return context.c.silverBorder;
-    return context.c.bronzeBorder;
-  }
-
   @override
   Widget build(BuildContext context) {
     final player = widget.player;
-    final isDark = context.c.isDarkSurface;
-    final tierCol = _tierColor(context, player.ovr);
-
+    final uid = ref.watch(authStateProvider).value?.uid;
+    final selected = uid == null || widget.matchId == null
+        ? null
+        : ref
+              .watch(ownedUpcomingMatchesProvider(uid))
+              .value
+              ?.where(
+                (m) =>
+                    m.id == widget.matchId &&
+                    canRecruitFor(m, uid, DateTime.now()) &&
+                    !m.playerUids.contains(player.uid),
+              )
+              .firstOrNull;
+    final schedule = availabilityDescriptions(player.availability);
     return SafeArea(
       top: false,
-      bottom: true,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? context.c.cardSurface : context.c.card,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadii.surface),
-          ),
-          border: Border(
-            top: BorderSide(
-              color: isDark
-                  ? context.c.primary.withValues(alpha: 0.35)
-                  : context.c.border,
-              width: 1.2,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * .82,
         ),
-        padding: EdgeInsets.fromLTRB(
-          20,
-          16,
-          20,
-          20 + bottomInset(context) + MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: context.c.textSecondary.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: tierCol, width: 2),
-                  ),
-                  child: PateaAvatar(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  PateaAvatar(
                     photoUrl: player.photoUrl,
-                    seed: player.displayName,
-                    size: 56,
+                    seed: player.uid,
+                    size: 76,
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        player.displayName,
-                        style: AppTypography.headline(
-                          size: 17,
-                          weight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          PlayerPositionBadge(
-                            position: player.position,
-                            fontSize: 11,
-                            dense: true,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'OVR ${player.ovr}',
-                            style: AppTypography.code(
-                              size: 12,
-                              weight: FontWeight.w800,
-                              color: tierCol,
-                            ),
-                          ),
-                          if (player.distanceKm != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '·',
-                              style: TextStyle(color: context.c.textSecondary),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 12,
-                              color: context.c.textSecondary,
-                            ),
-                            Text(
-                              '${player.distanceKm!.toStringAsFixed(1)} km',
-                              style: AppTypography.body(
-                                size: 11,
-                                color: context.c.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (player.availability.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              Text(
-                'DISPONIBILIDAD HORARIA',
-                style: AppTypography.code(
-                  size: 10,
-                  weight: FontWeight.w800,
-                  color: context.c.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: player.availability.entries.map((e) {
-                  return PateaCard(
-                    color: context.c.cardSurface,
-                    radius: AppRadii.surfaceAll,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${e.key[0].toUpperCase()}${e.key.substring(1)}: ',
-                          style: AppTypography.code(
-                            size: 11,
-                            weight: FontWeight.w700,
-                            color: context.c.textPrimary,
-                          ),
+                          player.displayName,
+                          style: AppTypography.headline(size: 23),
                         ),
-                        Text(
-                          e.value.join(', '),
-                          style: AppTypography.body(
-                            size: 11,
-                            color: context.c.primary,
-                          ),
+                        const SizedBox(height: 7),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 5,
+                          children: [
+                            Text(
+                              player.position.isEmpty
+                                  ? 'Posición a consultar'
+                                  : player.position,
+                              style: AppTypography.body(
+                                size: 13,
+                                weight: FontWeight.w700,
+                                color: _discoveryPositionColor(
+                                  context,
+                                  player.position,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'OVR ${player.ovr > 0
+                                      ? player.ovr.toString()
+                                      : '—'}',
+                              style: AppTypography.body(
+                                size: 13,
+                                weight: FontWeight.w600,
+                                color: _discoveryOvrColor(context),
+                              ),
+                            ),
+                            if (player.distanceKm != null)
+                              Text(
+                                '${player.distanceKm!.toStringAsFixed(1)} km',
+                                style: AppTypography.body(
+                                  size: 12,
+                                  color: context.c.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
-            ],
-            const SizedBox(height: 20),
-            if (player.isCurrentUser)
-              PateaCard(
-                borderColor: context.c.border,
-                radius: AppRadii.cardAll,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Text(
-                  'Tu perfil de Pase Libre en el mercado',
-                  textAlign: TextAlign.center,
+              const SizedBox(height: 26),
+              Text('Puede jugar', style: AppTypography.headline(size: 16)),
+              const SizedBox(height: 10),
+              if (schedule.isEmpty)
+                Text(
+                  'Consultá con el jugador sus horarios disponibles.',
                   style: AppTypography.body(
-                    size: 12,
+                    size: 14,
+                    color: context.c.textSecondary,
+                  ),
+                )
+              else
+                for (final line in schedule)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      line,
+                      style: AppTypography.body(
+                        size: 14,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                  ),
+              const SizedBox(height: 16),
+              if (selected != null) ...[
+                Divider(color: context.c.overlayLine),
+                const SizedBox(height: 10),
+                Text(
+                  'Tu convocatoria',
+                  style: AppTypography.body(
+                    size: 11,
                     color: context.c.textSecondary,
                   ),
                 ),
-              )
-            else
-              ElevatedButton.icon(
-                onPressed: _isInviting ? null : _invite,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.c.primary,
-                  foregroundColor: context.c.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: AppRadii.cardAll,
+                const SizedBox(height: 5),
+                Text(
+                  selected.title,
+                  style: AppTypography.body(size: 15, weight: FontWeight.w600),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'}',
+                  style: AppTypography.body(
+                    size: 13,
+                    color: context.c.textSecondary,
                   ),
                 ),
-                icon: _isInviting
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: const PateaButtonProgress(),
-                      )
-                    : const Icon(Icons.person_add_alt_1, size: 18),
-                label: Text(
-                  'Invitar a mi partido',
-                  style: AppTypography.headline(
-                    size: 14,
-                    weight: FontWeight.w800,
+                const SizedBox(height: 20),
+              ],
+              if (player.isCurrentUser)
+                Text(
+                  'Esta es tu disponibilidad publicada.',
+                  style: AppTypography.body(
+                    size: 13,
+                    color: context.c.textSecondary,
+                  ),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: _isInviting ? null : _invite,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 15,
+                    ),
+                  ),
+                  icon: _isInviting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: PateaButtonProgress(),
+                        )
+                      : const Icon(Icons.person_add_alt_1, size: 19),
+                  label: Text(
+                    selected == null
+                        ? 'Elegir partido para invitar'
+                        : 'Invitar a ${selected.title}',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.action(size: 14),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

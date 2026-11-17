@@ -132,6 +132,9 @@ final cases = <String, Widget>{
     groupId: idGrupo,
   ),
   'availability': const ExplorarScreen(),
+  'explore_player': const ExplorarScreen(),
+  'explore_light': const ExplorarScreen(),
+  'explore_player_light': const ExplorarScreen(),
   'clip_upload': Scaffold(
     appBar: AppBar(title: const Text('Clips del partido')),
     body: ClipCaptureSheet(match: partidos.first),
@@ -303,7 +306,7 @@ void main() {
       final errors = await montarPantalla(
         tester,
         item.value,
-        tema: AppTheme.darkTheme,
+        tema: item.key.endsWith('_light') ? AppTheme.lightTheme : AppTheme.darkTheme,
         extraOverrides: [
           matchResultStatsProvider(
             presentationStory.id,
@@ -318,7 +321,11 @@ void main() {
       );
       expect(errors, isEmpty);
       if (item.key == 'availability') {
-        await tester.tap(find.text('Publicá tu zona y tus horarios'));
+        await tester.tap(find.text('Tu disponibilidad'));
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+      if (item.key.startsWith('explore_player')) {
+        await tester.tap(find.text('Rodrigo Amarilla'));
         await tester.pump(const Duration(milliseconds: 400));
       }
       final tab = switch (item.key) {

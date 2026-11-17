@@ -10,12 +10,24 @@ import 'package:patea_mobile/core/services/firestore_service.dart';
 import 'package:patea_mobile/core/services/match_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/utils/explore_filters.dart';
+import 'package:patea_mobile/core/utils/availability_labels.dart';
+import 'package:flutter/material.dart';
 import 'package:patea_mobile/features/explorar/explorar_screen.dart';
 import 'goldens/arnes.dart';
 
 class SearchFake extends Fake implements ExploreService {
   final requests = <Completer<List<AvailablePlayerModel>>>[];
   final radii = <double>[];
+  int invitations = 0;
+  @override
+  Future<int> sendMatchInvitations({
+    required String matchId,
+    required List<String> playerIds,
+  }) async {
+    invitations++;
+    return playerIds.length;
+  }
+
   @override
   Future<List<AvailablePlayerModel>> getAvailableLocalPlayers({
     required double lat,
@@ -30,6 +42,14 @@ class SearchFake extends Fake implements ExploreService {
     requests.add(request);
     return request.future;
   }
+}
+
+class InvitationStoreFake extends Fake implements FirestoreService {
+  @override
+  Future<bool> hasPendingMatchInvitation(
+    String matchId,
+    String playerId,
+  ) async => false;
 }
 
 class JoinFake extends Fake implements MatchService {
@@ -77,6 +97,51 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
   final now = DateTime(2026, 11, 16, 20);
+  test('availability is grouped chronologically without repeated badges', () {
+    expect(
+      availabilitySummary({
+        'jueves': ['noche'],
+        'miércoles': ['noche'],
+      }),
+      'Mié y Jue · Noche',
+    );
+    expect(
+      availabilityDescriptions({
+        'jueves': ['noche'],
+        'miércoles': ['noche'],
+      }),
+      ['Miércoles y jueves por la noche.'],
+    );
+    expect(
+      availabilitySummary({
+        for (final day in [
+          'lunes',
+          'martes',
+          'miercoles',
+          'jueves',
+          'viernes',
+          'sabado',
+          'domingo',
+        ])
+          day: ['mañana', 'tarde', 'noche'],
+      }),
+      'Todos los días · Cualquier horario',
+    );
+    expect(
+      availabilityDescriptions({
+        'lunes': [],
+        '': ['noche'],
+      }),
+      isEmpty,
+    );
+    expect(
+      availabilitySummary({
+        'lunes': ['mañana'],
+        'jueves': ['noche'],
+      }),
+      'Lun y Jue · Horarios variados',
+    );
+  });
   test(
     'Today uses kickoff, not midnight; expired or active games are excluded',
     () {
@@ -132,24 +197,20 @@ void main() {
     WidgetTester tester,
     SearchFake search, {
     List<MatchModel> games = const [],
+    List<MatchModel> owned = const [],
     JoinFake? join,
   }) async {
     final errors = await montarPantalla(
       tester,
-      ProviderScope(
-        overrides: [
-          exploreServiceProvider.overrideWithValue(search),
-          publicMatchesStreamProvider.overrideWith(
-            (ref) => Stream.value(games),
-          ),
-          ownedUpcomingMatchesProvider(
-            uidYo,
-          ).overrideWith((ref) => Stream.value([])),
-        ],
-        child: const ExplorarScreen(),
-      ),
+      const ExplorarScreen(),
       tema: AppTheme.darkTheme,
       extraOverrides: [
+        exploreServiceProvider.overrideWithValue(search),
+        firestoreServiceProvider.overrideWithValue(InvitationStoreFake()),
+        publicMatchesStreamProvider.overrideWith((ref) => Stream.value(games)),
+        ownedUpcomingMatchesProvider(
+          uidYo,
+        ).overrideWith((ref) => Stream.value(owned)),
         if (join != null) matchServiceProvider.overrideWithValue(join),
       ],
     );
@@ -165,11 +226,43 @@ void main() {
   }
 
   testWidgets(
+    'player detail explains availability and chooses a match before inviting',
+    (tester) async {
+      final search = SearchFake();
+      await mount(tester, search, owned: [fixture(owner: uidYo)]);
+      search.requests.single.complete([
+        AvailablePlayerModel(
+          uid: 'guest',
+          displayName: 'Roberto P.',
+          position: 'POR',
+          ovr: 57,
+          availability: {
+            'jueves': ['noche'],
+            'miercoles': ['noche'],
+          },
+        ),
+      ]);
+      await tester.pump();
+      expect(find.text('Tu disponibilidad'), findsOneWidget);
+      await tapVisible(tester, find.text('Roberto P.'));
+      expect(find.text('Miércoles y jueves por la noche.'), findsOneWidget);
+      await tapVisible(tester, find.text('Elegir partido para invitar'));
+      expect(find.text('Elegí tu partido'), findsOneWidget);
+      await tapVisible(tester, find.textContaining('Partido para probar').last);
+      expect(find.text('Enviar invitación'), findsOneWidget);
+      expect(search.invitations, 0);
+      await tapVisible(tester, find.text('Volver'));
+      expect(search.invitations, 0);
+    },
+  );
+
+  testWidgets(
     'Browsing works without an owned match and stale searches cannot replace new results',
     (tester) async {
       final search = SearchFake();
       await mount(tester, search);
       expect(search.requests.length, 1);
+      await tapVisible(tester, find.byTooltip('Distancia de búsqueda').first);
       await tapVisible(tester, find.text('30 km').first);
       await tester.pump();
       expect(search.radii, [15, 30]);
@@ -188,6 +281,37 @@ void main() {
       expect(find.text('Resultado nuevo'), findsOneWidget);
       expect(find.text('Resultado viejo'), findsNothing);
       expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'selected recruitment context is visible before confirming an invitation',
+    (tester) async {
+      final search = SearchFake();
+      final guest = AvailablePlayerModel(
+        uid: 'guest',
+        displayName: 'Roberto P.',
+        position: 'POR',
+        ovr: 57,
+        availability: {
+          'jueves': ['noche'],
+        },
+      );
+      await mount(tester, search, owned: [fixture(owner: uidYo)]);
+      search.requests.single.complete([guest]);
+      await tester.pump();
+      await tapVisible(tester, find.byType(DropdownButton<String>));
+      await tapVisible(tester, find.text('Partido para probar').last);
+      expect(search.requests, hasLength(2));
+      search.requests.last.complete([guest]);
+      await tester.pump();
+      await tapVisible(tester, find.text('Roberto P.'));
+      expect(find.text('Tu convocatoria'), findsOneWidget);
+      await tapVisible(tester, find.text('Invitar a Partido para probar'));
+      expect(find.text('Elegí tu partido'), findsNothing);
+      expect(find.text('Enviar invitación'), findsOneWidget);
+      expect(search.invitations, 0);
+      await tapVisible(tester, find.text('Volver'));
+      expect(search.invitations, 0);
     },
   );
   testWidgets(
@@ -264,6 +388,43 @@ void main() {
     },
   );
   for (final theme in [AppTheme.darkTheme, AppTheme.lightTheme]) {
+    testWidgets(
+      'player discovery and invitation stay readable at 2x in ${theme.brightness}',
+      (tester) async {
+        final search = SearchFake();
+        final errors = await montarPantalla(
+          tester,
+          const ExplorarScreen(),
+          tema: theme,
+          escala: 2,
+          extraOverrides: [
+            exploreServiceProvider.overrideWithValue(search),
+            ownedUpcomingMatchesProvider(
+              uidYo,
+            ).overrideWith((ref) => Stream.value([])),
+          ],
+        );
+        expect(errors, isEmpty);
+        search.requests.single.complete([
+          AvailablePlayerModel(
+            uid: 'guest',
+            displayName: 'Roberto Fernández',
+            position: 'POR',
+            ovr: 57,
+            distanceKm: 0.3,
+            availability: {
+              'miercoles': ['noche'],
+              'jueves': ['noche'],
+            },
+          ),
+        ]);
+        await tester.pump();
+        await tapVisible(tester, find.text('Roberto Fernández'));
+        expect(find.text('Miércoles y jueves por la noche.'), findsOneWidget);
+        await tester.ensureVisible(find.text('Elegir partido para invitar'));
+        expect(tester.takeException(), isNull);
+      },
+    );
     testWidgets(
       'Public discovery remains readable at 1.3x in ${theme.brightness}',
       (tester) async {
