@@ -139,8 +139,9 @@ function calculateAttributeChangesFromAI(
 /**
  * Port de finalizeMatchEvaluationAction (server-actions.ts ~L4221-4502).
  * Deliberadamente NO portado (dominios fuera de este barrido, ver plan):
- * standings de liga/copa (`updateLeagueStandingsAction`/`advanceCupWinnerAction`,
- * Sección 6), crónica IA del partido, achievements/gamification, y la
+ * La sincronización de liga/copa ahora la realiza syncCompetitionResult al
+ * observar el resultado final, compartido por web y móvil. No se duplican
+ * aquí avances ni clasificaciones. Quedan fuera achievements/gamification y la
  * publicación de actividad social (`publishOvrChangeActivity`, Sección 9).
  * El núcleo — la única parte que de verdad hace progresar el OVR — sí está
  * completo y sin recortes.

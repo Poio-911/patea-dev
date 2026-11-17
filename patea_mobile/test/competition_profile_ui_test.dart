@@ -99,7 +99,7 @@ void main() {
       expect(errors, isEmpty);
       await tester.enterText(find.byType(TextField), 'Copa del barrio');
       tester.testTextInput.hide();
-      final checks = find.byType(CheckboxListTile);
+      final checks = find.byType(Checkbox);
       await tester.ensureVisible(checks.first);
       await tester.tap(checks.first);
       await tester.pump();

@@ -15,6 +15,11 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
     await env.withSecurityRulesDisabled(async context => {
       const db = context.firestore();
       const fixtures = {
+        'leagues/privacy-league': {ownerUid:'organizer',isPublic:true},
+        'cups/privacy-cup': {ownerUid:'organizer',isPublic:true},
+        'competitionApplications/privacy-application': {competitionId:'privacy-league',competitionType:'league',submittedBy:'alice',teamId:'team',status:'pending'},
+        'leagues/privacy-league/applications/external': {captainName:'Privado',status:'pending'},
+        'cups/privacy-cup/applications/external': {captainName:'Privado',status:'pending'},
         'matches/match': { ownerUid: 'organizer', playerUids: ['alice', 'bob'] },
         'evaluations/private-eval': { evaluatorId: 'alice', playerId: 'bob', matchId: 'match', rating: 7 },
         'evaluations/revealed-eval': { evaluatorId: 'alice', playerId: 'bob', identityRevealed: true },
@@ -65,4 +70,18 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
     await assertSucceeds(getDoc(doc(env.authenticatedContext('alice').firestore(), 'matches/match/messages/message')));
     await assertSucceeds(getDoc(doc(env.authenticatedContext('bob').firestore(), 'matches/match/invitations/invite')));
   });
+  it('postulaciones visibles sólo para el autor y el organizador, incluida la inscripción externa', async()=>{
+    const alice=env.authenticatedContext('alice').firestore(), organizer=env.authenticatedContext('organizer').firestore(), stranger=env.authenticatedContext('stranger').firestore();
+    await assertSucceeds(getDoc(doc(alice,'competitionApplications/privacy-application')));
+    await assertSucceeds(getDoc(doc(organizer,'competitionApplications/privacy-application')));
+    await assertFails(getDoc(doc(stranger,'competitionApplications/privacy-application')));
+    await assertFails(getDocs(collection(stranger,'competitionApplications')));
+    await assertSucceeds(getDocs(query(collection(organizer,'competitionApplications'),where('competitionId','==','privacy-league'),where('competitionType','==','league'))));
+    await assertSucceeds(getDocs(query(collection(alice,'competitionApplications'),where('competitionId','==','privacy-league'),where('competitionType','==','league'),where('submittedBy','==','alice'))));
+    for(const col of ['leagues/privacy-league','cups/privacy-cup']) {
+      await assertSucceeds(getDoc(doc(organizer,`${col}/applications/external`)));
+      await assertFails(getDoc(doc(stranger,`${col}/applications/external`)));
+    }
+  });
+
 });

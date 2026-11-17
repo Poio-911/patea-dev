@@ -61,8 +61,7 @@ class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
           if (player == null) return _NotFound(asOwnProfile: widget.asOwnProfile);
 
           final isOwnProfile = currentUid == player.id;
-          final hasOwnAccount =
-              player.ownerUid != null && player.id == player.ownerUid;
+          final hasOwnAccount = player.hasAccount;
           final showProgression = hasOwnAccount;
           final tabs = [
             const PateaTab('Partidos'),
@@ -289,13 +288,25 @@ class _HeroCardHeader extends StatelessWidget {
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          player.position.toUpperCase(),
-                          style: AppTypography.body(
-                            size: 16,
-                            height: 1.2,
-                            weight: FontWeight.w700,
-                            color: posColor,
+                        child: Text.rich(
+                          TextSpan(
+                            text: player.position.toUpperCase(),
+                            style: AppTypography.body(
+                              size: 16,
+                              height: 1.2,
+                              weight: FontWeight.w700,
+                              color: posColor,
+                            ),
+                            children: [
+                              if (player.isManual)
+                                TextSpan(
+                                  text: ' · MANUAL',
+                                  style: AppTypography.code(
+                                    size: 11,
+                                    color: c.textSecondary,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ),

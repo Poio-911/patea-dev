@@ -337,7 +337,9 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
 
       match /{subcollection}/{docId} {
-        allow read: if isAuthenticated();
+        allow read: if isAuthenticated() && (subcollection != 'applications'
+          || resource.data.get('submittedBy', '') == request.auth.uid
+          || get(/databases/$(database)/documents/leagues/$(leagueId)).data.ownerUid == request.auth.uid);
         allow write: if isAuthenticated()
           && get(/databases/$(database)/documents/leagues/$(leagueId)).data.ownerUid == request.auth.uid;
       }
@@ -349,7 +351,9 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
 
       match /{subcollection}/{docId} {
-        allow read: if isAuthenticated();
+        allow read: if isAuthenticated() && (subcollection != 'applications'
+          || resource.data.get('submittedBy', '') == request.auth.uid
+          || get(/databases/$(database)/documents/cups/$(cupId)).data.ownerUid == request.auth.uid);
         allow write: if isAuthenticated()
           && get(/databases/$(database)/documents/cups/$(cupId)).data.ownerUid == request.auth.uid;
       }
@@ -361,7 +365,13 @@ service cloud.firestore {
     }
 
     match /competitionApplications/{applicationId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        resource.data.get('submittedBy', '') == request.auth.uid
+        || (resource.data.competitionType == 'league'
+          && get(/databases/$(database)/documents/leagues/$(resource.data.competitionId)).data.ownerUid == request.auth.uid)
+        || (resource.data.competitionType == 'cup'
+          && get(/databases/$(database)/documents/cups/$(resource.data.competitionId)).data.ownerUid == request.auth.uid)
+      );
       allow write: if false;
     }
 

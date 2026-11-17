@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { buildLeaguePairs } from '../lib/league-fixture';
 import { buildMatchDateTime } from '../lib/match-date';
+import { loadCompetitionTeams, competitionLocation } from './competition-management';
 
 export const startLeagueTournament = onCall({ region: 'us-central1' }, async request => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Iniciá sesión.');
@@ -37,52 +38,34 @@ export async function startLeagueCore(uid: string, data: any, db: admin.firestor
     catch (e) { throw new HttpsError('failed-precondition', (e as Error).message); }
     const existing = await tx.get(db.collection('matches').where('leagueInfo.leagueId', '==', id).limit(1));
     if (!existing.empty) throw new HttpsError('failed-precondition', 'La liga ya tiene partidos. No se duplicó el fixture.');
-    const teamDocs = await tx.getAll(...ids.map(t => db.doc(`teams/${t}`)));
-    const teams = new Map<string, admin.firestore.DocumentData>();
-    const memberIds = new Set<string>();
-    for (const doc of teamDocs) {
-      const data = doc.data();
-      if (!data || data.groupId !== groupId) throw new HttpsError('failed-precondition', 'Actualizá los equipos de la liga.');
-      const members = Array.isArray(data.members) ? data.members : [];
-      if (!members.length) throw new HttpsError('failed-precondition', `${data.name}: el plantel está vacío.`);
-      for (const m of members) {
-        if (typeof m.playerId !== 'string' || !m.playerId || m.playerId.includes('/') || memberIds.has(m.playerId)) {
-          throw new HttpsError('failed-precondition', 'Revisá los planteles: un jugador no puede representar a dos equipos de la misma liga.');
-        }
-        memberIds.add(m.playerId);
-      }
-      teams.set(doc.id, { ...data, id: doc.id });
-    }
-    if (memberIds.size > 500) throw new HttpsError('failed-precondition', 'La liga supera el límite de 500 jugadores.');
-    const playerDocs = await tx.getAll(...[...memberIds].map(p => db.doc(`players/${p}`)));
-    const players = new Map<string, admin.firestore.DocumentData>();
-    for (const doc of playerDocs) {
-      const data = doc.data();
-      if (!data) throw new HttpsError('failed-precondition', 'Un jugador del plantel ya no existe.');
-      players.set(doc.id, { uid: doc.id, displayName: String(data.name ?? data.displayName ?? 'Jugador'), position: String(data.position ?? 'MED'), ovr: Number(data.ovr ?? 50), photoURL: String(data.photoUrl ?? data.photoURL ?? '') });
-    }
+    const resolved = await loadCompetitionTeams(db, tx, leagueRef, ids);
+    const teams = new Map(resolved.map(t => [t.id, t]));
+    const frequency = data?.matchFrequency ?? league.matchFrequency ?? 'weekly';
+    if (!['weekly','biweekly'].includes(frequency)) throw new HttpsError('invalid-argument','Frecuencia inválida.');
+    const interval = frequency === 'biweekly' ? 14 : 7;
+    const venue = competitionLocation(data?.location ?? league.defaultLocation);
     for (const pair of pairs) {
       const sides = [teams.get(pair.home)!, teams.get(pair.away)!].map(team => {
-        const roster = team.members.map((m: any) => players.get(m.playerId)!);
+        const roster = team.players;
         const totalOVR = roster.reduce((sum: number, p: any) => sum + p.ovr, 0);
-        return {name: team.name, jersey: team.jersey ?? null, players: roster, totalOVR, averageOVR: totalOVR / roster.length};
+        return {name: team.name, jersey: team.jersey ?? null, players: roster, totalOVR, averageOVR: totalOVR / roster.length, score: 0};
       });
       const roster = sides.flatMap(t => t.players);
       const matchSize = Math.max(...sides.map(t => t.players.length)) * 2;
       if (matchSize > 100) throw new HttpsError('failed-precondition', 'Un equipo supera los 50 jugadores.');
       const day = new Date(`${startDate}T12:00:00Z`);
-      day.setUTCDate(day.getUTCDate() + (pair.round - 1) * 7);
+      day.setUTCDate(day.getUTCDate() + (pair.round - 1) * interval);
       tx.set(db.collection('matches').doc(), {
         title: `${sides[0].name} vs ${sides[1].name}`, type: 'league', status: 'upcoming',
         date: day.toISOString().slice(0, 10), time, matchSize, ownerUid: uid, groupId,
         participantTeamIds: [pair.home, pair.away], teams: sides, teamsGenerated: true,
         players: roster, playerUids: roster.map((p: any) => p.uid), isPublic: false,
-        location: league.defaultLocation ?? {name: 'A definir', address: '', lat: 0, lng: 0, placeId: ''},
+        location: venue,
         leagueInfo: {leagueId: id, round: pair.round}, events: [],
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
-    tx.update(leagueRef, {status: 'in_progress', startDate, matchTime: time, matchFrequency: 'weekly'});
+    tx.update(leagueRef, {status: 'in_progress', startDate, matchTime: time, matchFrequency: frequency, defaultLocation: venue, teamSnapshots: Object.fromEntries(resolved.map(t=>[t.id,{name:t.name,jersey:t.jersey??null}]))});
     return {created: pairs.length};
   });
 }

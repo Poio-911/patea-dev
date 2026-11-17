@@ -1295,6 +1295,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       photoUrl: p.photoUrl,
                       position: p.position,
                       ovr: p.ovr,
+                      subtitle: p.isManual ? 'Manual' : null,
                       selected: isSelected,
                       disabled:
                           !isSelected &&

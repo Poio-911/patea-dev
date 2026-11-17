@@ -39,3 +39,5 @@ export { analyzeTextPerformance } from './callable/analyze-text-performance';
 // NOTE: onUserCreate requires GCIP (paid plan). Client-side rollback in register/page.tsx is used instead.
 
 export { startLeagueTournament } from './callable/league-management';
+
+export { manageCompetition, syncCompetitionResult } from './callable/competition-management';

@@ -49,6 +49,9 @@ class BracketMatchModel {
   final String? team1Name;
   final String? team2Name;
   final String? winnerId;
+  final String? matchId;
+  final String? penaltyWinnerId;
+  final bool requiresTiebreaker;
   final int? scoreTeam1;
   final int? scoreTeam2;
   final int? nextMatchNumber;
@@ -62,6 +65,9 @@ class BracketMatchModel {
     this.team1Name,
     this.team2Name,
     this.winnerId,
+    this.matchId,
+    this.penaltyWinnerId,
+    this.requiresTiebreaker = false,
     this.scoreTeam1,
     this.scoreTeam2,
     this.nextMatchNumber,
@@ -78,6 +84,9 @@ class BracketMatchModel {
       team1Name: map['team1Name'],
       team2Name: map['team2Name'],
       winnerId: map['winnerId'],
+      matchId: map['matchId'],
+      penaltyWinnerId: map['penaltyWinnerId'],
+      requiresTiebreaker: map['requiresTiebreaker'] == true,
       scoreTeam1: (finalScore?['team1'] as num?)?.toInt(),
       scoreTeam2: (finalScore?['team2'] as num?)?.toInt(),
       nextMatchNumber: (map['nextMatchNumber'] as num?)?.toInt(),
@@ -92,6 +101,21 @@ class CompetitionModel {
   final String status; // draft, published, in_progress, completed
   final String ownerUid;
   final String? description;
+  final String format;
+  final bool isPublic;
+  final bool isArchived;
+  final String? logoUrl;
+  final String? startDate;
+  final String matchTime;
+  final String matchFrequency;
+  final Map<String, dynamic> defaultLocation;
+  final Map<String, dynamic> rules;
+  final Map<String, dynamic> teamSnapshots;
+  final String? championTeamId;
+  final String? championTeamName;
+  final String? currentRound;
+  final int maxTeams;
+  final Map<String, dynamic>? resultConflict;
   final String? groupId;
   final List<String> teamIds;
   final List<BracketMatchModel> bracket;
@@ -104,6 +128,21 @@ class CompetitionModel {
     required this.status,
     required this.ownerUid,
     this.description,
+    this.format = 'round_robin',
+    this.isPublic = false,
+    this.isArchived = false,
+    this.logoUrl,
+    this.startDate,
+    this.matchTime = '21:00',
+    this.matchFrequency = 'weekly',
+    this.defaultLocation = const {},
+    this.rules = const {'pointsForWin': 3, 'pointsForDraw': 1},
+    this.teamSnapshots = const {},
+    this.championTeamId,
+    this.championTeamName,
+    this.currentRound,
+    this.maxTeams = 16,
+    this.resultConflict,
     this.groupId,
     this.teamIds = const [],
     this.bracket = const [],
@@ -125,6 +164,21 @@ class CompetitionModel {
       status: data['status'] ?? 'draft',
       ownerUid: data['ownerUid'] ?? '',
       description: data['description'],
+      format: data['format'] as String? ?? (type == 'cup' ? 'single_elimination' : 'round_robin'),
+      isPublic: data['isPublic'] == true,
+      isArchived: data['isArchived'] == true,
+      logoUrl: data['logoUrl'] as String?,
+      startDate: data['startDate'] as String?,
+      matchTime: data['matchTime'] as String? ?? '21:00',
+      matchFrequency: data['matchFrequency'] as String? ?? 'weekly',
+      defaultLocation: Map<String, dynamic>.from(data['defaultLocation'] as Map? ?? {}),
+      rules: Map<String, dynamic>.from(data['rules'] as Map? ?? {'pointsForWin': 3, 'pointsForDraw': 1}),
+      teamSnapshots: Map<String, dynamic>.from(data['teamSnapshots'] as Map? ?? {}),
+      championTeamId: data['championTeamId'] as String?,
+      championTeamName: data['championTeamName'] as String?,
+      currentRound: data['currentRound'] as String?,
+      maxTeams: (data['maxTeams'] as num?)?.toInt() ?? (type == 'cup' ? 32 : 16),
+      resultConflict: data['resultConflict'] is Map ? Map<String, dynamic>.from(data['resultConflict']) : null,
       groupId: data['groupId'] as String?,
       teamIds: ((data['teams'] as List?) ?? [])
           .map((t) => t is String ? t : (t as Map)['id'].toString())

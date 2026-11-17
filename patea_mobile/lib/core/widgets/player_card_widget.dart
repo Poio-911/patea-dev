@@ -84,6 +84,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     final semanticLabel = [
       widget.player.name,
       widget.player.position,
+      if (widget.player.isManual) 'Jugador manual',
       'OVR ${widget.player.ovr}',
       for (final stat in attributes) '${stat.description} ${stat.value}',
       '${best.length == 1 ? 'Mejor atributo' : 'Mejores atributos'}: ${best.map((stat) => stat.description).join(', ')}',
@@ -322,6 +323,18 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               ),
             ),
           ),
+          if (widget.player.isManual)
+            Positioned(
+              top: compact ? 8 : 12,
+              left: inset,
+              child: Text(
+                'MANUAL',
+                style: AppTypography.code(
+                  size: compact ? 9 : 10,
+                  color: c.textSecondary,
+                ),
+              ),
+            ),
           Positioned(
             left: inset,
             right: inset,

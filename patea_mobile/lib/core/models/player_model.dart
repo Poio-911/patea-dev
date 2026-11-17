@@ -129,6 +129,12 @@ class PlayerModel {
     PlayerStats? stats,
   }) : stats = stats ?? PlayerStats();
 
+  /// Jugador cargado a mano por un organizador (sin cuenta propia).
+  bool get isManual => ownerUid == null || ownerUid != id;
+
+  /// Jugador vinculado a una cuenta registrada.
+  bool get hasAccount => !isManual;
+
   /// Edad calculada a partir del año de nacimiento.
   int? get age {
     if (birthYear == null) return null;

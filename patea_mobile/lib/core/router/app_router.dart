@@ -1,6 +1,5 @@
 import '../../features/competitions/league_detail_screen.dart';
 import 'dart:async';
-import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -353,51 +352,57 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => PateaCard(
-        color: context.c.popover,
-        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.pop(sheetContext);
-                context.push('/matches/create');
-              },
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Armar un partido'),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              width: 48,
-              height: 5,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: context.c.textSecondary.withValues(alpha: 0.3),
-                borderRadius: AppRadii.hairAll,
+      isScrollControlled: true,
+      builder: (sheetContext) => Container(
+        decoration: BoxDecoration(
+          color: context.c.popover,
+          borderRadius: AppRadii.surfaceTop,
+          border: Border(
+            top: BorderSide(color: context.c.overlayLine, width: 1),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: context.c.overlayStrong,
+                    borderRadius: AppRadii.hairAll,
+                  ),
+                ),
               ),
-            ),
-            _PartidosSheetItem(
-              icon: Icons.calendar_today,
-              label: 'Mis Partidos',
-              isActive: isMatchesActive,
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _goBranch(_Branch.matches);
-              },
-            ),
-            const SizedBox(height: 8),
-            _PartidosSheetItem(
-              icon: Icons.emoji_events,
-              label: spec(Section.competitions).navLabel,
-              isActive: isCompetitionsActive,
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _goBranch(_Branch.competitions);
-              },
-            ),
-          ],
+              _PartidosSheetItem(
+                icon: isMatchesActive
+                    ? spec(Section.matches).activeIcon
+                    : spec(Section.matches).icon,
+                label: 'Mis Partidos',
+                isActive: isMatchesActive,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _goBranch(_Branch.matches);
+                },
+              ),
+              _PartidosSheetItem(
+                icon: isCompetitionsActive
+                    ? spec(Section.competitions).activeIcon
+                    : spec(Section.competitions).icon,
+                label: spec(Section.competitions).navLabel,
+                isActive: isCompetitionsActive,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _goBranch(_Branch.competitions);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -586,38 +591,33 @@ class _PartidosSheetItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tint = isActive ? context.c.primary : context.c.textPrimary;
+
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
-      child: PateaCard(
-        color: isActive
-            ? context.c.primary.withValues(alpha: 0.1)
-            : Colors.transparent,
-        radius: AppRadii.cardAll,
-        padding: const EdgeInsets.all(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isActive ? context.c.primary : context.c.cardSurface,
-                borderRadius: AppRadii.cardAll,
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: isActive ? context.c.onPrimary : context.c.textSecondary,
-              ),
+            Icon(
+              icon,
+              size: 20,
+              color: isActive ? context.c.primary : context.c.textSecondary,
             ),
             const SizedBox(width: 14),
-            Text(
-              label,
-              style: AppTypography.headline(
-                size: 15,
-                color: isActive ? context.c.primary : context.c.textPrimary,
+            Expanded(
+              child: Text(
+                label,
+                style: AppTypography.action(size: 15, color: tint),
               ),
             ),
+            if (isActive)
+              Icon(
+                Icons.check_rounded,
+                size: 18,
+                color: context.c.primary,
+              ),
           ],
         ),
       ),

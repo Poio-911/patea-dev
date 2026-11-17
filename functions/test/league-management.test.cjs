@@ -80,8 +80,8 @@ test('rechaza fechas pasadas e inválidas',async()=>{
   const {db,data}=fixture();
   for(const startDate of ['2000-01-01','2030-02-30','bad']) await assert.rejects(()=>startLeagueCore('owner',{...data,startDate},db),{code:'invalid-argument'});
 });
-test('rechaza planteles vacíos, jugadores compartidos, perfiles faltantes y equipos ajenos sin escrituras parciales',async()=>{
-  for(const fault of ['empty','shared','missing','otherGroup']) {
+test('rechaza planteles vacíos, jugadores compartidos, perfiles faltantes sin escrituras parciales',async()=>{
+  for(const fault of ['empty','shared','missing']) {
     const {db,records,data}=fixture();
     if(fault==='empty') records.get('teams/a').members=[];
     if(fault==='shared') records.get('teams/b').members=[{playerId:'a'}];
@@ -91,4 +91,12 @@ test('rechaza planteles vacíos, jugadores compartidos, perfiles faltantes y equ
     assert.equal(records.get('leagues/l').status,'draft');
     assert.equal([...records.keys()].some(p=>p.startsWith('matches/')),false);
   }
+});
+
+test('admite participantes registrados de otros grupos y frecuencia quincenal',async()=>{
+  const {db,records,data}=fixture();records.get('teams/a').groupId='away';
+  const result=await startLeagueCore('owner',{...data,matchFrequency:'biweekly'},db);
+  assert.equal(result.created,3);
+  const matches=[...records].filter(([path])=>path.startsWith('matches/')).map(([,data])=>data);
+  assert.deepEqual(matches.map(m=>m.date),['2030-01-05','2030-01-19','2030-02-02']);
 });
