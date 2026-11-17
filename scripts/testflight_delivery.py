@@ -21,6 +21,13 @@ def integration_value(value):
     return value.strip()
 
 
+def resolve_app_id(api):
+    apps = api.get('/apps', **{'filter[bundleId]': 'com.patea.app', 'limit': 2})['data']
+    if len(apps) != 1 or apps[0]['attributes']['bundleId'] != 'com.patea.app':
+        raise RuntimeError('No se pudo identificar la app com.patea.app inequívocamente')
+    return apps[0]['id']
+
+
 def select_groups(groups, previous_ids=()):
     internal = [g for g in groups if g['attributes'].get('isInternalGroup') is True]
     automatic = [g for g in internal if g['attributes'].get('hasAccessToAllBuilds') is True]
@@ -158,7 +165,7 @@ def main():
     parser.add_argument('action', choices=['prepare', 'verify', 'inspect'])
     args = parser.parse_args()
     api = Apple()
-    app_id = os.environ['APP_STORE_APPLE_ID']
+    app_id = resolve_app_id(api)
     targets = Path('build/ios/testflight-targets.json')
     if args.action == 'inspect':
         prepare(api, app_id, targets)
@@ -174,6 +181,9 @@ def main():
                     for b in builds[:5]]}), flush=True)
     elif args.action == 'prepare':
         prepare(api, app_id, targets)
+        if os.environ.get('CM_ENV'):
+            with open(os.environ['CM_ENV'], 'a') as env:
+                env.write('\nAPP_STORE_APPLE_ID='+app_id+'\n')
     else:
         version = re.search(r'^version:\s*(\S+)', Path('pubspec.yaml').read_text(), re.M)[1].split('+')[0]
         verify(api, app_id, os.environ['BUILD_NUMBER'], version,

@@ -2,7 +2,8 @@ import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
-from testflight_delivery import integration_value, select_groups, verify
+from testflight_delivery import integration_value, resolve_app_id, select_groups, verify
+from unittest.mock import Mock
 
 
 def group(id='internal', internal=True, automatic=False):
@@ -40,6 +41,20 @@ class FakeApple:
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_app_identity_is_resolved_by_bundle_not_stale_numeric_setting(self):
+        api = Mock()
+        api.get.return_value = {'data': [{'id': 'correct-app',
+            'attributes': {'bundleId': 'com.patea.app'}}]}
+        self.assertEqual(resolve_app_id(api), 'correct-app')
+        api.get.assert_called_once_with('/apps', **{'filter[bundleId]': 'com.patea.app', 'limit': 2})
+
+    def test_missing_or_ambiguous_app_identity_is_rejected(self):
+        for apps in ([], [{'id': 'other', 'attributes': {'bundleId': 'other.app'}}]):
+            api = Mock()
+            api.get.return_value = {'data': apps}
+            with self.assertRaises(RuntimeError):
+                resolve_app_id(api)
+
     def test_integration_secret_file_reference(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)/'fixture.p8'
