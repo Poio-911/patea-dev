@@ -67,3 +67,6 @@ nul
 # accidente. Guardalo en un gestor de contraseñas y borralo de acá.
 *.p8
 AuthKey_*.p8
+
+# Renderizados e imágenes intermedias del dossier PDF
+/tmp/pdfs/

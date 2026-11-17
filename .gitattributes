@@ -1,3 +1,6 @@
 # Handle line endings automatically for files detected as text
 # and normalize them to LF.
 * text=auto eol=lf
+
+# PDF streams and cross-reference offsets must remain byte-exact.
+*.pdf binary
