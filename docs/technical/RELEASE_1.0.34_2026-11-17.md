@@ -27,3 +27,11 @@ Ocho pruebas locales de selección, asignación y verificación aprobadas; YAML 
 La primera corrida `6afcb1aa799fbd143cdf1c16` falló antes de compilar: el verificador interpretó una referencia de credencial de Codemagic como contenido PEM. Se corrigió la resolución en memoria de `@file:` y `@env:`, siguiendo el mecanismo del CLI oficial; 11 pruebas aprobadas. No se exportan claves. El token de monitoreo se usa desde su archivo local existente fuera del repositorio.
 
 El CI completo de GitHub terminó correctamente en `c92ec3b0`, tras ajustar el harness de capturas y actualizar las dos referencias visuales de detalle con clima integrado. Estos ajustes no cambian el binario Android ya distribuido.
+
+### Estado verificado del seguimiento por API
+
+El token local de Codemagic fue localizado a partir de las referencias de ACOS y autentica correctamente. No está en el repositorio. La consulta de diagnóstico `6afcbb7a799fbd143cdf6941` terminó correctamente y encontró el grupo **Patea-Test**, interno, con acceso automático y builds válidos previos del 2 al 6. No se modificaron testers ni grupos.
+
+La corrida `6afcb8a5799fbd143cdf4fc6` y el reintento `6afcbc10799fbd143cdf6f3c` quedaron detenidos antes del IPA al recibir una lista vacía de grupos para el ID configurado `6808798274`. Se agregó resolución de identidad por bundle `com.patea.app`, usada también por el cálculo del número de build; 13 pruebas locales aprobadas. La última corrida `6afcbcebae2a1a47cc85aaff`, fuente `baf59e72`, falló al consultar `/v1/apps` con **Apple HTTP 500 UNEXPECTED_ERROR** después de los reintentos. Durante el seguimiento, la API de Codemagic también devolvió errores 502 temporales.
+
+**iOS pendiente: no se generó ni publicó el IPA 1.0.34 en estas corridas y no se acredita entrega en TestFlight.** Antes de relanzar, confirmar la respuesta de Apple para `com.patea.app` y el grupo interno. Android 1.0.34 (35) continúa distribuido al grupo Test Patea.
