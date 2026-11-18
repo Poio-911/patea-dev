@@ -53,10 +53,12 @@ class ProfileService {
     final result = await callFunction(
       'generatePlayerPhoto',
       const {},
-      timeout: const Duration(seconds: 120),
+      timeout: const Duration(seconds: 180),
     );
+    final url = result['photoUrl'] as String;
+    await _syncAuthUser(photoUrl: url);
     return (
-      photoUrl: result['photoUrl'] as String,
+      photoUrl: url,
       creditsRemaining: (result['creditsRemaining'] as num?)?.toInt(),
     );
   }
@@ -104,5 +106,19 @@ class ProfileService {
       data,
       timeout: const Duration(seconds: 30),
     );
+    await _syncAuthUser(displayName: displayName, photoUrl: photoUrl);
+  }
+
+  /// Refreshes the client Firebase Auth cache immediately after server updates.
+  Future<void> _syncAuthUser({String? displayName, String? photoUrl}) async {
+    if (displayName == null && photoUrl == null) return;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      if (displayName != null) await user.updateDisplayName(displayName);
+      if (photoUrl != null) await user.updatePhotoURL(photoUrl);
+    } catch (_) {
+      // Best-effort local cache sync; Firestore streams remain authoritative.
+    }
   }
 }

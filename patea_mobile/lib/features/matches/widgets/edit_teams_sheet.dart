@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/patea_card.dart';
+import '../../../core/widgets/patea_button_progress.dart';
 import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,12 +142,11 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'ARMAR LOS EQUIPOS',
+                  'Armar los equipos',
                   style: AppTypography.headline(
-                    size: 12,
+                    size: 14,
                     weight: FontWeight.w800,
-                    color: context.c.textSecondary,
-                    letterSpacing: 1.2,
+                    color: context.c.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -162,7 +162,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
                     'Los equipos tienen distinta cantidad de jugadores.',
                     style: AppTypography.body(
                       size: 12,
-                      color: context.c.warning,
+                      color: context.c.warningText,
                     ),
                   ),
                 if (!canEdit)
@@ -170,7 +170,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
                     'Sólo el organizador puede guardar cambios.',
                     style: AppTypography.body(
                       size: 12,
-                      color: context.c.warning,
+                      color: context.c.warningText,
                     ),
                   ),
                 Text(
@@ -220,27 +220,29 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
                     : _save,
                 style: FilledButton.styleFrom(
                   backgroundColor: context.c.primary,
-                  foregroundColor: context.c.background,
+                  foregroundColor: context.c.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: const RoundedRectangleBorder(
                     borderRadius: AppRadii.cardAll,
                   ),
                 ),
                 child: _saving
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: context.c.background,
-                        ),
+                        child: PateaButtonProgress(),
                       )
                     : Text(
                         _dirty ? 'Guardar equipos' : 'Sin cambios',
                         style: AppTypography.headline(
                           size: 14,
                           weight: FontWeight.w800,
-                          color: context.c.background,
+                          color: (_saving ||
+                                  !canEdit ||
+                                  aPlayers.isEmpty ||
+                                  bPlayers.isEmpty)
+                              ? context.c.textSecondary
+                              : context.c.onPrimary,
                         ),
                       ),
               ),
@@ -299,7 +301,7 @@ class _TeamColumn extends StatelessWidget {
               Text(
                 '${players.length} · media $avg',
                 style: AppTypography.body(
-                  size: 10,
+                  size: 12,
                   color: context.c.textSecondary,
                 ),
               ),
@@ -315,7 +317,7 @@ class _TeamColumn extends StatelessWidget {
                       'Sin jugadores',
                       textAlign: TextAlign.center,
                       style: AppTypography.body(
-                        size: 11,
+                        size: 12,
                         color: context.c.textSecondary,
                       ),
                     ),
@@ -357,8 +359,11 @@ class _TeamColumn extends StatelessWidget {
                           child: Row(
                             children: [
                               Container(
-                                width: 26,
-                                height: 26,
+                                constraints: const BoxConstraints(
+                                  minWidth: 28,
+                                  minHeight: 28,
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
                                 decoration: BoxDecoration(
                                   color: tierCol.withValues(alpha: 0.12),
                                   borderRadius: AppRadii.surfaceAll,
@@ -371,8 +376,8 @@ class _TeamColumn extends StatelessWidget {
                                 child: Text(
                                   p.ovr > 0 ? '${p.ovr}' : '—',
                                   style: AppTypography.sportNumber(
-                                    size: 11,
-                                    color: tierCol,
+                                    size: 12,
+                                    color: context.c.ovrTextColor(p.ovr),
                                   ),
                                 ),
                               ),
@@ -393,7 +398,7 @@ class _TeamColumn extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: AppTypography.headline(
-                                        size: 11.5,
+                                        size: 12,
                                         weight: FontWeight.w700,
                                       ),
                                     ),
@@ -401,8 +406,8 @@ class _TeamColumn extends StatelessWidget {
                                       Text(
                                         p.position,
                                         style: AppTypography.code(
-                                          size: 8.5,
-                                          weight: FontWeight.w800,
+                                          size: 12,
+                                          weight: FontWeight.w700,
                                           color: posCol,
                                         ),
                                       ),
@@ -465,7 +470,7 @@ class DuplicatePlayersAlert extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 20, color: context.c.warning),
+          Icon(Icons.warning_amber_rounded, size: 20, color: context.c.warningText),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -486,7 +491,7 @@ class DuplicatePlayersAlert extends StatelessWidget {
                       ? 'Va a evaluarse a sí mismo y los puntajes van a salir mal.'
                       : '${names.join(', ')}. Las evaluaciones van a salir mal.',
                   style: AppTypography.body(
-                    size: 11.5,
+                    size: 12,
                     color: context.c.textSecondary,
                   ),
                 ),
@@ -494,7 +499,7 @@ class DuplicatePlayersAlert extends StatelessWidget {
                 TextButton(
                   onPressed: () => EditTeamsSheet.show(context, match),
                   style: TextButton.styleFrom(
-                    foregroundColor: context.c.warning,
+                    foregroundColor: context.c.warningText,
                     padding: EdgeInsets.zero,
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -504,7 +509,7 @@ class DuplicatePlayersAlert extends StatelessWidget {
                     style: AppTypography.headline(
                       size: 12,
                       weight: FontWeight.w800,
-                      color: context.c.warning,
+                      color: context.c.warningText,
                     ),
                   ),
                 ),

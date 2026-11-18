@@ -1,6 +1,7 @@
 import '../../core/widgets/patea_button_progress.dart';
 import 'dart:io';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_snack.dart';
 import '../../core/theme/app_radii.dart';
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import '../../core/services/firestore_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'crop_photo_screen.dart';
 
@@ -101,7 +103,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
-  void _openPhotoSheet() {
+  void _openPhotoSheet(int? credits) {
+    final hasCredits = credits == null || credits > 0;
+    final aiSubtitle = !hasCredits
+        ? 'Sin créditos disponibles este mes.'
+        : credits != null
+        ? 'Convierte tu foto en un retrato de estudio. Usa 1 crédito ($credits disponibles).'
+        : 'Convierte tu foto en un retrato de estudio. Usa 1 crédito.';
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -144,8 +153,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               _SheetAction(
                 icon: Icons.auto_awesome_outlined,
                 label: 'Generar con IA',
-                subtitle:
-                    'Convierte tu foto en un retrato de estudio. Usa 1 crédito.',
+                subtitle: aiSubtitle,
+                enabled: hasCredits,
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _generateWithAi();
@@ -165,7 +174,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _notice = null;
     });
     try {
-      final res = await ref.read(profileServiceProvider).generateAiPhoto();
+      final service = ref.read(profileServiceProvider);
+      // Upload newly picked local photo first so AI uses it instead of stale photo.
+      if (_pickedPhoto != null) {
+        final uploadedUrl = await service.uploadProfilePhoto(_pickedPhoto!);
+        await service.updateProfile(photoUrl: uploadedUrl);
+      }
+      final res = await service.generateAiPhoto();
       await HapticFeedback.mediumImpact();
       if (!mounted) return;
       setState(() {
@@ -179,10 +194,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       });
     } catch (e) {
       if (mounted) {
+        final message = e.toString().replaceFirst('Exception: ', '');
         setState(() {
           _generating = false;
-          _error = e.toString().replaceFirst('Exception: ', '');
+          _error = message;
         });
+        PateaSnack.error(context, message);
       }
     }
   }
@@ -214,49 +231,80 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final maxYear = DateTime.now().year - 5;
     final years = [for (var y = maxYear; y >= _minBirthYear; y--) y];
     final initial = years.indexOf(_birthYear ?? 1995);
+    final initialIndex = initial >= 0 ? initial : 0;
+    var selectedYear = years[initialIndex];
+    final wheel = FixedExtentScrollController(initialItem: initialIndex);
 
     final chosen = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => PateaCard(
         color: context.c.popover,
-        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        height: 320,
-        child: Column(
-          children: [
-            const SizedBox(height: 14),
-            Text(
-              'Año de nacimiento',
-              style: AppTypography.headline(size: 15, weight: FontWeight.w700),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListWheelScrollView.useDelegate(
-                itemExtent: 46,
-                perspective: 0.004,
-                physics: const FixedExtentScrollPhysics(),
-                controller: FixedExtentScrollController(
-                  initialItem: initial >= 0 ? initial : 0,
+        radius: AppRadii.surfaceTop,
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 340,
+            child: Column(
+              children: [
+                const SizedBox(height: 14),
+                Text(
+                  'Año de nacimiento',
+                  style: AppTypography.headline(size: 16, weight: FontWeight.w700),
                 ),
-                onSelectedItemChanged: (_) => HapticFeedback.selectionClick(),
-                childDelegate: ListWheelChildBuilderDelegate(
-                  childCount: years.length,
-                  builder: (context, i) => Center(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(sheetContext, years[i]),
-                      child: Text(
-                        '${years[i]}',
-                        style: AppTypography.sportNumber(size: 24),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListWheelScrollView.useDelegate(
+                    itemExtent: 46,
+                    perspective: 0.004,
+                    physics: const FixedExtentScrollPhysics(),
+                    controller: wheel,
+                    onSelectedItemChanged: (idx) {
+                      selectedYear = years[idx];
+                      HapticFeedback.selectionClick();
+                    },
+                    childDelegate: ListWheelChildBuilderDelegate(
+                      childCount: years.length,
+                      builder: (context, i) => Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(sheetContext, years[i]),
+                          child: Text(
+                            '${years[i]}',
+                            style: AppTypography.sportNumber(size: 24),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetContext),
+                          child: const Text('Cancelar'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () =>
+                              Navigator.pop(sheetContext, selectedYear),
+                          child: const Text('Confirmar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+    wheel.dispose();
 
     if (chosen != null && mounted) setState(() => _birthYear = chosen);
   }
@@ -344,13 +392,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
       body: playerAsync.when(
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: context.c.primary)),
-        error: (err, _) => Center(
-          child: Text(
-            'Error: $err',
-            style: AppTypography.body(color: context.c.textSecondary),
-          ),
+        loading: () => const PateaLoading(),
+        error: (err, _) => PateaError(
+          error: err,
+          message: 'No pudimos cargar tu perfil.',
+          onRetry: () =>
+              ref.invalidate(singlePlayerStreamProvider(widget.playerId)),
         ),
         data: (player) {
           if (player == null) {
@@ -398,14 +445,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        SizedBox(
-                          width: 110,
-                          height: 165,
-                          child: PlayerCardWidget(
-                            player: preview,
-                            localPhoto: _pickedPhoto,
-                            photoStyle: CardPhotoStyle.halfTop,
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final cardW = (MediaQuery.sizeOf(context).width *
+                                    0.36)
+                                .clamp(132.0, 152.0);
+                            return SizedBox(
+                              width: cardW,
+                              height: cardW * 1.5,
+                              child: PlayerCardWidget(
+                                player: preview,
+                                localPhoto: _pickedPhoto,
+                                photoStyle: CardPhotoStyle.halfTop,
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(width: 18),
                         Expanded(
@@ -437,15 +491,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         OutlinedButton.icon(
                           onPressed: (_saving || _generating)
                               ? null
-                              : _openPhotoSheet,
+                              : () => _openPhotoSheet(
+                                    player.cardGenerationCredits,
+                                  ),
                           icon: _generating
-                              ? SizedBox(
+                              ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: context.c.primary,
-                                  ),
+                                  child: PateaButtonProgress(),
                                 )
                               : const Icon(
                                   Icons.photo_camera_outlined,
@@ -486,6 +539,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ),
                         ),
                       ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      PateaCard(
+                        color: context.c.destructive.withValues(alpha: 0.1),
+                        radius: AppRadii.cardAll,
+                        borderColor: context.c.destructive.withValues(
+                          alpha: 0.3,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 16,
+                              color: context.c.destructive,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: AppTypography.body(
+                                  size: 12,
+                                  color: context.c.destructive,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -632,37 +715,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                       ),
                     ),
-
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      PateaCard(
-                        color: context.c.destructive.withValues(alpha: 0.1),
-                        radius: AppRadii.cardAll,
-                        borderColor: context.c.destructive.withValues(
-                          alpha: 0.3,
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 16,
-                              color: context.c.destructive,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _error!,
-                                style: AppTypography.body(
-                                  size: 12,
-                                  color: context.c.destructive,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -725,7 +777,10 @@ class _Field extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hint,
           counterText: '',
-          hintStyle: TextStyle(color: context.c.overlayStrong, fontSize: 13),
+          hintStyle: AppTypography.body(
+            size: 13,
+            color: context.c.textSecondary,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 14,
@@ -783,6 +838,7 @@ class _SheetAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? subtitle;
+  final bool enabled;
   final VoidCallback onTap;
 
   const _SheetAction({
@@ -790,52 +846,61 @@ class _SheetAction extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.subtitle,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return InkWell(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       borderRadius: AppRadii.cardAll,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: context.c.cardSurface,
-                borderRadius: AppRadii.cardAll,
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.5,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: c.cardSurface,
+                  borderRadius: AppRadii.cardAll,
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: enabled ? c.primary : c.textSecondary,
+                ),
               ),
-              child: Icon(icon, size: 20, color: context.c.primary),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.headline(
-                      size: 15,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      subtitle!,
-                      style: AppTypography.body(
-                        size: 12,
-                        color: context.c.textSecondary,
+                      label,
+                      style: AppTypography.headline(
+                        size: 15,
+                        weight: FontWeight.w600,
                       ),
                     ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: AppTypography.body(
+                          size: 12,
+                          color: c.textSecondary,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

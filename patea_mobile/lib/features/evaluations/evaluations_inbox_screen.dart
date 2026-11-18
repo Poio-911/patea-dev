@@ -40,7 +40,7 @@ import '../../core/widgets/patea_tabs.dart';
   if (hoursLeft <= 24)
     return (
       label: '${hoursLeft}h restantes',
-      color: context.c.warning,
+      color: context.c.warningText,
       urgent: false,
     );
   final days = (hoursLeft / 24).floor();
@@ -132,129 +132,96 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
                 .where((i) => _urgency(context, i.matchDate).urgent)
                 .length;
 
-            return Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    MediaQuery.paddingOf(context).top + 12,
-                    16,
-                    0,
-                  ),
+            return NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      PateaPageHeader(
-                        section: Section.evaluations,
-                        title: spec(Section.evaluations).title,
-                        showCountRow: false,
-                      ),
-                      const SizedBox(height: 12),
-                      PateaActivityCover(
-                        image: 'assets/brand/patea_evaluations.webp',
-                        compact: true,
-                        title: pending.isEmpty
-                            ? 'Todo al día'
-                            : '${pending.length} ${pending.length == 1 ? 'pendiente' : 'pendientes'}',
-                        details:
-                            '${history.length} ${history.length == 1 ? 'completada' : 'completadas'} · ${spec(Section.evaluations).description!}',
-                      ),
-                    ],
-                  ),
-                ),
-                if (urgentCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.schedule_rounded,
-                          size: 18,
-                          color: context.c.destructive,
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          MediaQuery.paddingOf(context).top + 12,
+                          16,
+                          0,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '$urgentCount ${urgentCount == 1 ? 'evaluación cierra' : 'evaluaciones cierran'} en menos de 12 horas',
-                            style: AppTypography.body(
-                              size: 13,
-                              color: context.c.destructive,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            PateaPageHeader(
+                              section: Section.evaluations,
+                              title: spec(Section.evaluations).title,
+                              showCountRow: false,
                             ),
+                            const SizedBox(height: 12),
+                            PateaActivityCover(
+                              image: 'assets/brand/patea_evaluations.webp',
+                              compact: true,
+                              title: pending.isEmpty
+                                  ? 'Todo al día'
+                                  : '${pending.length} ${pending.length == 1 ? 'pendiente' : 'pendientes'}',
+                              details:
+                                  '${history.length} ${history.length == 1 ? 'completada' : 'completadas'} · ${spec(Section.evaluations).description!}',
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (urgentCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 18,
+                                color: context.c.destructive,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '$urgentCount ${urgentCount == 1 ? 'evaluación cierra' : 'evaluaciones cierran'} en menos de 12 horas',
+                                  style: AppTypography.body(
+                                    size: 13,
+                                    color: context.c.destructive,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: PateaTabs(
-                    tabs: [
-                      PateaTab('Pendientes', count: pending.length),
-                      PateaTab('Historial', count: history.length),
-                      PateaTab('Solicitudes', count: requestsCount),
-                    ],
-                    active: _tabController.index,
-                    onChanged: (i) => _tabController.animateTo(
-                      i,
-                      duration: MediaQuery.disableAnimationsOf(context)
-                          ? Duration.zero
-                          : const Duration(milliseconds: 220),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _PendingList(items: pending),
-                      _HistoryList(items: history),
-                      _RequestsList(requestsAsync: requestsAsync, uid: uid),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: PateaTabs(
+                          tabs: [
+                            PateaTab('Pendientes', count: pending.length),
+                            PateaTab('Historial', count: history.length),
+                            PateaTab('Solicitudes', count: requestsCount),
+                          ],
+                          active: _tabController.index,
+                          onChanged: (i) => _tabController.animateTo(
+                            i,
+                            duration: MediaQuery.disableAnimationsOf(context)
+                                ? Duration.zero
+                                : const Duration(milliseconds: 220),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  _PendingList(items: pending),
+                  _HistoryList(items: history),
+                  _RequestsList(requestsAsync: requestsAsync, uid: uid),
+                ],
+              ),
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const PateaLoading(),
           error: (e, _) => PateaError(error: e, onRetry: refresh),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-
-  const _EmptyState({
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 44, color: context.c.textSecondary),
-            const SizedBox(height: 12),
-            Text(title, style: AppTypography.headline(size: 15)),
-            const SizedBox(height: 6),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -419,11 +386,18 @@ class _PendingList extends StatelessWidget {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => context.push('/evaluations/${item.matchId}'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.c.primary,
-                    foregroundColor: context.c.onPrimary,
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: context.c.cardSurface,
+                    foregroundColor: context.c.primary,
+                    side: BorderSide(
+                      color: context.c.primary.withValues(alpha: 0.4),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.cardAll,
+                    ),
                   ),
                   icon: const Icon(Icons.edit_outlined, size: 16),
                   label: const Text('Evaluar ahora'),
@@ -445,10 +419,14 @@ class _HistoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const _EmptyState(
-        icon: Icons.history,
-        title: 'Historial vacío',
-        description: 'Acá van a aparecer tus evaluaciones enviadas.',
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(bottom: bottomInset(context)),
+        child: const PateaEmpty(
+          icon: Icons.history,
+          title: 'Historial vacío',
+          hint: 'Acá van a aparecer tus evaluaciones enviadas.',
+        ),
       );
     }
     return ListView.separated(
@@ -474,7 +452,7 @@ class _HistoryList extends StatelessWidget {
                     Text(
                       item.matchTitle,
                       style: AppTypography.body(
-                        color: context.c.textSecondary,
+                        color: context.c.textPrimary,
                         size: 14,
                         weight: FontWeight.w700,
                       ),
@@ -509,11 +487,15 @@ class _RequestsList extends ConsumerWidget {
     return requestsAsync.when(
       data: (requests) {
         if (requests.isEmpty) {
-          return const _EmptyState(
-            icon: Icons.help_outline,
-            title: 'Sin solicitudes',
-            description:
-                'Cuando alguien quiera saber que fuiste vos quien lo evaluó, va a aparecer acá.',
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.only(bottom: bottomInset(context)),
+            child: const PateaEmpty(
+              icon: Icons.help_outline,
+              title: 'Sin solicitudes',
+              hint:
+                  'Cuando alguien quiera saber que fuiste vos quien lo evaluó, va a aparecer acá.',
+            ),
           );
         }
         return ListView.separated(
@@ -528,7 +510,7 @@ class _RequestsList extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const PateaLoading(),
       error: (e, _) => PateaError(error: e),
     );
   }
@@ -567,8 +549,15 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
         );
       }
     } catch (e) {
+      assert(() {
+        debugPrint('Respond identity request failed: $e');
+        return true;
+      }());
       if (mounted) {
-        PateaSnack.error(context, '$e');
+        PateaSnack.error(
+          context,
+          'No pudimos responder la solicitud. Intentá de nuevo.',
+        );
         setState(() => _loading = null);
       }
     }
@@ -581,7 +570,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
       color: context.c.card,
       radius: AppRadii.cardAll,
       borderColor: context.c.border.withValues(alpha: 0.4),
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -600,7 +589,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
                     Text(
                       r.fromPlayerName,
                       style: AppTypography.body(
-                        color: context.c.textSecondary,
+                        color: context.c.textPrimary,
                         size: 13,
                         weight: FontWeight.w700,
                       ),
@@ -632,7 +621,7 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: PateaButtonProgress(),
                       )
                     : const Icon(Icons.visibility_off_outlined, size: 18),
                 label: Text(

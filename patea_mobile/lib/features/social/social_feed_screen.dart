@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/firestore_service.dart';
+import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
@@ -11,6 +12,7 @@ import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_section_scene.dart';
+import '../../core/widgets/patea_states.dart';
 
 class SocialFeedScreen extends ConsumerWidget {
   const SocialFeedScreen({super.key});
@@ -55,21 +57,15 @@ class SocialFeedScreen extends ConsumerWidget {
           ),
           Expanded(
             child: feedAsync.when(
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: c.primary)),
-        error: (_, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'No se pudo cargar la actividad de la comunidad.',
-              textAlign: TextAlign.center,
-              style: AppTypography.body(color: c.textSecondary),
-            ),
-          ),
+        loading: () => const PateaLoading(),
+        error: (err, _) => PateaError(
+          error: err,
+          message: 'No se pudo cargar la actividad de la comunidad.',
+          onRetry: () => ref.invalidate(feedActivitiesStreamProvider),
         ),
         data: (docs) {
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            padding: EdgeInsets.fromLTRB(16, 4, 16, bottomInset(context)),
             children: [
               const PateaSectionScene(
                 image: 'assets/brand/patea_ranking.webp',
@@ -211,7 +207,7 @@ class _FeedItemRow extends StatelessWidget {
                       Text(
                         whenLabel,
                         style: AppTypography.body(
-                          size: 11,
+                          size: 12,
                           color: c.textSecondary,
                         ),
                       ),
@@ -229,12 +225,25 @@ class _FeedItemRow extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         if (oldOvr != null && change != 0)
-                          Text(
-                            '$oldOvr → $newOvr OVR',
-                            style: AppTypography.code(
-                              size: 12,
-                              weight: FontWeight.w700,
-                              color: c.ratingAccent,
+                          Text.rich(
+                            TextSpan(
+                              style: AppTypography.code(
+                                size: 12,
+                                weight: FontWeight.w700,
+                                color: c.ratingAccent,
+                              ),
+                              children: [
+                                TextSpan(text: '$oldOvr '),
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 13,
+                                    color: c.ratingAccent,
+                                  ),
+                                ),
+                                TextSpan(text: ' $newOvr OVR'),
+                              ],
                             ),
                           )
                         else

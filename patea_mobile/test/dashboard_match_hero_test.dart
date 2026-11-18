@@ -41,7 +41,7 @@ void main() {
     expect(find.text('02:00'), findsOneWidget);
     expect(find.text('En pausa'), findsOneWidget);
     expect(find.text('Con chaleco'), findsOneWidget);
-    expect(find.text('2′ · Ana'), findsOneWidget);
+    expect(find.text('2\' · Ana'), findsOneWidget);
     await tester.tap(find.text('Seguir el partido')); await tester.pumpAndSettle();
     expect(find.text('Partido abierto'), findsOneWidget);
     expect(tester.takeException(), isNull);

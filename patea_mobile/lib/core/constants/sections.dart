@@ -31,7 +31,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-enum Section { panel, players, matches, competitions, explorar, evaluations }
+enum Section { panel, players, matches, competitions, social, explorar, evaluations }
 
 @immutable
 class SectionSpec {
@@ -112,6 +112,15 @@ const sections = <Section, SectionSpec>{
     description: 'Ligas, cruces y fechas de tu grupo.',
     icon: Icons.emoji_events_outlined,
     activeIcon: Icons.emoji_events,
+  ),
+  Section.social: SectionSpec(
+    branch: 4,
+    route: '/social',
+    navLabel: 'Comunidad',
+    title: 'Comunidad Pateá',
+    description: 'Cambios de nivel, partidos cerrados y novedades de tus compañeros.',
+    icon: Icons.forum_outlined,
+    activeIcon: Icons.forum,
   ),
   Section.explorar: SectionSpec(
     iconAsset: 'assets/icons/nav-map-search.svg',

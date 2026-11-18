@@ -863,6 +863,9 @@ List<Override> overridesDelArnes() {
     playerActivityProvider(
       'feedback-review',
     ).overrideWith((ref) async => [feedbackDePerfil]),
+    playerActivityProvider(
+      uidYo,
+    ).overrideWith((ref) async => [feedbackDePerfil]),
     singleMatchStreamProvider(
       partidoDirigir.id,
     ).overrideWith((ref) => Stream.value(partidoDirigir)),
@@ -948,9 +951,28 @@ List<Override> overridesDelArnes() {
       matchJoinRequestsProvider(
         m.id,
       ).overrideWith((ref) => Stream.value(const [])),
-      matchAssignmentsStreamProvider(
-        m.id,
-      ).overrideWith((ref) => Stream.value(const [])),
+      matchAssignmentsStreamProvider(m.id).overrideWith(
+        (ref) => Stream.value(
+          m.id == 'match-3'
+              ? [
+                  EvaluationAssignmentModel(
+                    id: 'a-1',
+                    matchId: 'match-3',
+                    evaluatorId: uidYo,
+                    subjectId: 'uid-2',
+                    status: 'completed',
+                  ),
+                  EvaluationAssignmentModel(
+                    id: 'a-2',
+                    matchId: 'match-3',
+                    evaluatorId: 'uid-2',
+                    subjectId: uidYo,
+                    status: 'completed',
+                  ),
+                ]
+              : const [],
+        ),
+      ),
     ],
 
     // Perfiles crudos (nombre del organizador)

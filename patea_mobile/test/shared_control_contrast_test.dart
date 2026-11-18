@@ -21,6 +21,7 @@ void main() {
         await GoogleFonts.pendingFonts();
         for (final states in [
           <WidgetState>{},
+          {WidgetState.disabled},
           {WidgetState.selected},
           {WidgetState.selected, WidgetState.disabled},
         ]) {
@@ -33,6 +34,28 @@ void main() {
             reason: 'El indicador no debe fundirse con su pista.',
           );
         }
+        expect(
+          theme.switchTheme.trackColor!.resolve({WidgetState.disabled}),
+          isNot(theme.switchTheme.trackColor!.resolve({})),
+          reason: 'El switch deshabilitado debe distinguirse del habilitado.',
+        );
+
+        final selectedChipBg = theme.chipTheme.selectedColor!;
+        expect(
+          _contrast(theme.chipTheme.checkmarkColor!, selectedChipBg),
+          greaterThanOrEqualTo(3.0),
+          reason: 'El checkmark del FilterChip debe leerse sobre selectedColor.',
+        );
+
+        final segStyle = theme.segmentedButtonTheme.style!;
+        expect(
+          _contrast(
+            segStyle.foregroundColor!.resolve({WidgetState.selected})!,
+            segStyle.backgroundColor!.resolve({WidgetState.selected})!,
+          ),
+          greaterThanOrEqualTo(4.5),
+          reason: 'El segmento activo del SegmentedButton debe cumplir AA.',
+        );
         for (final button in [
           theme.elevatedButtonTheme.style!,
           theme.filledButtonTheme.style!,

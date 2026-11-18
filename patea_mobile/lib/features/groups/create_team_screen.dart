@@ -86,8 +86,12 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
+      assert(() {
+        debugPrint('CreateTeamScreen error: $e');
+        return true;
+      }());
       if (mounted) {
-        PateaSnack.error(context, '$e');
+        PateaSnack.error(context, 'No se pudo crear el equipo. Intentá de nuevo.');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -98,34 +102,49 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   Widget build(BuildContext context) {
     final playersAsync = ref.watch(playersStreamProvider(widget.groupId));
 
-    return Scaffold(
-      // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
-      // Scaffold pinta su color opaco encima y tapa la foto de cancha.
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
+    return PopScope<dynamic>(
+      canPop: !_isSubmitting && _step == 1,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_isSubmitting && _step > 1) {
+          setState(() => _step -= 1);
+        }
+      },
+      child: Scaffold(
+        // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
+        // Scaffold pinta su color opaco encima y tapa la foto de cancha.
         backgroundColor: Colors.transparent,
-        title: Text(
-          'Crear equipo',
-          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
-        ),
-        leading: _step > 1
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() => _step -= 1),
-              )
-            : null,
-      ),
-      body: Column(
-        children: [
-          _StepIndicator(step: _step),
-          Expanded(
-            child: playersAsync.when(
-              data: (players) =>
-                  _step == 1 ? _buildStep1() : _buildStep2(players),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => PateaError(error: e),
-            ),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text(
+            'Crear equipo',
+            style: AppTypography.headline(size: 20, weight: FontWeight.w700),
           ),
+          leading: _step > 1
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => setState(() => _step -= 1),
+                )
+              : null,
+        ),
+        body: Column(
+          children: [
+            _StepIndicator(step: _step),
+            Expanded(
+              child: _step == 1
+                  ? _buildStep1()
+                  : playersAsync.when(
+                      data: _buildStep2,
+                      loading: () => const PateaLoading(),
+                      error: (e, _) => PateaError(
+                        error: e,
+                        message: 'No se pudieron cargar los jugadores.',
+                        onRetry: () =>
+                            ref.invalidate(playersStreamProvider(widget.groupId)),
+                      ),
+                    ),
+            ),
           SafeArea(
             top: false,
             child: Container(
@@ -184,6 +203,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -30,7 +30,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
         backgroundColor: Colors.transparent,
         title: Text(
           'Tu entrenamiento',
-          style: AppTypography.headline(size: 18, weight: FontWeight.w700),
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
       ),
       body: uid == null
@@ -71,7 +71,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
         Padding(
           padding: const EdgeInsets.only(top: 18),
           child: FilledButton(
-            onPressed: () => context.push('/players'),
+            onPressed: () => context.go('/players'),
             child: const Text('Ver mi plantel'),
           ),
         ),

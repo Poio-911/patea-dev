@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/patea_snack.dart';
+import '../../../core/widgets/patea_button_progress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
@@ -326,23 +327,22 @@ class _EventLoggerSheetState extends ConsumerState<EventLoggerSheet> {
                   onPressed: _canSave ? _save : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: context.c.primary,
-                    foregroundColor: context.c.background,
+                    foregroundColor: context.c.onPrimary,
                     disabledBackgroundColor: context.c.overlaySubtle,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   child: _saving
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: context.c.background),
+                          child: PateaButtonProgress(),
                         )
                       : Text('Guardar',
                           style: AppTypography.headline(
                               size: 14,
                               weight: FontWeight.w800,
-                              color: _canSave ? context.c.background : context.c.textSecondary)),
+                              color: _canSave ? context.c.onPrimary : context.c.textSecondary)),
                 ),
               ],
             ),
@@ -463,10 +463,10 @@ class _PlayerPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(),
+        Text(label,
             style: AppTypography.headline(
-                size: 10, weight: FontWeight.w800,
-                color: context.c.textSecondary, letterSpacing: 1)),
+                size: 12, weight: FontWeight.w700,
+                color: context.c.textSecondary)),
         const SizedBox(height: 8),
         if (players.isEmpty)
           Text('No hay jugadores cargados en este equipo.',
@@ -530,10 +530,10 @@ class _OptionRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(),
+        Text(label,
             style: AppTypography.headline(
-                size: 10, weight: FontWeight.w800,
-                color: context.c.textSecondary, letterSpacing: 1)),
+                size: 12, weight: FontWeight.w700,
+                color: context.c.textSecondary)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -547,7 +547,7 @@ class _OptionRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: entry.key == value
-                        ? context.c.brandVolt.withValues(alpha: 0.14)
+                        ? context.c.primary.withValues(alpha: 0.14)
                         : Colors.transparent,
                     borderRadius: AppRadii.chipAll,
                     border: Border.all(

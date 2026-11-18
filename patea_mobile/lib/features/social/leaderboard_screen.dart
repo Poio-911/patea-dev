@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/models/player_model.dart';
+import '../../core/theme/app_insets.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/firestore_service.dart';
@@ -54,7 +56,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       backgroundColor: Colors.transparent,
       title: Text(
         'Rankings y tablas',
-        style: AppTypography.headline(size: 18, weight: FontWeight.w700),
+        style: AppTypography.headline(size: 20, weight: FontWeight.w700),
       ),
     ),
     body: ref
@@ -76,7 +78,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
             final hasValues =
                 sorted.isNotEmpty && _metric.value(sorted.first) > 0;
             return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset(context, extra: 24)),
               itemCount: sorted.length + 1,
               itemBuilder: (context, index) {
                 if (index == 0) {
@@ -119,21 +121,26 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                 final player = sorted[index - 1];
                 final place = places[index - 1];
                 final podium = place <= 3 && _metric.value(player) > 0;
-                final accent = place == 1
+                final borderAccent = place == 1
                     ? context.c.goldBorder
                     : place == 2
                     ? context.c.silverBorder
                     : context.c.bronzeBorder;
+                final inkAccent = place == 1
+                    ? context.c.goldText
+                    : place == 2
+                    ? context.c.silverText
+                    : context.c.bronzeText;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Semantics(
                     button: true,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadii.cardAll,
                       onTap: () => context.push('/players/${player.id}'),
                       child: PateaCard(
                         borderColor: podium
-                            ? accent.withValues(alpha: .6)
+                            ? borderAccent.withValues(alpha: .6)
                             : context.c.border,
                         borderWidth: podium ? 1.5 : 1,
                         padding: const EdgeInsets.all(14),
@@ -146,7 +153,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                                 style: AppTypography.sportNumber(
                                   size: 22,
                                   color: podium
-                                      ? accent
+                                      ? inkAccent
                                       : context.c.textSecondary,
                                 ),
                               ),
@@ -177,13 +184,13 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                                     children: [
                                       PlayerPositionBadge(
                                         position: player.position,
-                                        fontSize: 10,
-                                  dense: true,
+                                        fontSize: 12,
+                                        dense: true,
                                       ),
                                       Text(
                                         '${player.stats.matchesPlayed} partidos',
                                         style: AppTypography.body(
-                                          size: 11,
+                                          size: 12,
                                           color: context.c.textSecondary,
                                         ),
                                       ),
@@ -200,14 +207,14 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                                   style: AppTypography.sportNumber(
                                     size: 28,
                                     color: _metric == RankingMetric.ovr
-                                        ? context.c.ovrBorderColor(player.ovr)
+                                        ? context.c.ovrTextColor(player.ovr)
                                         : context.c.primary,
                                   ),
                                 ),
                                 Text(
                                   _metric.label,
                                   style: AppTypography.body(
-                                    size: 10,
+                                    size: 12,
                                     color: context.c.textSecondary,
                                   ),
                                 ),

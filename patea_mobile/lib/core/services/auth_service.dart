@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../utils/photo_url.dart';
 import 'callable_functions.dart';
 import 'notifications_service.dart';
 
@@ -9,6 +10,18 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 final authStateProvider = StreamProvider<User?>((ref) {
   return ref.watch(authServiceProvider).authStateChanges;
+});
+
+/// Safe resolved photo URL from the signed-in Firebase Auth user.
+final currentAuthPhotoUrlProvider = Provider<String?>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return null;
+  try {
+    return nonEmptyPhotoUrl(user.photoURL);
+  } on NoSuchMethodError {
+    // Partial User test stubs may only override `uid`.
+    return null;
+  }
 });
 
 class AuthService {
@@ -72,11 +85,13 @@ class AuthService {
     final user = _auth.currentUser;
     if (user == null) return;
     try {
+      final authPhoto = nonEmptyPhotoUrl(user.photoURL);
       await callFunction('initializeUserProfile', {
         'displayName': user.displayName?.trim().isNotEmpty == true
             ? user.displayName!.trim()
             : (user.email?.split('@').first ?? 'Jugador'),
         'position': 'MED',
+        'photoURL': ?authPhoto,
       });
     } catch (_) {
       // Que no se pueda reparar no puede impedir el ingreso.

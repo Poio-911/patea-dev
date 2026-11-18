@@ -1,4 +1,3 @@
-import '../../core/widgets/patea_background.dart';
 import '../../core/utils/match_photography.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_button_progress.dart';
@@ -215,7 +214,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                       Text(
                                         match.title,
                                         style: AppTypography.body(
-                                          color: context.c.textSecondary,
+                                          color: context.c.textPrimary,
                                           size: 13,
                                           weight: FontWeight.w700,
                                         ),
@@ -226,7 +225,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                       Text(
                                         '${fmtDate(match.date)} · ${match.time ?? ''} hs',
                                         style: AppTypography.body(
-                                          size: 11,
+                                          size: 12,
                                           color: context.c.textSecondary,
                                         ),
                                       ),
@@ -315,12 +314,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => PateaBackground(
-    scene: PateaBackgroundScene.matches,
-    child: _buildScreen(context),
-  );
-
-  Widget _buildScreen(BuildContext context) {
+  Widget build(BuildContext context) {
     // Partidos del grupo activo, acotados y ordenados en el servidor.
     final matchesAsync = ref.watch(activeGroupMatchesProvider);
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
@@ -579,7 +573,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const PateaLoading(),
         error: (err, _) => PateaError(error: err),
       ),
     );
@@ -632,9 +626,9 @@ class _ViewModeToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          button(Icons.grid_view_rounded, MatchViewMode.grid),
+          button(Icons.view_list_rounded, MatchViewMode.grid),
           const SizedBox(width: 2),
-          button(Icons.view_list_rounded, MatchViewMode.compact),
+          button(Icons.grid_view_rounded, MatchViewMode.compact),
         ],
       ),
     );
@@ -757,7 +751,6 @@ class _MatchFiltersSheetState extends State<_MatchFiltersSheet> {
                 const Spacer(),
                 Switch(
                   value: _onlyMine,
-                  activeThumbColor: context.c.primary,
                   onChanged: (v) => setState(() => _onlyMine = v),
                 ),
               ],
@@ -875,8 +868,11 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
 
     final match = widget.matches[_index];
     final theme = getMatchTypeTheme(match.type);
-    final hasTeams =
-        match.type == 'by_teams' && match.teamA != null && match.teamB != null;
+    final hasTeams = _showMatchTeams(
+      match,
+      isLive: match.status == 'active',
+      isPast: false,
+    );
     final dateObj = DateTime.tryParse(match.date)?.toLocal();
 
     return DecoratedBox(
@@ -884,10 +880,9 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         borderRadius: AppRadii.cardAll,
         boxShadow: [
           BoxShadow(
-            // Una sombra es negra en los dos temas, más tenue en claro.
-            color: Colors.black.withValues(
-              alpha: context.c.isDarkSurface ? 0.35 : 0.12,
-            ),
+            color: context.c.isDarkSurface
+                ? context.c.photoFallback.withValues(alpha: 0.45)
+                : context.c.textPrimary.withValues(alpha: 0.12),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -904,7 +899,10 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
         ),
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: 320,
+          height:
+              320 +
+              ((MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0, 12) *
+                  8),
           child: Stack(
           fit: StackFit.expand,
           children: [
@@ -927,16 +925,16 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                 ),
               ),
             ),
-            Container(color: Colors.black.withValues(alpha: 0.30)),
+            Container(color: context.c.photoFallback.withValues(alpha: 0.30)),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.95),
-                    Colors.black.withValues(alpha: 0.35),
-                    Colors.transparent,
+                    context.c.photoFallback.withValues(alpha: 0.95),
+                    context.c.photoFallback.withValues(alpha: 0.35),
+                    context.c.photoFallback.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -960,7 +958,9 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
+                            color: context.c.photoFallback.withValues(
+                              alpha: 0.65,
+                            ),
                             borderRadius: AppRadii.surfaceAll,
                             border: Border.all(color: context.c.onPhotoLine),
                           ),
@@ -977,10 +977,10 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                theme.label.toUpperCase(),
+                                theme.label,
                                 style: AppTypography.code(
-                                  size: 9,
-                                  weight: FontWeight.w800,
+                                  size: 12,
+                                  weight: FontWeight.w700,
                                   color: context.c.onPhoto,
                                 ),
                               ),
@@ -1132,7 +1132,7 @@ class _BannerInfoRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.body(
-                size: 11,
+                size: 12,
                 weight: FontWeight.w600,
                 color: context.c.onPhoto,
               ),
@@ -1160,7 +1160,7 @@ class _BannerTeam extends StatelessWidget {
           Icon(Icons.checkroom, size: 48, color: context.c.onPhotoMuted),
         const SizedBox(height: 6),
         Text(
-          team.name.toUpperCase(),
+          team.name,
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -1192,7 +1192,7 @@ class _BannerOrganizerBadge extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.6),
+            color: context.c.photoFallback.withValues(alpha: 0.65),
             borderRadius: AppRadii.surfaceAll,
             border: Border.all(color: context.c.onPhotoLine),
           ),
@@ -1202,7 +1202,7 @@ class _BannerOrganizerBadge extends StatelessWidget {
                 TextSpan(
                   text: 'Organiza: ',
                   style: AppTypography.body(
-                    size: 9,
+                    size: 12,
                     weight: FontWeight.w700,
                     color: context.c.onPhoto,
                   ),
@@ -1210,9 +1210,9 @@ class _BannerOrganizerBadge extends StatelessWidget {
                 TextSpan(
                   text: name,
                   style: AppTypography.body(
-                    size: 9,
+                    size: 12,
                     weight: FontWeight.w800,
-                    color: context.c.primary,
+                    color: PateaColors.game.ratingAccent,
                   ),
                 ),
               ],
@@ -1254,13 +1254,16 @@ class _MatchCardFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shadowAlpha = context.c.isDarkSurface ? 0.28 : 0.08;
+    final shadowAlpha = context.c.isDarkSurface ? 0.36 : 0.08;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: AppRadii.cardAll,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: shadowAlpha),
+            color: (context.c.isDarkSurface
+                    ? context.c.photoFallback
+                    : context.c.textPrimary)
+                .withValues(alpha: shadowAlpha),
             blurRadius: blurRadius,
             offset: const Offset(0, 2),
           ),
@@ -1413,9 +1416,9 @@ class _MatchCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
                     Text(
-                      theme.label.toUpperCase(),
+                      theme.label,
                       style: AppTypography.code(
-                        size: 11,
+                        size: 12,
                         weight: FontWeight.w700,
                         color: context.c.textSecondary,
                       ),
@@ -1533,12 +1536,14 @@ class _MatchCard extends StatelessWidget {
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: OutlinedButton.icon(
               onPressed: () => context.push('/matches/${match.id}'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.c.primary,
-                foregroundColor: context.c.onPrimary,
-                elevation: 0,
+              style: OutlinedButton.styleFrom(
+                backgroundColor: context.c.cardSurface,
+                foregroundColor: context.c.primary,
+                side: BorderSide(
+                  color: context.c.primary.withValues(alpha: 0.4),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
               ),
@@ -1547,7 +1552,7 @@ class _MatchCard extends StatelessWidget {
                 _actionLabel(match.status),
                 style: AppTypography.action(
                   size: 14,
-                  color: context.c.onPrimary,
+                  color: context.c.primary,
                 ),
               ),
             ),

@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/player_model.dart';
+import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import '../theme/patea_colors.dart';
+import '../utils/photo_url.dart';
+import 'cropped_photo.dart';
 import 'player_avatar_fallback.dart';
 
 /// Las dos presentaciones conservan los mismos datos y la relación 2:3.
@@ -246,13 +249,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
       0.0,
       height - bottom - nameHeight - nameGap - statusHeight - 4,
     );
-    final positionColor = c.isDarkSurface
-        ? c.positionColor(widget.player.position)
-        : Color.lerp(
-            c.positionColor(widget.player.position),
-            c.textPrimary,
-            0.4,
-          )!;
+    final positionColor = c.positionColor(widget.player.position);
     final captionStyle = AppTypography.body(
       size: 12,
       height: 1.2,
@@ -312,12 +309,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: const [0, 0.25, 0.4, 0.65, 1],
+                stops: const [0, 0.30, 0.45, 0.62, 1],
                 colors: [
                   c.card.withValues(alpha: 0),
                   c.card.withValues(alpha: 0),
-                  c.card.withValues(alpha: 0.2),
-                  c.card.withValues(alpha: 0.8),
+                  c.card.withValues(alpha: 0.35),
+                  c.card,
                   c.card,
                 ],
               ),
@@ -330,38 +327,40 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               child: Builder(
                 builder: (context) {
                   final overPhoto = widget.photoStyle == CardPhotoStyle.halfTop;
+                  final badgeBg = overPhoto
+                      ? c.photoFallback.withValues(alpha: 0.80)
+                      : c.cardSurface;
                   final manualColor = overPhoto ? c.onPhoto : c.textPrimary;
-                  final manualShadows = overPhoto
-                      ? const [
-                          Shadow(
-                            color: Color(0xBF000000),
-                            blurRadius: 6,
-                            offset: Offset(0, 1),
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: AppRadii.chipAll,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.edit_note_rounded,
+                            size: compact ? 13 : 14,
+                            color: manualColor,
                           ),
-                        ]
-                      : null;
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.edit_note_rounded,
-                        size: compact ? 14 : 15,
-                        color: manualColor,
-                        shadows: manualShadows,
+                          const SizedBox(width: 3),
+                          Text(
+                            'Manual',
+                            style: AppTypography.body(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: manualColor,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 3),
-                      Text(
-                        'MANUAL',
-                        style: AppTypography.code(
-                          size: compact ? 10.5 : 11.5,
-                          weight: FontWeight.w800,
-                          color: manualColor,
-                        ).copyWith(
-                          letterSpacing: 0.9,
-                          shadows: manualShadows,
-                        ),
-                      ),
-                    ],
+                    ),
                   );
                 },
               ),
@@ -490,7 +489,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
         color: highlighted
             ? c.primary.withValues(alpha: 0.08)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadii.hairAll,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -554,32 +553,26 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
             cacheWidth: width,
             errorBuilder: (_, _, _) => _fallback,
           );
-        } else if (widget.player.photoUrl?.isNotEmpty == true) {
-          photo = CachedNetworkImage(
-            imageUrl: widget.player.photoUrl!,
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-            memCacheWidth: width,
-            maxWidthDiskCache: 1200,
-            placeholder: (_, _) => _fallback,
-            errorWidget: (_, _, _) => _fallback,
-          );
         } else {
-          photo = _fallback;
+          final remoteUrl = nonEmptyPhotoUrl(widget.player.photoUrl);
+          photo = remoteUrl != null
+              ? CachedNetworkImage(
+                  imageUrl: remoteUrl,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  memCacheWidth: width,
+                  maxWidthDiskCache: 1200,
+                  placeholder: (_, _) => _fallback,
+                  errorWidget: (_, _, _) => _fallback,
+                )
+              : _fallback;
         }
         final player = widget.player;
-        final zoom = player.cropZoom.isFinite
-            ? player.cropZoom.clamp(1.0, 4.0)
-            : 1.0;
-        return ClipRect(
-          child: Transform.scale(
-            scale: zoom,
-            alignment: Alignment(
-              (player.cropX / 50 - 1),
-              (player.cropY / 50 - 1),
-            ),
-            child: photo,
-          ),
+        return CroppedPhoto(
+          cropX: player.cropX,
+          cropY: player.cropY,
+          cropZoom: player.cropZoom,
+          child: photo,
         );
       },
     );

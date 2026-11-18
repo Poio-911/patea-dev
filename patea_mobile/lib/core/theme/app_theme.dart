@@ -47,12 +47,17 @@ class AppTheme {
         onPrimary: c.onPrimary,
         secondary: c.accent,
         onSecondary: c.onPrimary,
+        secondaryContainer: Color.alphaBlend(
+          c.primary.withValues(alpha: 0.16),
+          c.cardSurface,
+        ),
+        onSecondaryContainer: c.primary,
         surface: c.card,
         onSurface: c.textPrimary,
         surfaceContainerHighest: c.cardSurface,
         error: c.destructive,
         onError: Colors.white,
-        outline: c.border,
+        outline: c.controlBorder,
       ),
 
       appBarTheme: AppBarTheme(
@@ -101,11 +106,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadii.cardAll,
-          borderSide: BorderSide(color: c.border),
+          borderSide: BorderSide(color: c.controlBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadii.cardAll,
-          borderSide: BorderSide(color: c.border),
+          borderSide: BorderSide(color: c.controlBorder),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: AppRadii.cardAll,
@@ -210,10 +215,44 @@ class AppTheme {
 
       chipTheme: ChipThemeData(
         backgroundColor: c.cardSurface,
-        selectedColor: c.primary.withValues(alpha: 0.2),
-        side: BorderSide(color: c.border),
+        selectedColor: Color.alphaBlend(
+          c.primary.withValues(alpha: 0.18),
+          c.cardSurface,
+        ),
+        checkmarkColor: c.primary,
+        side: BorderSide(color: c.controlBorder),
         labelStyle: AppTypography.body(size: 13, color: c.textPrimary),
+        secondaryLabelStyle: AppTypography.body(
+          size: 13,
+          weight: FontWeight.w600,
+          color: c.primary,
+        ),
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
+      ),
+
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return Color.alphaBlend(
+                c.primary.withValues(alpha: 0.16),
+                c.cardSurface,
+              );
+            }
+            return c.cardSurface;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return c.primary;
+            }
+            return c.textPrimary;
+          }),
+          side: WidgetStateProperty.all(BorderSide(color: c.controlBorder)),
+          shape: WidgetStateProperty.all(
+            const RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
+          ),
+          textStyle: WidgetStateProperty.all(AppTypography.action(size: 14)),
+        ),
       ),
 
       listTileTheme: ListTileThemeData(
@@ -242,27 +281,32 @@ class AppTheme {
       ),
 
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.disabled)
-              ? c.textSecondary
-              : s.contains(WidgetState.selected)
+        thumbColor: WidgetStateProperty.resolveWith((s) {
+          if (s.contains(WidgetState.disabled)) {
+            return Color.lerp(c.textSecondary, c.background, 0.25)!;
+          }
+          return s.contains(WidgetState.selected)
               ? c.onPrimary
-              : c.textSecondary,
-        ),
-        trackColor: WidgetStateProperty.resolveWith(
-          (s) =>
-              s.contains(WidgetState.selected) &&
-                  !s.contains(WidgetState.disabled)
-              ? c.primary
-              : c.cardSurface,
-        ),
-        trackOutlineColor: WidgetStateProperty.resolveWith(
-          (s) =>
-              s.contains(WidgetState.selected) &&
-                  !s.contains(WidgetState.disabled)
+              : c.textSecondary;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((s) {
+          if (s.contains(WidgetState.disabled)) {
+            return s.contains(WidgetState.selected)
+                ? c.cardSurface
+                : c.background;
+          }
+          return s.contains(WidgetState.selected) ? c.primary : c.cardSurface;
+        }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((s) {
+          if (s.contains(WidgetState.disabled)) {
+            return s.contains(WidgetState.selected)
+                ? Color.lerp(c.primary, c.border, 0.6)!
+                : c.border;
+          }
+          return s.contains(WidgetState.selected)
               ? Colors.transparent
-              : c.border,
-        ),
+              : c.controlBorder;
+        }),
       ),
 
       checkboxTheme: CheckboxThemeData(
@@ -271,13 +315,16 @@ class AppTheme {
               s.contains(WidgetState.selected) ? c.primary : Colors.transparent,
         ),
         checkColor: WidgetStateProperty.all(c.onPrimary),
-        side: BorderSide(color: c.border, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        side: BorderSide(color: c.controlBorder, width: 1.5),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+        ),
       ),
 
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? c.primary : c.border,
+          (s) =>
+              s.contains(WidgetState.selected) ? c.primary : c.controlBorder,
         ),
       ),
 

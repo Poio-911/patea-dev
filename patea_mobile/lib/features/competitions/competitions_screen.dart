@@ -6,9 +6,11 @@ import '../../core/models/competition_model.dart';
 import '../../core/services/competition_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/theme/app_insets.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_activity_cover.dart';
+import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_section_scene.dart';
@@ -47,6 +49,116 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
   bool _loading = false, _more = false;
   Object? _error;
   String get _collection => _kind == 0 ? 'leagues' : 'cups';
+  int get _activeFilterCount =>
+      (_scope != 'group' ? 1 : 0) + (_status != 'all' ? 1 : 0);
+
+  void _openFiltersSheet() {
+    var draftScope = _scope;
+    var draftStatus = _status;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.c.popover,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx, setSheet) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Filtrar torneos',
+                      style: AppTypography.headline(
+                        size: 18,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (draftScope != 'group' || draftStatus != 'all')
+                      TextButton(
+                        onPressed: () => setSheet(() {
+                          draftScope = 'group';
+                          draftStatus = 'all';
+                        }),
+                        child: const Text('Limpiar'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  key: ValueKey('sheet-scope-$draftScope'),
+                  initialValue: draftScope,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Dónde buscar'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'group',
+                      child: Text('Del grupo activo'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'owner',
+                      child: Text('Las que organizo'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'public',
+                      child: Text('Competiciones públicas'),
+                    ),
+                  ],
+                  onChanged: (v) => setSheet(() => draftScope = v!),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  key: ValueKey('sheet-status-$draftStatus'),
+                  initialValue: draftStatus,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Estado'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'all',
+                      child: Text('Todos los estados'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'open_for_applications',
+                      child: Text('Inscripciones abiertas'),
+                    ),
+                    DropdownMenuItem(value: 'draft', child: Text('Borradores')),
+                    DropdownMenuItem(
+                      value: 'in_progress',
+                      child: Text('En juego'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'completed',
+                      child: Text('Finalizadas'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'archived',
+                      child: Text('Archivadas'),
+                    ),
+                  ],
+                  onChanged: (v) => setSheet(() => draftStatus = v!),
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(sheetCtx);
+                    setState(() {
+                      _scope = draftScope;
+                      _status = draftStatus;
+                    });
+                  },
+                  child: const Text('Aplicar filtros'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   Future<void> _load({bool reset = true}) async {
     if (!reset && (_loading || !_more)) return;
     final generation = ++_generation,
@@ -188,60 +300,42 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
               onChanged: (v) => setState(() => _kind = v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              key: ValueKey('scope-$_scope'),
-              initialValue: _scope,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Dónde buscar'),
-              items: const [
-                DropdownMenuItem(
-                  value: 'group',
-                  child: Text('Del grupo activo'),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Buscar torneo…',
+                      isDense: true,
+                    ),
+                    onChanged: (v) => setState(() => _search = v),
+                  ),
                 ),
-                DropdownMenuItem(
-                  value: 'owner',
-                  child: Text('Las que organizo'),
-                ),
-                DropdownMenuItem(
-                  value: 'public',
-                  child: Text('Competiciones públicas'),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: _openFiltersSheet,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _activeFilterCount > 0
+                        ? context.c.primary
+                        : context.c.textPrimary,
+                    side: BorderSide(
+                      color: _activeFilterCount > 0
+                          ? context.c.primary
+                          : context.c.controlBorder,
+                    ),
+                    minimumSize: const Size(0, 48),
+                  ),
+                  icon: const Icon(Icons.filter_list_rounded, size: 18),
+                  label: Text(
+                    _activeFilterCount > 0
+                        ? 'Filtros ($_activeFilterCount)'
+                        : 'Filtros',
+                  ),
                 ),
               ],
-              onChanged: (v) => setState(() => _scope = v!),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                labelText: 'Buscar entre los torneos cargados',
-              ),
-              onChanged: (v) => setState(() => _search = v),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _status,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Estado'),
-              items: const [
-                DropdownMenuItem(
-                  value: 'all',
-                  child: Text('Todos los estados'),
-                ),
-                DropdownMenuItem(
-                  value: 'open_for_applications',
-                  child: Text('Inscripciones abiertas'),
-                ),
-                DropdownMenuItem(value: 'draft', child: Text('Borradores')),
-                DropdownMenuItem(value: 'in_progress', child: Text('En juego')),
-                DropdownMenuItem(
-                  value: 'completed',
-                  child: Text('Finalizadas'),
-                ),
-                DropdownMenuItem(value: 'archived', child: Text('Archivadas')),
-              ],
-              onChanged: (v) => setState(() => _status = v!),
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             if (group.isLoading && _scope == 'group')
               const PateaLoading(height: 110)
             else if (group.hasError && _scope == 'group')
@@ -277,7 +371,7 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: AppRadii.cardAll,
                     onTap: () => context
                         .push(
                           '/competitions/${c.type == 'cup' ? 'cup' : 'league'}/${c.id}',
@@ -354,7 +448,7 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: PateaButtonProgress(),
                         )
                       : const Icon(Icons.expand_more),
                   label: Text(_loading ? 'Cargando…' : 'Cargar más torneos'),

@@ -231,11 +231,11 @@ void main() {
       // Marcador final en el Hero
       expect(find.text('4 – 2'), findsOneWidget);
       // Badges en el jugador
-      expect(find.text('FIGURA'), findsOneWidget);
-      expect(find.text('⚽ 2'), findsOneWidget);
-      expect(find.text('🟨'), findsOneWidget);
+      expect(find.text('Figura'), findsOneWidget);
+      expect(find.bySemanticsLabel('2 goles'), findsOneWidget);
+      expect(find.bySemanticsLabel('1 amarilla'), findsOneWidget);
       // Minuto a minuto integrado presente
-      expect(find.text('MINUTO A MINUTO'), findsOneWidget);
+      expect(find.text('Minuto a minuto'), findsOneWidget);
     },
   );
   for (final theme in [AppTheme.darkTheme, AppTheme.lightTheme]) {

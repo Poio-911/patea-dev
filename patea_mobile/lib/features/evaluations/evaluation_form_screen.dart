@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/patea_colors.dart';
@@ -218,25 +219,11 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
             evaluations: _drafts,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: context.c.cardSurface,
-            content: Row(
-              children: [
-                const PateaEvaluationMark(animate: true, size: 40),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '¡Evaluaciones enviadas! Se van a procesar en segundo plano.',
-                    style: AppTypography.body(
-                      size: 14,
-                      color: context.c.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        PateaSnack.custom(
+          context,
+          '¡Evaluaciones enviadas! Se van a procesar en segundo plano.',
+          leading: const PateaEvaluationMark(animate: true, size: 40),
+          borderColor: context.c.primary,
         );
         ref.invalidate(evaluationInboxItemsProvider);
         Navigator.of(context).pop();
@@ -290,7 +277,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const PateaLoading()
           : _loadError != null
           ? _MessageState(
               icon: Icons.error_outline,
@@ -666,11 +653,11 @@ class _PointsEditor extends StatelessWidget {
         children: [
           Text(
             '1 · Le costó',
-            style: AppTypography.body(size: 11, color: context.c.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
           Text(
             '10 · Determinante',
-            style: AppTypography.body(size: 11, color: context.c.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
         ],
       ),
@@ -869,7 +856,11 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
             OutlinedButton.icon(
               onPressed: _analyzing || len < 10 ? null : _previewImpact,
               icon: _analyzing
-                  ? const PateaButtonProgress()
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: PateaButtonProgress(),
+                    )
                   : const Icon(Icons.auto_graph_rounded, size: 16),
               label: Text(_analyzing ? 'Leyendo…' : 'Ver impacto'),
             ),
@@ -926,9 +917,9 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
                             borderRadius: AppRadii.chipAll,
                           ),
                           child: Text(
-                            '${ch.change >= 0 ? '+' : ''}${ch.change} ${_attrLabels[ch.attribute] ?? ch.attribute.toUpperCase()}',
+                            '${ch.change >= 0 ? '+' : ''}${ch.change} ${_attrLabels[ch.attribute] ?? ch.attribute}',
                             style: AppTypography.code(
-                              size: 11,
+                              size: 12,
                               weight: FontWeight.w700,
                               color: ch.change >= 0
                                   ? c.primary

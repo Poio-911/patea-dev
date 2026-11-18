@@ -35,6 +35,12 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
     _recalcOvr();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
   void _recalcOvr() {
     setState(() {
       _ovr = OvrCalculator.computeOvr({
@@ -93,8 +99,8 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
 
   Color _getOvrColor(int val, PateaColors c) {
     if (val >= 85) return c.eliteBorder;
-    if (val >= 75) return c.goldBorder;
-    if (val >= 65) return c.brandVolt;
+    if (val >= 75) return c.goldText;
+    if (val >= 65) return c.isDarkSurface ? c.brandVolt : c.primary;
     return c.textSecondary;
   }
   @override
@@ -218,7 +224,9 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
           border: Border.all(color: c.overlayLine, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: c.isDarkSurface
+                  ? c.photoFallback.withValues(alpha: 0.55)
+                  : c.textPrimary.withValues(alpha: 0.16),
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),
@@ -332,7 +340,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                       style: AppTypography.body(size: 12, weight: FontWeight.w600, color: c.textSecondary),
                     ),
                     Text(
-                      isGk ? 'Guantes y reflejos 🧤' : 'Jugador de campo ⚽',
+                      isGk ? 'Guantes y reflejos' : 'Jugador de campo',
                       style: AppTypography.body(size: 12, color: c.textSecondary),
                     ),
                   ],
@@ -424,7 +432,7 @@ class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
                     foregroundColor: c.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                    elevation: 3,
+                    elevation: 0,
                   ),
                   child: _isLoading
                       ? SizedBox(

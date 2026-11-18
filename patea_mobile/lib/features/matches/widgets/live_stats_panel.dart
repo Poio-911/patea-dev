@@ -67,10 +67,10 @@ class LiveStatsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('ESTADÍSTICAS',
+        Text('Estadísticas',
             style: AppTypography.headline(
-                size: 11, weight: FontWeight.w800,
-                color: context.c.textSecondary, letterSpacing: 1.2)),
+                size: 13, weight: FontWeight.w800,
+                color: context.c.textSecondary)),
         const SizedBox(height: 14),
         ...rows,
       ],

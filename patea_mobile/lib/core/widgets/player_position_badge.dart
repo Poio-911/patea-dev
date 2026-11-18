@@ -61,7 +61,7 @@ class PlayerPositionBadge extends StatelessWidget {
     }
 
     return PateaCard(
-      color: color.withValues(alpha: 0.18),
+      color: color.withValues(alpha: 0.12),
       radius: AppRadii.chipAll,
       borderColor: color.withValues(alpha: 0.8),
       borderWidth: 1,

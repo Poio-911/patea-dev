@@ -178,7 +178,7 @@ class PateaColors extends ThemeExtension<PateaColors> {
     brandVolt: Color(0xFFCCFF33),
 
   // Semanticos
-    destructive: Color(0xFFF04242),
+    destructive: Color(0xFFF87171),
     success: Color(0xFF35E375),
     warning: Color(0xFFF8BC54),
     info: Color(0xFF25C0F4),
@@ -204,8 +204,8 @@ class PateaColors extends ThemeExtension<PateaColors> {
     bronzeBorder: Color(0xFFD18C47),
 
   // Posiciones
-    posDel: Color(0xFFF47171),
-    posMed: Color(0xFFB87BF4),
+    posDel: Color(0xFFFF8585),
+    posMed: Color(0xFFCA9EFF),
     posDef: Color(0xFF7BB8F4),
     posPor: Color(0xFFF7B26E),
   );
@@ -214,28 +214,28 @@ class PateaColors extends ThemeExtension<PateaColors> {
   static const light = PateaColors(
     isDarkSurface: false,
   // Superficies
-    background: Color(0xFFFCFCFD),
+    background: Color(0xFFF4F6FA),
     card: Color(0xFFFFFFFF),
-    cardSurface: Color(0xFFF2F5F8),
+    cardSurface: Color(0xFFEDF1F7),
     popover: Color(0xFFFFFFFF),
-    border: Color(0xFFD9DFE8),
-    input: Color(0xFFD9DFE8),
+    border: Color(0xFFD2DAE6),
+    input: Color(0xFF7B889B),
 
   // Accion y marca
-    primary: Color(0xFF156BF4),
+    primary: Color(0xFF0F52C4),
     onPrimary: Color(0xFFF8FAFC),
     accent: Color(0xFFFBBD23),
     brandVolt: Color(0xFFCCFF33),
 
   // Semanticos
-    destructive: Color(0xFFEF4444),
-    success: Color(0xFF16A249),
+    destructive: Color(0xFFB91C1C),
+    success: Color(0xFF0E6F30),
     warning: Color(0xFFF59F0A),
-    info: Color(0xFF156BF4),
+    info: Color(0xFF0F52C4),
 
   // Texto
     textPrimary: Color(0xFF020817),
-    textSecondary: Color(0xFF5E6D82),
+    textSecondary: Color(0xFF536278),
 
   // Veladuras (nuevas, sin uso hasta la Fase 2)
     overlaySubtle: Color(0x0A000000),
@@ -253,17 +253,43 @@ class PateaColors extends ThemeExtension<PateaColors> {
     silverBorder: Color(0xFF737B8C),
     bronzeBorder: Color(0xFFA36629),
 
-  // Posiciones
-    posDel: Color(0xFFF04242),
-    posMed: Color(0xFF9942F0),
-    posDef: Color(0xFF4299F0),
-    posPor: Color(0xFFF5993D),
+  // Posiciones (oscurecidas en claro para cumplir WCAG AA incluso sobre chip @0.18)
+    posDel: Color(0xFFA31616),
+    posMed: Color(0xFF7A22D4),
+    posDef: Color(0xFF0F58B8),
+    posPor: Color(0xFF8F4800),
   );
 
   /// Puntaje y mejor atributo de las fichas; conserva contraste en ambos temas.
   Color get ratingAccent => isDarkSurface
       ? const Color(0xFFFFD56A)
       : const Color(0xFF885800);
+
+  /// Tinta legible para advertencias sobre superficie del tema.
+  Color get warningText =>
+      isDarkSurface ? warning : const Color(0xFF8A4F00);
+
+  /// Tinta legible para tier oro sobre superficie del tema.
+  Color get goldText => isDarkSurface ? goldBorder : ratingAccent;
+
+  /// Tinta legible para tier plata sobre superficie del tema.
+  Color get silverText =>
+      isDarkSurface ? silverBorder : const Color(0xFF525A6B);
+
+  /// Tinta legible para tier bronce sobre superficie del tema.
+  Color get bronzeText =>
+      isDarkSurface ? bronzeBorder : const Color(0xFF7D4912);
+
+  /// Borde de controles interactivos e inputs (`>= 3:1` en ambos esquemas).
+  Color get controlBorder => isDarkSurface ? border : input;
+
+  /// Color legible para etiquetas de texto según nivel de OVR.
+  Color ovrTextColor(int ovr) {
+    if (ovr >= 86) return eliteBorder;
+    if (ovr >= 76) return goldText;
+    if (ovr >= 65) return silverText;
+    return bronzeText;
+  }
 
   Color positionColor(String position) {
     switch (position.toUpperCase().trim()) {

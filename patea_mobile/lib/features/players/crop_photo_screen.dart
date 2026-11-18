@@ -9,7 +9,9 @@ import '../../core/services/profile_service.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
+import '../../core/widgets/cropped_photo.dart';
 import '../../core/widgets/patea_button_progress.dart';
+import '../../core/widgets/patea_states.dart';
 
 /// Ajuste del encuadre de la foto de perfil con proporción de retrato de ficha.
 class CropPhotoScreen extends ConsumerStatefulWidget {
@@ -41,8 +43,17 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
   late double _zoom = widget.initialZoom;
 
   double _zoomAtGestureStart = 1;
+  bool _touchingCrop = false;
   bool _saving = false;
   String? _error;
+
+  void _nudgeZoom(double delta) {
+    if (_saving) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _zoom = (_zoom + delta).clamp(_minZoom, _maxZoom);
+    });
+  }
 
   void _onScaleStart(ScaleStartDetails _) {
     _zoomAtGestureStart = _zoom;
@@ -103,7 +114,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
         backgroundColor: Colors.transparent,
         title: Text(
           'Ajustar encuadre',
-          style: AppTypography.headline(size: 17, weight: FontWeight.w700),
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
         actions: [
           if (!isDefault)
@@ -122,6 +133,9 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
           final frameH = frameW * (_frameHeight / _frameWidth);
 
           return SingleChildScrollView(
+            physics: _touchingCrop
+                ? const NeverScrollableScrollPhysics()
+                : const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
             child: ConstrainedBox(
               constraints: BoxConstraints(
@@ -140,24 +154,30 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  GestureDetector(
-                    onScaleStart: _onScaleStart,
-                    onScaleUpdate: _onScaleUpdate,
-                    child: Container(
+                  Listener(
+                    onPointerDown: (_) => setState(() => _touchingCrop = true),
+                    onPointerUp: (_) => setState(() => _touchingCrop = false),
+                    onPointerCancel: (_) =>
+                        setState(() => _touchingCrop = false),
+                    child: GestureDetector(
+                      onScaleStart: _onScaleStart,
+                      onScaleUpdate: _onScaleUpdate,
+                      child: Container(
                       width: frameW,
                       height: frameH,
                       decoration: BoxDecoration(
                         color: c.cardSurface,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppRadii.cardAll,
                         border: Border.all(color: c.primary, width: 2),
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Transform.scale(
-                            scale: _zoom,
-                            alignment: Alignment((_x / 50) - 1, (_y / 50) - 1),
+                          CroppedPhoto(
+                            cropX: _x,
+                            cropY: _y,
+                            cropZoom: _zoom,
                             child: CachedNetworkImage(
                               imageUrl: widget.photoUrl,
                               fit: BoxFit.cover,
@@ -165,11 +185,7 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                               memCacheWidth: 780,
                               placeholder: (_, _) => ColoredBox(
                                 color: c.cardSurface,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: c.primary,
-                                  ),
-                                ),
+                                child: const PateaLoading(height: 120),
                               ),
                               errorWidget: (_, _, _) => ColoredBox(
                                 color: c.cardSurface,
@@ -205,15 +221,23 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                       ),
                     ),
                   ),
+                  ),
                   const SizedBox(height: 20),
                   Column(
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.zoom_out,
-                            size: 18,
+                          IconButton(
+                            onPressed: _saving || _zoom <= _minZoom
+                                ? null
+                                : () => _nudgeZoom(-0.25),
+                            tooltip: 'Alejar',
+                            icon: const Icon(Icons.zoom_out, size: 20),
                             color: c.textSecondary,
+                            constraints: const BoxConstraints(
+                              minWidth: 44,
+                              minHeight: 44,
+                            ),
                           ),
                           Expanded(
                             child: Slider(
@@ -227,7 +251,18 @@ class _CropPhotoScreenState extends ConsumerState<CropPhotoScreen> {
                                   : (v) => setState(() => _zoom = v),
                             ),
                           ),
-                          Icon(Icons.zoom_in, size: 18, color: c.textSecondary),
+                          IconButton(
+                            onPressed: _saving || _zoom >= _maxZoom
+                                ? null
+                                : () => _nudgeZoom(0.25),
+                            tooltip: 'Acercar',
+                            icon: const Icon(Icons.zoom_in, size: 20),
+                            color: c.textSecondary,
+                            constraints: const BoxConstraints(
+                              minWidth: 44,
+                              minHeight: 44,
+                            ),
+                          ),
                         ],
                       ),
                       Text(

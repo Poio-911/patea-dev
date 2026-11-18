@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../../../core/widgets/patea_snack.dart';
+import '../../../core/widgets/patea_states.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,12 +39,11 @@ class MatchClipsView extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: Text('CLIPS',
+              child: Text('Clips',
                   style: AppTypography.headline(
-                      size: 11,
+                      size: 13,
                       weight: FontWeight.w800,
-                      color: context.c.textSecondary,
-                      letterSpacing: 1.2)),
+                      color: context.c.textSecondary)),
             ),
             if (canUpload)
               TextButton.icon(
@@ -124,7 +124,7 @@ class _ClipChip extends StatelessWidget {
             Text(clip.uploaderName.isEmpty ? 'Clip' : 'por ${clip.uploaderName}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(size: 10, color: context.c.textSecondary)),
+                style: AppTypography.body(size: 12, color: context.c.textSecondary)),
           ],
         ),
       ),
@@ -251,12 +251,11 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('SUBIR UN CLIP',
+          Text('Subir un clip',
               style: AppTypography.headline(
-                  size: 12,
+                  size: 14,
                   weight: FontWeight.w800,
-                  color: context.c.textSecondary,
-                  letterSpacing: 1.2)),
+                  color: context.c.textPrimary)),
           const SizedBox(height: 14),
 
           if (_file == null) ...[
@@ -281,7 +280,7 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
             ),
             const SizedBox(height: 10),
             Text('Hasta 30 segundos.',
-                style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                style: AppTypography.body(size: 12, color: context.c.textSecondary)),
           ] else ...[
             Row(
               children: [
@@ -313,12 +312,11 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
               onChanged: (m) => setState(() => _minute = m),
             ),
             const SizedBox(height: 18),
-            Text('DE QUIÉN ES (OPCIONAL)',
+            Text('De quién es (opcional)',
                 style: AppTypography.headline(
-                    size: 10,
+                    size: 12,
                     weight: FontWeight.w800,
-                    color: context.c.textSecondary,
-                    letterSpacing: 1)),
+                    color: context.c.textSecondary)),
             const SizedBox(height: 8),
             SizedBox(
               height: 34,
@@ -361,25 +359,25 @@ class _ClipCaptureSheetState extends ConsumerState<ClipCaptureSheet> {
               const SizedBox(height: 8),
               Text('Subiendo… ${(_progress * 100).round()}%',
                   textAlign: TextAlign.center,
-                  style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                  style: AppTypography.body(size: 12, color: context.c.textSecondary)),
             ] else
               FilledButton(
                 onPressed: _upload,
                 style: FilledButton.styleFrom(
                   backgroundColor: context.c.primary,
-                  foregroundColor: context.c.background,
+                  foregroundColor: context.c.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                 ),
                 child: Text('Subir clip',
                     style: AppTypography.headline(
-                        size: 14, weight: FontWeight.w800, color: context.c.background)),
+                        size: 14, weight: FontWeight.w800, color: context.c.onPrimary)),
               ),
           ],
 
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: AppTypography.body(size: 11, color: context.c.destructive)),
+            Text(_error!, style: AppTypography.body(size: 12, color: context.c.destructive)),
           ],
         ],
       ),
@@ -398,9 +396,9 @@ class _MinuteRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text('MINUTO',
+        Text('Minuto',
             style: AppTypography.headline(
-                size: 10, weight: FontWeight.w800, color: context.c.textSecondary, letterSpacing: 1)),
+                size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
         const Spacer(),
         IconButton(
           onPressed: enabled && minute > 0 ? () => onChanged(minute - 1) : null,
@@ -448,7 +446,7 @@ class _PlayerChip extends StatelessWidget {
             style: AppTypography.headline(
                 size: 12,
                 weight: FontWeight.w700,
-                color: selected ? context.c.background : context.c.textSecondary)),
+                color: selected ? context.c.onPrimary : context.c.textSecondary)),
       ),
     );
   }
@@ -467,7 +465,7 @@ class ClipPlayerSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black,
+      backgroundColor: context.c.photoFallback,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
       builder: (_) => ClipPlayerSheet(matchId: matchId, clip: clip),
     );
@@ -578,10 +576,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
                     style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               )
             else if (controller == null)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 60),
-                child: Center(child: CircularProgressIndicator(color: context.c.primary)),
-              )
+              const PateaLoading(height: 140)
             else
               GestureDetector(
                 onTap: () => setState(() {
@@ -606,7 +601,7 @@ class _ClipPlayerSheetState extends ConsumerState<ClipPlayerSheet> {
               const SizedBox(height: 12),
               Text('Grabado por ${widget.clip.uploaderName}',
                   textAlign: TextAlign.center,
-                  style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                  style: AppTypography.body(size: 12, color: context.c.textSecondary)),
             ],
           ],
         ),

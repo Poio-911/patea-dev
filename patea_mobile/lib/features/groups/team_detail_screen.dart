@@ -4,6 +4,7 @@ import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/player_position_badge.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,15 +91,10 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
     JerseyModel jersey = team.jersey;
     bool submitting = false;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: context.c.card,
+    final route = ModalBottomSheetRoute<void>(
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadii.surface),
-        ),
-      ),
+      backgroundColor: context.c.card,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Padding(
           padding: EdgeInsets.only(
@@ -156,10 +152,10 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                     foregroundColor: context.c.onPrimary,
                   ),
                   child: submitting
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: const PateaButtonProgress(),
+                          child: PateaButtonProgress(),
                         )
                       : const Text('Guardar'),
                 ),
@@ -169,6 +165,9 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
         ),
       ),
     );
+    await Navigator.of(context, rootNavigator: true).push(route);
+    await route.completed;
+    controller.dispose();
   }
 
   Future<void> _showEditMembersSheet(
@@ -219,13 +218,11 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
         ),
       ),
       body: teamAsync.when(
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: context.c.primary)),
-        error: (e, _) => Center(
-          child: Text(
-            'No se pudo cargar el equipo.',
-            style: AppTypography.body(color: context.c.textSecondary),
-          ),
+        loading: () => const PateaLoading(),
+        error: (e, _) => PateaError(
+          error: e,
+          message: 'No se pudo cargar el equipo.',
+          onRetry: () => ref.invalidate(singleTeamStreamProvider(widget.teamId)),
         ),
         data: (team) {
           if (team == null) {
@@ -299,7 +296,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
               ],
 
               if (agenda.isNotEmpty) ...[
-                _SectionLabel(text: 'PRÓXIMOS PARTIDOS', count: agenda.length),
+                _SectionLabel(text: 'Próximos partidos', count: agenda.length),
                 const SizedBox(height: 8),
                 ...agenda
                     .take(4)
@@ -313,13 +310,16 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                 const SizedBox(height: 18),
               ],
 
-              _SectionLabel(text: 'TITULARES', count: starters.length),
+              _SectionLabel(text: 'Titulares', count: starters.length),
               const SizedBox(height: 8),
               if (starters.isEmpty)
-                _EmptyLine(
-                  text: canEdit
-                      ? 'Todavía no armaste el once. Tocá Plantel.'
-                      : 'El once no está armado todavía.',
+                PateaEmpty(
+                  icon: Icons.groups_outlined,
+                  title: canEdit
+                      ? 'Todavía no armaste el once'
+                      : 'El once no está armado todavía',
+                  hint: canEdit ? 'Tocá Plantel para sumar titulares.' : null,
+                  compact: true,
                 )
               else
                 ...starters.map(
@@ -331,10 +331,14 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                 ),
 
               const SizedBox(height: 18),
-              _SectionLabel(text: 'SUPLENTES', count: subs.length),
+              _SectionLabel(text: 'Suplentes', count: subs.length),
               const SizedBox(height: 8),
               if (subs.isEmpty)
-                const _EmptyLine(text: 'Sin suplentes.')
+                const PateaEmpty(
+                  icon: Icons.chair_alt_outlined,
+                  title: 'Sin suplentes',
+                  compact: true,
+                )
               else
                 ...subs.map(
                   (m) => _RosterTile(
@@ -399,7 +403,7 @@ class _TeamBanner extends StatelessWidget {
                               ? Icons.emoji_events_outlined
                               : Icons.workspace_premium_outlined,
                           size: 18,
-                          color: context.c.goldBorder,
+                          color: context.c.goldText,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -504,7 +508,7 @@ class _ActionButton extends StatelessWidget {
         ? const SizedBox(
             width: 18,
             height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: PateaButtonProgress(),
           )
         : Icon(icon, size: 20);
     if (label == null)
@@ -569,23 +573,6 @@ class _SectionLabel extends StatelessWidget {
       ),
     ],
   );
-}
-
-class _EmptyLine extends StatelessWidget {
-  final String text;
-
-  const _EmptyLine({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-      child: Text(
-        text,
-        style: AppTypography.body(size: 12, color: context.c.textSecondary),
-      ),
-    );
-  }
 }
 
 /// Una fila del plantel. Los suplentes se ven, pero más apagados.
@@ -666,7 +653,7 @@ class _RosterTile extends StatelessWidget {
                   Text(
                     'OVR',
                     style: AppTypography.body(
-                      size: 10,
+                      size: 12,
                       color: context.c.textSecondary,
                     ),
                   ),
@@ -742,7 +729,7 @@ class _AgendaRow extends StatelessWidget {
                         ? fmtDate(match.date)
                         : '${fmtDate(match.date)} · ${match.time}',
                     style: AppTypography.body(
-                      size: 9,
+                      size: 12,
                       color: live
                           ? context.c.destructive
                           : context.c.textSecondary,
@@ -769,5 +756,5 @@ Color _parseColor(String hex, Color fallback) {
   final clean = hex.replaceAll('#', '').trim();
   if (clean.length != 6) return fallback;
   final value = int.tryParse(clean, radix: 16);
-  return value == null ? fallback : Color(0xFF000000 | value);
+  return value == null ? fallback : Color(value).withAlpha(255);
 }

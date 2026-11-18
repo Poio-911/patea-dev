@@ -11,6 +11,8 @@ import '../services/push_permission.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
+import '../utils/photo_url.dart';
+import 'cropped_photo.dart';
 
 /// Menú de usuario, port de `src/components/nav/user-menu.tsx`.
 ///
@@ -39,7 +41,9 @@ class PateaUserMenuSheet extends ConsumerWidget {
     final email = currentUser?.email ?? '';
     final position = player?.position;
     final ovr = player?.ovr;
-    final photoUrl = player?.photoUrl ?? currentUser?.photoURL;
+    final photoUrl =
+        nonEmptyPhotoUrl(player?.photoUrl) ??
+        ref.watch(currentAuthPhotoUrlProvider);
 
     return Container(
       decoration: BoxDecoration(
@@ -74,7 +78,13 @@ class PateaUserMenuSheet extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 18),
               child: Row(
                 children: [
-                  _Avatar(photoUrl: photoUrl, name: displayName),
+                  _Avatar(
+                    photoUrl: photoUrl,
+                    name: displayName,
+                    cropX: player?.cropX ?? 50,
+                    cropY: player?.cropY ?? 50,
+                    cropZoom: player?.cropZoom ?? 1,
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -152,6 +162,14 @@ class PateaUserMenuSheet extends ConsumerWidget {
               },
             ),
             _MenuItem(
+              icon: Icons.forum_outlined,
+              label: 'Comunidad Pateá',
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/social');
+              },
+            ),
+            _MenuItem(
               icon: Icons.sports_soccer_outlined,
               label: 'Mi entrenamiento',
               onTap: () {
@@ -174,9 +192,13 @@ class PateaUserMenuSheet extends ConsumerWidget {
                 if (granted) {
                   avisar.ok('Listo, te vamos a avisar.');
                 } else {
+                  final isIos = defaultTargetPlatform == TargetPlatform.iOS;
                   avisar.error(
-                    'Android tiene las notificaciones bloqueadas para Pateá. '
-                    'Se habilitan desde Ajustes › Apps › Pateá › Notificaciones.',
+                    isIos
+                        ? 'iOS tiene las notificaciones bloqueadas para Pateá. '
+                            'Habilitalas desde Configuración › Pateá › Notificaciones.'
+                        : 'Android tiene las notificaciones bloqueadas para Pateá. '
+                            'Se habilitan desde Ajustes › Apps › Pateá › Notificaciones.',
                   );
                 }
               },
@@ -215,7 +237,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
             if (kDebugMode)
               _MenuItem(
                 icon: Icons.palette_outlined,
-                label: 'Sistema de diseno',
+                label: 'Sistema de diseño',
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/dev/gallery');
@@ -242,13 +264,26 @@ class PateaUserMenuSheet extends ConsumerWidget {
 class _Avatar extends StatelessWidget {
   final String? photoUrl;
   final String name;
+  final double cropX;
+  final double cropY;
+  final double cropZoom;
 
-  const _Avatar({required this.photoUrl, required this.name});
+  const _Avatar({
+    required this.photoUrl,
+    required this.name,
+    this.cropX = 50,
+    this.cropY = 50,
+    this.cropZoom = 1,
+  });
 
   @override
   Widget build(BuildContext context) {
     final fallback = Container(
-      color: context.c.card,
+      decoration: BoxDecoration(
+        color: context.c.cardSurface,
+        shape: BoxShape.circle,
+        border: Border.all(color: context.c.border),
+      ),
       child: Center(
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : 'P',
@@ -268,13 +303,19 @@ class _Avatar extends StatelessWidget {
       height: 48,
       child: ClipOval(
         child: url != null && url.isNotEmpty
-            ? CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                memCacheWidth: 192,
-                maxWidthDiskCache: 384,
-                placeholder: (context, url) => fallback,
-                errorWidget: (context, url, error) => fallback,
+            ? CroppedPhoto(
+                cropX: cropX,
+                cropY: cropY,
+                cropZoom: cropZoom,
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  memCacheWidth: 192,
+                  maxWidthDiskCache: 384,
+                  placeholder: (context, url) => fallback,
+                  errorWidget: (context, url, error) => fallback,
+                ),
               )
             : fallback,
       ),
@@ -289,11 +330,11 @@ class _OvrPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tier = context.c.ovrBorderColor(ovr);
+    final tier = context.c.ovrTextColor(ovr);
 
     return Semantics(label: 'OVR $ovr', child: Column(mainAxisSize: MainAxisSize.min, children: [
       Text('$ovr', style: AppTypography.sportNumber(size: 28, color: tier)),
-      Text('OVR', style: AppTypography.body(size: 10, weight: FontWeight.w700, color: context.c.textSecondary)),
+      Text('OVR', style: AppTypography.body(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
     ]));
   }
 }

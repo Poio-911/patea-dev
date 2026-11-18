@@ -9,11 +9,15 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/models/player_model.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
+import '../../core/utils/photo_url.dart';
+import '../../core/widgets/cropped_photo.dart';
 import '../../core/widgets/ovr_progression_chart.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/patea_tabs.dart';
 import '../../core/widgets/player_avatar_fallback.dart';
 import 'widgets/player_match_debrief.dart';
@@ -46,16 +50,17 @@ class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
     final playerAsync = ref.watch(singlePlayerStreamProvider(widget.playerId));
     final currentUid = ref.watch(authServiceProvider).currentUser?.uid;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: playerAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: c.primary)),
-        error: (err, _) => Center(
-          child: Text('Error: $err', style: AppTypography.body(color: c.textSecondary)),
+        loading: () => const PateaLoading(),
+        error: (err, _) => PateaError(
+          error: err,
+          message: 'No pudimos cargar el perfil del jugador.',
+          onRetry: () => ref.invalidate(singlePlayerStreamProvider(widget.playerId)),
         ),
         data: (player) {
           if (player == null) return _NotFound(asOwnProfile: widget.asOwnProfile);
@@ -71,7 +76,7 @@ class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
           final safeTab = _activeTab.clamp(0, tabs.length - 1);
 
           return ListView(
-            padding: const EdgeInsets.only(bottom: 36),
+            padding: EdgeInsets.only(bottom: bottomInset(context)),
             children: [
               _HeroCardHeader(
                 player: player,
@@ -174,9 +179,7 @@ class _HeroCardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final topInset = MediaQuery.paddingOf(context).top;
-    final posColor = c.isDarkSurface
-        ? c.positionColor(player.position)
-        : Color.lerp(c.positionColor(player.position), c.textPrimary, 0.4)!;
+    final posColor = c.positionColor(player.position);
     final attrs = _attributesFor(player);
     final maxVal = attrs.map((a) => a.value).reduce(math.max);
     final meta = _metaLine(player);
@@ -234,43 +237,15 @@ class _HeroCardHeader extends StatelessWidget {
                       }
                     },
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isOwnProfile) ...[
-                        FilledButton.icon(
-                          onPressed: () => context.push('/profile/edit'),
-                          style: FilledButton.styleFrom(
-                            shape: const StadiumBorder(),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            minimumSize: const Size(0, 36),
-                          ),
-                          icon: const Icon(Icons.edit_outlined, size: 15),
-                          label: Text(
-                            'Editar perfil',
-                            style: AppTypography.headline(
-                              size: 12,
-                              weight: FontWeight.w700,
-                              color: c.onPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      _OverlayCircleButton(
-                        icon: Icons.share_outlined,
-                        tooltip: 'Compartir perfil',
-                        onTap: () => SharePlus.instance.share(
-                          ShareParams(
-                            text:
-                                'Mirá el perfil de ${player.name} en Pateá — OVR ${player.ovr}',
-                          ),
-                        ),
+                  _OverlayCircleButton(
+                    icon: Icons.share_outlined,
+                    tooltip: 'Compartir perfil',
+                    onTap: () => SharePlus.instance.share(
+                      ShareParams(
+                        text:
+                            'Mirá el perfil de ${player.name} en Pateá — OVR ${player.ovr}',
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -300,9 +275,9 @@ class _HeroCardHeader extends StatelessWidget {
                             children: [
                               if (player.isManual)
                                 TextSpan(
-                                  text: ' · MANUAL',
+                                  text: ' · Manual',
                                   style: AppTypography.code(
-                                    size: 11,
+                                    size: 12,
                                     color: c.textSecondary,
                                   ),
                                 ),
@@ -384,6 +359,33 @@ class _HeroCardHeader extends StatelessWidget {
                       style: AppTypography.body(size: 12, color: c.textSecondary),
                     ),
                   ],
+                  if (isOwnProfile) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push('/profile/edit'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: c.cardSurface,
+                          foregroundColor: c.textPrimary,
+                          side: BorderSide(color: c.primary.withValues(alpha: 0.45)),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadii.chipAll,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          minimumSize: const Size(0, 44),
+                        ),
+                        icon: Icon(Icons.edit_outlined, size: 16, color: c.primary),
+                        label: Text(
+                          'Editar perfil',
+                          style: AppTypography.action(color: c.textPrimary),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Divider(height: 1, thickness: 1, color: c.overlayLine),
                   const SizedBox(height: 12),
@@ -429,8 +431,8 @@ class _HeroPhoto extends StatelessWidget {
     final fallback = PlayerAvatarFallback(
       seed: player.id.isEmpty ? player.name : player.id,
     );
-    final url = player.photoUrl;
-    if (url == null || url.isEmpty) return fallback;
+    final url = nonEmptyPhotoUrl(player.photoUrl);
+    if (url == null) return fallback;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -438,12 +440,10 @@ class _HeroPhoto extends StatelessWidget {
             (constraints.maxWidth * MediaQuery.devicePixelRatioOf(context))
                 .round()
                 .clamp(240, 1200);
-        return Transform.scale(
-          scale: player.cropZoom,
-          alignment: Alignment(
-            (player.cropX / 50) - 1,
-            (player.cropY / 50) - 1,
-          ),
+        return CroppedPhoto(
+          cropX: player.cropX,
+          cropY: player.cropY,
+          cropZoom: player.cropZoom,
           child: CachedNetworkImage(
             imageUrl: url,
             fit: BoxFit.cover,
@@ -478,8 +478,8 @@ class _OverlayCircleButton extends StatelessWidget {
       label: tooltip,
       child: Material(
         color: c.isDarkSurface
-            ? Colors.black.withValues(alpha: 0.45)
-            : c.card.withValues(alpha: 0.85),
+            ? c.photoFallback.withValues(alpha: 0.72)
+            : c.card.withValues(alpha: 0.90),
         shape: CircleBorder(
           side: BorderSide(color: c.overlayLine),
         ),
@@ -487,9 +487,9 @@ class _OverlayCircleButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: SizedBox(
-            width: 38,
-            height: 38,
-            child: Icon(icon, size: 18, color: c.textPrimary),
+            width: 44,
+            height: 44,
+            child: Icon(icon, size: 20, color: c.textPrimary),
           ),
         ),
       ),
@@ -558,12 +558,12 @@ class _CareerStatsBand extends StatelessWidget {
         children: [
           _StatColumn('PJ', '${player.stats.matchesPlayed}'),
           _BandDivider(color: c.border),
-          _StatColumn('GOLES', '${player.stats.goals}'),
+          _StatColumn('Goles', '${player.stats.goals}'),
           _BandDivider(color: c.border),
-          _StatColumn('ASIST', '${player.stats.assists}'),
+          _StatColumn('Asist.', '${player.stats.assists}'),
           _BandDivider(color: c.border),
           _StatColumn(
-            'RATING',
+            'Rating',
             player.stats.averageRating.toStringAsFixed(1),
             accent: c.ratingAccent,
           ),
@@ -597,7 +597,7 @@ class _StatColumn extends StatelessWidget {
           Text(
             label,
             style: AppTypography.code(
-              size: 9,
+              size: 12,
               color: c.textSecondary,
               weight: FontWeight.w700,
             ),
@@ -633,13 +633,11 @@ class _ProgressionTab extends ConsumerWidget {
       borderColor: c.border,
       padding: const EdgeInsets.all(16),
       child: historyAsync.when(
-        loading: () => SizedBox(
-          height: 180,
-          child: Center(child: CircularProgressIndicator(color: c.primary)),
-        ),
-        error: (_, _) => Text(
-          'No se pudo cargar la progresión.',
-          style: AppTypography.body(size: 12, color: c.textSecondary),
+        loading: () => const PateaLoading(height: 180),
+        error: (err, _) => PateaError(
+          error: err,
+          message: 'No se pudo cargar la progresión.',
+          compact: true,
         ),
         data: (history) => OvrProgressionChart(
           player: player,
@@ -677,8 +675,8 @@ class _BioAndTeamsTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'FICHA PERSONAL',
-                  style: AppTypography.headline(size: 12, weight: FontWeight.w700),
+                  'Ficha personal',
+                  style: AppTypography.headline(size: 13, weight: FontWeight.w700),
                 ),
                 if (hasBio) ...[
                   const SizedBox(height: 8),

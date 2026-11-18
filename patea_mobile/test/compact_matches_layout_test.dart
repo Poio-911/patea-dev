@@ -18,8 +18,8 @@ void main() {
             escala: scale,
           );
           expect(errors, isEmpty);
-          await tester.ensureVisible(find.byIcon(Icons.view_list_rounded));
-          await tester.tap(find.byIcon(Icons.view_list_rounded));
+          await tester.ensureVisible(find.byIcon(Icons.grid_view_rounded));
+          await tester.tap(find.byIcon(Icons.grid_view_rounded));
           await tester.pumpAndSettle();
           final cards = find.byWidgetPredicate(
             (w) =>

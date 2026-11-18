@@ -126,16 +126,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     : 'Dale, ${player.name.split(' ').first}.',
                 description: spec(Section.panel).description,
                 showCountRow: false,
-                actionButton: PateaHeaderActionButton(
-                  label: hasGroup
-                      ? spec(Section.panel).action!
-                      : 'Crear mi grupo',
-                  icon: hasGroup
-                      ? Icons.add_rounded
-                      : Icons.group_add_outlined,
-                  onPressed: () =>
-                      context.push(hasGroup ? '/matches/create' : '/groups'),
-                ),
+                actionButton: hasGroup
+                    ? PateaHeaderActionButton(
+                        label: spec(Section.panel).action!,
+                        icon: Icons.add_rounded,
+                        onPressed: () => context.push('/matches/create'),
+                      )
+                    : null,
               ),
             ),
           ),
@@ -196,12 +193,7 @@ class _ResumenTab extends ConsumerWidget {
         if (groupId == null) return const _WelcomeEmptyState();
         return _ResumenTabBody(uid: uid, groupId: groupId, player: player);
       },
-      loading: () => Padding(
-        padding: EdgeInsets.all(40),
-        child: Center(
-          child: CircularProgressIndicator(color: context.c.primary),
-        ),
-      ),
+      loading: () => const PateaLoading(height: 120),
       error: (e, _) => PateaError(
         error: e,
         message: 'No pudimos cargar tu grupo.',
@@ -228,18 +220,12 @@ class _ResumenTabBody extends ConsumerWidget {
     final ovrHistoryAsync = ref.watch(ovrHistoryStreamProvider(uid));
 
     return matchesAsync.when(
-      loading: () => Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: CircularProgressIndicator(color: context.c.primary),
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Text(
-          'No se pudo cargar tu panel.',
-          style: AppTypography.body(size: 13, color: context.c.textSecondary),
-        ),
+      loading: () => const PateaLoading(height: 140),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No se pudo cargar tu panel.',
+        compact: true,
+        onRetry: () => ref.invalidate(matchesStreamProvider(groupId)),
       ),
       data: (allMatches) {
         final now = DateTime.now();
@@ -304,11 +290,15 @@ class _ResumenTabBody extends ConsumerWidget {
             if (next != null)
               DashboardMatchHero(match: next, isLive: live.isNotEmpty)
             else
-              _EmptyMural(
-                label: 'La próxima juntada',
-                message: 'La cancha está esperando.',
-                actionLabel: 'Armar un partido',
-                onAction: () => context.push('/matches/create'),
+              PateaEmpty(
+                icon: Icons.sports_soccer_outlined,
+                title: 'La cancha está esperando.',
+                hint: 'Armá la próxima juntada con tu grupo.',
+                compact: true,
+                action: OutlinedButton(
+                  onPressed: () => context.push('/matches/create'),
+                  child: const Text('Armar un partido'),
+                ),
               ),
 
             const SizedBox(height: 16),
@@ -412,11 +402,11 @@ class _PlayerPerformanceMural extends StatelessWidget {
                 ],
               ),
               Text(
-                'TIER ${player.tier.toUpperCase()}',
+                'Nivel ${player.tier}',
                 style: AppTypography.body(
                   size: 12,
                   weight: FontWeight.w600,
-                  color: context.c.ovrBorderColor(player.ovr),
+                  color: context.c.ovrTextColor(player.ovr),
                 ),
               ),
             ],
@@ -430,7 +420,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$goals GOLES',
+                goals == 1 ? '1 gol' : '$goals goles',
                 style: AppTypography.sportNumber(
                   size: 30,
                   color: context.c.primary,
@@ -438,7 +428,9 @@ class _PlayerPerformanceMural extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '$matches PARTIDOS JUGADOS',
+                matches == 1
+                    ? '1 partido jugado'
+                    : '$matches partidos jugados',
                 style: AppTypography.body(
                   size: 13,
                   weight: FontWeight.w700,
@@ -447,7 +439,7 @@ class _PlayerPerformanceMural extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'PROMEDIO: $avg G/PJ',
+                'Promedio: $avg G/PJ',
                 style: AppTypography.body(
                   size: 12,
                   weight: FontWeight.w600,
@@ -477,22 +469,20 @@ class _GrupoTab extends ConsumerWidget {
     return groupIdAsync.when(
       data: (groupId) {
         if (groupId == null) {
-          return _EmptyMural(
-            label: 'Sin grupo activo',
-            message:
-                'Unite o creá tu grupo para ver las estadísticas del cuadro.',
-            actionLabel: 'Ir a Mis Grupos',
-            onAction: () => context.push('/groups'),
+          return PateaEmpty(
+            icon: Icons.groups_outlined,
+            title: 'Sin grupo activo',
+            hint: 'Unite o creá tu grupo para ver las estadísticas del cuadro.',
+            compact: true,
+            action: OutlinedButton(
+              onPressed: () => context.push('/groups'),
+              child: const Text('Ir a Mis Grupos'),
+            ),
           );
         }
         return _GrupoTabBody(groupId: groupId);
       },
-      loading: () => Padding(
-        padding: EdgeInsets.all(40),
-        child: Center(
-          child: CircularProgressIndicator(color: context.c.primary),
-        ),
-      ),
+      loading: () => const PateaLoading(height: 120),
       error: (e, _) => PateaError(
         error: e,
         message: 'No pudimos cargar tu grupo.',
@@ -514,26 +504,24 @@ class _GrupoTabBody extends ConsumerWidget {
     final matchesAsync = ref.watch(matchesStreamProvider(groupId));
 
     return groupAsync.when(
-      loading: () => Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: CircularProgressIndicator(color: context.c.primary),
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Text(
-          'No se pudo cargar el grupo.',
-          style: AppTypography.body(size: 13, color: context.c.textSecondary),
-        ),
+      loading: () => const PateaLoading(height: 140),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No se pudo cargar el grupo.',
+        compact: true,
+        onRetry: () => ref.invalidate(singleGroupStreamProvider(groupId)),
       ),
       data: (group) {
         if (group == null) {
-          return _EmptyMural(
-            label: 'Grupo no encontrado',
-            message: 'El grupo no existe o fue eliminado.',
-            actionLabel: 'Explorar Grupos',
-            onAction: () => context.push('/groups'),
+          return PateaEmpty(
+            icon: Icons.group_off_outlined,
+            title: 'Grupo no encontrado',
+            hint: 'El grupo no existe o fue eliminado.',
+            compact: true,
+            action: OutlinedButton(
+              onPressed: () => context.push('/groups'),
+              child: const Text('Explorar Grupos'),
+            ),
           );
         }
 
@@ -610,7 +598,7 @@ class _GrupoTabBody extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'CÓDIGO: ',
+                              'Código: ',
                               style: AppTypography.body(
                                 size: 12,
                                 color: context.c.textSecondary,
@@ -719,11 +707,11 @@ class _GrupoTabBody extends ConsumerWidget {
 
             if (topOvr != null)
               _GroupFigureRow(
-                label: 'MEJOR OVR · ${topOvr.tier.toUpperCase()}',
+                label: 'Mejor OVR · ${topOvr.tier}',
                 name: topOvr.name,
                 value: '${topOvr.ovr}',
                 valueColor: context.c.textPrimary,
-                tierColor: context.c.ovrBorderColor(topOvr.ovr),
+                tierColor: context.c.ovrTextColor(topOvr.ovr),
                 onTap: () => context.push('/players/${topOvr.id}'),
               ),
 
@@ -969,58 +957,6 @@ class _GroupFigureRow extends StatelessWidget {
   }
 }
 
-class _EmptyMural extends StatelessWidget {
-  final String label;
-  final String message;
-  final String actionLabel;
-  final VoidCallback onAction;
-
-  const _EmptyMural({
-    required this.label,
-    required this.message,
-    required this.actionLabel,
-    required this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTypography.body(
-              size: 12,
-              weight: FontWeight.w600,
-              color: context.c.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            message,
-            style: AppTypography.headline(size: 16, weight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: onAction,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.c.primary,
-              foregroundColor: context.c.onPrimary,
-              shape: RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
-            ),
-            child: Text(
-              actionLabel,
-              style: AppTypography.headline(size: 12, weight: FontWeight.w800),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Lo que ve alguien que acaba de crear su cuenta.
 ///
 /// Un panel en blanco no le dice nada a quien recién llega: acá están las dos
@@ -1044,10 +980,8 @@ class _WelcomeEmptyState extends StatelessWidget {
                 'assets/brand/patea_groups.webp',
                 fit: BoxFit.cover,
                 alignment: Alignment.centerRight,
-                errorBuilder: (_, _, _) => Image.asset(
-                  'assets/backgrounds/fondo_1.jpg',
-                  fit: BoxFit.cover,
-                ),
+                errorBuilder: (_, _, _) =>
+                    ColoredBox(color: context.c.cardSurface),
               ),
             ),
           ),

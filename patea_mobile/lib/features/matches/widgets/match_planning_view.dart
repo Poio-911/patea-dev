@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../../../core/widgets/patea_snack.dart';
+import '../../../core/widgets/patea_button_progress.dart';
 import '../../../core/widgets/patea_card.dart';
 
 import 'package:flutter/material.dart';
@@ -117,7 +118,7 @@ class _DateVotingState extends ConsumerState<_DateVoting> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(
-          label: 'CUÁNDO SE JUEGA',
+          label: 'Cuándo se juega',
           actionLabel: widget.isCaptain ? 'Proponer' : null,
           busy: _busy == 'propose',
           onAction: _propose,
@@ -220,7 +221,7 @@ class _LocationVotingState extends ConsumerState<_LocationVoting> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(
-          label: 'DÓNDE SE JUEGA',
+          label: 'Dónde se juega',
           actionLabel: widget.isCaptain ? 'Proponer' : null,
           busy: _busy == 'propose',
           onAction: _propose,
@@ -310,12 +311,11 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('PROPONER CANCHA',
+          Text('Proponer cancha',
               style: AppTypography.headline(
-                  size: 12,
+                  size: 14,
                   weight: FontWeight.w800,
-                  color: context.c.textSecondary,
-                  letterSpacing: 1.2)),
+                  color: context.c.textPrimary)),
           const SizedBox(height: 14),
           TextField(
             controller: _controller,
@@ -326,13 +326,13 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
               hintText: 'Nombre de la cancha o dirección',
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searching
-                  ? Padding(
+                  ? const Padding(
                       padding: EdgeInsets.all(14),
                       child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: context.c.primary)),
+                        width: 16,
+                        height: 16,
+                        child: PateaButtonProgress(),
+                      ),
                     )
                   : null,
             ),
@@ -352,7 +352,7 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
                     subtitle: Text(r.label,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                        style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                     onTap: () => Navigator.pop(context, r),
                   ),
               ],
@@ -388,19 +388,19 @@ class _Header extends StatelessWidget {
         Expanded(
           child: Text(label,
               style: AppTypography.headline(
-                  size: 11,
+                  size: 13,
                   weight: FontWeight.w800,
-                  color: context.c.textSecondary,
-                  letterSpacing: 1.2)),
+                  color: context.c.textSecondary)),
         ),
         if (actionLabel != null)
           TextButton.icon(
             onPressed: busy ? null : onAction,
             icon: busy
-                ? SizedBox(
+                ? const SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary))
+                    child: PateaButtonProgress(),
+                  )
                 : const Icon(Icons.add_rounded, size: 16),
             label: Text(actionLabel!,
                 style: AppTypography.action(
@@ -472,18 +472,19 @@ class _ProposalRow extends StatelessWidget {
                       : '$subtitle  ·  $votes ${votes == 1 ? 'voto' : 'votos'}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                  style: AppTypography.body(size: 12, color: context.c.textSecondary),
                 ),
               ],
             ),
           ),
           if (busy)
-            Padding(
+            const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary)),
+                width: 18,
+                height: 18,
+                child: PateaButtonProgress(),
+              ),
             )
           else ...[
             if (canConfirm) ...[

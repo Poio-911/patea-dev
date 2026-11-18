@@ -14,6 +14,7 @@ import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/jersey_painter.dart';
+import '../../core/widgets/patea_states.dart';
 import 'widgets/event_logger_sheet.dart';
 import '../../core/services/match_presence_service.dart';
 import 'widgets/live_clock.dart';
@@ -141,7 +142,7 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
               backgroundColor: context.c.destructive,
-              foregroundColor: context.c.textPrimary,
+              foregroundColor: context.c.onPrimary,
             ),
             child: const Text('Finalizar'),
           ),
@@ -165,22 +166,18 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
         backgroundColor: Colors.transparent,
         title: Text(
           matchAsync.asData?.value?.title ?? 'Minuto a minuto',
-          style: AppTypography.headline(
-            size: 15,
-            weight: FontWeight.w800,
-            letterSpacing: 0.5,
-          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
       ),
       body: matchAsync.when(
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: context.c.primary)),
-        error: (e, _) => Center(
-          child: Text(
-            'No se pudo cargar el partido.\n$e',
-            textAlign: TextAlign.center,
-            style: AppTypography.body(color: context.c.textSecondary),
-          ),
+        loading: () => const PateaLoading(),
+        error: (e, _) => PateaError(
+          error: e,
+          message: 'No pudimos cargar el partido.',
+          onRetry: () =>
+              ref.invalidate(singleMatchStreamProvider(widget.matchId)),
         ),
         data: (match) {
           if (match == null) {
@@ -389,7 +386,7 @@ class _Scoreboard extends StatelessWidget {
               clock.periodLabel(match),
               textAlign: TextAlign.center,
               style: AppTypography.body(
-                size: 10,
+                size: 12,
                 color: context.c.textSecondary,
               ),
             ),
@@ -421,7 +418,7 @@ class _TeamColumn extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: AppTypography.body(size: 11, weight: FontWeight.w700),
+        style: AppTypography.body(size: 12, weight: FontWeight.w700),
       ),
     ],
   );
@@ -545,10 +542,10 @@ class _ControlButton extends StatelessWidget {
       message: label,
       child: Material(
         color: primary ? context.c.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadii.cardAll,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadii.cardAll,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             child: Column(
@@ -561,7 +558,7 @@ class _ControlButton extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   style: AppTypography.body(
-                    size: 11,
+                    size: 12,
                     weight: FontWeight.w600,
                     color: fg,
                   ),
@@ -636,7 +633,7 @@ class _QuickEvents extends StatelessWidget {
                   Text(
                     'Eventos',
                     style: AppTypography.body(
-                      size: 11,
+                      size: 12,
                       weight: FontWeight.w600,
                       color: context.c.textPrimary,
                     ),
@@ -683,7 +680,7 @@ class _WatchingLine extends ConsumerWidget {
           presence.watching == 1
               ? '1 siguiendo el partido'
               : '${presence.watching} siguiendo el partido',
-          style: AppTypography.body(size: 11.5, color: context.c.textSecondary),
+          style: AppTypography.body(size: 12, color: context.c.textSecondary),
         ),
       ],
     );

@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import '../theme/patea_colors.dart';
+import 'patea_states.dart';
 
 const int _kNotificationsLimit = 20;
 
@@ -170,9 +171,15 @@ class PateaNotificationsSheet extends ConsumerWidget {
                           .snapshots()
                     : const Stream.empty(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: CircularProgressIndicator(color: c.primary),
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
+                    return const PateaLoading();
+                  }
+
+                  if (snapshot.hasError) {
+                    return PateaError(
+                      error: snapshot.error,
+                      message: 'No se pudieron cargar las notificaciones.',
                     );
                   }
 
@@ -243,11 +250,33 @@ class _NotificationRow extends StatelessWidget {
 
     Future<void> open() async {
       if (!isRead) {
-        await doc.reference.update({'isRead': true});
+        try {
+          await doc.reference.update({'isRead': true});
+        } catch (e) {
+          assert(() {
+            debugPrint('Error al marcar notificación como leída: $e');
+            return true;
+          }());
+        }
       }
       if (!context.mounted) return;
       Navigator.pop(context);
-      if (link != null && link.isNotEmpty) context.push(link);
+      if (link != null && link.isNotEmpty) {
+        const shellRoots = {
+          '/',
+          '/players',
+          '/matches',
+          '/competitions',
+          '/social',
+          '/explorar',
+          '/evaluations',
+        };
+        if (shellRoots.contains(link)) {
+          context.go(link);
+        } else {
+          context.push(link);
+        }
+      }
     }
 
     return InkWell(
@@ -302,7 +331,7 @@ class _NotificationRow extends StatelessWidget {
                         Text(
                           when,
                           style: AppTypography.body(
-                            size: 11,
+                            size: 12,
                             color: c.textSecondary,
                           ),
                         ),

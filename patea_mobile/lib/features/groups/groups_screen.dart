@@ -72,7 +72,7 @@ class GroupsScreen extends ConsumerWidget {
   ) async {
     final controller = TextEditingController();
     bool submitting = false;
-    await showDialog<void>(
+    final route = DialogRoute<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -112,10 +112,10 @@ class GroupsScreen extends ConsumerWidget {
                 foregroundColor: context.c.onPrimary,
               ),
               child: submitting
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: const PateaButtonProgress(),
+                      child: PateaButtonProgress(),
                     )
                   : const Text('Crear'),
             ),
@@ -123,6 +123,9 @@ class GroupsScreen extends ConsumerWidget {
         ),
       ),
     );
+    await Navigator.of(context, rootNavigator: true).push(route);
+    await route.completed;
+    controller.dispose();
   }
 
   static Future<void> _showJoinGroupDialog(
@@ -131,7 +134,7 @@ class GroupsScreen extends ConsumerWidget {
   ) async {
     final controller = TextEditingController();
     bool submitting = false;
-    await showDialog<void>(
+    final route = DialogRoute<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -172,10 +175,10 @@ class GroupsScreen extends ConsumerWidget {
                 foregroundColor: context.c.onPrimary,
               ),
               child: submitting
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: const PateaButtonProgress(),
+                      child: PateaButtonProgress(),
                     )
                   : const Text('Unirme'),
             ),
@@ -183,6 +186,9 @@ class GroupsScreen extends ConsumerWidget {
         ),
       ),
     );
+    await Navigator.of(context, rootNavigator: true).push(route);
+    await route.completed;
+    controller.dispose();
   }
 }
 
@@ -200,7 +206,7 @@ class _GroupsBody extends ConsumerWidget {
         if (groupId == null) return _NoActiveGroupView(uid: uid);
         return _ActiveGroupView(groupId: groupId, uid: uid);
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const PateaLoading(),
       error: (e, _) => PateaError(error: e),
     );
   }
@@ -255,9 +261,9 @@ class _NoActiveGroupView extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'TUS GRUPOS',
+                  'Tus grupos',
                   style: AppTypography.headline(
-                    size: 12,
+                    size: 13,
                     weight: FontWeight.w800,
                     color: context.c.textSecondary,
                   ),
@@ -314,7 +320,7 @@ class _NoActiveGroupView extends ConsumerWidget {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const PateaLoading(),
           error: (e, _) => PateaError(error: e, compact: true),
         ),
       ],
@@ -505,10 +511,7 @@ class _ActiveGroupView extends ConsumerWidget {
                         .toList(),
                   );
                 },
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+                loading: () => const PateaLoading(height: 96),
                 error: (e, _) => PateaError(error: e, compact: true),
               ),
             ),
@@ -548,7 +551,7 @@ class _ActiveGroupView extends ConsumerWidget {
               action: recent.isEmpty
                   ? null
                   : TextButton(
-                      onPressed: () => context.push('/matches'),
+                      onPressed: () => context.go('/matches'),
                       child: const Text('Ver todos'),
                     ),
               child: recent.isEmpty
@@ -596,7 +599,7 @@ class _ActiveGroupView extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const PateaLoading(),
       error: (e, _) => PateaError(error: e),
     );
   }
@@ -835,7 +838,7 @@ class _PlayedMatchRow extends StatelessWidget {
                   Icon(
                     Icons.emoji_events_rounded,
                     size: 12,
-                    color: context.c.goldBorder,
+                    color: context.c.goldText,
                   ),
                   const SizedBox(width: 4),
                   // Un nombre largo desbordaba la fila 84 px a 1,3×.
@@ -846,7 +849,7 @@ class _PlayedMatchRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.body(
                         size: 12,
-                        color: context.c.goldBorder,
+                        color: context.c.goldText,
                       ),
                     ),
                   ),

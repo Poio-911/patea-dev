@@ -340,7 +340,11 @@ Future<bool?> competitionResultDialog(
                         }
                       },
                 icon: busy
-                    ? const PateaButtonProgress()
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: PateaButtonProgress(),
+                      )
                     : const Icon(Icons.check),
                 label: Text(busy ? 'Guardando…' : 'Confirmar resultado'),
               ),

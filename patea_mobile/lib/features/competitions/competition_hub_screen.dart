@@ -224,7 +224,8 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
         title: Text(
           c?.name ?? (widget.collection == 'cups' ? 'Copa' : 'Liga'),
           maxLines: 2,
-          style: AppTypography.headline(size: 19),
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
         actions: [
           if (owner)
@@ -1187,7 +1188,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                               style: AppTypography.body(size: 15),
                             ),
                             subtitle: Text(
-                              '${member.status == 'suplente' ? 'Suplente' : 'Titular'} · Dorsal ${member.number}',
+                              '${member.status == 'suplente' ? 'Suplente' : 'Titular'} · ${member.number > 0 ? 'Dorsal ${member.number}' : 'Sin dorsal'}',
                               style: AppTypography.body(size: 12),
                             ),
                             trailing: p == null

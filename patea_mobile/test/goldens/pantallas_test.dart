@@ -66,10 +66,15 @@ import 'package:patea_mobile/features/players/players_list_screen.dart';
 import 'package:patea_mobile/features/social/leaderboard_screen.dart';
 import 'package:patea_mobile/features/social/social_feed_screen.dart';
 
+import 'package:patea_mobile/features/auth/login_screen.dart';
 import 'package:patea_mobile/features/coach/ai_coach_screen.dart';
-
+import 'package:patea_mobile/features/matches/create_match_screen.dart';
 import 'package:patea_mobile/features/matches/live_match_screen.dart';
 import 'package:patea_mobile/features/matches/match_chat_screen.dart';
+import 'package:patea_mobile/features/matches/match_evaluate_screen.dart';
+import 'package:patea_mobile/features/players/player_history_screen.dart';
+import 'package:patea_mobile/features/players/player_progression_screen.dart';
+import 'package:patea_mobile/features/splash/splash_screen.dart';
 import 'arnes.dart';
 
 /// Una pantalla y el nombre con el que se guarda su imagen.
@@ -157,6 +162,12 @@ final List<Caso> _pantallas = [
   ('tabla', () => const LeaderboardScreen()),
   ('entrenador', () => const AICoachScreen()),
   ('comunidad', () => const SocialFeedScreen()),
+  ('splash', () => const SplashScreen()),
+  ('login', () => const LoginScreen()),
+  ('crear_partido', () => const CreateMatchScreen()),
+  ('partido_evaluar', () => const MatchEvaluateScreen(matchId: 'match-3')),
+  ('jugador_historial', () => const PlayerHistoryScreen(playerId: uidYo)),
+  ('jugador_progresion', () => const PlayerProgressionScreen(playerId: uidYo)),
 ];
 
 void main() {
@@ -253,7 +264,7 @@ void main() {
   });
 
   for (final (nombre, construir) in _pantallas) {
-    Widget construirParaPrueba() => nombre == 'panel'
+    Widget construirParaPrueba() => (nombre == 'panel' || nombre == 'splash')
         ? Builder(
             builder: (context) => MediaQuery(
               data: MediaQuery.of(context).copyWith(disableAnimations: true),

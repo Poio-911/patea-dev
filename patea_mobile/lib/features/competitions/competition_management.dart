@@ -178,19 +178,40 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
   @override
   Widget build(BuildContext context) {
     final group = ref.watch(groupTeamsStreamProvider(widget.groupId));
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
+    return PopScope<dynamic>(
+      canPop: !_saving && _step == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_saving && _step > 0) {
+          setState(() {
+            _step--;
+            _error = null;
+          });
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        title: Text(
-          widget.competition != null
-              ? 'Configurar torneo'
-              : widget.isCup
-              ? 'Crear copa'
-              : 'Crear liga',
-          style: AppTypography.headline(size: 20),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          leading: _step > 0
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _saving
+                      ? null
+                      : () => setState(() {
+                          _step--;
+                          _error = null;
+                        }),
+                )
+              : null,
+          title: Text(
+            widget.competition != null
+                ? 'Configurar torneo'
+                : widget.isCup
+                ? 'Crear copa'
+                : 'Crear liga',
+            style: AppTypography.headline(size: 20),
+          ),
         ),
-      ),
       body: PateaBackground(
         child: Column(
           children: [
@@ -555,7 +576,11 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
                   child: FilledButton.icon(
                     onPressed: _saving ? null : _next,
                     icon: _saving
-                        ? const PateaButtonProgress()
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: PateaButtonProgress(),
+                          )
                         : Icon(_step == 2 ? Icons.check : Icons.arrow_forward),
                     label: Text(
                       _saving
@@ -575,6 +600,7 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

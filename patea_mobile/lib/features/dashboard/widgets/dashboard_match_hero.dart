@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/models/group_model.dart';
 import '../../../core/models/match_model.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/match_theme.dart'
@@ -75,7 +76,7 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
         ? '${m.playerUids.length}/${m.matchSize}'
         : '${m.playerUids.length}';
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: AppRadii.surfaceAll,
       child: Stack(
         children: [
           Positioned.fill(
@@ -118,7 +119,7 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
                         ),
                         decoration: BoxDecoration(
                           color: c.onPhoto.withValues(alpha: .10),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: AppRadii.pillAll,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -238,7 +239,7 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
                               widget.isLive ? phase : 'Nos vemos en la cancha',
                               textAlign: TextAlign.center,
                               style: AppTypography.body(
-                                size: 11,
+                                size: 12,
                                 color: c.onPhotoMuted,
                               ),
                             ),
@@ -289,7 +290,7 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
                     ),
                     decoration: BoxDecoration(
                       color: c.onPhoto.withValues(alpha: .07),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadii.cardAll,
                     ),
                     child: Row(
                       children: [
@@ -297,7 +298,7 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
                         const SizedBox(width: 9),
                         Expanded(
                           child: Text(
-                            '${goals.first.minute}′ · ${goals.first.playerName.isEmpty ? 'Gol registrado' : goals.first.playerName}${goals.first.goalType == 'own_goal' ? ' (en contra)' : ''}',
+                            '${goals.first.minute}\' · ${goals.first.playerName.isEmpty ? 'Gol registrado' : goals.first.playerName}${goals.first.goalType == 'own_goal' ? ' (en contra)' : ''}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.body(
@@ -355,8 +356,8 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
                         : '/matches/${m.id}',
                   ),
                   style: FilledButton.styleFrom(
-                    backgroundColor: c.brandVolt,
-                    foregroundColor: PateaColors.game.onPrimary,
+                    backgroundColor: c.primary,
+                    foregroundColor: c.onPrimary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -379,7 +380,7 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
                           style: AppTypography.body(
                             size: 14,
                             weight: FontWeight.w700,
-                            color: PateaColors.game.onPrimary,
+                            color: c.onPrimary,
                           ),
                         ),
                       ),
@@ -453,7 +454,7 @@ class _BroadcastTeam extends StatelessWidget {
               if (players.length > 2)
                 Text(
                   '+${players.length - 2}',
-                  style: AppTypography.body(size: 10, color: c.onPhotoMuted),
+                  style: AppTypography.body(size: 12, color: c.onPhotoMuted),
                 ),
             ],
           ),

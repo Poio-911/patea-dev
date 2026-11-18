@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/models/match_model.dart';
 import '../../../core/services/match_result_service.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/utils/dates.dart';
@@ -45,7 +46,7 @@ class LatestMatchReview extends ConsumerWidget {
         const SizedBox(height: 13),
         InkWell(
           onTap: openMatch,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadii.cardAll,
           child: PateaActivityCover(
             image: MatchPhotography.forMatch(match.id),
             title: match.title,

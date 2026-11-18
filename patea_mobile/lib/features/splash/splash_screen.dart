@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_brand.dart';
@@ -57,7 +58,7 @@ class SplashScreen extends StatelessWidget {
                     value: reduced ? 0.5 : null,
                     backgroundColor: context.c.overlayLine,
                     color: context.c.primary,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadii.hairAll,
                   ),
                 ),
               ),

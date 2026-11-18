@@ -159,30 +159,51 @@ class PateaPageHeader extends StatelessWidget {
         // 3. Fila de Contador y Filtros (opcional)
         if (showCountRow) ...[
           const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    '$currentCount/$totalCount $countLabel',
-                    style: AppTypography.body(
-                      size: 12,
-                      weight: FontWeight.w600,
-                      color: c.textSecondary,
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '$currentCount/$totalCount $countLabel',
+                        style: AppTypography.body(
+                          size: 12,
+                          weight: FontWeight.w600,
+                          color: c.textSecondary,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: onHelpTap,
-                    child: Icon(
-                      Icons.help_outline_rounded,
-                      size: 15,
-                      color: c.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+                    if (onHelpTap != null)
+                      Semantics(
+                        button: true,
+                        label: 'Ayuda sobre $countLabel',
+                        child: InkWell(
+                          onTap: onHelpTap,
+                          borderRadius: AppRadii.pillAll,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 44,
+                              minHeight: 44,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.help_outline_rounded,
+                                size: 17,
+                                color: c.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               InkWell(
                 onTap: onFiltersTap,
                 borderRadius: AppRadii.cardAll,
@@ -190,7 +211,7 @@ class PateaPageHeader extends StatelessWidget {
                   color: c.card.withValues(alpha: 0.70),
                   radius: AppRadii.cardAll,
                   borderColor: activeFilterCount > 0
-                      ? c.brandVolt.withValues(alpha: 0.7)
+                      ? c.primary.withValues(alpha: 0.7)
                       : c.border.withValues(alpha: 0.6),
                   borderWidth: 1,
                   padding: const EdgeInsets.symmetric(
@@ -198,6 +219,7 @@ class PateaPageHeader extends StatelessWidget {
                     vertical: 6,
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.filter_list_rounded,
@@ -218,8 +240,14 @@ class PateaPageHeader extends StatelessWidget {
                       if (activeFilterCount > 0) ...[
                         const SizedBox(width: 6),
                         Container(
-                          width: 17,
-                          height: 17,
+                          constraints: const BoxConstraints(
+                            minWidth: 20,
+                            minHeight: 20,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: c.primary,
@@ -228,7 +256,7 @@ class PateaPageHeader extends StatelessWidget {
                           child: Text(
                             '$activeFilterCount',
                             style: AppTypography.code(
-                              size: 9,
+                              size: 12,
                               color: c.onPrimary,
                             ),
                           ),
@@ -245,6 +273,7 @@ class PateaPageHeader extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ],
       ],

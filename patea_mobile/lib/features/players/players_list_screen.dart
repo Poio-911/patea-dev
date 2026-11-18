@@ -1,8 +1,9 @@
-import '../../core/widgets/patea_background.dart';
 import '../../core/widgets/patea_activity_cover.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_help_dialog.dart';
+import '../../core/widgets/patea_states.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/constants/sections.dart';
 import 'package:flutter/services.dart';
@@ -163,7 +164,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                           prefixIcon: Icon(
                             Icons.search,
                             size: 20,
-                            color: context.c.overlayStrong,
+                            color: context.c.textSecondary,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -192,7 +193,10 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                               HapticFeedback.selectionClick();
                               update(() => _selectedPosition = pos);
                             },
-                            child: _chip(pos, _selectedPosition == pos),
+                            child: _chip(
+                              pos == 'ALL' ? 'Todos' : pos,
+                              _selectedPosition == pos,
+                            ),
                           ),
                       ],
                     ),
@@ -275,12 +279,7 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
   );
 
   @override
-  Widget build(BuildContext context) => PateaBackground(
-    scene: PateaBackgroundScene.players,
-    child: _buildScreen(context),
-  );
-
-  Widget _buildScreen(BuildContext context) {
+  Widget build(BuildContext context) {
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
     final minimumCardWidth = MediaQuery.textScalerOf(context).scale(14) > 20
         ? 260.0
@@ -357,6 +356,10 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     currentCount: filtered.length,
                     totalCount: players.length,
                     activeFilterCount: _activeFilterCount,
+                    onHelpTap: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => const PateaHelpDialog(),
+                    ),
                     onFiltersTap: _openFilters,
                     actionButton: PateaHeaderActionButton(
                       label: spec(Section.players).action!,
@@ -459,13 +462,11 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
             ],
           );
         },
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: context.c.primary)),
-        error: (err, stack) => Center(
-          child: Text(
-            'Error: $err',
-            style: TextStyle(color: context.c.textPrimary),
-          ),
+        loading: () => const PateaLoading(),
+        error: (err, stack) => PateaError(
+          error: err,
+          message: 'No pudimos cargar el plantel.',
+          onRetry: () => ref.invalidate(activeGroupPlayersProvider),
         ),
       ),
     );

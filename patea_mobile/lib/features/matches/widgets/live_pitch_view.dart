@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/patea_avatar.dart';
 
 import '../../../core/models/match_model.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -90,7 +91,7 @@ class LivePitchView extends StatelessWidget {
     return SizedBox(
       height: height,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadii.cardAll,
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -204,7 +205,9 @@ class _Half extends StatelessWidget {
         rows.add(line.sublist(i, (i + 3).clamp(0, line.length)));
       }
     }
-    final color = _teamColor(context.c.brandVolt);
+    final color = _teamColor(
+      attackingDown ? context.c.accent : context.c.brandVolt,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 5, 12, 5),
       child: Column(
@@ -222,7 +225,7 @@ class _Half extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.body(
-                    size: 10,
+                    size: 12,
                     weight: FontWeight.w700,
                     color: context.c.onPhotoMuted,
                   ),
@@ -387,7 +390,7 @@ class _PlayerDot extends StatelessWidget {
           '${player.displayName}, ${player.position}, OVR ${player.ovr}, $goals goles',
       child: InkWell(
         onTap: () => _open(context),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadii.chipAll,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 120),
           child: Column(
@@ -423,49 +426,73 @@ class _PlayerDot extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    right: 0,
-                    top: -2,
-                    child: Text(
-                      '${player.ovr}',
-                      style: AppTypography.sportNumber(
-                        size: 16,
-                        color: context.c.brandVolt,
-                      ).copyWith(shadows: [shadow]),
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    bottom: 5,
-                    child: Text(
-                      player.position,
-                      style: AppTypography.body(
-                        size: 9,
-                        weight: FontWeight.w700,
-                        color: context.c.onPhoto,
-                      ).copyWith(shadows: [shadow]),
+                    bottom: -4,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: context.c.photoFallback.withValues(alpha: 0.90),
+                        borderRadius: AppRadii.chipAll,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              player.position,
+                              style: AppTypography.body(
+                                size: 12,
+                                weight: FontWeight.w700,
+                                color: context.c.onPhotoMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${player.ovr}',
+                              style: AppTypography.sportNumber(
+                                size: 13,
+                                color: context.c.brandVolt,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   if (goals > 0)
                     Positioned(
-                      right: -6,
-                      bottom: -2,
+                      right: 2,
+                      top: -2,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: context.c.brandVolt,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppRadii.chipAll,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 4,
                             vertical: 1,
                           ),
-                          child: Text(
-                            '⚽ $goals',
-                            style: AppTypography.body(
-                              size: 10,
-                              weight: FontWeight.w700,
-                              color: context.c.photoFallback,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.sports_soccer_rounded,
+                                size: 12,
+                                color: context.c.photoFallback,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '$goals',
+                                style: AppTypography.body(
+                                  size: 12,
+                                  weight: FontWeight.w700,
+                                  color: context.c.photoFallback,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

@@ -11,7 +11,7 @@ import '../../../core/services/match_service.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/player_avatar_fallback.dart';
+import '../../../core/widgets/patea_avatar.dart';
 
 /// Lo que queda del partido cuando terminó, con forma de revista.
 ///
@@ -197,7 +197,7 @@ class _Masthead extends StatelessWidget {
           Row(
             children: [
               PateaCard(
-                color: context.c.brandVolt.withValues(alpha: 0.15),
+                color: context.c.primary.withValues(alpha: 0.15),
                 radius: AppRadii.chipAll,
                 padding: const EdgeInsets.all(6),
                 child: Icon(
@@ -209,7 +209,7 @@ class _Masthead extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'CRÓNICA DEL PARTIDO',
+                  'Crónica del partido',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.code(
@@ -278,14 +278,12 @@ class _MvpMedallion extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: context.c.goldBorder, width: 2),
-              ),
-              child: ClipOval(child: _Avatar(player: player)),
+            PateaAvatar(
+              photoUrl: player.photoURL,
+              seed: player.uid,
+              size: 40,
+              borderColor: context.c.goldBorder,
+              borderWidth: 2,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -301,22 +299,22 @@ class _MvpMedallion extends StatelessWidget {
                       Icon(
                         Icons.emoji_events_rounded,
                         size: 13,
-                        color: context.c.goldBorder,
+                        color: context.c.goldText,
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'FIGURA DEL PARTIDO',
+                        'Figura del partido',
                         style: AppTypography.body(
-                          size: 11,
+                          size: 12,
                           weight: FontWeight.w600,
-                          color: context.c.ratingAccent,
+                          color: context.c.goldText,
                         ),
                       ),
                       if (votes > 0) ...[
                         Text(
                           '$votes voto${votes > 1 ? "s" : ""}',
                           style: AppTypography.body(
-                            size: 11,
+                            size: 12,
                             color: context.c.textSecondary,
                           ),
                         ),
@@ -565,7 +563,7 @@ class _Voices extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'VOCES DEL VESTUARIO',
+                  'Voces del vestuario',
                   style: AppTypography.code(
                     size: 12,
                     weight: FontWeight.w600,
@@ -653,12 +651,10 @@ class _VoiceCard extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: ClipOval(
-                      child: _Avatar(player: player, seed: name),
-                    ),
+                  PateaAvatar(
+                    photoUrl: player?.photoURL,
+                    seed: player?.uid ?? name,
+                    size: 28,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -678,10 +674,10 @@ class _VoiceCard extends StatelessWidget {
                           Text(
                             player!.position.toUpperCase(),
                             style: AppTypography.code(
-                              size: 8,
+                              size: 12,
                               weight: FontWeight.w700,
                               color: context.c.positionColor(player!.position),
-                            ).copyWith(letterSpacing: 1.2),
+                            ),
                           ),
                       ],
                     ),
@@ -721,7 +717,7 @@ class _CoverPending extends StatelessWidget {
           Row(
             children: [
               PateaCard(
-                color: context.c.brandVolt.withValues(alpha: 0.12),
+                color: context.c.primary.withValues(alpha: 0.12),
                 radius: AppRadii.cardAll,
                 padding: const EdgeInsets.all(8),
                 child: Icon(
@@ -760,7 +756,7 @@ class _CoverPending extends StatelessWidget {
             Text(
               error!,
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 11, color: context.c.destructive),
+              style: AppTypography.body(size: 12, color: context.c.destructive),
             ),
           ],
           const SizedBox(height: 14),
@@ -789,29 +785,6 @@ class _CoverPending extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Foto del jugador, o el muñeco generado si no tiene.
-class _Avatar extends StatelessWidget {
-  final MatchPlayerEntry? player;
-  final String? seed;
-
-  const _Avatar({required this.player, this.seed});
-
-  @override
-  Widget build(BuildContext context) {
-    final url = player?.photoURL;
-    final fallbackSeed = player?.uid ?? seed ?? '?';
-    if (url == null || url.isEmpty) {
-      return PlayerAvatarFallback(seed: fallbackSeed);
-    }
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, error, stack) =>
-          PlayerAvatarFallback(seed: fallbackSeed),
     );
   }
 }

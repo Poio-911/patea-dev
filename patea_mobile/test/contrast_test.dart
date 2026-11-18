@@ -33,6 +33,17 @@ void main() {
       final textos = {
         'textPrimary': c.textPrimary,
         'textSecondary': c.textSecondary,
+        'primary': c.primary,
+        'destructive': c.destructive,
+        'success': c.success,
+        'warningText': c.warningText,
+        'goldText': c.goldText,
+        'silverText': c.silverText,
+        'bronzeText': c.bronzeText,
+        'posDel': c.posDel,
+        'posMed': c.posMed,
+        'posDef': c.posDef,
+        'posPor': c.posPor,
       };
 
       superficies.forEach((sn, sc) {
@@ -45,11 +56,30 @@ void main() {
         });
       });
 
-      test('onPrimary sobre primary', () {
-        final r = _contraste(c.onPrimary, c.primary);
-        expect(r, greaterThanOrEqualTo(minimo),
-            reason: 'el texto del botón primario da '
-                '${r.toStringAsFixed(2)}:1');
+      test('onPrimary sobre primary, destructive y success', () {
+        for (final (label, bg) in [
+          ('primary', c.primary),
+          ('destructive', c.destructive),
+          ('success', c.success),
+        ]) {
+          final r = _contraste(c.onPrimary, bg);
+          expect(r, greaterThanOrEqualTo(minimo),
+              reason: 'onPrimary sobre $label da ${r.toStringAsFixed(2)}:1');
+        }
+      });
+
+      test('pos* sobre fondo de chip @0.12 en cardSurface', () {
+        for (final (label, tc) in [
+          ('posDel', c.posDel),
+          ('posMed', c.posMed),
+          ('posDef', c.posDef),
+          ('posPor', c.posPor),
+        ]) {
+          final bg = Color.alphaBlend(tc.withValues(alpha: 0.12), c.cardSurface);
+          final r = _contraste(tc, bg);
+          expect(r, greaterThanOrEqualTo(minimo),
+              reason: '$label sobre chip @0.12 da ${r.toStringAsFixed(2)}:1');
+        }
       });
     });
   }

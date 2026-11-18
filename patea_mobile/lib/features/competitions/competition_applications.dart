@@ -150,7 +150,11 @@ class _ApplyState extends ConsumerState<CompetitionApplySheet> {
                         }
                       },
                 icon: _busy
-                    ? const PateaButtonProgress()
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: PateaButtonProgress(),
+                      )
                     : const Icon(Icons.send_outlined),
                 label: Text(_busy ? 'Enviando…' : 'Enviar solicitud'),
               ),
@@ -294,7 +298,7 @@ class _ApplicationsState extends ConsumerState<CompetitionApplicationsPanel> {
                     ? 'Sin solicitudes pendientes'
                     : 'Todavía no hay solicitudes resueltas',
                 hint:
-                    'Las postulaciones de equipos y los registros de la web aparecen acá.',
+                    'Las postulaciones de equipos y las inscripciones externas aparecen acá.',
               );
             }
             return Column(
@@ -342,7 +346,7 @@ class _ApplicationsState extends ConsumerState<CompetitionApplicationsPanel> {
                         if (a['source'] == 'external')
                           const Padding(
                             padding: EdgeInsets.only(top: 6),
-                            child: Text('Inscripción externa de la web'),
+                            child: Text('Inscripción externa'),
                           ),
                         if ((a['message'] ?? '').toString().isNotEmpty)
                           Padding(

@@ -102,7 +102,7 @@ class OvrProgressionChart extends StatelessWidget {
                     getTitlesWidget: (val, _) => Text(
                       '${val.round()}',
                       style: AppTypography.code(
-                        size: 10,
+                        size: 12,
                         color: c.textSecondary,
                       ),
                     ),
@@ -165,7 +165,7 @@ class _MiniStat extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTypography.body(size: 11, color: c.textSecondary),
+            style: AppTypography.body(size: 12, color: c.textSecondary),
           ),
         ],
       ),

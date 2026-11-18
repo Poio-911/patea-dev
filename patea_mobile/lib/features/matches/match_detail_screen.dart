@@ -3,6 +3,7 @@ import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_states.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_avatar.dart';
 import 'dart:ui' show ImageFilter;
@@ -24,7 +25,6 @@ import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/jersey_painter.dart';
-import '../../core/widgets/player_avatar_fallback.dart';
 import '../../core/widgets/player_card_preview.dart';
 import 'widgets/edit_teams_sheet.dart';
 import 'widgets/join_requests_section.dart';
@@ -291,7 +291,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     bool submitting = false;
     final locationService = LocationService();
 
-    await showDialog<void>(
+    final route = DialogRoute<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -389,10 +389,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 foregroundColor: context.c.onPrimary,
               ),
               child: submitting
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: const PateaButtonProgress(),
+                      child: PateaButtonProgress(),
                     )
                   : const Text('Guardar'),
             ),
@@ -400,6 +400,10 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         ),
       ),
     );
+    await Navigator.of(context, rootNavigator: true).push(route);
+    await route.completed;
+    debounce?.cancel();
+    controller.dispose();
   }
 
   void _showSnack(String text) {
@@ -462,7 +466,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 ? context.c.background.withValues(alpha: 0.96)
                 : Colors.transparent,
             surfaceTintColor: Colors.transparent,
-            elevation: _showCollapsedTitle ? 1 : 0,
+            elevation: 0,
             shape: _showCollapsedTitle
                 ? Border(
                     bottom: BorderSide(
@@ -711,15 +715,14 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       },
       loading: () => const Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(child: CircularProgressIndicator()),
+        body: PateaLoading(),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(
-          child: Text(
-            'Error: $e',
-            style: AppTypography.body(color: context.c.destructive),
-          ),
+        body: PateaError(
+          error: e,
+          message: 'No pudimos cargar este partido.',
+          onRetry: () => ref.invalidate(singleMatchStreamProvider(widget.matchId)),
         ),
       ),
     );
@@ -746,7 +749,9 @@ class _TeamsRoster extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '${match.players.length} JUGADORES',
+              match.players.length == 1
+                  ? '1 jugador'
+                  : '${match.players.length} jugadores',
               style: AppTypography.body(
                 size: 12,
                 weight: FontWeight.w600,
@@ -915,21 +920,21 @@ class _MosaicPlayer extends StatelessWidget {
       case 'POR':
       case 'ARQUERO':
       case 'PORTERO':
-        return 'ARQUERO';
+        return 'Arquero';
       case 'DEF':
       case 'DEFENSOR':
       case 'DEFENSA':
-        return 'DEFENSOR';
+        return 'Defensor';
       case 'MED':
       case 'VOLANTE':
       case 'MEDIO':
       case 'MEDIOCAMPISTA':
-        return 'VOLANTE';
+        return 'Volante';
       case 'DEL':
       case 'DELANTERO':
-        return 'DELANTERO';
+        return 'Delantero';
       default:
-        return pos.isNotEmpty ? pos.toUpperCase() : 'JUGADOR';
+        return pos.isNotEmpty ? pos : 'Jugador';
     }
   }
 
@@ -944,27 +949,10 @@ class _MosaicPlayer extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
             children: [
-              SizedBox(
-                width: 46,
-                height: 46,
-                child: ClipOval(
-                  child: (photo == null || photo!.isEmpty)
-                      ? PlayerAvatarFallback(
-                          seed: player.uid.isNotEmpty
-                              ? player.uid
-                              : player.displayName,
-                        )
-                      : Image.network(
-                          photo!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, error, stack) =>
-                              PlayerAvatarFallback(
-                                seed: player.uid.isNotEmpty
-                                    ? player.uid
-                                    : player.displayName,
-                              ),
-                        ),
-                ),
+              PateaAvatar(
+                photoUrl: photo,
+                seed: player.uid.isNotEmpty ? player.uid : player.displayName,
+                size: 46,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1067,22 +1055,26 @@ class _PlayerMatchBadges extends StatelessWidget {
               color: context.c.goldBorder.withValues(alpha: 0.2),
               radius: AppRadii.hairAll,
               borderColor: context.c.goldBorder.withValues(alpha: 0.5),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.emoji_events_rounded,
-                    size: 9,
-                    color: context.c.goldBorder,
+                    size: 11,
+                    color: context.c.goldText,
                   ),
                   const SizedBox(width: 2),
-                  Text(
-                    'FIGURA',
-                    style: AppTypography.code(
-                      size: 7.5,
-                      weight: FontWeight.w800,
-                      color: context.c.goldBorder,
+                  Flexible(
+                    child: Text(
+                      'Figura',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: context.c.goldText,
+                      ),
                     ),
                   ),
                 ],
@@ -1090,16 +1082,30 @@ class _PlayerMatchBadges extends StatelessWidget {
             ),
           if (goals > 0)
             _MiniBadge(
-              label: goals > 1 ? '⚽ $goals' : '⚽',
+              icon: Icons.sports_soccer_rounded,
+              text: goals > 1 ? '$goals' : null,
+              semanticsLabel: '$goals ${goals == 1 ? 'gol' : 'goles'}',
               color: context.c.primary,
             ),
           if (assists > 0)
             _MiniBadge(
-              label: assists > 1 ? '👟 $assists' : '👟',
+              icon: Icons.trending_up_rounded,
+              text: assists > 1 ? '$assists' : null,
+              semanticsLabel: '$assists ${assists == 1 ? 'asistencia' : 'asistencias'}',
               color: context.c.textSecondary,
             ),
-          if (reds > 0) _MiniBadge(label: '🟥', color: context.c.destructive),
-          if (yellows > 0) _MiniBadge(label: '🟨', color: context.c.warning),
+          if (reds > 0)
+            _MiniBadge(
+              icon: Icons.style_rounded,
+              semanticsLabel: '$reds roja',
+              color: context.c.destructive,
+            ),
+          if (yellows > 0)
+            _MiniBadge(
+              icon: Icons.style_rounded,
+              semanticsLabel: '$yellows amarilla',
+              color: context.c.warningText,
+            ),
         ],
       ),
     );
@@ -1107,24 +1113,45 @@ class _PlayerMatchBadges extends StatelessWidget {
 }
 
 class _MiniBadge extends StatelessWidget {
-  final String label;
+  final IconData icon;
+  final String? text;
+  final String semanticsLabel;
   final Color color;
 
-  const _MiniBadge({required this.label, required this.color});
+  const _MiniBadge({
+    required this.icon,
+    this.text,
+    required this.semanticsLabel,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return PateaCard(
-      color: color.withValues(alpha: 0.14),
-      radius: AppRadii.hairAll,
-      borderColor: color.withValues(alpha: 0.35),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
-      child: Text(
-        label,
-        style: AppTypography.body(
-          size: 12,
-          weight: FontWeight.w600,
-          color: color,
+    return Semantics(
+      container: true,
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: PateaCard(
+        color: color.withValues(alpha: 0.14),
+        radius: AppRadii.hairAll,
+        borderColor: color.withValues(alpha: 0.35),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            if (text != null) ...[
+              const SizedBox(width: 3),
+              Text(
+                text!,
+                style: AppTypography.body(
+                  size: 12,
+                  weight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -1371,13 +1398,10 @@ class _OrganizerPanel extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: isShuffling ? null : onShuffle,
                       icon: isShuffling
-                          ? SizedBox(
+                          ? const SizedBox(
                               width: 14,
                               height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: context.c.primary,
-                              ),
+                              child: PateaButtonProgress(),
                             )
                           : const Icon(Icons.shuffle_rounded, size: 15),
                       label: Text(
@@ -1588,19 +1612,19 @@ class _StickyActionBar extends StatelessWidget {
         onPressed: () => context.push('/matches/${match.id}/live'),
         style: ElevatedButton.styleFrom(
           backgroundColor: context.c.destructive,
-          foregroundColor: context.c.textPrimary,
+          foregroundColor: context.c.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          elevation: 4,
+          elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
         icon: Icon(
           Icons.sensors_rounded,
           size: 20,
-          color: context.c.textPrimary,
+          color: context.c.onPrimary,
         ),
         label: Text(
           isOwner ? 'Dirigir en vivo' : 'Seguir en vivo',
-          style: AppTypography.action(size: 16, color: context.c.textPrimary),
+          style: AppTypography.action(size: 16, color: context.c.onPrimary),
         ),
       );
     } else if (isCompleted && !isCompetition) {
@@ -1614,7 +1638,7 @@ class _StickyActionBar extends StatelessWidget {
           backgroundColor: context.c.primary,
           foregroundColor: context.c.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          elevation: 4,
+          elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
         icon: Icon(
@@ -1731,13 +1755,10 @@ class _StickyActionBar extends StatelessWidget {
                     ),
                   ),
                   icon: isJoining
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.c.textSecondary,
-                          ),
+                          child: PateaButtonProgress(),
                         )
                       : Icon(
                           Icons.logout_rounded,
@@ -1805,7 +1826,7 @@ class _StickyActionBar extends StatelessWidget {
               backgroundColor: context.c.primary,
               foregroundColor: context.c.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              elevation: 4,
+              elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
             ),
             icon: isJoining
@@ -1842,7 +1863,7 @@ class _StickyActionBar extends StatelessWidget {
             10 + MediaQuery.of(context).padding.bottom,
           ),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.88),
+            color: context.c.popover.withValues(alpha: 0.92),
             border: Border(
               top: BorderSide(color: context.c.border.withValues(alpha: 0.35)),
             ),

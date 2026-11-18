@@ -143,8 +143,8 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                                         begin: Alignment.topCenter,
                                         end: Alignment.bottomCenter,
                                         colors: [
-                                          Colors.black.withValues(alpha: 0.15),
-                                          Colors.black.withValues(alpha: 0.65),
+                                          c.photoFallback.withValues(alpha: 0.15),
+                                          c.photoFallback.withValues(alpha: 0.65),
                                         ],
                                       ),
                                     ),
@@ -155,7 +155,7 @@ class _PateaHelpDialogState extends State<PateaHelpDialog> {
                                     child: Text(
                                       step.eyebrow,
                                       style: AppTypography.code(
-                                        size: 11,
+                                        size: 12,
                                         weight: FontWeight.w700,
                                         color: c.onPhoto,
                                       ),

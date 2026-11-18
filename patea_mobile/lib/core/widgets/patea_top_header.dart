@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_typography.dart';
+import '../utils/photo_url.dart';
 import 'patea_brand.dart';
 import 'patea_help_dialog.dart';
 import 'patea_user_menu_sheet.dart';
@@ -64,7 +65,10 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
 
     final userPosition = overrideUserPosition ?? player?.position;
     final userPhotoUrl =
-        overrideUserPhotoUrl ?? player?.photoUrl ?? currentUser?.photoURL;
+        nonEmptyPhotoUrl(overrideUserPhotoUrl) ??
+        nonEmptyPhotoUrl(player?.photoUrl) ??
+        ref.watch(currentAuthPhotoUrlProvider);
+    final usePlayerCrop = nonEmptyPhotoUrl(overrideUserPhotoUrl) == null && player != null;
     final initial = (firstName != null && firstName.isNotEmpty)
         ? firstName[0].toUpperCase()
         : 'P';
@@ -255,6 +259,9 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                   seed: currentUser?.uid ?? initial,
                                   size: 36,
                                   borderColor: context.c.overlayStrong,
+                                  cropX: usePlayerCrop ? player.cropX : 50,
+                                  cropY: usePlayerCrop ? player.cropY : 50,
+                                  cropZoom: usePlayerCrop ? player.cropZoom : 1,
                                 ),
 
                                 const SizedBox(width: 3),

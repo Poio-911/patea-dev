@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import '../theme/patea_colors.dart';
 
@@ -29,7 +30,7 @@ class PateaSectionScene extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadii.cardAll,
         child: AspectRatio(
           aspectRatio: 2,
           child: LayoutBuilder(

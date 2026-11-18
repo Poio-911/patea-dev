@@ -2,6 +2,7 @@ import '../../core/utils/availability_labels.dart';
 import '../../core/utils/explore_filters.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_button_progress.dart';
+import '../../core/widgets/patea_states.dart';
 import 'dart:async';
 import '../../core/widgets/patea_card.dart';
 import '../../core/constants/sections.dart';
@@ -208,7 +209,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
     final available = ref.watch(myAvailabilityStreamProvider(widget.uid));
     final savedAsync = ref.watch(savedLocationStreamProvider(widget.uid));
     if (savedAsync.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const PateaLoading();
     }
     final saved = savedAsync.value;
     final matches =
@@ -247,7 +248,7 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         children: [
           Text(
             'Buscar jugadores para',
-            style: AppTypography.body(size: 11, color: context.c.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
           Row(
             children: [
@@ -409,19 +410,13 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
           ),
           const SizedBox(height: 4),
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const PateaLoading(height: 160)
           else if (_error != null)
-            Column(
-              children: [
-                Text(_error!),
-                TextButton(
-                  onPressed: () => _load(selected, zone, key),
-                  child: const Text('Reintentar'),
-                ),
-              ],
+            PateaError(
+              error: _error,
+              message: _error!,
+              compact: true,
+              onRetry: () => _load(selected, zone, key),
             )
           else if (players.isEmpty)
             PateaSectionScene(
@@ -449,13 +444,10 @@ LocationSuggestion _savedZone(Map<String, dynamic>? saved) =>
       placeId: '',
     );
 
-Color _discoveryOvrColor(BuildContext context) =>
-    context.c.isDarkSurface ? const Color(0xFFFFD56A) : const Color(0xFF885800);
+Color _discoveryOvrColor(BuildContext context) => context.c.ratingAccent;
 
 Color _discoveryPositionColor(BuildContext context, String position) =>
-    context.c.isDarkSurface
-    ? context.c.positionColor(position)
-    : Color.lerp(context.c.positionColor(position), context.c.textPrimary, .4)!;
+    context.c.positionColor(position);
 
 class _DiscoveryPlayerRow extends StatelessWidget {
   final AvailablePlayerModel player;
@@ -529,7 +521,7 @@ class _DiscoveryPlayerRow extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.body(
-                        size: 11,
+                        size: 12,
                         color: context.c.textSecondary,
                       ),
                     ),
@@ -549,7 +541,7 @@ class _DiscoveryPlayerRow extends StatelessWidget {
                   Text(
                     'OVR',
                     style: AppTypography.body(
-                      size: 9,
+                      size: 12,
                       color: context.c.textSecondary,
                     ),
                   ),
@@ -631,7 +623,7 @@ class _ZoneControl extends StatelessWidget {
                     Text(
                       suggested ? 'Zona sugerida · Cambiar' : 'Cambiar zona',
                       style: AppTypography.body(
-                        size: 10,
+                        size: 12,
                         color: context.c.textSecondary,
                       ),
                     ),
@@ -1044,7 +1036,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                 Text(
                   'Tu convocatoria',
                   style: AppTypography.body(
-                    size: 11,
+                    size: 12,
                     color: context.c.textSecondary,
                   ),
                 ),
@@ -1338,7 +1330,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: context.c.border.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadii.hairAll,
                 ),
               ),
             ),
@@ -1379,7 +1371,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                             ? 'Visible para organizadores en tu zona'
                             : 'Oculto (no recibirás convocatorias)',
                         style: AppTypography.body(
-                          size: 11,
+                          size: 12,
                           color: context.c.textSecondary,
                         ),
                       ),
@@ -1388,8 +1380,6 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                 ),
                 Switch(
                   value: _isVisible,
-                  activeThumbColor: context.c.primary,
-                  activeTrackColor: context.c.primary.withValues(alpha: 0.35),
                   onChanged: (v) {
                     HapticFeedback.selectionClick();
                     setState(() => _isVisible = v);
@@ -1401,10 +1391,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             Row(
               children: [
                 Text(
-                  'DÍAS Y HORARIOS',
+                  'Días y horarios',
                   style: AppTypography.code(
-                    size: 10,
-                    weight: FontWeight.w800,
+                    size: 12,
+                    weight: FontWeight.w700,
                     color: context.c.textSecondary,
                   ),
                 ),
@@ -1412,7 +1402,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                 Text(
                   'Atajos rápidos:',
                   style: AppTypography.body(
-                    size: 10,
+                    size: 12,
                     color: context.c.textSecondary,
                   ),
                 ),
@@ -1462,10 +1452,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             ),
             const SizedBox(height: 18),
             Text(
-              'ZONA DE JUEGO',
+              'Zona de juego',
               style: AppTypography.code(
-                size: 10,
-                weight: FontWeight.w800,
+                size: 12,
+                weight: FontWeight.w700,
                 color: context.c.textSecondary,
               ),
             ),
@@ -1473,7 +1463,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
             Text(
               'Organizadores de partidos cercanos a esta zona podrán encontrarte.',
               style: AppTypography.body(
-                size: 11,
+                size: 12,
                 color: context.c.textSecondary,
               ),
             ),
@@ -1605,7 +1595,7 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                     child: Text(
                       'Ubicación: $activeLocationLabel',
                       style: AppTypography.body(
-                        size: 11,
+                        size: 12,
                         color: context.c.textSecondary,
                       ),
                       maxLines: 1,
@@ -1636,18 +1626,13 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                         color: context.c.destructive.withValues(alpha: 0.5),
                       )
                     : BorderSide.none,
-                elevation: _isVisible ? 2 : 0,
+                elevation: 0,
               ),
               icon: _isSaving
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: _isVisible
-                            ? context.c.onPrimary
-                            : context.c.destructive,
-                      ),
+                      child: PateaButtonProgress(),
                     )
                   : Icon(
                       _isVisible ? Icons.check : Icons.visibility_off,
@@ -1655,13 +1640,12 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                     ),
               label: Text(
                 _isSaving
-                    ? 'GUARDANDO...'
+                    ? 'Guardando…'
                     : _isVisible
-                    ? 'GUARDAR DISPONIBILIDAD'
-                    : 'DESACTIVAR MODO PÚBLICO',
-                style: AppTypography.headline(
-                  size: 13,
-                  weight: FontWeight.w900,
+                    ? 'Guardar disponibilidad'
+                    : 'Desactivar modo público',
+                style: AppTypography.action(
+                  size: 15,
                   color: _isVisible
                       ? context.c.onPrimary
                       : context.c.destructive,
@@ -1710,7 +1694,7 @@ class _PresetChip extends StatelessWidget {
             Text(
               label,
               style: AppTypography.code(
-                size: 10,
+                size: 12,
                 weight: FontWeight.w700,
                 color: context.c.textPrimary,
               ),
@@ -1757,7 +1741,7 @@ class _CityChip extends StatelessWidget {
               Text(
                 label,
                 style: AppTypography.code(
-                  size: 10,
+                  size: 12,
                   weight: FontWeight.w700,
                   color: context.c.textPrimary,
                 ),
@@ -1819,7 +1803,7 @@ class _ScheduleMatrixPicker extends StatelessWidget {
                 boxShadow: isDayActive && !isDark
                     ? [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
+                          color: context.c.textPrimary.withValues(alpha: 0.04),
                           blurRadius: 4,
                           offset: const Offset(0, 1),
                         ),
@@ -1928,8 +1912,8 @@ class _ScheduleMatrixPicker extends StatelessWidget {
                                     Text(
                                       slotLabel,
                                       style: AppTypography.code(
-                                        size: 10,
-                                        weight: FontWeight.w800,
+                                        size: 12,
+                                        weight: FontWeight.w700,
                                         color: isSelected
                                             ? onPrimary
                                             : context.c.textSecondary,
@@ -2113,16 +2097,11 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('No pudimos cargar los partidos.'),
-          TextButton(
-            onPressed: () => ref.invalidate(publicMatchesStreamProvider),
-            child: const Text('Reintentar'),
-          ),
-        ],
+      loading: () => const PateaLoading(),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No pudimos cargar los partidos.',
+        onRetry: () => ref.invalidate(publicMatchesStreamProvider),
       ),
     );
   }
@@ -2231,9 +2210,9 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
               ),
               const SizedBox(width: 7),
               Text(
-                theme.label.toUpperCase(),
+                theme.label,
                 style: AppTypography.code(
-                  size: 11,
+                  size: 12,
                   weight: FontWeight.w700,
                   color: context.c.textSecondary,
                 ),
@@ -2339,20 +2318,24 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
                         icon: const Icon(Icons.hourglass_top_rounded, size: 16),
                         label: const Text('Pedido enviado'),
                       )
-                    : FilledButton.icon(
+                    : OutlinedButton.icon(
                         onPressed: _busy ? null : _join,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: context.c.primary,
-                          foregroundColor: context.c.onPrimary,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: context.c.cardSurface,
+                          foregroundColor: context.c.primary,
+                          side: BorderSide(
+                            color: context.c.primary.withValues(alpha: 0.4),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
                         ),
                         icon: _busy
-                            ? SizedBox(
+                            ? const SizedBox(
                                 width: 14,
                                 height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: context.c.onPrimary,
-                                ),
+                                child: PateaButtonProgress(),
                               )
                             : Icon(
                                 needsApproval
@@ -2362,10 +2345,9 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
                               ),
                         label: Text(
                           needsApproval ? 'Solicitar' : 'Unirme',
-                          style: AppTypography.headline(
-                            size: 13,
-                            weight: FontWeight.w800,
-                            color: context.c.onPrimary,
+                          style: AppTypography.action(
+                            size: 14,
+                            color: context.c.primary,
                           ),
                         ),
                       ),

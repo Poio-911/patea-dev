@@ -432,8 +432,9 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  // Una sombra es negra en los dos temas.
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: context.c.isDarkSurface
+                      ? context.c.photoFallback.withValues(alpha: 0.45)
+                      : context.c.textPrimary.withValues(alpha: 0.08),
                   blurRadius: 16,
                   offset: const Offset(0, -4),
                 ),

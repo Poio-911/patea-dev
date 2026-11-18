@@ -33,8 +33,51 @@ class MatchEvaluateScreen extends ConsumerStatefulWidget {
 
 class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
   bool _isFinalizing = false;
+  Future<List<PlayerModel>>? _playersFuture;
+  String? _playersMatchId;
+  List<String> _playersKey = const [];
+
+  Future<List<PlayerModel>> _ensurePlayersFuture(
+    String matchId,
+    List<String> uids,
+  ) {
+    final sameKey =
+        _playersFuture != null &&
+        _playersMatchId == matchId &&
+        _playersKey.length == uids.length &&
+        List.generate(uids.length, (i) => _playersKey[i] == uids[i])
+            .every((e) => e);
+    if (!sameKey) {
+      _playersMatchId = matchId;
+      _playersKey = List.of(uids);
+      _playersFuture =
+          ref.read(evaluationServiceProvider).getPlayersByIds(uids);
+    }
+    return _playersFuture!;
+  }
 
   Future<void> _finalize() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Finalizar evaluación'),
+        content: const Text(
+          'Esta acción calcula los nuevos OVRs y cierra definitivamente las evaluaciones pendientes de este partido.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Finalizar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
     setState(() => _isFinalizing = true);
     try {
       final updated = await ref.read(evaluationServiceProvider).finalizeMatchEvaluation(widget.matchId);
@@ -43,8 +86,15 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
         context.pop();
       }
     } catch (e) {
+      assert(() {
+        debugPrint('finalizeMatchEvaluation error: $e');
+        return true;
+      }());
       if (mounted) {
-        PateaSnack.error(context, '$e');
+        PateaSnack.error(
+          context,
+          'No se pudo finalizar la evaluación. Intentá de nuevo.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isFinalizing = false);
@@ -61,7 +111,12 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
       // El router envuelve esta ruta en `PateaBackground`. Sin esto, el
       // Scaffold pinta su color opaco encima y tapa la foto de cancha.
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text('EVALUACIÓN DEL PARTIDO', style: AppTypography.headline(size: 16, weight: FontWeight.w800))),
+      appBar: AppBar(
+        title: Text(
+          'Evaluación del partido',
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
+        ),
+      ),
       body: matchAsync.when(
         data: (match) {
           if (match == null) {
@@ -97,7 +152,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
             data: (assignments) {
               final completedAssignments = assignments.where((a) => a.status == 'completed').toList();
               return FutureBuilder<List<PlayerModel>>(
-                future: ref.read(evaluationServiceProvider).getPlayersByIds(match.playerUids),
+                future: _ensurePlayersFuture(match.id, match.playerUids),
                 builder: (context, snap) {
                   final players = snap.data ?? [];
                   final realPlayers = players.where((p) => p.id == p.ownerUid).toList();
@@ -136,7 +191,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text('$completed/$total', style: AppTypography.headline(size: 28, weight: FontWeight.w900)),
-                                  Text('EVALUARON', style: AppTypography.code(size: 10, weight: FontWeight.w700, color: context.c.textSecondary)),
+                                  Text('Evaluaron', style: AppTypography.code(size: 12, weight: FontWeight.w700, color: context.c.textSecondary)),
                                 ],
                               ),
                             ],
@@ -157,7 +212,7 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                               Expanded(
                                 child: Text(
                                   'Al finalizar, se calculan los cambios de OVR y atributos con las evaluaciones recibidas hasta ahora. Los jugadores que todavía no evaluaron reciben el promedio del partido.',
-                                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                                  style: AppTypography.body(size: 12, color: context.c.textSecondary),
                                 ),
                               ),
                             ]),
@@ -171,26 +226,26 @@ class _MatchEvaluateScreenState extends ConsumerState<MatchEvaluateScreen> {
                           onPressed: (completedAssignments.isEmpty || _isFinalizing) ? null : _finalize,
                           style: ElevatedButton.styleFrom(backgroundColor: context.c.primary, foregroundColor: context.c.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14)),
                           icon: _isFinalizing
-                              ? SizedBox(width: 16, height: 16, child: const PateaButtonProgress())
+                              ? const SizedBox(width: 16, height: 16, child: PateaButtonProgress())
                               : const Icon(Icons.emoji_events_outlined),
-                          label: Text(_isFinalizing ? 'Finalizando...' : 'FINALIZAR EVALUACIÓN'),
+                          label: Text(_isFinalizing ? 'Finalizando…' : 'Finalizar evaluación'),
                         ),
                       ),
                       if (completedAssignments.isEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Text('Necesitás al menos una evaluación completada para finalizar.', textAlign: TextAlign.center, style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                          child: Text('Necesitás al menos una evaluación completada para finalizar.', textAlign: TextAlign.center, style: AppTypography.body(size: 12, color: context.c.textSecondary)),
                         ),
                     ],
                   );
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const PateaLoading(),
             error: (e, _) => PateaError(error: e),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const PateaLoading(),
         error: (e, _) => PateaError(error: e),
       ),
     );

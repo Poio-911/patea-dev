@@ -77,6 +77,6 @@ void main() {
 
     // Y que efectivamente haya dibujado el contenido, no una tarjeta vacia.
     expect(find.text('3 - 6'), findsOneWidget);
-    expect(find.text('VOCES DEL VESTUARIO'), findsOneWidget);
+    expect(find.text('Voces del vestuario'), findsOneWidget);
   });
 }

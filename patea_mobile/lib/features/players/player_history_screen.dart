@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/firestore_service.dart';
+import '../../core/theme/app_insets.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import 'widgets/player_match_debrief.dart';
@@ -23,11 +24,11 @@ class PlayerHistoryScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         title: Text(
           'Historial de partidos',
-          style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 4, 18, 40),
+        padding: EdgeInsets.fromLTRB(18, 4, 18, bottomInset(context, extra: 24)),
         children: [
           Text(
             playerAsync.value?.name ?? 'Historial',

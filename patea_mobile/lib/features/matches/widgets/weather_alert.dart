@@ -5,7 +5,9 @@ import '../../../core/models/match_model.dart';
 import '../../../core/models/weather_advisory.dart';
 import '../../../core/services/match_weather_provider.dart';
 import '../../../core/theme/patea_colors.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/patea_button_progress.dart';
 
 /// Venue + kickoff forecast. Saved historical weather is never a current alert.
 class MatchWeatherAlert extends ConsumerStatefulWidget {
@@ -219,25 +221,20 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
     bool loading = false,
     WeatherAdvisory? warning,
   }) {
-    final ink = widget.onPhoto
-        ? const Color(0xFFF4F7F6)
-        : context.c.textPrimary;
-    final muted = widget.onPhoto
-        ? const Color(0xFFC3CDCA)
-        : context.c.textSecondary;
+    final c = context.c;
+    final ink = widget.onPhoto ? c.activityPhotoTitle : c.textPrimary;
+    final muted = widget.onPhoto ? c.onPhotoMuted : c.textSecondary;
     // Light theme still uses photographic ink over the shared dark cover.
     final caution = widget.onPhoto
-        ? const Color(0xFFFFD56A)
-        : Theme.of(context).brightness == Brightness.light
-        ? context.c.textPrimary
-        : context.c.warning;
+        ? PateaColors.game.ratingAccent
+        : c.warningText;
     return Semantics(
       button: true,
       label: 'Ver detalle del clima',
       child: InkWell(
         key: const ValueKey('match-weather-inline'),
         onTap: _openSheet,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadii.chipAll,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Column(
@@ -251,9 +248,9 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
                       SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.5,
-                          color: muted,
+                        child: DefaultTextStyle.merge(
+                          style: TextStyle(color: muted),
+                          child: const PateaButtonProgress(),
                         ),
                       )
                     else if (kind != null)
@@ -349,7 +346,7 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
                 const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: PateaButtonProgress(),
                 )
               else
                 Icon(
@@ -535,7 +532,7 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
             Text(
               'Riesgos previstos. No reemplazan los avisos meteorológicos oficiales.',
               style: AppTypography.body(
-                size: 11,
+                size: 12,
                 color: context.c.textSecondary,
               ),
             ),
@@ -543,7 +540,7 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
           const SizedBox(height: 12),
           Text(
             'Open-Meteo · Actualizado $updated',
-            style: AppTypography.body(size: 11, color: context.c.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
         ],
       ),
@@ -556,7 +553,7 @@ class _MatchWeatherAlertState extends ConsumerState<MatchWeatherAlert>
     children: [
       Text(
         title,
-        style: AppTypography.body(size: 11, color: context.c.textSecondary),
+        style: AppTypography.body(size: 12, color: context.c.textSecondary),
       ),
       const SizedBox(height: 3),
       Text(value, style: AppTypography.body(size: 15, weight: FontWeight.w600)),

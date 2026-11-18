@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/patea_button_progress.dart';
 import '../../../core/widgets/patea_card.dart';
 import '../../../core/widgets/patea_snack.dart';
+import '../../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/available_player_model.dart';
@@ -125,12 +127,11 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('FALTA GENTE',
+                  Text('Falta gente',
                       style: AppTypography.headline(
-                          size: 12,
+                          size: 14,
                           weight: FontWeight.w800,
-                          color: context.c.textSecondary,
-                          letterSpacing: 1.2)),
+                          color: context.c.textPrimary)),
                   const SizedBox(height: 4),
                   Text(
                     spotsLeft == 1
@@ -167,16 +168,16 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                   onPressed: _selected.isEmpty || _sending ? null : _invite,
                   style: FilledButton.styleFrom(
                     backgroundColor: context.c.primary,
-                    foregroundColor: context.c.background,
+                    foregroundColor: context.c.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
                   ),
                   child: _sending
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: context.c.background))
+                          child: PateaButtonProgress(),
+                        )
                       : Text(
                           _selected.isEmpty
                               ? 'Elegí a quién invitar'
@@ -186,7 +187,9 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                           style: AppTypography.headline(
                               size: 14,
                               weight: FontWeight.w800,
-                              color: context.c.background)),
+                              color: _selected.isEmpty || _sending
+                                  ? context.c.textSecondary
+                                  : context.c.onPrimary)),
                 ),
               ),
             ),
@@ -200,8 +203,12 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
     final playersAsync = ref.watch(activeGroupPlayersProvider);
 
     return playersAsync.when(
-      loading: () => Center(child: CircularProgressIndicator(color: context.c.primary)),
-      error: (e, _) => _Empty(text: 'No se pudieron cargar los jugadores del grupo.\n$e'),
+      loading: () => const PateaLoading(),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No pudimos cargar los jugadores del grupo.',
+        onRetry: () => ref.invalidate(activeGroupPlayersProvider),
+      ),
       data: (players) {
         // Los que ya están en el partido no se invitan de nuevo. Y sólo tiene
         // sentido invitar a jugadores con cuenta: los manuales no reciben nada.
@@ -210,8 +217,12 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
             .toList();
 
         if (candidates.isEmpty) {
-          return const _Empty(
-              text: 'Todos los jugadores del grupo con cuenta ya están en el partido.');
+          return const PateaEmpty(
+            icon: Icons.group_outlined,
+            title: 'Plantel completo',
+            hint:
+                'Todos los jugadores del grupo con cuenta ya están en el partido.',
+          );
         }
 
         return ListView.builder(
@@ -266,15 +277,24 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
   }
 
   Widget _buildNearbyList() {
-    if (_searchError != null) return _Empty(text: _searchError!);
+    if (_searchError != null) {
+      return PateaEmpty(
+        icon: Icons.wifi_off_outlined,
+        title: 'Sin resultados',
+        hint: _searchError!,
+      );
+    }
     if (_searching && _nearby == null) {
-      return Center(child: CircularProgressIndicator(color: context.c.primary));
+      return const PateaLoading();
     }
 
     final players = _nearby ?? const <AvailablePlayerModel>[];
     if (players.isEmpty) {
-      return const _Empty(
-          text: 'No hay jugadores libres en la zona. Probá agrandando el radio.');
+      return const PateaEmpty(
+        icon: Icons.travel_explore_outlined,
+        title: 'No hay jugadores libres en la zona',
+        hint: 'Probá agrandando el radio.',
+      );
     }
 
     return Stack(
@@ -300,13 +320,14 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
           },
         ),
         if (_searching)
-          Positioned(
+          const Positioned(
             top: 8,
             right: 24,
             child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary)),
+              width: 16,
+              height: 16,
+              child: PateaButtonProgress(),
+            ),
           ),
       ],
     );
@@ -336,27 +357,6 @@ class _Tab extends StatelessWidget {
                 weight: FontWeight.w700,
                 color: selected ? context.c.background : context.c.textSecondary)),
              ),
-    );
-  }
-}
-
-
-class _Empty extends StatelessWidget {
-  final String text;
-
-  const _Empty({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: AppTypography.body(size: 13, color: context.c.textSecondary),
-        ),
-      ),
     );
   }
 }

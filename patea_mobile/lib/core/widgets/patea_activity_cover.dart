@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import '../theme/patea_colors.dart';
 
@@ -20,7 +21,7 @@ class PateaActivityCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(18),
+    borderRadius: AppRadii.cardAll,
     child: Stack(
       children: [
         Positioned.fill(

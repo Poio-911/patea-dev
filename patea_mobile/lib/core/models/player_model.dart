@@ -1,3 +1,5 @@
+import '../utils/photo_url.dart';
+
 class PlayerStats {
   final int matchesPlayed;
   final int goals;
@@ -104,6 +106,7 @@ class PlayerModel {
   final double cropX;
   final double cropY;
   final double cropZoom;
+  final int? cardGenerationCredits;
 
   PlayerModel({
     required this.id,
@@ -126,6 +129,7 @@ class PlayerModel {
     this.cropX = 50,
     this.cropY = 50,
     this.cropZoom = 1,
+    this.cardGenerationCredits,
     PlayerStats? stats,
   }) : stats = stats ?? PlayerStats();
 
@@ -154,7 +158,7 @@ class PlayerModel {
       dri: (data['dri'] as num?)?.toInt() ?? 50,
       def: (data['def'] as num?)?.toInt() ?? 50,
       phy: (data['phy'] as num?)?.toInt() ?? 50,
-      photoUrl: data['photoUrl'] ?? data['photoURL'],
+      photoUrl: nonEmptyPhotoUrl((data['photoUrl'] ?? data['photoURL']) as String?),
       ownerUid: data['ownerUid'],
       groupId: data['groupId'],
       preferredFoot: data['preferredFoot'] as String?,
@@ -164,6 +168,7 @@ class PlayerModel {
       cropX: (data['cropPosition']?['x'] as num?)?.toDouble() ?? 50,
       cropY: (data['cropPosition']?['y'] as num?)?.toDouble() ?? 50,
       cropZoom: (data['cropZoom'] as num?)?.toDouble() ?? 1,
+      cardGenerationCredits: (data['cardGenerationCredits'] as num?)?.toInt(),
       stats: PlayerStats.fromMap(data['stats'] as Map<String, dynamic>?),
     );
   }
@@ -190,6 +195,39 @@ class PlayerModel {
       'cropZoom': cropZoom,
       'stats': stats.toMap(),
     };
+  }
+
+  /// Returns a copy with overridden display photo URL.
+  PlayerModel copyWith({String? photoUrl}) => PlayerModel(
+    id: id,
+    name: name,
+    position: position,
+    ovr: ovr,
+    pac: pac,
+    sho: sho,
+    pas: pas,
+    dri: dri,
+    def: def,
+    phy: phy,
+    photoUrl: photoUrl ?? this.photoUrl,
+    ownerUid: ownerUid,
+    groupId: groupId,
+    preferredFoot: preferredFoot,
+    bio: bio,
+    birthYear: birthYear,
+    nationality: nationality,
+    cropX: cropX,
+    cropY: cropY,
+    cropZoom: cropZoom,
+    cardGenerationCredits: cardGenerationCredits,
+    stats: stats,
+  );
+
+  /// Applies [fallbackUrl] only to linked account players lacking a player photo.
+  PlayerModel withFallbackPhoto(String? fallbackUrl) {
+    if (!hasAccount || nonEmptyPhotoUrl(photoUrl) != null) return this;
+    final resolved = nonEmptyPhotoUrl(fallbackUrl);
+    return resolved == null ? this : copyWith(photoUrl: resolved);
   }
 
   String get tier {

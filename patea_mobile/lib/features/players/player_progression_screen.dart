@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/player_model.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/utils/dates.dart';
 import '../../core/widgets/ovr_progression_chart.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_states.dart';
 
 /// Vista dedicada de `/players/[id]/progression`.
 class PlayerProgressionScreen extends ConsumerWidget {
@@ -28,17 +30,15 @@ class PlayerProgressionScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         title: Text(
           'Progresión de OVR',
-          style: AppTypography.headline(size: 17, weight: FontWeight.w700),
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
       ),
       body: playerAsync.when(
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: c.primary)),
-        error: (err, _) => Center(
-          child: Text(
-            'Error: $err',
-            style: AppTypography.body(color: c.textSecondary),
-          ),
+        loading: () => const PateaLoading(),
+        error: (err, _) => PateaError(
+          error: err,
+          message: 'No pudimos cargar la progresión del jugador.',
+          onRetry: () => ref.invalidate(singlePlayerStreamProvider(playerId)),
         ),
         data: (player) {
           if (player == null) {
@@ -51,16 +51,14 @@ class PlayerProgressionScreen extends ConsumerWidget {
           }
 
           return historyAsync.when(
-            loading: () =>
-                Center(child: CircularProgressIndicator(color: c.primary)),
-            error: (_, _) => Center(
-              child: Text(
-                'No se pudo cargar la progresión.',
-                style: AppTypography.body(size: 13, color: c.textSecondary),
-              ),
+            loading: () => const PateaLoading(),
+            error: (err, _) => PateaError(
+              error: err,
+              message: 'No se pudo cargar la progresión.',
+              onRetry: () => ref.invalidate(ovrHistoryStreamProvider(playerId)),
             ),
             data: (history) => ListView(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 40),
+              padding: EdgeInsets.fromLTRB(18, 4, 18, bottomInset(context, extra: 24)),
               children: [
                 Text(
                   player.name,
@@ -150,11 +148,24 @@ class _HistoryEntryRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${entry.oldOVR} → ${entry.newOVR} OVR',
-                  style: AppTypography.headline(
-                    size: 14,
-                    weight: FontWeight.w700,
+                Text.rich(
+                  TextSpan(
+                    style: AppTypography.headline(
+                      size: 14,
+                      weight: FontWeight.w700,
+                    ),
+                    children: [
+                      TextSpan(text: '${entry.oldOVR} '),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: c.textPrimary,
+                        ),
+                      ),
+                      TextSpan(text: ' ${entry.newOVR} OVR'),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 2),

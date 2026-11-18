@@ -114,53 +114,82 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
   }
 
   Future<void> _pickNumber(RosterEntry entry) async {
+    var selectedNumber = entry.number.clamp(0, 99);
+    final wheel = FixedExtentScrollController(initialItem: selectedNumber);
     final chosen = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => PateaCard(
         color: context.c.popover,
-        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        height: 300,
-        child: Column(
-          children: [
-            const SizedBox(height: 14),
-            Text(
-              'Número de ${entry.player.name}',
-              style: AppTypography.headline(size: 15, weight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListWheelScrollView.useDelegate(
-                itemExtent: 46,
-                perspective: 0.004,
-                physics: const FixedExtentScrollPhysics(),
-                controller: FixedExtentScrollController(
-                  initialItem: entry.number,
+        radius: AppRadii.surfaceTop,
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 340,
+            child: Column(
+              children: [
+                const SizedBox(height: 14),
+                Text(
+                  'Número de ${entry.player.name}',
+                  style: AppTypography.headline(size: 16, weight: FontWeight.w700),
                 ),
-                onSelectedItemChanged: (_) => HapticFeedback.selectionClick(),
-                childDelegate: ListWheelChildBuilderDelegate(
-                  childCount: 100,
-                  builder: (context, i) => Center(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(ctx, i),
-                      child: Text(
-                        i == 0 ? 'sin número' : '$i',
-                        style: AppTypography.sportNumber(
-                          size: i == 0 ? 16 : 24,
-                          color: i == 0
-                              ? context.c.textSecondary
-                              : context.c.textPrimary,
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListWheelScrollView.useDelegate(
+                    itemExtent: 46,
+                    perspective: 0.004,
+                    physics: const FixedExtentScrollPhysics(),
+                    controller: wheel,
+                    onSelectedItemChanged: (idx) {
+                      selectedNumber = idx;
+                      HapticFeedback.selectionClick();
+                    },
+                    childDelegate: ListWheelChildBuilderDelegate(
+                      childCount: 100,
+                      builder: (context, i) => Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(ctx, i),
+                          child: Text(
+                            i == 0 ? 'sin número' : '$i',
+                            style: AppTypography.sportNumber(
+                              size: i == 0 ? 16 : 24,
+                              color: i == 0
+                                  ? context.c.textSecondary
+                                  : context.c.textPrimary,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancelar'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () => Navigator.pop(ctx, selectedNumber),
+                          child: const Text('Confirmar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+    wheel.dispose();
     if (chosen != null) setState(() => entry.number = chosen);
   }
 
@@ -260,7 +289,10 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                 ),
                 child: Text(
                   'Números repetidos: ${(dups.toList()..sort()).join(', ')}',
-                  style: AppTypography.body(size: 12, color: context.c.warning),
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.warningText,
+                  ),
                 ),
               ),
 
@@ -398,7 +430,7 @@ class _RosterRow extends StatelessWidget {
                     style: TextButton.styleFrom(
                       minimumSize: const Size(48, 48),
                       foregroundColor: duplicated
-                          ? context.c.warning
+                          ? context.c.warningText
                           : context.c.textSecondary,
                     ),
                   ),

@@ -39,6 +39,15 @@ abstract final class PateaSnack {
   static void info(BuildContext context, String mensaje) =>
       _mostrar(context, mensaje, _Tono.info);
 
+  /// Aviso estilizado con marca/ícono propio (ej. confirmación de evaluación).
+  static void custom(
+    BuildContext context,
+    String mensaje, {
+    required Widget leading,
+    Color? borderColor,
+  }) =>
+      of(context).custom(mensaje, leading: leading, borderColor: borderColor);
+
   /// Para avisar **después de un `await`**.
   ///
   /// Pasado el await el widget puede estar desmontado y el `BuildContext` ya
@@ -75,14 +84,40 @@ class PateaSnackSender {
   void error(String mensaje) => _enviar(mensaje, _Tono.error);
   void info(String mensaje) => _enviar(mensaje, _Tono.info);
 
+  void custom(
+    String mensaje, {
+    required Widget leading,
+    Color? borderColor,
+  }) =>
+      _enviarCustom(mensaje, leading: leading, borderColor: borderColor);
+
   void _enviar(String mensaje, _Tono tono) {
     final (icono, color) = switch (tono) {
       _Tono.ok => (Icons.check_circle_rounded, _c.success),
       _Tono.error => (Icons.error_rounded, _c.destructive),
       _Tono.info => (Icons.info_rounded, _c.textSecondary),
     };
+    _enviarCustom(
+      mensaje,
+      leading: Icon(icono, size: 17, color: color),
+      borderColor: color,
+      duration: Duration(seconds: tono == _Tono.error ? 4 : 2),
+      gap: 10,
+      fontSize: 13.5,
+    );
+  }
+
+  void _enviarCustom(
+    String mensaje, {
+    required Widget leading,
+    Color? borderColor,
+    Duration duration = const Duration(seconds: 3),
+    double gap = 12,
+    double fontSize = 14,
+  }) {
     final messenger = _messenger;
     if (messenger == null) return;
+    final sideColor = borderColor ?? _c.border;
 
     messenger
       // Sin esto, tocar tres veces un botón que falla apila tres avisos y el
@@ -94,20 +129,20 @@ class PateaSnackSender {
           backgroundColor: _c.popover,
           elevation: 0,
           margin: const EdgeInsets.all(14),
-          duration: Duration(seconds: tono == _Tono.error ? 4 : 2),
+          duration: duration,
           shape: RoundedRectangleBorder(
             borderRadius: AppRadii.cardAll,
-            side: BorderSide(color: color.withValues(alpha: 0.45)),
+            side: BorderSide(color: sideColor.withValues(alpha: 0.45)),
           ),
           content: Row(
             children: [
-              Icon(icono, size: 17, color: color),
-              const SizedBox(width: 10),
+              leading,
+              SizedBox(width: gap),
               Expanded(
                 child: Text(
                   mensaje,
                   style: AppTypography.body(
-                    size: 13.5,
+                    size: fontSize,
                     color: _c.textPrimary,
                   ),
                 ),

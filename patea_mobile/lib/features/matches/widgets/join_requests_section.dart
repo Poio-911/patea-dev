@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/widgets/patea_button_progress.dart';
 import '../../../core/widgets/patea_card.dart';
 import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_avatar.dart';
@@ -60,12 +61,11 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
       children: [
         Row(
           children: [
-            Text('QUIEREN ENTRAR',
+            Text('Quieren entrar',
                 style: AppTypography.headline(
-                    size: 11,
+                    size: 13,
                     weight: FontWeight.w800,
-                    color: context.c.textSecondary,
-                    letterSpacing: 1.2)),
+                    color: context.c.textSecondary)),
             const SizedBox(width: 8),
             PateaCard(
               color: context.c.primary,
@@ -73,7 +73,7 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               child: Text('${requests.length}',
                   style: AppTypography.code(
-                      size: 11, weight: FontWeight.w800, color: context.c.background)),
+                      size: 12, weight: FontWeight.w800, color: context.c.onPrimary)),
             ),
           ],
         ),
@@ -135,18 +135,18 @@ class _RequestRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${request.position}  ·  OVR ${request.ovr}',
-                  style: AppTypography.body(size: 11, color: context.c.textSecondary),
+                  style: AppTypography.body(size: 12, color: context.c.textSecondary),
                 ),
               ],
             ),
           ),
           if (busy)
-            Padding(
+            const Padding(
               padding: EdgeInsets.symmetric(horizontal: 14),
               child: SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: context.c.primary),
+                child: PateaButtonProgress(),
               ),
             )
           else ...[

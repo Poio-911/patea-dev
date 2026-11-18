@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/player_model.dart';
@@ -5,6 +7,7 @@ import '../models/match_model.dart';
 import '../models/competition_model.dart';
 import '../models/group_model.dart';
 import '../models/evaluation_models.dart';
+import '../utils/photo_url.dart';
 import 'auth_service.dart';
 
 /// Ojo con la dependencia de abajo: NO es decorativa.
@@ -58,7 +61,13 @@ final activeGroupIdProvider = Provider<AsyncValue<String?>>((ref) {
 
 // Streams
 final playersStreamProvider = StreamProvider.family<List<PlayerModel>, String?>((ref, groupId) {
-  return ref.watch(firestoreServiceProvider).getPlayersStream(groupId: groupId);
+  final uid = ref.watch(currentUidProvider);
+  final authPhoto = ref.watch(currentAuthPhotoUrlProvider);
+  return ref.watch(firestoreServiceProvider).getResolvedPlayersStream(
+    groupId: groupId,
+    currentUid: uid,
+    currentAuthPhotoUrl: authPhoto,
+  );
 });
 
 /// Jugadores del grupo activo — la forma que deberían usar las pantallas.
@@ -71,7 +80,13 @@ final playersStreamProvider = StreamProvider.family<List<PlayerModel>, String?>(
 final activeGroupPlayersProvider = StreamProvider<List<PlayerModel>>((ref) {
   final groupAsync = ref.watch(activeGroupIdProvider);
   if (groupAsync.isLoading) return const Stream<List<PlayerModel>>.empty();
-  return ref.watch(firestoreServiceProvider).getPlayersStream(groupId: groupAsync.value);
+  final uid = ref.watch(currentUidProvider);
+  final authPhoto = ref.watch(currentAuthPhotoUrlProvider);
+  return ref.watch(firestoreServiceProvider).getResolvedPlayersStream(
+    groupId: groupAsync.value,
+    currentUid: uid,
+    currentAuthPhotoUrl: authPhoto,
+  );
 });
 
 /// Partidos del grupo activo. Mismo criterio de carga que los jugadores.
@@ -82,7 +97,13 @@ final activeGroupMatchesProvider = StreamProvider<List<MatchModel>>((ref) {
 });
 
 final singlePlayerStreamProvider = StreamProvider.family<PlayerModel?, String>((ref, playerId) {
-  return ref.watch(firestoreServiceProvider).getPlayerStream(playerId);
+  final uid = ref.watch(currentUidProvider);
+  final authPhoto = ref.watch(currentAuthPhotoUrlProvider);
+  return ref.watch(firestoreServiceProvider).getResolvedPlayerStream(
+    playerId,
+    currentUid: uid,
+    currentAuthPhotoUrl: authPhoto,
+  );
 });
 
 final ovrHistoryStreamProvider = StreamProvider.family<List<OvrHistoryEntry>, String>((ref, playerId) {
@@ -215,6 +236,145 @@ class FirestoreService {
       if (!doc.exists || doc.data() == null) return null;
       return PlayerModel.fromFirestore(doc.data()!, doc.id);
     });
+  }
+
+  /// Maps `uid -> photoURL` for members of [groupId] so linked player cards
+  /// match user avatars when `players/{uid}.photoUrl` is absent (matching web).
+  Stream<Map<String, String>> getGroupUserPhotosStream(String? groupId) {
+    if (groupId == null || groupId.isEmpty) {
+      return Stream.value(const <String, String>{});
+    }
+    return _firestore
+        .collection('users')
+        .where('groups', arrayContains: groupId)
+        .limit(QueryLimits.players)
+        .snapshots()
+        .map((snap) {
+          final photos = <String, String>{};
+          for (final doc in snap.docs) {
+            final url = nonEmptyPhotoUrl(doc.data()['photoURL'] as String?);
+            if (url != null) photos[doc.id] = url;
+          }
+          return photos;
+        });
+  }
+
+  Stream<String?> getUserPhotoStream(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((doc) => nonEmptyPhotoUrl(doc.data()?['photoURL'] as String?));
+  }
+
+  /// Combines group players with linked `users/{uid}.photoURL` (and Auth photo for
+  /// the signed-in user) without blocking on fallback failures.
+  Stream<List<PlayerModel>> getResolvedPlayersStream({
+    String? groupId,
+    int limit = QueryLimits.players,
+    String? currentUid,
+    String? currentAuthPhotoUrl,
+  }) {
+    final controller = StreamController<List<PlayerModel>>();
+    List<PlayerModel>? latestPlayers;
+    var latestUserPhotos = const <String, String>{};
+
+    void emit() {
+      final players = latestPlayers;
+      if (players == null || controller.isClosed) return;
+      controller.add([
+        for (final p in players)
+          p.withFallbackPhoto(
+            latestUserPhotos[p.id] ??
+                (p.id == currentUid ? nonEmptyPhotoUrl(currentAuthPhotoUrl) : null),
+          ),
+      ]);
+    }
+
+    final playersSub = getPlayersStream(groupId: groupId, limit: limit).listen(
+      (players) {
+        latestPlayers = players;
+        emit();
+      },
+      onError: (Object error, StackTrace stack) {
+        if (!controller.isClosed) controller.addError(error, stack);
+      },
+    );
+
+    final userPhotosSub = getGroupUserPhotosStream(groupId).listen(
+      (photos) {
+        latestUserPhotos = photos;
+        emit();
+      },
+      onError: (_, _) {
+        // Fallback photos are best-effort; keep roster streaming on failure.
+      },
+    );
+
+    controller.onCancel = () async {
+      await playersSub.cancel();
+      await userPhotosSub.cancel();
+    };
+    return controller.stream;
+  }
+
+  /// Resolves missing photo on a linked player lazily from `users/{playerId}`
+  /// or [currentAuthPhotoUrl] without extra reads when `player.photoUrl` exists.
+  Stream<PlayerModel?> getResolvedPlayerStream(
+    String playerId, {
+    String? currentUid,
+    String? currentAuthPhotoUrl,
+  }) {
+    final controller = StreamController<PlayerModel?>();
+    PlayerModel? latestPlayer;
+    String? latestUserPhoto;
+    StreamSubscription<String?>? userSub;
+
+    void emit() {
+      if (controller.isClosed) return;
+      final player = latestPlayer;
+      if (player == null) {
+        controller.add(null);
+        return;
+      }
+      final fallback =
+          latestUserPhoto ??
+          (player.id == currentUid ? nonEmptyPhotoUrl(currentAuthPhotoUrl) : null);
+      controller.add(player.withFallbackPhoto(fallback));
+    }
+
+    final playerSub = getPlayerStream(playerId).listen(
+      (player) {
+        latestPlayer = player;
+        final needsUserFallback =
+            player != null &&
+            player.hasAccount &&
+            nonEmptyPhotoUrl(player.photoUrl) == null;
+        if (!needsUserFallback) {
+          userSub?.cancel();
+          userSub = null;
+          latestUserPhoto = null;
+        } else {
+          userSub ??= getUserPhotoStream(playerId).listen(
+            (url) {
+              latestUserPhoto = url;
+              emit();
+            },
+            onError: (_, _) {},
+          );
+        }
+        emit();
+      },
+      onError: (Object error, StackTrace stack) {
+        if (!controller.isClosed) controller.addError(error, stack);
+      },
+    );
+
+    controller.onCancel = () async {
+      await playerSub.cancel();
+      await userSub?.cancel();
+    };
+    return controller.stream;
   }
 
   Stream<List<OvrHistoryEntry>> getOvrHistoryStream(String playerId) {

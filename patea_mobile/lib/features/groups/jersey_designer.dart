@@ -55,6 +55,9 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
     final active = _activeColorSelection == 'primary'
         ? value.primaryColor
         : value.secondaryColor;
+    final patterns = jerseyTemplates.keys
+        .where((k) => k != 'solid')
+        .toList(growable: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -79,9 +82,9 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
           ),
-          itemCount: jerseyTemplates.length,
+          itemCount: patterns.length,
           itemBuilder: (context, index) {
-            final type = jerseyTemplates.keys.elementAt(index);
+            final type = patterns[index];
             final selected = type == value.pattern;
             return Semantics(
               button: true,
@@ -141,7 +144,7 @@ class _JerseyDesignerState extends State<JerseyDesigner> {
                 child: Tooltip(
                   message: color['name']!,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: AppRadii.pillAll,
                     onTap: () => widget.onChanged(
                       _activeColorSelection == 'primary'
                           ? JerseyModel(

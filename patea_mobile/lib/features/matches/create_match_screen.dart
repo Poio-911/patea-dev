@@ -384,15 +384,20 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   Widget build(BuildContext context) {
     final playersAsync = ref.watch(activeGroupPlayersProvider);
 
-    return PopScope(
-      canPop: !_isSubmitting,
+    return PopScope<dynamic>(
+      canPop: !_isSubmitting && _step == 1,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_isSubmitting && _step > 1) {
+          setState(() => _step -= 1);
+        }
+      },
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           title: Text(
             'Armar partido',
-            style: AppTypography.headline(size: 18, weight: FontWeight.w800),
+            style: AppTypography.headline(size: 20, weight: FontWeight.w700),
           ),
           leading: _step > 1
               ? IconButton(
@@ -410,23 +415,16 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               totalSteps: _selectedType == 'collaborative' ? 2 : 3,
             ),
             Expanded(
-              child: playersAsync.when(
-                data: (allPlayers) => AbsorbPointer(
-                  absorbing: _isSubmitting,
-                  child: AnimatedSwitcher(
-                    duration: MediaQuery.disableAnimationsOf(context)
-                        ? Duration.zero
-                        : const Duration(milliseconds: 160),
-                    child: KeyedSubtree(
-                      key: ValueKey('create-match-step-$_step'),
-                      child: _buildStepBody(allPlayers),
-                    ),
+              child: AbsorbPointer(
+                absorbing: _isSubmitting,
+                child: AnimatedSwitcher(
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 160),
+                  child: KeyedSubtree(
+                    key: ValueKey('create-match-step-$_step'),
+                    child: _buildStepBody(playersAsync),
                   ),
-                ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => PateaError(
-                  error: e,
-                  onRetry: () => ref.invalidate(activeGroupPlayersProvider),
                 ),
               ),
             ),
@@ -437,16 +435,23 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     );
   }
 
-  Widget _buildStepBody(List<PlayerModel> allPlayers) {
+  Widget _buildStepBody(AsyncValue<List<PlayerModel>> playersAsync) {
     switch (_step) {
       case 1:
         return _buildStep1();
       case 2:
         return _buildStep2();
       default:
-        return _selectedType == 'by_teams'
-            ? _buildTeamPicker()
-            : _buildStep3(allPlayers);
+        if (_selectedType == 'by_teams') return _buildTeamPicker();
+        return playersAsync.when(
+          data: _buildStep3,
+          loading: () => const PateaLoading(),
+          error: (e, _) => PateaError(
+            error: e,
+            message: 'No se pudieron cargar los jugadores.',
+            onRetry: () => ref.invalidate(activeGroupPlayersProvider),
+          ),
+        );
     }
   }
 
@@ -575,7 +580,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       child: SizedBox(
                         height: 16,
                         width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: PateaButtonProgress(),
                       ),
                     )
                   : (_selectedLocation != null
@@ -724,7 +729,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: PateaButtonProgress(),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -769,7 +774,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             Text(
               'Para el lugar y la hora elegidos · Open-Meteo',
               style: AppTypography.body(
-                size: 11,
+                size: 12,
                 color: context.c.textSecondary,
               ),
             ),
@@ -1000,26 +1005,28 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final groupId = ref.watch(activeGroupIdProvider).value;
 
     if (groupId == null) {
-      return _EmptyHint(
+      return const PateaEmpty(
         icon: Icons.groups_outlined,
-        text: 'Necesitás un grupo activo para armar un partido entre equipos.',
+        title: 'Sin grupo activo',
+        hint: 'Necesitás un grupo activo para armar un partido entre equipos.',
       );
     }
 
     final teamsAsync = ref.watch(groupTeamsStreamProvider(groupId));
 
     return teamsAsync.when(
-      loading: () =>
-          Center(child: CircularProgressIndicator(color: context.c.primary)),
-      error: (e, _) => _EmptyHint(
-        icon: Icons.error_outline,
-        text: 'No se pudieron cargar los equipos.\n$e',
+      loading: () => const PateaLoading(),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No se pudieron cargar los equipos.',
+        onRetry: () => ref.invalidate(groupTeamsStreamProvider(groupId)),
       ),
       data: (teams) {
         if (teams.length < 2) {
-          return _EmptyHint(
+          return PateaEmpty(
             icon: Icons.checkroom_outlined,
-            text: teams.isEmpty
+            title: teams.isEmpty ? 'Faltan equipos' : 'Falta un equipo más',
+            hint: teams.isEmpty
                 ? 'El grupo todavía no tiene equipos armados.'
                 : 'Hace falta al menos un equipo más para armar un partido.',
           );
@@ -1101,12 +1108,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                             ),
                             if (selected)
                               Text(
-                                index == 0 ? 'LOCAL' : 'VISITANTE',
+                                index == 0 ? 'Local' : 'Visitante',
                                 style: AppTypography.headline(
                                   size: 12,
                                   weight: FontWeight.w800,
                                   color: context.c.primary,
-                                  letterSpacing: 1,
                                 ),
                               ),
                           ],
@@ -1571,37 +1577,6 @@ class _PositionCountChip extends StatelessWidget {
                 color: count > 0
                     ? context.c.textPrimary
                     : context.c.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyHint extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _EmptyHint({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 40, color: context.c.textSecondary),
-            const SizedBox(height: 12),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: AppTypography.body(
-                size: 13,
-                color: context.c.textSecondary,
               ),
             ),
           ],

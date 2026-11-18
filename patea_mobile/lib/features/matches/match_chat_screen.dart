@@ -4,9 +4,11 @@ import '../../core/models/match_model.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/match_chat_service.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_states.dart';
 
 class MatchChatScreen extends ConsumerStatefulWidget {
@@ -379,13 +381,10 @@ class _MatchChatScreenState extends ConsumerState<MatchChatScreen> {
                   ? null
                   : _send,
               icon: _sending
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: context.c.onPrimary,
-                      ),
+                      child: PateaButtonProgress(),
                     )
                   : const Icon(Icons.arrow_upward_rounded),
             ),
@@ -435,7 +434,7 @@ class _MessageBubble extends StatelessWidget {
                         context.c.card,
                       )
                     : context.c.cardSurface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppRadii.cardAll,
                 border: Border.all(
                   color: mine
                       ? context.c.primary.withValues(alpha: .28)
@@ -481,7 +480,7 @@ class _MessageBubble extends StatelessWidget {
                       Text(
                         message.pending ? 'Enviando…' : time,
                         style: AppTypography.body(
-                          size: 11,
+                          size: 12,
                           color: context.c.textSecondary,
                         ),
                       ),

@@ -23,10 +23,10 @@ class MatchTimelineView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('MINUTO A MINUTO',
+        Text('Minuto a minuto',
             style: AppTypography.headline(
-                size: 11, weight: FontWeight.w800,
-                color: context.c.textSecondary, letterSpacing: 1.2)),
+                size: 13, weight: FontWeight.w800,
+                color: context.c.textSecondary)),
         const SizedBox(height: 14),
         if (events.isEmpty)
           Padding(
@@ -130,7 +130,7 @@ class _TimelineRow extends StatelessWidget {
           Text(
             _detail!,
             textAlign: left ? TextAlign.right : TextAlign.left,
-            style: AppTypography.body(size: 11, color: context.c.textSecondary),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
         ],
       ],
@@ -166,7 +166,7 @@ class _TimelineRow extends StatelessWidget {
               children: [
                 Text("${event.minute}'",
                     style: AppTypography.code(
-                        size: 11, weight: FontWeight.w800, color: context.c.textSecondary)),
+                        size: 12, weight: FontWeight.w800, color: context.c.textSecondary)),
                 const SizedBox(height: 4),
                 badge,
                 Expanded(
@@ -226,7 +226,7 @@ class OpposedBar extends StatelessWidget {
               Expanded(
                 child: Text(label,
                     textAlign: TextAlign.center,
-                    style: AppTypography.body(size: 11, color: context.c.textSecondary)),
+                    style: AppTypography.body(size: 12, color: context.c.textSecondary)),
               ),
               SizedBox(
                 width: 28,

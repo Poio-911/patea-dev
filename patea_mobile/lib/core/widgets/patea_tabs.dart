@@ -30,7 +30,7 @@ class PateaTab {
   const PateaTab(this.label, {this.count = 0});
 }
 
-class PateaTabs extends StatelessWidget {
+class PateaTabs extends StatefulWidget {
   final List<PateaTab> tabs;
   final int active;
   final ValueChanged<int> onChanged;
@@ -43,32 +43,91 @@ class PateaTabs extends StatelessWidget {
   });
 
   @override
+  State<PateaTabs> createState() => _PateaTabsState();
+}
+
+class _PateaTabsState extends State<PateaTabs> {
+  final ScrollController _scroll = ScrollController();
+  bool _showRightFade = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_syncFade);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncFade());
+  }
+
+  @override
+  void didUpdateWidget(covariant PateaTabs oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncFade());
+  }
+
+  void _syncFade() {
+    if (!mounted || !_scroll.hasClients) return;
+    final pos = _scroll.position;
+    final next = pos.maxScrollExtent > 2 && pos.pixels < pos.maxScrollExtent - 2;
+    if (next != _showRightFade) setState(() => _showRightFade = next);
+  }
+
+  @override
+  void dispose() {
+    _scroll
+      ..removeListener(_syncFade)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    final scrollView = SingleChildScrollView(
+      controller: _scroll,
+      scrollDirection: Axis.horizontal,
+      physics: const ClampingScrollPhysics(),
+      child: Row(
+        children: [
+          for (var i = 0; i < widget.tabs.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: _Tab(
+                tab: widget.tabs[i],
+                active: i == widget.active,
+                onTap: () => widget.onChanged(i),
+              ),
+            ),
+        ],
+      ),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Se desplaza en horizontal en vez de recortar. La barra de
-        // Evaluaciones (Pendientes / Historial / Solicitudes) ya no entraba a
-        // escala normal: se comía 26 px de la tercera pestaña, y a 1,3× de
-        // texto, 88. Mientras entren, se ven exactamente igual que antes.
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const ClampingScrollPhysics(),
-          child: Row(
-            children: [
-              for (var i = 0; i < tabs.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: _Tab(
-                    tab: tabs[i],
-                    active: i == active,
-                    onTap: () => onChanged(i),
-                  ),
-                ),
-            ],
-          ),
+        // Se desplaza en horizontal en vez de recortar; cuando desborda hacia
+        // la derecha se insinúa con un desvanecimiento suave de máscara alfa.
+        NotificationListener<ScrollMetricsNotification>(
+          onNotification: (_) {
+            _syncFade();
+            return false;
+          },
+          child: _showRightFade
+              ? ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (bounds) => LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    stops: const [0.0, 0.88, 1.0],
+                    colors: [
+                      c.textPrimary,
+                      c.textPrimary,
+                      c.textPrimary.withValues(alpha: 0),
+                    ],
+                  ).createShader(bounds),
+                  child: scrollView,
+                )
+              : scrollView,
         ),
-        Container(height: 1, color: context.c.border.withValues(alpha: 0.3)),
+        Container(height: 1, color: c.border.withValues(alpha: 0.3)),
       ],
     );
   }
@@ -88,39 +147,43 @@ class _Tab extends StatelessWidget {
         HapticFeedback.selectionClick();
         onTap();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: active ? context.c.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              tab.label,
-              style: AppTypography.body(
-                size: 14,
-                weight: FontWeight.w700,
-                color: active ? context.c.primary : context.c.textSecondary,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: active ? context.c.primary : Colors.transparent,
+                width: 2,
               ),
             ),
-            if (tab.count > 0) ...[
-              const SizedBox(width: 6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(
-                '${tab.count}',
+                tab.label,
                 style: AppTypography.body(
-                  size: 12,
-                  weight: FontWeight.w600,
+                  size: 14,
+                  weight: FontWeight.w700,
                   color: active ? context.c.primary : context.c.textSecondary,
                 ),
               ),
+              if (tab.count > 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '${tab.count}',
+                  style: AppTypography.body(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: active ? context.c.primary : context.c.textSecondary,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

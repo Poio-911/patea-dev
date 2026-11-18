@@ -326,8 +326,14 @@ void main() {
       escala: 1.3,
     );
     expect(errors, isEmpty);
-    expect(find.text('⚽ 1'), findsOneWidget);
-    expect(find.text('⚽ 2'), findsNothing);
+    final p0 = find.byKey(const ValueKey('pitch-player-p0'));
+    expect(p0, findsOneWidget);
+    expect(
+      find.descendant(of: p0, matching: find.byIcon(Icons.sports_soccer_rounded)),
+      findsOneWidget,
+    );
+    expect(find.descendant(of: p0, matching: find.text('1')), findsOneWidget);
+    expect(find.descendant(of: p0, matching: find.text('2')), findsNothing);
     expect(find.byKey(const ValueKey('pitch-player-p6')), findsOneWidget);
   });
   testWidgets('The selected team B player records a goal for team B only', (

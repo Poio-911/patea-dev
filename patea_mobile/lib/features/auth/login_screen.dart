@@ -8,6 +8,7 @@ import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_brand.dart';
+import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_snack.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -104,7 +105,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _error = null;
     });
     try {
-      await ref.read(authServiceProvider).signInWithGoogle();
+      final auth = ref.read(authServiceProvider);
+      await auth.signInWithGoogle();
+      await auth.ensureProfile();
     } catch (_) {
       if (mounted) {
         setState(
@@ -399,7 +402,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: PateaButtonProgress(),
                     )
                   : Text(
                       _isRegister ? 'Crear mi cuenta' : 'Entrar a Pateá',
@@ -503,7 +506,7 @@ class _WelcomePhoto extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: Alignment.centerRight,
           errorBuilder: (_, _, _) =>
-              Image.asset('assets/backgrounds/fondo_1.jpg', fit: BoxFit.cover),
+              ColoredBox(color: PateaColors.game.background),
         ),
         DecoratedBox(
           decoration: BoxDecoration(

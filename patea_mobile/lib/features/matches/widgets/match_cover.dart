@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/match_model.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/match_theme.dart';
+import '../../../core/theme/patea_colors.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/widgets/jersey_painter.dart';
 import 'weather_alert.dart';
@@ -33,8 +34,10 @@ class MatchCover extends StatelessWidget {
     };
     final hasTeams = match.teamA != null && match.teamB != null;
     final showScore = match.hasFinalScore || match.status == 'active';
-    const photoInk = Color(0xFFF4F7F6);
-    const photoMuted = Color(0xFFC3CDCA);
+    final c = context.c;
+    final photoInk = c.activityPhotoTitle;
+    final photoMuted = c.onPhotoMuted;
+    final scrimBase = c.photoFallback;
     return Stack(
       children: [
         Positioned.fill(
@@ -50,9 +53,9 @@ class MatchCover extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xD90B1416),
-                  const Color(0xB30B1416),
-                  const Color(0xFF0B1416),
+                  scrimBase.withValues(alpha: 0.85),
+                  scrimBase.withValues(alpha: 0.70),
+                  scrimBase,
                 ],
                 stops: const [0, .62, 1],
               ),
@@ -76,13 +79,13 @@ class MatchCover extends StatelessWidget {
                           ? Icons.radio_button_checked
                           : Icons.check_circle_outline,
                       size: 14,
-                      color: const Color(0xFFD0FF37),
+                      color: c.brandVolt,
                     ),
                     Text(
                       '$status · ${getMatchTypeTheme(match.type).label}',
                       style: AppTypography.body(
                         size: 12,
-                        color: const Color(0xFFD0FF37),
+                        color: c.brandVolt,
                         weight: FontWeight.w600,
                       ),
                     ),
@@ -108,7 +111,7 @@ class MatchCover extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.place_outlined,
                           size: 16,
                           color: photoMuted,
@@ -126,7 +129,7 @@ class MatchCover extends StatelessWidget {
                           ),
                         ),
                         if (hasVenue)
-                          const Icon(
+                          Icon(
                             Icons.arrow_outward,
                             size: 14,
                             color: photoMuted,
@@ -164,11 +167,11 @@ class MatchCover extends StatelessWidget {
                             Text(
                               showScore
                                   ? (match.status == 'active'
-                                        ? 'EN VIVO'
-                                        : 'RESULTADO FINAL')
-                                  : 'POR JUGAR',
+                                        ? 'En vivo'
+                                        : 'Resultado final')
+                                  : 'Por jugar',
                               style: AppTypography.body(
-                                size: 10,
+                                size: 12,
                                 color: photoMuted,
                               ),
                             ),
@@ -193,29 +196,32 @@ class _TeamIdentity extends StatelessWidget {
   const _TeamIdentity({required this.team});
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      if (team.jersey != null)
-        JerseyWidget(jersey: team.jersey!, size: 44)
-      else
-        const Icon(Icons.checkroom, size: 38, color: Color(0xFFF4F7F6)),
-      const SizedBox(height: 8),
-      Text(
-        team.name,
-        textAlign: TextAlign.center,
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.body(
-          size: 13,
-          weight: FontWeight.w600,
-          color: const Color(0xFFF4F7F6),
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Column(
+      children: [
+        if (team.jersey != null)
+          JerseyWidget(jersey: team.jersey!, size: 44)
+        else
+          Icon(Icons.checkroom, size: 38, color: c.activityPhotoTitle),
+        const SizedBox(height: 8),
+        Text(
+          team.name,
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.body(
+            size: 13,
+            weight: FontWeight.w600,
+            color: c.activityPhotoTitle,
+          ),
         ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        '${team.players.length} jugadores',
-        style: AppTypography.body(size: 11, color: const Color(0xFFC3CDCA)),
-      ),
-    ],
-  );
+        const SizedBox(height: 4),
+        Text(
+          '${team.players.length} jugadores',
+          style: AppTypography.body(size: 12, color: c.onPhotoMuted),
+        ),
+      ],
+    );
+  }
 }

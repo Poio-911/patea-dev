@@ -13,6 +13,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/patea_colors.dart';
+import '../utils/photo_url.dart';
+import 'cropped_photo.dart';
 import 'player_avatar_fallback.dart';
 
 class PateaAvatar extends StatelessWidget {
@@ -31,6 +33,11 @@ class PateaAvatar extends StatelessWidget {
   final Color? borderColor;
   final double borderWidth;
 
+  /// Saved crop framing (`cropX`/`cropY` 0–100, `cropZoom` 1–4).
+  final double cropX;
+  final double cropY;
+  final double cropZoom;
+
   const PateaAvatar({
     super.key,
     required this.photoUrl,
@@ -38,11 +45,14 @@ class PateaAvatar extends StatelessWidget {
     this.size = 40,
     this.borderColor,
     this.borderWidth = 1.5,
+    this.cropX = 50,
+    this.cropY = 50,
+    this.cropZoom = 1,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tieneFoto = photoUrl != null && photoUrl!.isNotEmpty;
+    final resolvedUrl = nonEmptyPhotoUrl(photoUrl);
 
     return Container(
       width: size,
@@ -55,18 +65,24 @@ class PateaAvatar extends StatelessWidget {
             : Border.all(color: borderColor!, width: borderWidth),
       ),
       clipBehavior: Clip.antiAlias,
-      child: tieneFoto
-          ? CachedNetworkImage(
-              imageUrl: photoUrl!,
-              fit: BoxFit.cover,
-              // Pedir la imagen al tamaño en que se va a ver. Sin esto una
-              // foto de perfil de 1200px se decodifica entera para mostrarse
-              // en 40, y eso se paga en memoria por cada fila de la lista.
-              memCacheWidth: (size * MediaQuery.devicePixelRatioOf(context))
-                  .round()
-                  .clamp(48, 512),
-              placeholder: (_, _) => _fallback,
-              errorWidget: (_, _, _) => _fallback,
+      child: resolvedUrl != null
+          ? CroppedPhoto(
+              cropX: cropX,
+              cropY: cropY,
+              cropZoom: cropZoom,
+              child: CachedNetworkImage(
+                imageUrl: resolvedUrl,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                // Pedir la imagen al tamaño en que se va a ver. Sin esto una
+                // foto de perfil de 1200px se decodifica entera para mostrarse
+                // en 40, y eso se paga en memoria por cada fila de la lista.
+                memCacheWidth: (size * MediaQuery.devicePixelRatioOf(context))
+                    .round()
+                    .clamp(48, 512),
+                placeholder: (_, _) => _fallback,
+                errorWidget: (_, _, _) => _fallback,
+              ),
             )
           : _fallback,
     );

@@ -1,4 +1,5 @@
 import { optionalProfileFields } from '../lib/profile-optional-fields';
+import { isAiGeneratedPhotoUrl } from './generate-player-photo';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 
@@ -68,6 +69,9 @@ export const updateProfile = onCall({ region: 'us-central1' }, async (request) =
     userUpdates.photoURL = url;
     playerUpdates.photoUrl = url;
     playerUpdates.photoURL = url; // LEGACY
+    if (!isAiGeneratedPhotoUrl(url)) {
+      playerUpdates.aiSourcePhotoUrl = url;
+    }
     authUpdates.photoURL = url;
   }
 

@@ -29,7 +29,9 @@ void main() {
         await mount(tester, [feedbackDePerfil], playerId: id, theme: theme, scale: 1.3);
         expect(find.byType(PateaCard), findsNothing);
         expect(find.text('Evolución en este partido'), findsOneWidget);
-        expect(find.text('OVR 55 → 56'), findsOneWidget);
+        expect(find.text('OVR 55'), findsOneWidget);
+        expect(find.text('56'), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
         expect(find.text('Pase'), findsOneWidget);
         expect(find.text('Defensa'), findsOneWidget);
         expect(find.text('-4'), findsOneWidget);

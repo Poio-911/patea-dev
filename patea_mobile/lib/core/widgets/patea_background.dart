@@ -37,44 +37,45 @@ class PateaBackground extends StatelessWidget {
         excludeFromSemantics: true,
         errorBuilder: (_, error, stack) => const SizedBox.shrink(),
       );
-      if (dark) {
-        // 85 % desaturation, soft focus and charcoal veil: atmosphere,
-        // rather than the untreated photograph competing with the cards.
-        photo = ImageFiltered(
-          imageFilter: ui.ImageFilter.blur(sigmaX: 2.8, sigmaY: 2.8),
-          child: ColorFiltered(
-            colorFilter: const ColorFilter.matrix([
-              .33071,
-              .60792,
-              .06137,
-              0,
-              0,
-              .18071,
-              .75792,
-              .06137,
-              0,
-              0,
-              .18071,
-              .60792,
-              .21137,
-              0,
-              0,
-              0,
-              0,
-              0,
-              1,
-              0,
-            ]),
-            child: photo,
-          ),
-        );
-      }
+      // Desaturación + blur en ambos temas: en claro con velo lechoso para que
+      // las fotografías no compitan con los encabezados ni las tarjetas.
+      photo = ImageFiltered(
+        imageFilter: ui.ImageFilter.blur(
+          sigmaX: dark ? 2.8 : 3.6,
+          sigmaY: dark ? 2.8 : 3.6,
+        ),
+        child: ColorFiltered(
+          colorFilter: const ColorFilter.matrix([
+            .33071,
+            .60792,
+            .06137,
+            0,
+            0,
+            .18071,
+            .75792,
+            .06137,
+            0,
+            0,
+            .18071,
+            .60792,
+            .21137,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+          ]),
+          child: photo,
+        ),
+      );
       return Stack(
         children: [
           Positioned.fill(child: ColoredBox(color: c.background)),
           Positioned.fill(
             child: IgnorePointer(
-              child: Opacity(opacity: dark ? 0.40 : 0.34, child: photo),
+              child: Opacity(opacity: dark ? 0.40 : 0.22, child: photo),
             ),
           ),
           Positioned.fill(
@@ -85,9 +86,9 @@ class PateaBackground extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      c.background.withValues(alpha: dark ? .35 : .20),
-                      c.background.withValues(alpha: dark ? .20 : .08),
-                      c.background.withValues(alpha: dark ? .45 : .18),
+                      c.background.withValues(alpha: dark ? .35 : .60),
+                      c.background.withValues(alpha: dark ? .20 : .45),
+                      c.background.withValues(alpha: dark ? .45 : .68),
                     ],
                     stops: const [0, .45, 1],
                   ),

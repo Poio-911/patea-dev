@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/models/player_activity_models.dart';
 import '../../../core/services/player_profile_service.dart';
 import '../../../core/theme/patea_colors.dart';
+import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/widgets/patea_states.dart';
 
 /// Port de `PlayerMatchDebriefView` (src/components/player-match-debrief-view.tsx).
 ///
@@ -28,18 +30,12 @@ class PlayerMatchDebrief extends ConsumerWidget {
     final activityAsync = ref.watch(playerActivityProvider(playerId));
 
     return activityAsync.when(
-      loading: () => Padding(
-        padding: EdgeInsets.symmetric(vertical: 28),
-        child: Center(
-          child: CircularProgressIndicator(color: context.c.primary),
-        ),
-      ),
-      error: (err, _) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Text(
-          'No se pudo cargar el historial.',
-          style: AppTypography.body(size: 13, color: context.c.textSecondary),
-        ),
+      loading: () => const PateaLoading(height: 96),
+      error: (err, _) => PateaError(
+        error: err,
+        message: 'No se pudo cargar el historial.',
+        compact: true,
+        onRetry: () => ref.invalidate(playerActivityProvider(playerId)),
       ),
       data: (matches) {
         if (matches.isEmpty) {
@@ -218,7 +214,7 @@ class _MatchCard extends StatelessWidget {
               color: c.cardSurface.withValues(
                 alpha: c.isDarkSurface ? .55 : .65,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadii.cardAll,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,11 +244,35 @@ class _MatchCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'OVR ${ovr.previousOvr} → ${ovr.newOvr}',
-                      style: AppTypography.body(
-                        size: 14,
-                        weight: FontWeight.w600,
+                    child: Semantics(
+                      label: 'OVR ${ovr.previousOvr} a ${ovr.newOvr}',
+                      excludeSemantics: true,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'OVR ${ovr.previousOvr}',
+                            style: AppTypography.body(
+                              size: 14,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 15,
+                              color: c.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            '${ovr.newOvr}',
+                            style: AppTypography.body(
+                              size: 14,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -434,7 +454,7 @@ class _PeerEvalTile extends StatelessWidget {
                 const SizedBox(width: 3),
                 Text(
                   '/10',
-                  style: AppTypography.body(size: 11, color: c.textSecondary),
+                  style: AppTypography.body(size: 12, color: c.textSecondary),
                 ),
               ],
             ],

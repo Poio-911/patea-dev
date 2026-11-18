@@ -6,6 +6,7 @@ import '../models/match_model.dart';
 import '../models/player_model.dart';
 import '../services/firestore_service.dart';
 import '../theme/app_typography.dart';
+import '../theme/patea_colors.dart';
 import 'player_card_widget.dart';
 
 /// The card is the surface; no menu sheet or secondary frame surrounds it.
@@ -16,7 +17,7 @@ Future<void> showPlayerCardPreview(
 }) async {
   final openProfile = await showDialog<bool>(
     context: context,
-    barrierColor: Colors.black.withValues(alpha: .82),
+    barrierColor: context.c.photoFallback.withValues(alpha: .88),
     builder: (_) => _PlayerCardPreview(entry: entry, photo: photo),
   );
   if (openProfile == true && context.mounted && entry.uid.isNotEmpty) {
@@ -86,9 +87,9 @@ class _PlayerCardPreview extends ConsumerWidget {
                         child: IconButton(
                           tooltip: 'Cerrar ficha',
                           onPressed: () => Navigator.of(context).pop(false),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.close_rounded,
-                            color: Colors.white,
+                            color: context.c.onPhoto,
                           ),
                           constraints: const BoxConstraints(
                             minWidth: 48,
@@ -110,7 +111,7 @@ class _PlayerCardPreview extends ConsumerWidget {
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(true),
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
+                            foregroundColor: context.c.onPhoto,
                             minimumSize: const Size(48, 48),
                           ),
                           child: Text(
@@ -118,7 +119,7 @@ class _PlayerCardPreview extends ConsumerWidget {
                             textAlign: TextAlign.center,
                             style: AppTypography.action(
                               size: 15,
-                              color: Colors.white,
+                              color: context.c.onPhoto,
                             ),
                           ),
                         ),
