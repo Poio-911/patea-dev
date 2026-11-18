@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-11-18T22:05:31.012Z",
+  "project": "mil-disculpis",
+  "source": "source.png",
+  "prompt": "Edit the supplied reference photo into a natural professional football player portrait of the SAME person. Change the outfit, pose and background; keep the reference face rather than redesigning it.\n\nIdentity comes first. Preserve the exact apparent age, facial proportions and asymmetry, eye shape and size, eyebrows, nose, lips, jaw, hairline, curls and hair volume, skin tone, freckles, head tilt, gaze and gentle original expression. Do not open the eyes wider, lift the eyebrows, intensify the smile or reshape the face. If any styling instruction conflicts with the reference face, preserve the reference face.\n\nKeep the skin as naturally soft as it appears in the reference. Do not add or deepen forehead creases, wrinkles, eye bags, smile lines, pores or facial hair. Do not apply beauty filters, plastic skin, sharpening, extra clarity, dramatic contrast, tanning or cinematic color grading.\n\nCompose a vertical 2:3 photograph, from just above the complete hairstyle down to the crossed forearms at the bottom edge. Leave only 2–4% of image height above the tallest hair strand, not a large empty upper band. The entire head including hair should occupy approximately 40–45% of image height. Show both shoulders and keep the crossed hands naturally within the frame. Do not show the waist or hips. Keep head, neck and body proportions natural.\n\nRelax the shoulders. Turn the torso only slightly, keeping the reference head angle and gaze. Arms loosely crossed at the lower chest, natural hands, no stiff or exaggerated athletic pose.\n\nWear a simple modern football jersey, navy blue with restrained white trim, with realistic fabric. No badge, crest, stars, sponsor, manufacturer mark, invented symbol, letters or numbers. Keep the face and hair unchanged when changing the clothing.\n\nUse soft broad frontal light resembling the gentle daylight of the reference. No hard shadows under the eyes, no heavy cheekbone contrast, no shiny skin.\n\nGenerate the FINAL background directly: an even matte muted teal (#3A6F78), without scenery, texture, spotlight, strong gradient or halo. This is the finished photograph, not a green-screen or chroma-key image. No artificial outline around the hair. Preserve fine natural hair strands against the background.\n\nOutput only the final high-resolution photograph. No borders, frame, card interface, text, watermark or fake transparency.",
+  "postProcessing": false,
+  "aspectRatio": "2:3",
+  "attempts": [
+    {
+      "model": "gemini-nano-banana-2.1",
+      "success": true,
+      "elapsedMs": 15044
+    }
+  ],
+  "result": {
+    "file": "converted.png",
+    "mimeType": "image/png",
+    "bytes": 1478286,
+    "model": "gemini-nano-banana-2.1"
+  }
+}

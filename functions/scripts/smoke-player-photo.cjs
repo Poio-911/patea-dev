@@ -12,9 +12,10 @@ const { IMAGE_MODEL_CANDIDATES, PLAYER_PHOTO_ASPECT_RATIO, PROMPT, extractGenera
   require('../lib/callable/generate-player-photo');
 
 async function main() {
-  const [source, destination] = process.argv.slice(2);
-  if (!source || !destination) throw new Error('Usage: node scripts/smoke-player-photo.cjs SOURCE OUTPUT_DIR');
+  const [source, destination, promptFile] = process.argv.slice(2);
+  if (!source || !destination) throw new Error('Usage: node scripts/smoke-player-photo.cjs SOURCE OUTPUT_DIR [PROMPT_FILE]');
   const buffer = fs.readFileSync(source);
+  const prompt = promptFile ? fs.readFileSync(promptFile, 'utf8').trim() : PROMPT;
   if (buffer.length > 5 * 1024 * 1024) throw new Error('Source exceeds production 5 MB limit');
   fs.mkdirSync(destination, { recursive: true });
   fs.copyFileSync(source, path.join(destination, 'source.png'));
@@ -26,14 +27,15 @@ async function main() {
   const client = new GoogleGenAI({ vertexai: true, project: 'mil-disculpis',
     location: 'global', googleAuthOptions: { authClient } });
   const report = { createdAt: new Date().toISOString(), project: 'mil-disculpis',
-    source: 'source.png', prompt: PROMPT, aspectRatio: PLAYER_PHOTO_ASPECT_RATIO, attempts: [], result: null };
+    source: 'source.png', prompt, postProcessing: false,
+    aspectRatio: PLAYER_PHOTO_ASPECT_RATIO, attempts: [], result: null };
   for (const model of IMAGE_MODEL_CANDIDATES) {
     const start = Date.now();
     console.log('Testing production model:', model);
     try {
       const response = await client.models.generateContent({ model,
         contents: [{ inlineData: { data: buffer.toString('base64'), mimeType: 'image/png' } },
-          { text: PROMPT }], config: { responseModalities: [Modality.TEXT, Modality.IMAGE],
+          { text: prompt }], config: { responseModalities: [Modality.TEXT, Modality.IMAGE],
           imageConfig: { aspectRatio: PLAYER_PHOTO_ASPECT_RATIO }, httpOptions: { timeout: 65000 } } });
       const image = extractGeneratedImage(response);
       const extension = image.mimeType === 'image/jpeg' ? 'jpg' : image.mimeType === 'image/webp' ? 'webp' : 'png';

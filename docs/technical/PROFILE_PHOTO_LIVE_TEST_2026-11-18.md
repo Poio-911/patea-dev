@@ -37,3 +37,11 @@ Se repitió Vertex con la misma foto original, no con la primera transformación
 Resultado: `gemini-nano-banana-2.1`, 15.216 ms, PNG de 1.397.668 bytes. Artefactos comparables en `output/profile-photo-smoke/2026-11-18-v2/`. Inspección visual: menos líneas acentuadas y rostro más próximo a la referencia; camiseta azul/blanca sin emblemas; pose menos rígida y fondo más uniforme. Sigue dejando más espacio sobre el cabello que el 4% solicitado y conserva pequeñas variaciones tonales del fondo. La fidelidad facial sigue siendo una evaluación visual, no una garantía biométrica.
 
 Compilación TypeScript y cinco pruebas del backend aprobadas tras el cambio. El código está preparado; esta prueba no despliega la función ni modifica perfiles.
+
+## Propuesta de prompt para aprobación: salida directa
+
+El usuario rechazó el procesamiento posterior del fondo y pospuso el selector de colores hasta aprobar el prompt. Se retiraron los cambios locales experimentales de chroma key, normalización de encuadre, dependencias y selector de equipo. El backend conserva el prompt de la segunda versión; no se desplegaron esos experimentos.
+
+La nueva propuesta vive en `output/profile-photo-smoke/prompt-review/prompt.txt` y se probó con la misma referencia original mediante el argumento opcional `PROMPT_FILE` del smoke test. Pide directamente el fondo final, rostro/edad/expresión próximos a la referencia, pose relajada, camiseta azul/blanca sin emblemas y menos espacio superior.
+
+`converted.png` contiene directamente los bytes de imagen devueltos por Vertex: sin recorte, eliminación de fondo, filtros ni recoloreado. `report.json` registra el prompt exacto, modelo, tiempo y `postProcessing: false`. La propuesta queda pendiente de aprobación; no cambia perfiles ni créditos y no se aplica todavía al callable.
