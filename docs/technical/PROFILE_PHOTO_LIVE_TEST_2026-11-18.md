@@ -27,3 +27,13 @@ node scripts/smoke-player-photo.cjs RUTA_FOTO_PNG DIRECTORIO_RESULTADO
 El script usa el token de gcloud en memoria y la versión de `google-auth-library` resuelta por `@google/genai`, evitando incompatibilidad de headers con la dependencia de Firebase Admin. La foto debe ser PNG y no superar los 5 MB.
 
 Prompt de la imagen de entrada: fotografía natural de smartphone de una mujer ficticia de aproximadamente 30 años, cabello castaño oscuro rizado a los hombros, pecas suaves, sonrisa leve, camiseta gris, brazos relajados y parque desenfocado. Se usó la herramienta integrada para la referencia; la transformación se hizo mediante Vertex, no mediante una segunda edición de esa herramienta.
+
+## Segunda versión: fidelidad y composición
+
+A pedido del usuario se ajustó el prompt del backend: prioridad del rostro sobre el estilo, conservación de expresión y textura sin acentuar edad, postura relajada, camiseta sin marcas ni escudos inventados y fondo mate uniforme. La relación de aspecto se centralizó en `PLAYER_PHOTO_ASPECT_RATIO = '2:3'`, compartida por el callable y el smoke test.
+
+Se repitió Vertex con la misma foto original, no con la primera transformación. SHA-256 de ambas referencias: `4B2DAB03FCA4C574B1B565EC7FBA4B47CE4E5F56EB829E573C5BEE4AE39E4458`.
+
+Resultado: `gemini-nano-banana-2.1`, 15.216 ms, PNG de 1.397.668 bytes. Artefactos comparables en `output/profile-photo-smoke/2026-11-18-v2/`. Inspección visual: menos líneas acentuadas y rostro más próximo a la referencia; camiseta azul/blanca sin emblemas; pose menos rígida y fondo más uniforme. Sigue dejando más espacio sobre el cabello que el 4% solicitado y conserva pequeñas variaciones tonales del fondo. La fidelidad facial sigue siendo una evaluación visual, no una garantía biométrica.
+
+Compilación TypeScript y cinco pruebas del backend aprobadas tras el cambio. El código está preparado; esta prueba no despliega la función ni modifica perfiles.

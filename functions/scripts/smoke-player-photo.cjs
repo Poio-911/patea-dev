@@ -8,7 +8,7 @@ const { GoogleGenAI, Modality } = require('@google/genai');
 const { OAuth2Client } = require(require.resolve('google-auth-library', {
   paths: [path.dirname(require.resolve('@google/genai'))],
 }));
-const { IMAGE_MODEL_CANDIDATES, PROMPT, extractGeneratedImage } =
+const { IMAGE_MODEL_CANDIDATES, PLAYER_PHOTO_ASPECT_RATIO, PROMPT, extractGeneratedImage } =
   require('../lib/callable/generate-player-photo');
 
 async function main() {
@@ -26,7 +26,7 @@ async function main() {
   const client = new GoogleGenAI({ vertexai: true, project: 'mil-disculpis',
     location: 'global', googleAuthOptions: { authClient } });
   const report = { createdAt: new Date().toISOString(), project: 'mil-disculpis',
-    source: 'source.png', prompt: PROMPT, attempts: [], result: null };
+    source: 'source.png', prompt: PROMPT, aspectRatio: PLAYER_PHOTO_ASPECT_RATIO, attempts: [], result: null };
   for (const model of IMAGE_MODEL_CANDIDATES) {
     const start = Date.now();
     console.log('Testing production model:', model);
@@ -34,7 +34,7 @@ async function main() {
       const response = await client.models.generateContent({ model,
         contents: [{ inlineData: { data: buffer.toString('base64'), mimeType: 'image/png' } },
           { text: PROMPT }], config: { responseModalities: [Modality.TEXT, Modality.IMAGE],
-          imageConfig: { aspectRatio: '3:4' }, httpOptions: { timeout: 65000 } } });
+          imageConfig: { aspectRatio: PLAYER_PHOTO_ASPECT_RATIO }, httpOptions: { timeout: 65000 } } });
       const image = extractGeneratedImage(response);
       const extension = image.mimeType === 'image/jpeg' ? 'jpg' : image.mimeType === 'image/webp' ? 'webp' : 'png';
       const filename = 'converted.' + extension;

@@ -16,18 +16,22 @@ export const IMAGE_MODEL_CANDIDATES = [
   'gemini-3-pro-image',
 ] as const;
 
+export const PLAYER_PHOTO_ASPECT_RATIO = '2:3';
+
 const MAX_SOURCE_BYTES = 5 * 1024 * 1024;
 const EXTERNAL_FETCH_TIMEOUT_MS = 15_000;
 const VERTEX_TIMEOUT_MS = 65_000;
 
 export const PROMPT = `
-Transform the reference photo into a crisp, natural football player card portrait while strictly preserving the exact same person.
-CRITICAL — Identity & Exact Age Preservation: Keep 100% identical facial structure, bone structure, eyes, nose, lips, jawline, hairline, facial expression, skin tone, and the exact apparent age shown in the reference image.
-Do NOT make the person look older, do NOT add wrinkles, fine lines, eye bags, deep laugh lines, heavy stubble, or exaggerated skin pores/texture, and do NOT reinterpret or redraw the face.
-Pose & Outfit: Facing forward with arms crossed over the chest, wearing a modern football (soccer) jersey with a clean athletic design and varied color.
-Lighting: Bright, soft, diffused frontal studio fill lighting (softbox / butterfly lighting) with even, flattering illumination on the face. Eliminate harsh contrast and eliminate heavy shadows under the eyes, nose, and cheekbones.
-Background: A single flat, smooth solid color (vibrant, pastel, or neutral — never pure white or pure black) with zero gradients, shadows, patterns, or textures.
-Render as a clean high-resolution photograph without borders, frames, text, watermarks, or fake transparency.
+Edit the reference photograph into a natural football player card portrait. This is a wardrobe, pose and background edit of the SAME person, not a new interpretation of their face.
+PRIORITY 1 — Preserve identity and the exact apparent age: retain the reference facial proportions, eyes, eyebrows, nose, lips, jawline, hairline, hairstyle, hair volume, skin tone, freckles and the original expression. Treat the face as a protected region: keep its appearance as close to the original photograph as possible. If a styling instruction conflicts with facial fidelity, preserve the reference face.
+Do NOT make the person look older or younger. Do NOT add, deepen or sharpen wrinkles, forehead creases, eye bags, smile lines, facial hair or skin pores. Preserve existing natural skin detail without beauty smoothing, face reshaping, skin darkening, extra contrast, clarity or cinematic grading.
+Composition: tight vertical head-and-upper-torso portrait. Keep the entire hairstyle visible with approximately 4% clear space above it. The head including hair should occupy about 40% of image height. Crop at the lower crossed forearms, not the waist or hips; avoid excess empty space and long torso. Keep shoulders, face and arms within the frame so the face remains legible on a small player card.
+Pose: retain the reference head angle, gaze and facial expression. Relaxed shoulders, torso turned only slightly, arms loosely crossed at the lower chest with natural hands and anatomy. Do not force a rigid symmetrical pose or rotate/redraw the face to match the torso.
+Outfit: a clean modern football jersey with a restrained two-color athletic design. Completely unbranded: no club badge, crest, stars, sponsor, manufacturer symbol, lettering, numbers, text or invented emblems. Do not add accessories absent from the reference.
+Lighting: soft broad frontal fill, close to the gentle light in the reference. Even facial illumination without shadowed eye sockets, hard cheekbones or glossy skin.
+Background: one uniform matte muted teal color, RGB 58, 111, 120 (#3A6F78), identical across the entire background. No gradient, vignette, spotlight, halo, cast shadow, texture or scenery. Do not bake a card overlay into the photograph; the app adds its own overlay.
+Render as a clean natural photograph, without borders, frames, text, watermarks or fake transparency.
 `.trim();
 
 export type PhotoSource =
@@ -366,7 +370,7 @@ export const generatePlayerPhoto = onCall(
           ],
           config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
-            imageConfig: { aspectRatio: '3:4' },
+            imageConfig: { aspectRatio: PLAYER_PHOTO_ASPECT_RATIO },
             httpOptions: { timeout: VERTEX_TIMEOUT_MS },
           },
         });
