@@ -88,6 +88,30 @@ void main() {
   });
 
   for (final light in [false, true]) {
+    testWidgets(
+      'nombre sobre la fila compartida de posición y OVR, claro=$light',
+      (tester) async {
+        await _mount(
+          tester,
+          Center(
+            child: SizedBox(
+              width: 161,
+              child: PlayerCardWidget(
+                player: _player(name: 'Cosme', ovr: 50),
+                photoStyle: CardPhotoStyle.halfTop,
+              ),
+            ),
+          ),
+          light: light,
+        );
+        final name = tester.getRect(find.text('Cosme'));
+        final position = tester.getRect(find.text('MED'));
+        final score = tester.getRect(find.text('50'));
+        expect(name.bottom, lessThanOrEqualTo(position.top));
+        expect((position.center.dy - score.center.dy).abs(), lessThan(2));
+        expect(tester.takeException(), isNull);
+      },
+    );
     for (final width in [141.0, 161.0, 260.0]) {
       testWidgets(
         'ficha ${light ? 'clara' : 'cancha'} de $width mantiene datos y OVR visibles a 1.3x',

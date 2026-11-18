@@ -239,8 +239,21 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     final scaler = MediaQuery.textScalerOf(context);
     final inset = compact ? 8.0 : 14.0;
     final bottom = compact ? 8.0 : 10.0;
-    final nameGap = compact ? 7.0 : 9.0;
-    final nameHeight = (scaler.scale(nameSize) * 1.2 * 2).ceilToDouble();
+    final nameGap = compact ? 3.0 : 5.0;
+    final nameStyle = AppTypography.headline(
+      size: nameSize,
+      weight: FontWeight.w600,
+      color: c.textPrimary,
+    ).copyWith(height: 1.2, letterSpacing: 0);
+    final namePainter = TextPainter(
+      text: TextSpan(text: widget.player.name, style: nameStyle),
+      textDirection: Directionality.of(context),
+      textScaler: scaler,
+      maxLines: 2,
+      ellipsis: '…',
+    )..layout(maxWidth: math.max(1, width - inset * 2));
+    final nameHeight = namePainter.height.ceilToDouble();
+    namePainter.dispose();
     final hasStatus = status != null && status.isNotEmpty;
     final statusHeight = hasStatus
         ? (scaler.scale(12) * 1.25).ceilToDouble() + 6
@@ -266,26 +279,24 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
       return result;
     }
 
-    var scoreSize = compact ? math.min(36.0, width * 0.196) : 44.0;
+    var scoreSize = compact ? math.min(29.0, width * 0.17) : 38.0;
     TextStyle scoreStyle() => AppTypography.sportNumber(
       size: scoreSize,
       color: c.ratingAccent,
     ).copyWith(height: 1, fontWeight: FontWeight.w700);
-    final captionHeight = measure('OVR', captionStyle);
-    var showCaption = true;
-    while (scoreSize > 18 &&
-        measure('${widget.player.ovr}', scoreStyle()) + captionHeight >
-            available) {
-      scoreSize -= 0.5;
-    }
-    if (measure('${widget.player.ovr}', scoreStyle()) + captionHeight >
-        available) {
-      showCaption = false;
-    }
+    final showCaption =
+        width >= 130 && available >= measure('OVR', captionStyle);
     while (scoreSize > 12 &&
         measure('${widget.player.ovr}', scoreStyle()) > available) {
       scoreSize -= 0.5;
     }
+    final rowHeight = math.min(
+      available,
+      math.max(
+        measure('${widget.player.ovr}', scoreStyle()),
+        scaler.scale(12) * 1.2,
+      ),
+    );
     return ClipRect(
       child: Stack(
         fit: StackFit.expand,
@@ -309,12 +320,12 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: const [0, 0.30, 0.45, 0.62, 1],
+                stops: const [0, 0.45, 0.66, 0.86, 1],
                 colors: [
                   c.card.withValues(alpha: 0),
                   c.card.withValues(alpha: 0),
-                  c.card.withValues(alpha: 0.35),
-                  c.card,
+                  c.card.withValues(alpha: 0.42),
+                  c.card.withValues(alpha: 0.94),
                   c.card,
                 ],
               ),
@@ -373,82 +384,61 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 3),
-                      child: Text(
-                        widget.player.position.toUpperCase(),
-                        style: AppTypography.body(
-                          size: 14,
-                          height: 1.2,
-                          weight: FontWeight.w700,
-                          color: positionColor,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(9, 0, 9, 7),
-                        child: SizedBox(
-                          height: 1,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Positioned.fill(
-                                child: ColoredBox(
-                                  color: c.ratingAccent.withValues(alpha: 0.7),
-                                ),
-                              ),
-                              Positioned(
-                                right: -1,
-                                top: -1.5,
-                                child: Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: c.ratingAccent,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (showCaption) Text('OVR', style: captionStyle),
-                        Transform(
-                          transform: Matrix4.identity()..setEntry(0, 1, -0.12),
-                          child: Text(
-                            '${widget.player.ovr}',
-                            style: scoreStyle(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                SizedBox(
+                  height: nameHeight,
+                  child: Text(
+                    widget.player.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: nameStyle,
+                  ),
                 ),
                 SizedBox(height: nameGap),
                 SizedBox(
-                  height: nameHeight,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      widget.player.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.headline(
-                        size: nameSize,
-                        weight: FontWeight.w600,
-                        color: c.textPrimary,
-                      ).copyWith(height: 1.2, letterSpacing: 0),
-                    ),
+                  height: rowHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              widget.player.position.toUpperCase(),
+                              style: AppTypography.body(
+                                size: 12,
+                                height: 1.2,
+                                weight: FontWeight.w700,
+                                color: positionColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (showCaption) ...[
+                              Text('OVR', style: captionStyle),
+                              const SizedBox(width: 5),
+                            ],
+                            Transform(
+                              transform: Matrix4.identity()
+                                ..setEntry(0, 1, -0.12),
+                              child: Text(
+                                '${widget.player.ovr}',
+                                style: scoreStyle(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (hasStatus) ...[
