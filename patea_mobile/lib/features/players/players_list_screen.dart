@@ -351,39 +351,21 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                 ),
                 sliver: SliverToBoxAdapter(
                   child: PateaPageHeader(
+                    section: Section.players,
                     title: spec(Section.players).title,
                     description: spec(Section.players).description,
                     currentCount: filtered.length,
                     totalCount: players.length,
                     activeFilterCount: _activeFilterCount,
                     onFiltersTap: _openFilters,
-                    actionButton: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => const CreatePlayerDialog(),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.c.primary,
-                          foregroundColor: context.c.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_circle, size: 18),
-                        label: Text(
-                          'Agregar Jugador',
-                          style: AppTypography.headline(
-                            size: 13,
-                            weight: FontWeight.w700,
-                            color: context.c.onPrimary,
-                          ),
-                        ),
-                      ),
+                    actionButton: PateaHeaderActionButton(
+                      label: spec(Section.players).action!,
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => const CreatePlayerDialog(),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -395,7 +377,8 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                   sliver: SliverToBoxAdapter(
                     child: PateaActivityCover(
                       image: PateaSectionScene.groups,
-                      title: 'El plantel',
+                      compact: true,
+                      title: 'Resumen del cuadro',
                       details:
                           '${players.length} jugadores · OVR promedio ${(players.fold<double>(0, (sum, p) => sum + p.ovr) / players.length).toStringAsFixed(1)}',
                     ),

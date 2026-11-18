@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/sections.dart';
 import '../../core/models/competition_model.dart';
 import '../../core/services/competition_service.dart';
 import '../../core/services/firestore_service.dart';
@@ -9,6 +10,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_activity_cover.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
@@ -149,29 +151,28 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
           });
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text('Torneos y Copas', style: AppTypography.headline(size: 20)),
-      ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
-        child: FloatingActionButton.extended(
-          onPressed: _create,
-          icon: const Icon(Icons.add),
-          label: Text(_kind == 0 ? 'Crear liga' : 'Crear copa'),
-        ),
-      ),
       body: RefreshIndicator(
         onRefresh: () => _load(),
         child: ListView(
           padding: EdgeInsets.fromLTRB(
             16,
-            4,
+            MediaQuery.paddingOf(context).top + 12,
             16,
-            bottomInset(context, extra: 105),
+            bottomInset(context, extra: 24),
           ),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
+            PateaPageHeader(
+              section: Section.competitions,
+              title: spec(Section.competitions).title,
+              description: spec(Section.competitions).description,
+              showCountRow: false,
+              actionButton: PateaHeaderActionButton(
+                label: _kind == 0 ? 'Crear liga' : 'Crear copa',
+                onPressed: _create,
+              ),
+            ),
+            const SizedBox(height: 16),
             PateaActivityCover(
               image: _kind == 0
                   ? PateaSectionScene.league

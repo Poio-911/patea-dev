@@ -92,13 +92,14 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
               0,
             ),
             child: PateaPageHeader(
+              section: Section.explorar,
               title: spec(Section.explorar).title,
               description: spec(Section.explorar).description,
               showCountRow: false,
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: PateaTabs(
               tabs: const [PateaTab('Jugadores'), PateaTab('Partidos')],
               active: _tab,

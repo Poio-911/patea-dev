@@ -15,7 +15,9 @@ import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/evaluation_service.dart';
 import '../../core/models/evaluation_models.dart';
+import '../../core/constants/sections.dart';
 import '../../core/theme/app_insets.dart';
+import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
 
 ({String label, Color color, bool urgent}) _urgency(
@@ -139,13 +141,25 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
                     16,
                     0,
                   ),
-                  child: PateaActivityCover(
-                    image: 'assets/brand/patea_evaluations.webp',
-                    compact: true,
-                    title: 'Evaluaciones',
-                    details: pending.isEmpty
-                        ? 'Todo al día · ${history.length} ${history.length == 1 ? 'completada' : 'completadas'}.\nTu devolución también hace equipo.'
-                        : '${pending.length} ${pending.length == 1 ? 'pendiente' : 'pendientes'} · ${history.length} ${history.length == 1 ? 'completada' : 'completadas'}.\nTu devolución también hace equipo.',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      PateaPageHeader(
+                        section: Section.evaluations,
+                        title: spec(Section.evaluations).title,
+                        showCountRow: false,
+                      ),
+                      const SizedBox(height: 12),
+                      PateaActivityCover(
+                        image: 'assets/brand/patea_evaluations.webp',
+                        compact: true,
+                        title: pending.isEmpty
+                            ? 'Todo al día'
+                            : '${pending.length} ${pending.length == 1 ? 'pendiente' : 'pendientes'}',
+                        details:
+                            '${history.length} ${history.length == 1 ? 'completada' : 'completadas'} · ${spec(Section.evaluations).description!}',
+                      ),
+                    ],
                   ),
                 ),
                 if (urgentCount > 0)
@@ -171,9 +185,8 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
                       ],
                     ),
                   ),
-                const SizedBox(height: 12),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: PateaTabs(
                     tabs: [
                       PateaTab('Pendientes', count: pending.length),

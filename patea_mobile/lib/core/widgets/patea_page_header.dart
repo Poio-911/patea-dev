@@ -1,10 +1,57 @@
 import 'package:flutter/material.dart';
-import '../../core/widgets/patea_card.dart';
-import '../../core/theme/app_radii.dart';
-import '../theme/patea_colors.dart';
-import '../theme/app_typography.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../constants/sections.dart';
+import '../theme/app_radii.dart';
+import '../theme/app_typography.dart';
+import '../theme/patea_colors.dart';
+import 'patea_card.dart';
+import 'section_icon.dart';
+
+/// Botón compacto tonal para acciones principales de cabecera ("Armar partido",
+/// "Agregar jugador", "Crear liga"). Deja el énfasis Volt/Blue sólido reservado
+/// al partido o tarjeta protagonista debajo, respetando `AppTypography.action`.
+class PateaHeaderActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const PateaHeaderActionButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon = Icons.add_rounded,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: c.cardSurface,
+          foregroundColor: c.textPrimary,
+          side: BorderSide(color: c.primary.withValues(alpha: 0.45), width: 1),
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+          textStyle: AppTypography.action(size: 15, weight: FontWeight.w600),
+        ),
+        icon: Icon(icon, size: 19, color: c.primary),
+        label: Text(label),
+      ),
+    );
+  }
+}
+
+/// Encabezado unificado de sección: ícono editorial Tabler (o propio) en color
+/// primario + título directo sobre el lienzo + bajada breve + acción opcional.
 class PateaPageHeader extends StatelessWidget {
+  final Section? section;
+  final String? iconAsset;
+  final IconData? icon;
   final String title;
   final String? description;
   final Widget? actionButton;
@@ -18,13 +65,16 @@ class PateaPageHeader extends StatelessWidget {
   /// botón, sin este número el usuario no tiene forma de saber que la lista
   /// está recortada.
   final int activeFilterCount;
-  // Algunas secciones (ej. Partidos) ya arman su propia fila de
-  // contador/filtros más abajo con datos reales — para esas, esta fila del
-  // header (pensada para Jugadores) se apaga en vez de duplicarla.
+
+  /// Algunas secciones (ej. Partidos) arman su propia fila de filtros abajo;
+  /// para esas, esta fila del header se apaga en vez de duplicarla.
   final bool showCountRow;
 
   const PateaPageHeader({
     super.key,
+    this.section,
+    this.iconAsset,
+    this.icon,
     required this.title,
     this.description,
     this.actionButton,
@@ -37,149 +87,166 @@ class PateaPageHeader extends StatelessWidget {
     this.showCountRow = true,
   });
 
+  Widget? _buildLeadingIcon(BuildContext context) {
+    final primary = context.c.primary;
+    if (iconAsset != null) {
+      return SvgPicture.asset(
+        iconAsset!,
+        width: 26,
+        height: 26,
+        fit: BoxFit.contain,
+        colorFilter: ColorFilter.mode(primary, BlendMode.srcIn),
+        excludeFromSemantics: true,
+      );
+    }
+    if (section != null) {
+      return SectionIcon(
+        section: section!,
+        active: true,
+        size: 26,
+        color: primary,
+      );
+    }
+    if (icon != null) {
+      return Icon(icon, size: 26, color: primary);
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    final leading = _buildLeadingIcon(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. Título con barra vertical neón
+        // 1. Ícono de sección en color primario + título limpio sobre el lienzo
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Barra vertical neón
-            Container(
-              width: 3.5,
-              height: description != null ? 58 : 34,
-              margin: const EdgeInsets.only(top: 2, right: 10),
-              decoration: BoxDecoration(
-                borderRadius: AppRadii.hairAll,
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    context.c.primary,
-                    context.c.brandVolt.withValues(alpha: 0.30),
-                  ],
-                ),
-              ),
-            ),
-            // Título y descripción
+            if (leading != null) ...[
+              leading,
+              const SizedBox(width: 10),
+            ],
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTypography.headline(
-                      size: 26,
-                      weight: FontWeight.w900,
-                      color: context.c.textPrimary,
-                    ),
-                  ),
-                  if (description != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      description!,
-                      style: AppTypography.body(
-                        size: 13,
-                        color: context.c.textSecondary,
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                title,
+                style: AppTypography.headline(
+                  size: 28,
+                  weight: FontWeight.w800,
+                  letterSpacing: -0.7,
+                  color: c.textPrimary,
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 14),
-
-        // 2. Botón "+ Agregar Jugador" en Amarillo Neón
-        if (actionButton != null) ...[
-          actionButton!,
-          const SizedBox(height: 14),
+        if (description != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            description!,
+            style: AppTypography.body(size: 13, color: c.textSecondary),
+          ),
         ],
 
-        // 3. Fila de Contador y Filtros (opcional — algunas secciones ya
-        // arman la suya propia con datos reales, ver `showCountRow`)
-        if (showCountRow)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Contador + Ayuda
-            Row(
-              children: [
-                Text(
-                  '$currentCount/$totalCount $countLabel',
-                  style: AppTypography.body(
-                    size: 12,
-                    weight: FontWeight.w600,
-                    color: context.c.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: onHelpTap,
-                  child: Icon(
-                    Icons.help_outline_rounded,
-                    size: 15,
-                    color: context.c.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+        // 2. Acción principal de sección (si aplica)
+        if (actionButton != null) ...[
+          const SizedBox(height: 12),
+          actionButton!,
+        ],
 
-            // Botón Filtros
-            InkWell(
-              onTap: onFiltersTap,
-              borderRadius: AppRadii.cardAll,
-              child: PateaCard(
-                       color: context.c.card.withValues(alpha: 0.70),
-                       radius: AppRadii.cardAll,
-                       borderColor: activeFilterCount > 0
-                        ? context.c.brandVolt.withValues(alpha: 0.7)
-                        : context.c.border.withValues(alpha: 0.6),
-                       borderWidth: 1,
-                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                       child: Row(
-                  children: [
-                    Icon(
-                      Icons.filter_list_rounded,
+        // 3. Fila de Contador y Filtros (opcional)
+        if (showCountRow) ...[
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    '$currentCount/$totalCount $countLabel',
+                    style: AppTypography.body(
+                      size: 12,
+                      weight: FontWeight.w600,
+                      color: c.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: onHelpTap,
+                    child: Icon(
+                      Icons.help_outline_rounded,
                       size: 15,
-                      color: activeFilterCount > 0 ? context.c.primary : context.c.textPrimary,
+                      color: c.textSecondary,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Filtros',
-                      style: AppTypography.action(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: activeFilterCount > 0 ? context.c.primary : context.c.textPrimary,
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: onFiltersTap,
+                borderRadius: AppRadii.cardAll,
+                child: PateaCard(
+                  color: c.card.withValues(alpha: 0.70),
+                  radius: AppRadii.cardAll,
+                  borderColor: activeFilterCount > 0
+                      ? c.brandVolt.withValues(alpha: 0.7)
+                      : c.border.withValues(alpha: 0.6),
+                  borderWidth: 1,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.filter_list_rounded,
+                        size: 15,
+                        color: activeFilterCount > 0 ? c.primary : c.textPrimary,
                       ),
-                    ),
-                    if (activeFilterCount > 0) ...[
                       const SizedBox(width: 6),
-                      Container(
-                        width: 17,
-                        height: 17,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: context.c.primary,
-                          shape: BoxShape.circle,
+                      Text(
+                        'Filtros',
+                        style: AppTypography.action(
+                          size: 14,
+                          weight: FontWeight.w600,
+                          color: activeFilterCount > 0
+                              ? c.primary
+                              : c.textPrimary,
                         ),
-                        child: Text(
-                          '$activeFilterCount',
-                          style: AppTypography.code(size: 9, color: context.c.onPrimary),
+                      ),
+                      if (activeFilterCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 17,
+                          height: 17,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: c.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$activeFilterCount',
+                            style: AppTypography.code(
+                              size: 9,
+                              color: c.onPrimary,
+                            ),
+                          ),
                         ),
+                      ],
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 16,
+                        color: c.textSecondary,
                       ),
                     ],
-                    const SizedBox(width: 2),
-                    Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: context.c.textSecondary),
-                  ],
+                  ),
                 ),
-                     ),
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

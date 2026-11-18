@@ -9,6 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_section_scene.dart';
 
 class SocialFeedScreen extends ConsumerWidget {
@@ -37,14 +38,23 @@ class SocialFeedScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(
-          'Comunidad Pateá',
-          style: AppTypography.headline(size: 17, weight: FontWeight.w700),
-        ),
-      ),
-      body: feedAsync.when(
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              MediaQuery.paddingOf(context).top + 12,
+              16,
+              12,
+            ),
+            child: const PateaPageHeader(
+              icon: Icons.forum_outlined,
+              title: 'Comunidad Pateá',
+              showCountRow: false,
+            ),
+          ),
+          Expanded(
+            child: feedAsync.when(
         loading: () =>
             Center(child: CircularProgressIndicator(color: c.primary)),
         error: (_, _) => Center(
@@ -128,6 +138,9 @@ class SocialFeedScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+          ),
+        ],
       ),
     );
   }

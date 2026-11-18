@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patea_mobile/core/theme/patea_colors.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
+import 'package:patea_mobile/core/constants/sections.dart';
 import 'package:patea_mobile/core/widgets/patea_page_header.dart';
+import 'package:patea_mobile/core/widgets/section_icon.dart';
 
 /// Tests que no necesitan Firebase inicializado.
 ///
@@ -91,6 +93,41 @@ void main() {
 
       expect(find.text('Partidos'), findsOneWidget);
       expect(find.textContaining('jugadores'), findsNothing);
+    });
+
+    testWidgets('usa ícono Tabler de sección y botón tonal compacto', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: PateaPageHeader(
+              section: Section.matches,
+              title: spec(Section.matches).title,
+              description: spec(Section.matches).description,
+              showCountRow: false,
+              actionButton: PateaHeaderActionButton(
+                label: spec(Section.matches).action!,
+                onPressed: () => tapped = true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(SectionIcon), findsOneWidget);
+      expect(find.text('Armar partido'), findsOneWidget);
+      final btnFinder = find.ancestor(
+        of: find.text('Armar partido'),
+        matching: find.byType(FilledButton),
+      );
+      expect(btnFinder, findsOneWidget);
+      expect(tester.getSize(btnFinder).height, greaterThanOrEqualTo(44));
+      await tester.tap(btnFinder);
+      expect(tapped, isTrue);
     });
   });
 }

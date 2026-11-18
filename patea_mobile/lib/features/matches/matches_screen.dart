@@ -442,31 +442,13 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 ),
                 sliver: SliverToBoxAdapter(
                   child: PateaPageHeader(
+                    section: Section.matches,
                     title: spec(Section.matches).title,
                     description: spec(Section.matches).description,
                     showCountRow: false,
-                    actionButton: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.push('/matches/create'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.c.primary,
-                          foregroundColor: context.c.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_circle, size: 18),
-                        label: Text(
-                          'Armar partido',
-                          style: AppTypography.action(
-                            size: 14,
-                            weight: FontWeight.w700,
-                            color: context.c.onPrimary,
-                          ),
-                        ),
-                      ),
+                    actionButton: PateaHeaderActionButton(
+                      label: spec(Section.matches).action!,
+                      onPressed: () => context.push('/matches/create'),
                     ),
                   ),
                 ),
@@ -474,7 +456,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
               if (allMatches.isNotEmpty && _timeFilter != TimeFilter.history)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                     child: _NextMatchBanner(matches: bannerMatches),
                   ),
                 ),
@@ -1036,13 +1018,13 @@ class _NextMatchBannerState extends State<_NextMatchBanner> {
                                 horizontal: 8,
                               ),
                               child: Text(
-                                match.title.toUpperCase(),
+                                match.title,
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTypography.headline(
                                   size: 24,
-                                  weight: FontWeight.w900,
+                                  weight: FontWeight.w800,
                                   color: context.c.onPhoto,
                                 ),
                               ),
@@ -1226,7 +1208,7 @@ class _BannerOrganizerBadge extends StatelessWidget {
                   ),
                 ),
                 TextSpan(
-                  text: name.toUpperCase(),
+                  text: name,
                   style: AppTypography.body(
                     size: 9,
                     weight: FontWeight.w800,

@@ -145,9 +145,10 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    final button = tester.getRect(find.byType(FloatingActionButton));
+    final button = tester.getRect(find.text('Crear liga'));
     final navigation = tester.getRect(find.text('Navegación de prueba'));
     expect(button.bottom, lessThanOrEqualTo(navigation.top));
+    expect(find.byType(FloatingActionButton), findsNothing);
     await tester.tap(find.text('Crear liga'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
