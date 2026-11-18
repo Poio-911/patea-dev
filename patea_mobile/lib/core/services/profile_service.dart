@@ -10,6 +10,17 @@ final profileServiceProvider = Provider<ProfileService>(
   (ref) => ProfileService(),
 );
 
+class PortraitDraft {
+  final String id;
+  final String photoUrl;
+  final int? creditsRemaining;
+  const PortraitDraft({
+    required this.id,
+    required this.photoUrl,
+    this.creditsRemaining,
+  });
+}
+
 /// Escrituras del perfil propio.
 ///
 /// La foto se sube directo a Storage desde el cliente (storage.rules permite
@@ -17,6 +28,33 @@ final profileServiceProvider = Provider<ProfileService>(
 /// URL a la Cloud Function, que es la única que puede tocar `users` y
 /// `players`.
 class ProfileService {
+  Future<PortraitDraft> previewAiPhoto({
+    String? sourcePhotoUrl,
+    required String primaryColor,
+    required String secondaryColor,
+    required String pattern,
+  }) async {
+    final result = await callFunction('generatePlayerPhoto', {
+      'previewOnly': true,
+      if (sourcePhotoUrl != null) 'sourcePhotoUrl': sourcePhotoUrl,
+      'jersey': {
+        'primaryColor': primaryColor,
+        'secondaryColor': secondaryColor,
+        'pattern': pattern,
+      },
+    }, timeout: const Duration(seconds: 180));
+    return PortraitDraft(
+      id: result['draftId'] as String,
+      photoUrl: result['photoUrl'] as String,
+      creditsRemaining: (result['creditsRemaining'] as num?)?.toInt(),
+    );
+  }
+
+  Future<void> applyAiPhoto(String draftId) async {
+    final result = await callFunction('applyPlayerPhoto', {'draftId': draftId});
+    await _syncAuthUser(photoUrl: result['photoUrl'] as String);
+  }
+
   /// Sube la foto y devuelve su URL de descarga.
   ///
   /// El nombre lleva timestamp para que la URL cambie: si se reusara el mismo

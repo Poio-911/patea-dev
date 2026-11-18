@@ -37,10 +37,26 @@ Wear a simple modern football jersey, navy blue with restrained white trim, with
 
 Use soft broad frontal light resembling the gentle daylight of the reference. No hard shadows under the eyes, no heavy cheekbone contrast, no shiny skin.
 
-Generate the FINAL background directly: an even matte muted teal (#3A6F78), without scenery, texture, spotlight, strong gradient or halo. This is the finished photograph, not a green-screen or chroma-key image. No artificial outline around the hair. Preserve fine natural hair strands against the background.
+Generate the FINAL background directly: choose a random tasteful solid color for this generation, excluding pure white and pure black. Let the color vary between generations. Keep it even and matte, without scenery, texture, spotlight, strong gradient or halo. This is the finished photograph, not a green-screen or chroma-key image. No artificial outline around the hair. Preserve fine natural hair strands against the background.
 
 Output only the final high-resolution photograph. No borders, frame, card interface, text, watermark or fake transparency.
 `.trim();
+
+const JERSEY_PATTERNS: Record<string, string> = {
+  plain: 'plain with contrasting trim', stripes: 'vertical stripes', band: 'a single horizontal chest band',
+};
+export function buildPlayerPhotoPrompt(settings?: unknown): string {
+  if (settings === undefined || settings === null) return PROMPT;
+  if (typeof settings !== 'object' || Array.isArray(settings)) throw new HttpsError('invalid-argument', 'La camiseta no es válida.');
+  const s = settings as Record<string, unknown>;
+  const validColor = (v: unknown): v is string => typeof v === 'string' && /^#[\da-f]{6}$/i.test(v);
+  if (!validColor(s.primaryColor) || !validColor(s.secondaryColor) ||
+      typeof s.pattern !== 'string' || !Object.prototype.hasOwnProperty.call(JERSEY_PATTERNS, s.pattern)) {
+    throw new HttpsError('invalid-argument', 'Elegí colores y diseño de camiseta válidos.');
+  }
+  return PROMPT.replace('navy blue with restrained white trim',
+    `using primary color ${s.primaryColor.toUpperCase()} and secondary color ${s.secondaryColor.toUpperCase()}, ${JERSEY_PATTERNS[s.pattern]}`);
+}
 
 export type PhotoSource =
   | { kind: 'storage'; path: string }
@@ -304,6 +320,8 @@ export const generatePlayerPhoto = onCall(
     }
     const player = playerSnap.data()!;
     const userData = userSnap.data();
+    const previewOnly = request.data?.previewOnly === true;
+    const prompt = buildPlayerPhotoPrompt(request.data?.jersey);
 
     // Chequeo temprano de créditos: no tiene sentido gastar la llamada a la IA
     // si igual va a fallar después. El descuento real va en la transacción.
@@ -321,6 +339,14 @@ export const generatePlayerPhoto = onCall(
       userData,
       tokenPicture,
     });
+    if (request.data?.sourcePhotoUrl !== undefined) {
+      if (typeof request.data.sourcePhotoUrl !== 'string') throw new HttpsError('invalid-argument', 'La foto no es válida.');
+      const source = parseSourcePhotoUrl(request.data.sourcePhotoUrl, bucket.name);
+      if (source.kind !== 'storage' || !source.path.startsWith(`profile-images/${uid}/`) || isAiGeneratedPhotoUrl(request.data.sourcePhotoUrl)) {
+        throw new HttpsError('permission-denied', 'Usá una foto original subida por vos.');
+      }
+      currentPhoto = request.data.sourcePhotoUrl;
+    }
     if (!currentPhoto) {
       try {
         const authUser = await admin.auth().getUser(uid);
@@ -374,7 +400,7 @@ export const generatePlayerPhoto = onCall(
                 mimeType: sourceMimeType,
               },
             },
-            { text: PROMPT },
+            { text: prompt },
           ],
           config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
@@ -424,6 +450,7 @@ export const generatePlayerPhoto = onCall(
 
     // ── Escribir, descontando el crédito de forma atómica ───────────────────
     let remaining: number | null = null;
+    const draftRef = playerRef.collection('photoDrafts').doc();
 
     await db.runTransaction(async (tx) => {
       const fresh = await tx.get(playerRef);
@@ -435,6 +462,15 @@ export const generatePlayerPhoto = onCall(
           throw new HttpsError('resource-exhausted', 'No te quedan créditos este mes.');
         }
         remaining = freshCredits - 1;
+      }
+
+      if (previewOnly) {
+        tx.set(draftRef, { photoUrl, sourcePhotoUrl: currentPhoto, createdAt: Date.now(),
+          expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, applied: false });
+        if (typeof freshCredits === 'number') tx.update(playerRef, {
+          cardGenerationCredits: admin.firestore.FieldValue.increment(-1),
+        });
+        return;
       }
 
       const availableRef = db.collection('availablePlayers').doc(uid);
@@ -472,8 +508,43 @@ export const generatePlayerPhoto = onCall(
       }
     });
 
-    await admin.auth().updateUser(uid, { photoURL: photoUrl });
+    if (!previewOnly) await admin.auth().updateUser(uid, { photoURL: photoUrl });
 
-    return { ok: true, photoUrl, creditsRemaining: remaining };
+    return { ok: true, photoUrl, creditsRemaining: remaining, ...(previewOnly ? { draftId: draftRef.id } : {}) };
   },
 );
+
+/** Apply an owned server-created preview. Generation already charged its credit. */
+export const applyPlayerPhoto = onCall({ region: 'us-central1' }, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Debés iniciar sesión.');
+  const uid = request.auth.uid;
+  const draftId = request.data?.draftId;
+  if (typeof draftId !== 'string' || !/^[\w-]{1,128}$/.test(draftId)) {
+    throw new HttpsError('invalid-argument', 'La vista previa no es válida.');
+  }
+  const db = admin.firestore();
+  const playerRef = db.collection('players').doc(uid);
+  const draftRef = playerRef.collection('photoDrafts').doc(draftId);
+  let photoUrl = '';
+  await db.runTransaction(async tx => {
+    const [draft, player, available] = await Promise.all([
+      tx.get(draftRef), tx.get(playerRef), tx.get(db.collection('availablePlayers').doc(uid)),
+    ]);
+    const data = draft.data();
+    if (!player.exists || !data || data.expiresAt < Date.now()) {
+      throw new HttpsError('failed-precondition', 'La vista previa venció. Generá una nueva.');
+    }
+    photoUrl = data.photoUrl;
+    if (data.applied) {
+      if (player.data()?.photoUrl !== photoUrl) throw new HttpsError('failed-precondition', 'Esa vista previa ya fue aplicada. Generá una nueva.');
+      return;
+    }
+    const updates = { photoUrl, photoURL: photoUrl, cropPosition: { x: 50, y: 50 }, cropZoom: 1 };
+    tx.set(playerRef, { ...updates, aiSourcePhotoUrl: data.sourcePhotoUrl }, { merge: true });
+    tx.set(db.collection('users').doc(uid), { photoURL: photoUrl, cropPosition: updates.cropPosition, cropZoom: 1 }, { merge: true });
+    if (available.exists) tx.set(available.ref, updates, { merge: true });
+    tx.update(draftRef, { applied: true });
+  });
+  await admin.auth().updateUser(uid, { photoURL: photoUrl });
+  return { ok: true, photoUrl };
+});

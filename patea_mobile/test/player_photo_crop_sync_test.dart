@@ -39,172 +39,200 @@ void main() {
   });
 
   group('Player photo resolution and crop clipping', () {
-    test('PlayerModel normalizes blank photoUrl and limits fallback to linked accounts', () {
-      final linked = PlayerModel.fromFirestore({
-        'name': 'Fiorenzo',
-        'position': 'POR',
-        'ovr': 58,
-        'ownerUid': 'uid-1',
-        'photoUrl': '   ',
-      }, 'uid-1');
-      expect(linked.photoUrl, isNull);
-      expect(
-        linked.withFallbackPhoto('https://example.com/user.jpg').photoUrl,
-        'https://example.com/user.jpg',
-      );
+    test(
+      'PlayerModel normalizes blank photoUrl and limits fallback to linked accounts',
+      () {
+        final linked = PlayerModel.fromFirestore({
+          'name': 'Fiorenzo',
+          'position': 'POR',
+          'ovr': 58,
+          'ownerUid': 'uid-1',
+          'photoUrl': '   ',
+        }, 'uid-1');
+        expect(linked.photoUrl, isNull);
+        expect(
+          linked.withFallbackPhoto('https://example.com/user.jpg').photoUrl,
+          'https://example.com/user.jpg',
+        );
 
-      final manual = PlayerModel.fromFirestore({
-        'name': 'Invitado',
-        'position': 'DEL',
-        'ovr': 60,
-        'ownerUid': 'uid-1',
-      }, 'manual-1');
-      expect(manual.isManual, isTrue);
-      expect(
-        manual.withFallbackPhoto('https://example.com/user.jpg').photoUrl,
-        isNull,
-      );
-    });
+        final manual = PlayerModel.fromFirestore({
+          'name': 'Invitado',
+          'position': 'DEL',
+          'ovr': 60,
+          'ownerUid': 'uid-1',
+        }, 'manual-1');
+        expect(manual.isManual, isTrue);
+        expect(
+          manual.withFallbackPhoto('https://example.com/user.jpg').photoUrl,
+          isNull,
+        );
+      },
+    );
 
-    test('getResolvedPlayersStream fills linked player photo from users collection only', () async {
-      final db = FakeFirebaseFirestore();
-      await db.collection('users').doc('uid-1').set({
-        'photoURL': 'https://example.com/fiorenzo.jpg',
-        'groups': ['g1'],
-      });
-      await db.collection('players').doc('uid-1').set({
-        'name': 'Fiorenzo',
-        'position': 'POR',
-        'ovr': 58,
-        'ownerUid': 'uid-1',
-        'groupId': 'g1',
-      });
-      await db.collection('players').doc('manual-1').set({
-        'name': 'Manual',
-        'position': 'DEF',
-        'ovr': 55,
-        'ownerUid': 'uid-1',
-        'groupId': 'g1',
-      });
+    test(
+      'getResolvedPlayersStream fills linked player photo from users collection only',
+      () async {
+        final db = FakeFirebaseFirestore();
+        await db.collection('users').doc('uid-1').set({
+          'photoURL': 'https://example.com/fiorenzo.jpg',
+          'groups': ['g1'],
+        });
+        await db.collection('players').doc('uid-1').set({
+          'name': 'Fiorenzo',
+          'position': 'POR',
+          'ovr': 58,
+          'ownerUid': 'uid-1',
+          'groupId': 'g1',
+        });
+        await db.collection('players').doc('manual-1').set({
+          'name': 'Manual',
+          'position': 'DEF',
+          'ovr': 55,
+          'ownerUid': 'uid-1',
+          'groupId': 'g1',
+        });
 
-      final service = FirestoreService(db);
-      final players = await service
-          .getResolvedPlayersStream(groupId: 'g1')
-          .firstWhere((list) => list.any((p) => p.id == 'uid-1' && p.photoUrl != null));
+        final service = FirestoreService(db);
+        final players = await service
+            .getResolvedPlayersStream(groupId: 'g1')
+            .firstWhere(
+              (list) => list.any((p) => p.id == 'uid-1' && p.photoUrl != null),
+            );
 
-      final linked = players.firstWhere((p) => p.id == 'uid-1');
-      final manual = players.firstWhere((p) => p.id == 'manual-1');
-      expect(linked.photoUrl, 'https://example.com/fiorenzo.jpg');
-      expect(manual.photoUrl, isNull);
-    });
+        final linked = players.firstWhere((p) => p.id == 'uid-1');
+        final manual = players.firstWhere((p) => p.id == 'manual-1');
+        expect(linked.photoUrl, 'https://example.com/fiorenzo.jpg');
+        expect(manual.photoUrl, isNull);
+      },
+    );
 
-    test('getResolvedPlayerStream falls back to currentAuthPhotoUrl when user doc lacks photo', () async {
-      final db = FakeFirebaseFirestore();
-      await db.collection('players').doc('uid-2').set({
-        'name': 'Fiorenzo',
-        'position': 'POR',
-        'ovr': 58,
-        'ownerUid': 'uid-2',
-      });
+    test(
+      'getResolvedPlayerStream falls back to currentAuthPhotoUrl when user doc lacks photo',
+      () async {
+        final db = FakeFirebaseFirestore();
+        await db.collection('players').doc('uid-2').set({
+          'name': 'Fiorenzo',
+          'position': 'POR',
+          'ovr': 58,
+          'ownerUid': 'uid-2',
+        });
 
-      final service = FirestoreService(db);
-      final resolved = await service
-          .getResolvedPlayerStream(
-            'uid-2',
-            currentUid: 'uid-2',
-            currentAuthPhotoUrl: 'https://example.com/auth.jpg',
-          )
-          .first;
+        final service = FirestoreService(db);
+        final resolved = await service
+            .getResolvedPlayerStream(
+              'uid-2',
+              currentUid: 'uid-2',
+              currentAuthPhotoUrl: 'https://example.com/auth.jpg',
+            )
+            .first;
 
-      expect(resolved?.photoUrl, 'https://example.com/auth.jpg');
-    });
+        expect(resolved?.photoUrl, 'https://example.com/auth.jpg');
+      },
+    );
 
-    testWidgets('PlayerDetailScreen wraps zoomed portrait in CroppedPhoto with ClipRect', (tester) async {
-      final zoomedPlayer = PlayerModel(
-        id: uidYo,
-        name: 'Briseida',
-        position: 'DEL',
-        ovr: 55,
-        pac: 56,
-        sho: 57,
-        pas: 66,
-        dri: 63,
-        def: 40,
-        phy: 49,
-        ownerUid: uidYo,
-        photoUrl: 'https://example.com/briseida.jpg',
-        cropX: 25,
-        cropY: 12,
-        cropZoom: 2.4,
-      );
+    testWidgets(
+      'PlayerDetailScreen wraps zoomed portrait in CroppedPhoto with ClipRect',
+      (tester) async {
+        final zoomedPlayer = PlayerModel(
+          id: uidYo,
+          name: 'Briseida',
+          position: 'DEL',
+          ovr: 55,
+          pac: 56,
+          sho: 57,
+          pas: 66,
+          dri: 63,
+          def: 40,
+          phy: 49,
+          ownerUid: uidYo,
+          photoUrl: 'https://example.com/briseida.jpg',
+          cropX: 25,
+          cropY: 12,
+          cropZoom: 2.4,
+        );
 
-      final errors = await montarPantalla(
-        tester,
-        const PlayerDetailScreen(playerId: uidYo, asOwnProfile: true),
-        tema: AppTheme.darkTheme,
-        extraOverrides: [
-          singlePlayerStreamProvider(uidYo).overrideWith((ref) => Stream.value(zoomedPlayer)),
-        ],
-      );
+        final errors = await montarPantalla(
+          tester,
+          const PlayerDetailScreen(playerId: uidYo, asOwnProfile: true),
+          tema: AppTheme.darkTheme,
+          extraOverrides: [
+            singlePlayerStreamProvider(
+              uidYo,
+            ).overrideWith((ref) => Stream.value(zoomedPlayer)),
+          ],
+        );
 
-      expect(errors, isEmpty, reason: resumirErrores(errors));
-      final cropFinder = find.byType(CroppedPhoto);
-      expect(cropFinder, findsOneWidget);
-      final cropWidget = tester.widget<CroppedPhoto>(cropFinder);
-      expect(cropWidget.cropZoom, 2.4);
-      expect(cropWidget.cropY, 12);
-      expect(
-        find.descendant(of: cropFinder, matching: find.byType(ClipRect)),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: find.descendant(of: cropFinder, matching: find.byType(ClipRect)),
-          matching: find.byType(Transform),
-        ),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    });
+        expect(errors, isEmpty, reason: resumirErrores(errors));
+        final cropFinder = find.byType(CroppedPhoto);
+        expect(cropFinder, findsOneWidget);
+        final cropWidget = tester.widget<CroppedPhoto>(cropFinder);
+        expect(cropWidget.cropZoom, 2.4);
+        expect(cropWidget.cropY, 12);
+        expect(
+          find.descendant(of: cropFinder, matching: find.byType(ClipRect)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.descendant(
+              of: cropFinder,
+              matching: find.byType(ClipRect),
+            ),
+            matching: find.byType(Transform),
+          ),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('PateaTopHeader forwards auth fallback photo and player crop to PateaAvatar', (tester) async {
-      final playerWithCrop = PlayerModel(
-        id: uidYo,
-        name: 'Fiorenzo',
-        position: 'POR',
-        ovr: 58,
-        pac: 64,
-        sho: 51,
-        pas: 62,
-        dri: 46,
-        def: 62,
-        phy: 62,
-        ownerUid: uidYo,
-        photoUrl: null,
-        cropX: 30,
-        cropY: 20,
-        cropZoom: 1.8,
-      );
+    testWidgets(
+      'PateaTopHeader forwards auth fallback photo and player crop to PateaAvatar',
+      (tester) async {
+        final playerWithCrop = PlayerModel(
+          id: uidYo,
+          name: 'Fiorenzo',
+          position: 'POR',
+          ovr: 58,
+          pac: 64,
+          sho: 51,
+          pas: 62,
+          dri: 46,
+          def: 62,
+          phy: 62,
+          ownerUid: uidYo,
+          photoUrl: null,
+          cropX: 30,
+          cropY: 20,
+          cropZoom: 1.8,
+        );
 
-      final errors = await montarPantalla(
-        tester,
-        const Scaffold(appBar: PateaTopHeader()),
-        tema: AppTheme.darkTheme,
-        extraOverrides: [
-          singlePlayerStreamProvider(uidYo).overrideWith((ref) => Stream.value(playerWithCrop)),
-          currentAuthPhotoUrlProvider.overrideWithValue('https://example.com/google.jpg'),
-        ],
-      );
+        final errors = await montarPantalla(
+          tester,
+          const Scaffold(appBar: PateaTopHeader()),
+          tema: AppTheme.darkTheme,
+          extraOverrides: [
+            singlePlayerStreamProvider(
+              uidYo,
+            ).overrideWith((ref) => Stream.value(playerWithCrop)),
+            currentAuthPhotoUrlProvider.overrideWithValue(
+              'https://example.com/google.jpg',
+            ),
+          ],
+        );
 
-      expect(errors, isEmpty, reason: resumirErrores(errors));
-      final avatar = tester.widget<PateaAvatar>(find.byType(PateaAvatar));
-      expect(avatar.photoUrl, 'https://example.com/google.jpg');
-      expect(avatar.cropX, 30);
-      expect(avatar.cropY, 20);
-      expect(avatar.cropZoom, 1.8);
-    });
+        expect(errors, isEmpty, reason: resumirErrores(errors));
+        final avatar = tester.widget<PateaAvatar>(find.byType(PateaAvatar));
+        expect(avatar.photoUrl, 'https://example.com/google.jpg');
+        expect(avatar.cropX, 30);
+        expect(avatar.cropY, 20);
+        expect(avatar.cropZoom, 1.8);
+      },
+    );
 
-    testWidgets('EditProfileScreen surfaces AI error near header', (tester) async {
+    testWidgets('EditProfileScreen surfaces AI error near header', (
+      tester,
+    ) async {
       final basePlayer = PlayerModel(
         id: uidYo,
         name: 'Santiago',
@@ -218,6 +246,7 @@ void main() {
         phy: 76,
         ownerUid: uidYo,
         cardGenerationCredits: 2,
+        photoUrl: 'https://example.com/source.jpg',
       );
 
       final errors = await montarPantalla(
@@ -225,22 +254,35 @@ void main() {
         const EditProfileScreen(playerId: uidYo),
         tema: AppTheme.darkTheme,
         extraOverrides: [
-          singlePlayerStreamProvider(uidYo).overrideWith((ref) => Stream.value(basePlayer)),
+          singlePlayerStreamProvider(
+            uidYo,
+          ).overrideWith((ref) => Stream.value(basePlayer)),
           profileServiceProvider.overrideWithValue(_FailingAiProfileService()),
         ],
       );
       expect(errors, isEmpty, reason: resumirErrores(errors));
 
       await tester.tap(find.text('Cambiar foto'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.scrollUntilVisible(
+        find.text('Generar con IA'),
+        250,
+        scrollable: find.byType(Scrollable).last,
+      );
       expect(find.textContaining('2 disponibles'), findsOneWidget);
 
+      await tester.ensureVisible(find.text('Generar con IA'));
       await tester.tap(find.text('Generar con IA'));
-      await tester.pumpAndSettle();
-      expect(find.text('Primero subí una foto de perfil.'), findsAtLeastNWidgets(1));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.text('Primero subí una foto de perfil.'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
-    testWidgets('EditProfileScreen disables AI photo generation at 0 credits', (tester) async {
+    testWidgets('EditProfileScreen disables AI photo generation at 0 credits', (
+      tester,
+    ) async {
       final zeroCreditPlayer = PlayerModel(
         id: uidYo,
         name: 'Santiago',
@@ -261,23 +303,40 @@ void main() {
         const EditProfileScreen(playerId: uidYo),
         tema: AppTheme.darkTheme,
         extraOverrides: [
-          singlePlayerStreamProvider(uidYo).overrideWith((ref) => Stream.value(zeroCreditPlayer)),
+          singlePlayerStreamProvider(
+            uidYo,
+          ).overrideWith((ref) => Stream.value(zeroCreditPlayer)),
           profileServiceProvider.overrideWithValue(_FailingAiProfileService()),
         ],
       );
       expect(errors, isEmpty, reason: resumirErrores(errors));
 
       await tester.tap(find.text('Cambiar foto'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.scrollUntilVisible(
+        find.text('Generar con IA'),
+        250,
+        scrollable: find.byType(Scrollable).last,
+      );
       expect(find.text('Sin créditos disponibles este mes.'), findsOneWidget);
       await tester.tap(find.text('Generar con IA'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.text('Sin créditos disponibles este mes.'), findsOneWidget);
     });
   });
 }
 
 class _FailingAiProfileService extends Fake implements ProfileService {
+  @override
+  Future<PortraitDraft> previewAiPhoto({
+    String? sourcePhotoUrl,
+    required String primaryColor,
+    required String secondaryColor,
+    required String pattern,
+  }) async {
+    throw Exception('Primero subí una foto de perfil.');
+  }
+
   @override
   Future<({String photoUrl, int? creditsRemaining})> generateAiPhoto() async {
     throw Exception('Primero subí una foto de perfil.');

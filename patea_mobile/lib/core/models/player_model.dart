@@ -57,14 +57,20 @@ class OvrHistoryEntry {
   final int newOVR;
   final String? matchId;
 
-  OvrHistoryEntry({required this.date, required this.oldOVR, required this.newOVR, this.matchId});
+  OvrHistoryEntry({
+    required this.date,
+    required this.oldOVR,
+    required this.newOVR,
+    this.matchId,
+  });
 
   factory OvrHistoryEntry.fromMap(Map<String, dynamic> map) {
     final rawDate = map['date'];
     DateTime parsed;
     if (rawDate is String) {
       parsed = DateTime.tryParse(rawDate) ?? DateTime.now();
-    } else if (rawDate != null && rawDate.runtimeType.toString() == 'Timestamp') {
+    } else if (rawDate != null &&
+        rawDate.runtimeType.toString() == 'Timestamp') {
       parsed = (rawDate as dynamic).toDate() as DateTime;
     } else {
       parsed = DateTime.now();
@@ -90,6 +96,7 @@ class PlayerModel {
   final int def;
   final int phy;
   final String? photoUrl;
+  final String? aiSourcePhotoUrl;
   final String? ownerUid;
   final String? groupId;
   final PlayerStats stats;
@@ -120,6 +127,7 @@ class PlayerModel {
     required this.def,
     required this.phy,
     this.photoUrl,
+    this.aiSourcePhotoUrl,
     this.ownerUid,
     this.groupId,
     this.preferredFoot,
@@ -158,7 +166,10 @@ class PlayerModel {
       dri: (data['dri'] as num?)?.toInt() ?? 50,
       def: (data['def'] as num?)?.toInt() ?? 50,
       phy: (data['phy'] as num?)?.toInt() ?? 50,
-      photoUrl: nonEmptyPhotoUrl((data['photoUrl'] ?? data['photoURL']) as String?),
+      photoUrl: nonEmptyPhotoUrl(
+        (data['photoUrl'] ?? data['photoURL']) as String?,
+      ),
+      aiSourcePhotoUrl: nonEmptyPhotoUrl(data['aiSourcePhotoUrl'] as String?),
       ownerUid: data['ownerUid'],
       groupId: data['groupId'],
       preferredFoot: data['preferredFoot'] as String?,
@@ -185,6 +196,7 @@ class PlayerModel {
       'def': def,
       'phy': phy,
       'photoUrl': photoUrl,
+      'aiSourcePhotoUrl': aiSourcePhotoUrl,
       'ownerUid': ownerUid,
       'groupId': groupId,
       'preferredFoot': preferredFoot,
@@ -198,7 +210,12 @@ class PlayerModel {
   }
 
   /// Returns a copy with overridden display photo URL.
-  PlayerModel copyWith({String? photoUrl}) => PlayerModel(
+  PlayerModel copyWith({
+    String? photoUrl,
+    double? cropX,
+    double? cropY,
+    double? cropZoom,
+  }) => PlayerModel(
     id: id,
     name: name,
     position: position,
@@ -210,15 +227,16 @@ class PlayerModel {
     def: def,
     phy: phy,
     photoUrl: photoUrl ?? this.photoUrl,
+    aiSourcePhotoUrl: aiSourcePhotoUrl,
     ownerUid: ownerUid,
     groupId: groupId,
     preferredFoot: preferredFoot,
     bio: bio,
     birthYear: birthYear,
     nationality: nationality,
-    cropX: cropX,
-    cropY: cropY,
-    cropZoom: cropZoom,
+    cropX: cropX ?? this.cropX,
+    cropY: cropY ?? this.cropY,
+    cropZoom: cropZoom ?? this.cropZoom,
     cardGenerationCredits: cardGenerationCredits,
     stats: stats,
   );
@@ -239,4 +257,3 @@ class PlayerModel {
 }
 
 typedef Player = PlayerModel;
-

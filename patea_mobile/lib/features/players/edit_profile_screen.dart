@@ -1,13 +1,11 @@
 import '../../core/widgets/patea_button_progress.dart';
 import 'dart:io';
 import '../../core/widgets/patea_card.dart';
-import '../../core/widgets/patea_snack.dart';
 import '../../core/theme/app_radii.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/player_model.dart';
 import '../../core/services/firestore_service.dart';
@@ -17,6 +15,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/player_card_widget.dart';
 import 'crop_photo_screen.dart';
+import 'portrait_studio_screen.dart';
 
 /// Edición del perfil propio.
 ///
@@ -57,7 +56,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool _initialised = false;
   bool _saving = false;
-  bool _generating = false;
+  final bool _generating = false;
   String? _error;
   String? _notice;
 
@@ -82,125 +81,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _birthYear = player.birthYear;
   }
 
-  Future<void> _pickPhoto(ImageSource source) async {
-    try {
-      final picked = await ImagePicker().pickImage(
-        source: source,
-        // Se redimensiona en el teléfono antes de subir: una foto de cámara
-        // moderna son varios MB y el límite de storage.rules es 5.
-        maxWidth: 1080,
-        maxHeight: 1080,
-        imageQuality: 88,
-      );
-      if (picked == null || !mounted) return;
-      await HapticFeedback.selectionClick();
-      if (!mounted) return;
-      setState(() => _pickedPhoto = File(picked.path));
-    } catch (e) {
-      if (mounted) {
-        setState(() => _error = 'No se pudo abrir la cámara o la galería.');
-      }
-    }
-  }
-
-  void _openPhotoSheet(int? credits) {
-    final hasCredits = credits == null || credits > 0;
-    final aiSubtitle = !hasCredits
-        ? 'Sin créditos disponibles este mes.'
-        : credits != null
-        ? 'Convierte tu foto en un retrato de estudio. Usa 1 crédito ($credits disponibles).'
-        : 'Convierte tu foto en un retrato de estudio. Usa 1 crédito.';
-
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => PateaCard(
-        color: context.c.popover,
-        radius: BorderRadius.vertical(top: Radius.circular(AppRadii.surface)),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 48,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: context.c.textSecondary.withValues(alpha: 0.3),
-                  borderRadius: AppRadii.hairAll,
-                ),
-              ),
-              _SheetAction(
-                icon: Icons.photo_camera_outlined,
-                label: 'Sacar una foto',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _pickPhoto(ImageSource.camera);
-                },
-              ),
-              const SizedBox(height: 8),
-              _SheetAction(
-                icon: Icons.photo_library_outlined,
-                label: 'Elegir de la galería',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _pickPhoto(ImageSource.gallery);
-                },
-              ),
-              const SizedBox(height: 8),
-              _SheetAction(
-                icon: Icons.auto_awesome_outlined,
-                label: 'Generar con IA',
-                subtitle: aiSubtitle,
-                enabled: hasCredits,
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _generateWithAi();
-                },
-              ),
-            ],
-          ),
-        ),
+  Future<void> _openPhotoSheet(int? credits) async {
+    final player = ref.read(singlePlayerStreamProvider(widget.playerId)).value;
+    if (player == null) return;
+    final applied = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            PortraitStudioScreen(player: player, initialPhoto: _pickedPhoto),
       ),
     );
-  }
-
-  Future<void> _generateWithAi() async {
-    setState(() {
-      _generating = true;
-      _error = null;
-      _notice = null;
-    });
-    try {
-      final service = ref.read(profileServiceProvider);
-      // Upload newly picked local photo first so AI uses it instead of stale photo.
-      if (_pickedPhoto != null) {
-        final uploadedUrl = await service.uploadProfilePhoto(_pickedPhoto!);
-        await service.updateProfile(photoUrl: uploadedUrl);
-      }
-      final res = await service.generateAiPhoto();
-      await HapticFeedback.mediumImpact();
-      if (!mounted) return;
+    if (mounted && applied == true) {
       setState(() {
-        _generating = false;
-        // La foto nueva ya quedó guardada del lado servidor; el stream del
-        // jugador la trae solo. Se limpia la local para no taparla.
         _pickedPhoto = null;
-        _notice = res.creditsRemaining != null
-            ? 'Foto generada. Te ${res.creditsRemaining == 1 ? 'queda' : 'quedan'} ${res.creditsRemaining} crédito${res.creditsRemaining == 1 ? '' : 's'}.'
-            : 'Foto generada.';
+        _notice = 'Foto actualizada.';
+        _error = null;
       });
-    } catch (e) {
-      if (mounted) {
-        final message = e.toString().replaceFirst('Exception: ', '');
-        setState(() {
-          _generating = false;
-          _error = message;
-        });
-        PateaSnack.error(context, message);
-      }
     }
   }
 
@@ -250,7 +145,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 const SizedBox(height: 14),
                 Text(
                   'Año de nacimiento',
-                  style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+                  style: AppTypography.headline(
+                    size: 16,
+                    weight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -447,9 +345,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       children: [
                         Builder(
                           builder: (context) {
-                            final cardW = (MediaQuery.sizeOf(context).width *
-                                    0.36)
-                                .clamp(132.0, 152.0);
+                            final cardW =
+                                (MediaQuery.sizeOf(context).width * 0.36).clamp(
+                                  132.0,
+                                  152.0,
+                                );
                             return SizedBox(
                               width: cardW,
                               height: cardW * 1.5,
@@ -492,8 +392,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           onPressed: (_saving || _generating)
                               ? null
                               : () => _openPhotoSheet(
-                                    player.cardGenerationCredits,
-                                  ),
+                                  player.cardGenerationCredits,
+                                ),
                           icon: _generating
                               ? const SizedBox(
                                   width: 16,
@@ -827,79 +727,6 @@ class _ChoiceChip extends StatelessWidget {
             size: 13,
             weight: FontWeight.w600,
             color: selected ? color : context.c.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? subtitle;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  const _SheetAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.subtitle,
-    this.enabled = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: AppRadii.cardAll,
-      child: Opacity(
-        opacity: enabled ? 1.0 : 0.5,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: c.cardSurface,
-                  borderRadius: AppRadii.cardAll,
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: enabled ? c.primary : c.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: AppTypography.headline(
-                        size: 15,
-                        weight: FontWeight.w600,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        style: AppTypography.body(
-                          size: 12,
-                          color: c.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),
