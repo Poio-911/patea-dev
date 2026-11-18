@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-11-18T21:35:41.597Z",
+  "project": "mil-disculpis",
+  "source": "source.png",
+  "prompt": "Transform the reference photo into a crisp, natural football player card portrait while strictly preserving the exact same person.\nCRITICAL — Identity & Exact Age Preservation: Keep 100% identical facial structure, bone structure, eyes, nose, lips, jawline, hairline, facial expression, skin tone, and the exact apparent age shown in the reference image.\nDo NOT make the person look older, do NOT add wrinkles, fine lines, eye bags, deep laugh lines, heavy stubble, or exaggerated skin pores/texture, and do NOT reinterpret or redraw the face.\nPose & Outfit: Facing forward with arms crossed over the chest, wearing a modern football (soccer) jersey with a clean athletic design and varied color.\nLighting: Bright, soft, diffused frontal studio fill lighting (softbox / butterfly lighting) with even, flattering illumination on the face. Eliminate harsh contrast and eliminate heavy shadows under the eyes, nose, and cheekbones.\nBackground: A single flat, smooth solid color (vibrant, pastel, or neutral — never pure white or pure black) with zero gradients, shadows, patterns, or textures.\nRender as a clean high-resolution photograph without borders, frames, text, watermarks, or fake transparency.",
+  "attempts": [
+    {
+      "model": "gemini-nano-banana-2.1",
+      "success": true,
+      "elapsedMs": 36342
+    }
+  ],
+  "result": {
+    "file": "converted.png",
+    "mimeType": "image/png",
+    "bytes": 1617736,
+    "model": "gemini-nano-banana-2.1"
+  }
+}
