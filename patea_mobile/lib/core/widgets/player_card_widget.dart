@@ -11,6 +11,7 @@ import '../theme/app_typography.dart';
 import '../theme/patea_colors.dart';
 import '../utils/photo_url.dart';
 import 'cropped_photo.dart';
+import 'ovr_accent.dart';
 import 'player_avatar_fallback.dart';
 
 /// Las dos presentaciones conservan los mismos datos y la relación 2:3.
@@ -89,6 +90,8 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
       widget.player.position,
       if (widget.player.isManual) 'Jugador manual',
       'OVR ${widget.player.ovr}',
+      if (ovrCategory(widget.player.ovr).isNotEmpty)
+        ovrCategory(widget.player.ovr),
       for (final stat in attributes) '${stat.description} ${stat.value}',
       '${best.length == 1 ? 'Mejor atributo' : 'Mejores atributos'}: ${best.map((stat) => stat.description).join(', ')}',
       if (sorted != null) 'Ordenado por ${sorted.description.toLowerCase()}',
@@ -280,9 +283,10 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     }
 
     var scoreSize = compact ? math.min(29.0, width * 0.17) : 38.0;
+    final scoreColor = ovrAccentColor(c, widget.player.ovr);
     TextStyle scoreStyle() => AppTypography.sportNumber(
       size: scoreSize,
-      color: c.ratingAccent,
+      color: scoreColor,
     ).copyWith(height: 1, fontWeight: FontWeight.w700);
     final showCaption =
         width >= 130 && available >= measure('OVR', captionStyle);
@@ -417,6 +421,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 6),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Row(
@@ -424,14 +429,42 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             if (showCaption) ...[
-                              Text('OVR', style: captionStyle),
+                              SizedBox(
+                                height: math.min(
+                                  rowHeight,
+                                  measure('${widget.player.ovr}', scoreStyle()),
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('OVR', style: captionStyle),
+                                      if (ovrCategory(
+                                        widget.player.ovr,
+                                      ).isNotEmpty)
+                                        Text(
+                                          ovrCategory(widget.player.ovr),
+                                          style: captionStyle.copyWith(
+                                            color: scoreColor,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                               const SizedBox(width: 5),
                             ],
                             Transform(
                               transform: Matrix4.identity()
                                 ..setEntry(0, 1, -0.12),
-                              child: Text(
-                                '${widget.player.ovr}',
+                              child: OvrPrismNumber(
+                                ovr: widget.player.ovr,
+                                seed: widget.player.id,
                                 style: scoreStyle(),
                               ),
                             ),

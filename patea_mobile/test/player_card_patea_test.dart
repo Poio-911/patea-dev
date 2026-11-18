@@ -229,7 +229,7 @@ void main() {
                       SizedBox(
                         width: 141,
                         child: PlayerCardWidget(
-                          player: _player(ovr: 82, name: 'Santiago Fernández'),
+                          player: _player(ovr: 93, name: 'Santiago Fernández'),
                           photoStyle: CardPhotoStyle.halfTop,
                         ),
                       ),
@@ -239,7 +239,7 @@ void main() {
                         child: PlayerCardWidget(
                           player: _player(
                             position: 'POR',
-                            ovr: 82,
+                            ovr: 76,
                             name: 'Diego Suárez',
                           ),
                           photoStyle: CardPhotoStyle.circular,
