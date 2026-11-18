@@ -16,7 +16,7 @@ test('usa modelos Vertex AI priorizando Nano Banana 2.1 con fallback Pro', () =>
     'gemini-3-pro-image',
   ]);
   assert.match(PROMPT, /exact apparent age/i);
-  assert.match(PROMPT, /Do NOT make the person look older/i);
+  assert.match(PROMPT, /Do not add or deepen forehead creases/i);
   assert.doesNotMatch(PROMPT, /not a direct copy/i);
 });
 

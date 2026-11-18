@@ -45,3 +45,9 @@ El usuario rechazó el procesamiento posterior del fondo y pospuso el selector d
 La nueva propuesta vive en `output/profile-photo-smoke/prompt-review/prompt.txt` y se probó con la misma referencia original mediante el argumento opcional `PROMPT_FILE` del smoke test. Pide directamente el fondo final, rostro/edad/expresión próximos a la referencia, pose relajada, camiseta azul/blanca sin emblemas y menos espacio superior.
 
 `converted.png` contiene directamente los bytes de imagen devueltos por Vertex: sin recorte, eliminación de fondo, filtros ni recoloreado. `report.json` registra el prompt exacto, modelo, tiempo y `postProcessing: false`. La propuesta queda pendiente de aprobación; no cambia perfiles ni créditos y no se aplica todavía al callable.
+
+### Prompt aprobado e incorporado
+
+El usuario aprobó esta propuesta y autorizó incorporarla al backend. `generate-player-photo.ts` usa ahora exactamente el texto de `prompt-review/prompt.txt`, manteniendo 2:3, modelos y salida directa. No hay eliminación de fondo, recoloreado ni dependencia de `sharp`. Compilación y cinco pruebas de la función aprobadas, más comparación del prompt aplicado contra el aprobado. No se realizó despliegue en esta revisión.
+
+La próxima revisión solicitada es analizar la sección de imágenes y opciones del prompt antes de implementarlas. Estado actual: miniatura de card dentro de editar perfil, botón Cambiar foto con cámara/galería/IA, encuadre separado, y generación que reemplaza inmediatamente la foto. La propuesta a discutir es un espacio de retrato con vista previa grande, referencia original identificada, personalización breve y revisión antes de aplicar. Colores y camiseta siguen pendientes de aprobación; no hay selector nuevo ni parámetros de personalización implementados.

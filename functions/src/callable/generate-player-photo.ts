@@ -23,15 +23,23 @@ const EXTERNAL_FETCH_TIMEOUT_MS = 15_000;
 const VERTEX_TIMEOUT_MS = 65_000;
 
 export const PROMPT = `
-Edit the reference photograph into a natural football player card portrait. This is a wardrobe, pose and background edit of the SAME person, not a new interpretation of their face.
-PRIORITY 1 — Preserve identity and the exact apparent age: retain the reference facial proportions, eyes, eyebrows, nose, lips, jawline, hairline, hairstyle, hair volume, skin tone, freckles and the original expression. Treat the face as a protected region: keep its appearance as close to the original photograph as possible. If a styling instruction conflicts with facial fidelity, preserve the reference face.
-Do NOT make the person look older or younger. Do NOT add, deepen or sharpen wrinkles, forehead creases, eye bags, smile lines, facial hair or skin pores. Preserve existing natural skin detail without beauty smoothing, face reshaping, skin darkening, extra contrast, clarity or cinematic grading.
-Composition: tight vertical head-and-upper-torso portrait. Keep the entire hairstyle visible with approximately 4% clear space above it. The head including hair should occupy about 40% of image height. Crop at the lower crossed forearms, not the waist or hips; avoid excess empty space and long torso. Keep shoulders, face and arms within the frame so the face remains legible on a small player card.
-Pose: retain the reference head angle, gaze and facial expression. Relaxed shoulders, torso turned only slightly, arms loosely crossed at the lower chest with natural hands and anatomy. Do not force a rigid symmetrical pose or rotate/redraw the face to match the torso.
-Outfit: a clean modern football jersey with a restrained two-color athletic design. Completely unbranded: no club badge, crest, stars, sponsor, manufacturer symbol, lettering, numbers, text or invented emblems. Do not add accessories absent from the reference.
-Lighting: soft broad frontal fill, close to the gentle light in the reference. Even facial illumination without shadowed eye sockets, hard cheekbones or glossy skin.
-Background: one uniform matte muted teal color, RGB 58, 111, 120 (#3A6F78), identical across the entire background. No gradient, vignette, spotlight, halo, cast shadow, texture or scenery. Do not bake a card overlay into the photograph; the app adds its own overlay.
-Render as a clean natural photograph, without borders, frames, text, watermarks or fake transparency.
+Edit the supplied reference photo into a natural professional football player portrait of the SAME person. Change the outfit, pose and background; keep the reference face rather than redesigning it.
+
+Identity comes first. Preserve the exact apparent age, facial proportions and asymmetry, eye shape and size, eyebrows, nose, lips, jaw, hairline, curls and hair volume, skin tone, freckles, head tilt, gaze and gentle original expression. Do not open the eyes wider, lift the eyebrows, intensify the smile or reshape the face. If any styling instruction conflicts with the reference face, preserve the reference face.
+
+Keep the skin as naturally soft as it appears in the reference. Do not add or deepen forehead creases, wrinkles, eye bags, smile lines, pores or facial hair. Do not apply beauty filters, plastic skin, sharpening, extra clarity, dramatic contrast, tanning or cinematic color grading.
+
+Compose a vertical 2:3 photograph, from just above the complete hairstyle down to the crossed forearms at the bottom edge. Leave only 2–4% of image height above the tallest hair strand, not a large empty upper band. The entire head including hair should occupy approximately 40–45% of image height. Show both shoulders and keep the crossed hands naturally within the frame. Do not show the waist or hips. Keep head, neck and body proportions natural.
+
+Relax the shoulders. Turn the torso only slightly, keeping the reference head angle and gaze. Arms loosely crossed at the lower chest, natural hands, no stiff or exaggerated athletic pose.
+
+Wear a simple modern football jersey, navy blue with restrained white trim, with realistic fabric. No badge, crest, stars, sponsor, manufacturer mark, invented symbol, letters or numbers. Keep the face and hair unchanged when changing the clothing.
+
+Use soft broad frontal light resembling the gentle daylight of the reference. No hard shadows under the eyes, no heavy cheekbone contrast, no shiny skin.
+
+Generate the FINAL background directly: an even matte muted teal (#3A6F78), without scenery, texture, spotlight, strong gradient or halo. This is the finished photograph, not a green-screen or chroma-key image. No artificial outline around the hair. Preserve fine natural hair strands against the background.
+
+Output only the final high-resolution photograph. No borders, frame, card interface, text, watermark or fake transparency.
 `.trim();
 
 export type PhotoSource =
