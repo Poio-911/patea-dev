@@ -159,3 +159,73 @@ test('plantel del partido: se arma desde los equipos y rechaza jugadores repetid
   const empty = { id: 't2', data: { name: 'Los C', members: [] } };
   assert.throws(() => challenges.buildChallengeTeams([home, empty], profiles), /plantel propio/);
 });
+
+test('searchTeamsCore encuentra equipos heredados sin searchTokens y los auto-indexa', async () => {
+  const teams = new Map([
+    ['t-hura', { name: 'Huracán del Parque', groupId: 'g-rival', members: [{ playerId: 'p1' }] }],
+    ['t-same-group', { name: 'Huracán Local', groupId: 'g-mine', members: [{ playerId: 'p2' }] }],
+    ['t-optout', { name: 'Huracán Oculto', groupId: 'g-other', challengeOptOut: true, members: [{ playerId: 'p3' }] }],
+    ['t-empty', { name: 'Huracán Sin Jugadores', groupId: 'g-other', members: [] }],
+  ]);
+  const groups = new Map([['g-rival', { name: 'Fútbol del Parque' }]]);
+  const updated = [];
+
+  const makeSnap = (entries) => ({
+    docs: entries.map(([id, data]) => ({
+      id,
+      ref: { path: `teams/${id}` },
+      data: () => data,
+    })),
+  });
+
+  const db = {
+    collection: (col) => {
+      assert.equal(col, 'teams');
+      return {
+        where: (_field, _op, token) => ({
+          limit: () => ({
+            async get() {
+              const matched = [...teams.entries()].filter(([, d]) =>
+                Array.isArray(d.searchTokens) && d.searchTokens.includes(token),
+              );
+              return makeSnap(matched);
+            },
+          }),
+        }),
+        limit: () => ({
+          async get() {
+            return makeSnap([...teams.entries()]);
+          },
+        }),
+      };
+    },
+    doc: (path) => ({ path }),
+    async getAll(...refs) {
+      return refs.map((r) => {
+        const id = r.path.split('/').at(-1);
+        const data = groups.get(id);
+        return { id, exists: Boolean(data), data: () => data };
+      });
+    },
+    batch: () => ({
+      update(ref, patch) {
+        updated.push({ path: ref.path, patch });
+        const id = ref.path.split('/').at(-1);
+        teams.set(id, { ...teams.get(id), ...patch });
+      },
+      async commit() {},
+    }),
+  };
+
+  const res = await challenges.searchTeamsCore(db, {
+    query: 'hura',
+    excludeTeamId: 't-mine',
+    excludeGroupId: 'g-mine',
+  });
+
+  assert.equal(res.ok, true);
+  assert.equal(res.teams.length, 1);
+  assert.equal(res.teams[0].id, 't-hura');
+  assert.equal(res.teams[0].groupName, 'Fútbol del Parque');
+  assert.ok(updated.some((u) => u.path === 'teams/t-hura' && u.patch.searchTokens.includes('hura')));
+});

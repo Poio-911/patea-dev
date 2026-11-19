@@ -7,7 +7,9 @@ import { acceptedRivals, challengeState, teamAccess } from '../lib/team-rivals-s
 import { rivalDocId } from '../lib/team-rivals';
 import {
   MAX_QUERY_LENGTH,
+  buildTeamSearchTokens,
   matchesTeamQuery,
+  normalizeSearchText,
   parseTeamQuery,
   rankTeamMatch,
 } from '../lib/team-search';
@@ -34,6 +36,7 @@ type Doc = Record<string, any>;
 const REGION = { region: 'us-central1' } as const;
 const MAX_RESULTS = 15;
 const SEARCH_CANDIDATES = 100;
+const FALLBACK_TEAM_SCAN_LIMIT = 500;
 const MAX_MESSAGE = 200;
 
 function requireAuth(request: { auth?: { uid: string } | null }): string {
@@ -119,31 +122,81 @@ async function groupOf(db: admin.firestore.Firestore, team: Doc): Promise<Doc | 
  * - Excluye el equipo propio, los del grupo indicado, los ocultos
  *   (`challengeOptOut`) y los que no tienen jugadores (no pueden jugar).
  */
-export const searchTeams = onCall(REGION, async (request) => {
-  requireAuth(request);
-  const query = parseTeamQuery(String(request.data?.query ?? '').slice(0, MAX_QUERY_LENGTH));
+export async function searchTeamsCore(
+  db: admin.firestore.Firestore,
+  params: { query?: unknown; excludeTeamId?: unknown; excludeGroupId?: unknown },
+): Promise<{
+  ok: true;
+  tooShort?: boolean;
+  teams: Array<{
+    id: string;
+    name: string;
+    jersey: unknown;
+    groupId: string;
+    groupName: string;
+    memberCount: number;
+  }>;
+}> {
+  const query = parseTeamQuery(String(params.query ?? '').slice(0, MAX_QUERY_LENGTH));
   if (!query) return { ok: true, teams: [], tooShort: true };
 
-  const excludeTeamId = cleanId(request.data?.excludeTeamId);
-  const excludeGroupId = cleanId(request.data?.excludeGroupId);
+  const excludeTeamId = cleanId(params.excludeTeamId);
+  const excludeGroupId = cleanId(params.excludeGroupId);
 
-  const db = admin.firestore();
-  const snap = await db
+  const isEligible = (team: Doc & { id: string }): boolean =>
+    team.id !== excludeTeamId &&
+    (!excludeGroupId || team.groupId !== excludeGroupId) &&
+    team.challengeOptOut !== true &&
+    memberCount(team) > 0 &&
+    matchesTeamQuery(team.name, query);
+
+  const byId = new Map<string, Doc & { id: string }>();
+  const indexedSnap = await db
     .collection('teams')
     .where('searchTokens', 'array-contains', query.anchor)
     .limit(SEARCH_CANDIDATES)
     .get();
+  for (const doc of indexedSnap.docs) {
+    byId.set(doc.id, { ...(doc.data() as Doc), id: doc.id });
+  }
 
-  const candidates = snap.docs
-    .map((doc): Doc & { id: string } => ({ ...(doc.data() as Doc), id: doc.id }))
-    .filter(
-      (team) =>
-        team.id !== excludeTeamId &&
-        (!excludeGroupId || team.groupId !== excludeGroupId) &&
-        team.challengeOptOut !== true &&
-        memberCount(team) > 0 &&
-        matchesTeamQuery(team.name, query),
-    )
+  let eligibleCount = [...byId.values()].filter(isEligible).length;
+
+  // Fallback para equipos creados antes de `searchTokens` / `onTeamWrite` o desde
+  // la web sin haber pasado por backfill. Auto-indexa los faltantes al paso.
+  if (eligibleCount < MAX_RESULTS) {
+    const scanSnap = await db.collection('teams').limit(FALLBACK_TEAM_SCAN_LIMIT).get();
+    const toIndex: Array<{ ref: admin.firestore.DocumentReference; nameLower: string; searchTokens: string[] }> = [];
+    for (const doc of scanSnap.docs) {
+      const data = doc.data() as Doc;
+      if (!byId.has(doc.id)) {
+        byId.set(doc.id, { ...data, id: doc.id });
+      }
+      if (typeof data.name === 'string' && data.name.trim()) {
+        const expectedLower = normalizeSearchText(data.name);
+        const hasTokens = Array.isArray(data.searchTokens) && data.searchTokens.length > 0;
+        if (!hasTokens || data.nameLower !== expectedLower) {
+          toIndex.push({
+            ref: doc.ref,
+            nameLower: expectedLower,
+            searchTokens: buildTeamSearchTokens(data.name),
+          });
+        }
+      }
+    }
+    if (toIndex.length > 0) {
+      for (let i = 0; i < toIndex.length; i += 400) {
+        const batch = db.batch();
+        for (const item of toIndex.slice(i, i + 400)) {
+          batch.update(item.ref, { nameLower: item.nameLower, searchTokens: item.searchTokens });
+        }
+        await batch.commit().catch(() => {});
+      }
+    }
+  }
+
+  const candidates = [...byId.values()]
+    .filter(isEligible)
     .sort(
       (a, b) =>
         rankTeamMatch(a.name, query) - rankTeamMatch(b.name, query) ||
@@ -167,6 +220,15 @@ export const searchTeams = onCall(REGION, async (request) => {
       memberCount: memberCount(team),
     })),
   };
+}
+
+export const searchTeams = onCall(REGION, async (request) => {
+  requireAuth(request);
+  return searchTeamsCore(admin.firestore(), {
+    query: request.data?.query,
+    excludeTeamId: request.data?.excludeTeamId,
+    excludeGroupId: request.data?.excludeGroupId,
+  });
 });
 
 // ---------------------------------------------------------------------------
