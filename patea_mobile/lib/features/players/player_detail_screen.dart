@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +13,7 @@ import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/utils/photo_url.dart';
+import '../../core/utils/player_attribute_highlight.dart';
 import '../../core/widgets/cropped_photo.dart';
 import '../../core/widgets/ovr_progression_chart.dart';
 import '../../core/widgets/patea_card.dart';
@@ -255,7 +255,10 @@ class _HeroCardHeader extends StatelessWidget {
     final topInset = MediaQuery.paddingOf(context).top;
     final posColor = c.positionColor(player.position);
     final attrs = _attributesFor(player);
-    final maxVal = attrs.map((a) => a.value).reduce(math.max);
+    final bestKey = playerAttributeHighlight(player);
+    final attributeKeys = player.position.toUpperCase() == 'POR'
+        ? const ['DEF', 'DRI', 'SHO', 'PAC', 'PAS', 'PHY']
+        : const ['PAC', 'SHO', 'PAS', 'DRI', 'DEF', 'PHY'];
     final meta = _metaLine(player);
 
     return Stack(
@@ -487,7 +490,7 @@ class _HeroCardHeader extends StatelessWidget {
                           child: _AttributeLine(
                             label: attrs[r * 2].label,
                             value: attrs[r * 2].value,
-                            isMax: attrs[r * 2].value == maxVal,
+                            isMax: attributeKeys[r * 2] == bestKey,
                           ),
                         ),
                         const SizedBox(width: 24),
@@ -495,7 +498,7 @@ class _HeroCardHeader extends StatelessWidget {
                           child: _AttributeLine(
                             label: attrs[r * 2 + 1].label,
                             value: attrs[r * 2 + 1].value,
-                            isMax: attrs[r * 2 + 1].value == maxVal,
+                            isMax: attributeKeys[r * 2 + 1] == bestKey,
                           ),
                         ),
                       ],

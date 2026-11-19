@@ -10,6 +10,7 @@ import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import '../theme/patea_colors.dart';
 import '../utils/photo_url.dart';
+import '../utils/player_attribute_highlight.dart';
 import 'cropped_photo.dart';
 import 'ovr_accent.dart';
 import 'player_avatar_fallback.dart';
@@ -82,8 +83,8 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
     final sorted = attributes
         .where((stat) => stat.key == widget.highlightStat?.toUpperCase())
         .firstOrNull;
-    final maximum = attributes.map((stat) => stat.value).reduce(math.max);
-    final best = attributes.where((stat) => stat.value == maximum).toList();
+    final bestKey = playerAttributeHighlight(widget.player);
+    final best = attributes.where((stat) => stat.key == bestKey).firstOrNull;
     final status = widget.matchStatusText?.trim();
     final semanticLabel = [
       widget.player.name,
@@ -93,7 +94,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
       if (ovrCategory(widget.player.ovr).isNotEmpty)
         ovrCategory(widget.player.ovr),
       for (final stat in attributes) '${stat.description} ${stat.value}',
-      '${best.length == 1 ? 'Mejor atributo' : 'Mejores atributos'}: ${best.map((stat) => stat.description).join(', ')}',
+      if (best != null) 'Atributo destacado: ${best.description}',
       if (sorted != null) 'Ordenado por ${sorted.description.toLowerCase()}',
       if (status != null && status.isNotEmpty) status,
     ].join(', ');
@@ -468,10 +469,7 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
   Widget _stat(BuildContext context, _Attribute stat, double numberSize) {
     final c = context.c;
     final highlighted = stat.key == widget.highlightStat?.toUpperCase();
-    final maximum = _attributes
-        .map((attribute) => attribute.value)
-        .reduce(math.max);
-    final isMaximum = stat.value == maximum;
+    final isMaximum = stat.key == playerAttributeHighlight(widget.player);
     final accent = isMaximum
         ? c.ratingAccent
         : highlighted
