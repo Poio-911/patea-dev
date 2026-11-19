@@ -70,3 +70,7 @@ AuthKey_*.p8
 
 # Renderizados e imágenes intermedias del dossier PDF
 /tmp/pdfs/
+
+# Cachés locales de los scripts Python, sin fuentes ni artefactos de entrega.
+__pycache__/
+*.py[cod]
