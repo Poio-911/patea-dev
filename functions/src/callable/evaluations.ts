@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { submissionKey, validateEvaluationSubmission } from '../lib/evaluation-submission';
 import { sendPushToUsers } from '../lib/fcm-push';
+import { canFinalizeEvaluation } from '../lib/match-access';
 import {
   computeMatchProgression,
   equivalentRatingFromVector,
@@ -44,7 +45,7 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
 
   const matchSnapCheck = await matchRef.get();
   if (!matchSnapCheck.exists) throw new HttpsError('not-found', 'Partido no encontrado.');
-  if (matchSnapCheck.data()!.ownerUid !== uid) {
+  if (!canFinalizeEvaluation(matchSnapCheck.data()!, uid)) {
     throw new HttpsError('permission-denied', 'Solo el organizador puede finalizar la evaluación.');
   }
 
@@ -56,7 +57,7 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
       throw new HttpsError('failed-precondition', 'Este partido ya fue evaluado o no existe.');
     }
     const match = matchDoc.data()!;
-    if (match.ownerUid !== uid) {
+    if (!canFinalizeEvaluation(match, uid)) {
       throw new HttpsError('permission-denied', 'Solo el organizador puede finalizar la evaluación.');
     }
     if (match.status !== 'completed') {

@@ -698,6 +698,27 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
       },
       'RespondTeamChallenge',
     );
+    // Los jugadores de los dos planteles también se enteran: el partido existe
+    // desde que se mandó el desafío, pero recién ahora se juega.
+    try {
+      const matchSnap = await db.doc(`matches/${result.matchId}`).get();
+      const roster: string[] = Array.isArray(matchSnap.data()?.playerUids) ? matchSnap.data()!.playerUids : [];
+      const alreadyNotified = new Set([...challengers, uid]);
+      await notifyUsers(
+        db,
+        roster.filter((id) => !alreadyNotified.has(id)),
+        {
+          type: 'match_invite',
+          title: '¡Hay partido!',
+          message: `"${result.fromTeam?.name ?? 'Tu equipo'}" juega contra "${toTeam.name}". Mirá la fecha en el partido.`,
+          link: `/matches/${result.matchId}`,
+          metadata: { matchId: result.matchId },
+        },
+        'RespondTeamChallenge',
+      );
+    } catch (error) {
+      console.error('[respondTeamChallenge] No se pudo avisar a los planteles', error);
+    }
     return { ok: true, accepted: true, matchId: result.matchId };
   }
 

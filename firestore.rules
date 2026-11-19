@@ -47,17 +47,48 @@ service cloud.firestore {
     // capitanes de un partido entre grupos distintos no siempre juegan —el
     // creador del equipo puede ser el DT— y tienen que poder subir clips y
     // escribir en el chat de su partido igual que el rival.
+    //
+    // `.get(campo, valor)` y no `.campo`: un partido sin `captains` (todos los
+    // anteriores a los desafíos) no debe romper la regla.
     function isMatchParticipant(matchId) {
       return isAuthenticated() && (
         isMatchOwner(matchId)
-        || (
-          matchData(matchId).playerUids != null
-          && request.auth.uid in matchData(matchId).playerUids
-        )
-        || (
-          matchData(matchId).captains != null
-          && request.auth.uid in matchData(matchId).captains
-        )
+        || request.auth.uid in matchData(matchId).get('playerUids', [])
+        || request.auth.uid in matchData(matchId).get('captains', [])
+      );
+    }
+
+    // Organizador o capitán: quienes gestionan el partido.
+    function isMatchManager(matchId) {
+      return isAuthenticated() && (
+        isMatchOwner(matchId)
+        || request.auth.uid in matchData(matchId).get('captains', [])
+      );
+    }
+
+    // ¿Es de alguno de los grupos que participan en el partido?
+    // `users/{uid}.groups` lo mantienen createGroup / joinGroupByInviteCode /
+    // setActiveGroup; `activeGroupId` cubre a quienes todavía no tienen la lista.
+    function isGroupLinked(matchId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && (
+          matchData(matchId).get('groupId', '') in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', [])
+          || matchData(matchId).get('groupId', '') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeGroupId', '-')
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', []).hasAny(matchData(matchId).get('participantGroupIds', []))
+        );
+    }
+
+    // Vinculado: participa, o es de un grupo que participa.
+    function isMatchLinked(matchId) {
+      return isMatchParticipant(matchId) || isGroupLinked(matchId);
+    }
+
+    // Lo que ve cualquiera: un partido público. Lo privado, sólo vinculados.
+    function canSeeMatchContent(matchId) {
+      return isAuthenticated() && (
+        matchData(matchId).get('isPublic', false) == true
+        || isMatchLinked(matchId)
       );
     }
 
@@ -201,7 +232,16 @@ service cloud.firestore {
         allow read: if isMatchParticipant(matchId);
         allow create: if isMatchParticipant(matchId)
           && request.resource.data.senderId == request.auth.uid;
-        allow update: if isMatchParticipant(matchId);
+        // Antes cualquier participante podía reescribir cualquier mensaje, hasta
+        // el `senderId`. Ahora, los participantes sólo tocan lo que es de todos
+        // (reacciones y acuses de lectura) y cada uno edita sólo lo suyo.
+        allow update: if isMatchParticipant(matchId) && (
+          onlyChanges(['reactions', 'deliveredTo', 'readBy', 'status'])
+          || (
+            resource.data.senderId == request.auth.uid
+            && onlyChanges(['text', 'editedAt'])
+          )
+        );
         allow delete: if false;
       }
 
@@ -216,9 +256,12 @@ service cloud.firestore {
       // cada persona ocupa una sola fila, y sólo la suya. De paso sale más
       // barato — `isMatchParticipant` hace un get() del partido en cada
       // evaluación de la regla, y esto no lee nada.
+      //
+      // Pero sí acotado a quien puede VER el partido: uno público lo mira
+      // cualquiera; uno privado, sólo vinculados.
       match /presence/{viewerId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAuthenticated()
+        allow read: if canSeeMatchContent(matchId);
+        allow create, update, delete: if canSeeMatchContent(matchId)
           && request.auth.uid == viewerId;
       }
 
@@ -232,13 +275,28 @@ service cloud.firestore {
       // uno de ellos, y abrirlo a cualquiera autenticado convierte esto en
       // un buzón donde cualquiera puede tirar video en el partido ajeno.
       // Cada uno borra lo suyo; nadie edita lo de nadie.
+      //
+      // Suben todos los VINCULADOS: organizador, capitanes, jugadores de
+      // cualquiera de los equipos y miembros de los grupos que participan (el
+      // que filma desde el costado). No un tercero. Sólo con el partido en vivo
+      // o terminado. El id es `{uid}_{0-9}`: así hay a lo sumo 10 por persona
+      // sin necesidad de contar. Los gestores pueden borrar cualquiera.
       match /clips/{clipId} {
-        allow read: if isAuthenticated();
-        allow create: if isMatchParticipant(matchId)
-          && request.resource.data.uploadedBy == request.auth.uid;
+        allow read: if canSeeMatchContent(matchId);
+        allow create: if isMatchLinked(matchId)
+          && request.resource.data.uploadedBy == request.auth.uid
+          && matchData(matchId).get('status', '') in ['active', 'completed', 'evaluated']
+          && clipId.matches('^' + request.auth.uid + '_[0-9]$');
         allow update: if false;
         allow delete: if isAuthenticated()
-          && resource.data.uploadedBy == request.auth.uid;
+          && (resource.data.uploadedBy == request.auth.uid || isMatchManager(matchId));
+      }
+
+      // Solicitudes para entrar: las ve el organizador (y quien pidió), nadie más.
+      // Traen el perfil de cada solicitante.
+      match /joinRequests/{requesterId} {
+        allow read: if isMatchManager(matchId) || request.auth.uid == requesterId;
+        allow write: if false;
       }
 
       // Invitaciones del partido: organizador o invitado.
@@ -252,8 +310,15 @@ service cloud.firestore {
 
       // Asignaciones de evaluación, submissions procesadas, performance, etc.
       match /assignments/{assignmentId} {
+        // Los dos capitanes de un partido entre grupos cierran la evaluación,
+        // así que los dos ven el avance.
         allow read: if isAuthenticated() && (
-          resource.data.evaluatorId == request.auth.uid || isMatchOwner(matchId)
+          resource.data.evaluatorId == request.auth.uid
+          || isMatchOwner(matchId)
+          || (
+            matchData(matchId).get('type', '') == 'intergroup_friendly'
+            && isMatchManager(matchId)
+          )
         );
         allow write: if false;
       }
@@ -266,7 +331,7 @@ service cloud.firestore {
       match /{subcollection}/{docId} {
         // Reglas aditivas: no volver a abrir las rutas privadas de arriba.
         allow read: if isAuthenticated()
-          && !(subcollection in ['messages', 'invitations', 'assignments', 'processedSubmissions']);
+          && !(subcollection in ['messages', 'invitations', 'assignments', 'processedSubmissions', 'joinRequests', 'clips', 'presence']);
         allow write: if false;
       }
     }

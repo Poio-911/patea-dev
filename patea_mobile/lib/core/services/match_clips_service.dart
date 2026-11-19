@@ -97,6 +97,29 @@ final matchClipsProvider =
 
 final matchClipsServiceProvider = Provider<MatchClipsService>((ref) => MatchClipsService());
 
+/// Tope de clips por persona y partido. Lo imponen las reglas de Firestore y de
+/// Storage: el id del clip es `{uid}_{0-9}` y el archivo `{0-9}.mp4|mov|webm`.
+const int kMaxClipsPerPerson = 10;
+
+/// El primer cupo libre (0-9) de [uid], o `null` si ya llegó al tope.
+///
+/// [ownClipIds] son los ids de los clips que ya subió. Los clips anteriores a
+/// los cupos (id con milisegundos) no ocupan un número pero cuentan para el
+/// tope.
+int? nextClipSlot(String uid, Iterable<String> ownClipIds) {
+  final ids = ownClipIds.toList();
+  if (ids.length >= kMaxClipsPerPerson) return null;
+  final pattern = RegExp('^${RegExp.escape(uid)}_([0-9])\$');
+  final used = <int>{
+    for (final id in ids)
+      if (pattern.firstMatch(id) case final m?) int.parse(m.group(1)!),
+  };
+  for (var slot = 0; slot < kMaxClipsPerPerson; slot++) {
+    if (!used.contains(slot)) return slot;
+  }
+  return null;
+}
+
 class MatchClipsService {
   /// Tope de tamaño, en sintonía con `isValidClip()` de storage.rules. Se
   /// chequea acá también para no gastar la subida entera y que falle al final.
@@ -125,17 +148,34 @@ class MatchClipsService {
           'El máximo son ${maxBytes ~/ 1024 ~/ 1024} MB.');
     }
 
-    final ext = file.path.split('.').last.toLowerCase();
+    final rawExt = file.path.split('.').last.toLowerCase();
+    // Storage sólo acepta estas tres; cualquier otra se sube como mp4.
+    final ext = const {'mp4', 'mov', 'webm'}.contains(rawExt) ? rawExt : 'mp4';
     final contentType = switch (ext) {
       'mov' => 'video/quicktime',
       'webm' => 'video/webm',
       _ => 'video/mp4',
     };
 
+    // Cupos: a lo sumo 10 por persona y partido. El id (`{uid}_{n}`) y el
+    // archivo (`{n}.ext`) llevan el número, que es lo que las reglas verifican.
+    final own = await FirebaseFirestore.instance
+        .collection('matches')
+        .doc(matchId)
+        .collection('clips')
+        .where('uploadedBy', isEqualTo: uid)
+        .get();
+    final slot = nextClipSlot(uid, own.docs.map((d) => d.id));
+    if (slot == null) {
+      throw Exception(
+        'Ya subiste $kMaxClipsPerPerson clips a este partido. Borrá uno para subir otro.',
+      );
+    }
+
     // El uid va en la ruta: así la regla de Storage puede dejar que cada uno
     // borre lo suyo y nada más.
-    final clipId = '${DateTime.now().millisecondsSinceEpoch}';
-    final storagePath = 'match-clips/$matchId/$uid/$clipId.$ext';
+    final clipId = '${uid}_$slot';
+    final storagePath = 'match-clips/$matchId/$uid/$slot.$ext';
     final ref = FirebaseStorage.instance.ref(storagePath);
 
     final task = ref.putFile(file, SettableMetadata(contentType: contentType));

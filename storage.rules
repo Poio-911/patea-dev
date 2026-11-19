@@ -47,7 +47,10 @@ service firebase.storage {
     }
 
     match /{folder}/{rest=**} {
-      allow read: if isSignedIn() && folder != 'evaluation-audios';
+      // `match-clips` también queda afuera: tiene su regla propia (sólo vinculados
+      // o partido público). Con el piso abierto esa regla no valía de nada: las
+      // reglas se suman, y cualquier usuario con sesión leía cualquier clip.
+      allow read: if isSignedIn() && folder != 'evaluation-audios' && folder != 'match-clips';
       allow write: if false;
     }
 
@@ -107,12 +110,59 @@ service firebase.storage {
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // Clips del partido: el gol de Nico al 23'. El uid va en la ruta para que
-    // cada uno pueda borrar lo suyo y nada más.
-    match /match-clips/{matchId}/{userId}/{allPaths=**} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && request.auth.uid == userId && isValidClip();
-      allow delete: if isSignedIn() && request.auth.uid == userId;
+    // ----- Clips del partido: el gol de Nico al 23' ------------------------
+    //
+    // Antes cualquier usuario con sesión podía subir 40 MB a CUALQUIER partido
+    // (la ficha en Firestore sí exigía participar, así que quedaban videos
+    // huérfanos). Ahora Storage consulta el partido, igual que Firestore:
+    // suben los VINCULADOS (organizador, capitanes, jugadores de cualquier
+    // equipo y miembros de los grupos que participan), con el partido en vivo
+    // o terminado, y a lo sumo 10 por persona: el nombre del archivo es
+    // `{0-9}.mp4|mov|webm`.
+    //
+    // Storage permite hasta 2 lecturas de Firestore por pedido: el partido y el
+    // documento del usuario. Por eso no se consulta nada más.
+    function matchDoc(matchId) {
+      return firestore.get(/databases/(default)/documents/matches/$(matchId)).data;
+    }
+
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isMatchParticipantStorage(matchId) {
+      return matchDoc(matchId).get('ownerUid', '') == request.auth.uid
+        || request.auth.uid in matchDoc(matchId).get('captains', [])
+        || request.auth.uid in matchDoc(matchId).get('playerUids', []);
+    }
+
+    function isMatchLinkedStorage(matchId) {
+      return isMatchParticipantStorage(matchId)
+        || matchDoc(matchId).get('groupId', '') in userDoc().get('groups', [])
+        || matchDoc(matchId).get('groupId', '') == userDoc().get('activeGroupId', '-')
+        || userDoc().get('groups', []).hasAny(matchDoc(matchId).get('participantGroupIds', []));
+    }
+
+    function isMatchManagerStorage(matchId) {
+      return matchDoc(matchId).get('ownerUid', '') == request.auth.uid
+        || request.auth.uid in matchDoc(matchId).get('captains', []);
+    }
+
+    match /match-clips/{matchId}/{userId}/{file} {
+      // Un partido público lo ve cualquiera; uno privado, sólo vinculados.
+      allow read: if isSignedIn() && (
+        matchDoc(matchId).get('isPublic', false) == true
+        || isMatchLinkedStorage(matchId)
+      );
+      allow create, update: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidClip()
+        && file.matches('^[0-9][.](mp4|mov|webm)$')
+        && matchDoc(matchId).get('status', '') in ['active', 'completed', 'evaluated']
+        && isMatchLinkedStorage(matchId);
+      // Cada uno borra lo suyo; los gestores, cualquiera (moderación).
+      allow delete: if isSignedIn()
+        && (request.auth.uid == userId || isMatchManagerStorage(matchId));
     }
 
     // Notas de voz de evaluaciones: SOLO el autor puede leer/escribir/borrar

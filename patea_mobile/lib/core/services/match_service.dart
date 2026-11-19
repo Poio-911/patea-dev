@@ -263,6 +263,47 @@ class MatchService {
     await callFunction('leaveMatch', {'matchId': matchId});
   }
 
+  /// Cancela un partido que no empezó (organizador o capitán): queda en el
+  /// historial como cancelado y se avisa a los anotados.
+  Future<void> cancelMatch(String matchId, {String? reason}) async {
+    await callFunction('cancelMatch', {
+      'matchId': matchId,
+      if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+    });
+  }
+
+  /// Acepta o rechaza una invitación del organizador.
+  Future<void> respondMatchInvitation(String matchId, bool accepted) async {
+    await callFunction('respondMatchInvitation', {
+      'matchId': matchId,
+      'accepted': accepted,
+    });
+  }
+
+  /// El organizador (o el responsable del equipo) saca a alguien del partido.
+  Future<void> removeMatchPlayer(
+    String matchId,
+    String playerId, {
+    bool restore = false,
+  }) async {
+    await callFunction('removeMatchPlayer', {
+      'matchId': matchId,
+      'playerId': playerId,
+      if (restore) 'restore': true,
+    });
+  }
+
+  /// En un partido de plantel fijo nadie se baja: avisa que no puede ir.
+  Future<void> reportMatchUnavailable(
+    String matchId, {
+    bool unavailable = true,
+  }) async {
+    await callFunction('reportMatchUnavailable', {
+      'matchId': matchId,
+      'unavailable': unavailable,
+    });
+  }
+
   /// Elimina el partido (solo el organizador). Port de deleteMatchAction.
   Future<void> deleteMatch(String matchId) async {
     await callFunction('deleteMatch', {'matchId': matchId});

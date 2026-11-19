@@ -1,7 +1,9 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { sendPushToUsers } from '../lib/fcm-push';
-import { assertCanJoinMatch } from '../lib/match-access';
+import { assertCanJoinMatch, assertOpenRoster } from '../lib/match-access';
+import { assertConvocationOpen, staleTeamsPatch } from '../lib/match-state';
+import { regenerateMatchTeams } from './match-management';
 
 /**
  * Solicitudes de unión a un partido, con aprobación del organizador.
@@ -44,6 +46,7 @@ export const requestJoinMatch = onCall({ region: 'us-central1' }, async (request
   // Sólo se pide entrada a un partido que admite jugadores sueltos y que es
   // público, o del propio grupo.
   await assertCanJoinMatch(db, match, uid);
+  assertConvocationOpen(match);
 
   const pending: string[] = Array.isArray(match.pendingPlayerUids) ? match.pendingPlayerUids : [];
   // Idempotente: volver a pedir no es un error, es no hacer nada.
@@ -126,6 +129,13 @@ export const respondJoinRequest = onCall({ region: 'us-central1' }, async (reque
   if (match.ownerUid !== uid) {
     throw new HttpsError('permission-denied', 'Sólo el organizador decide quién entra.');
   }
+  // Rechazar siempre se puede (limpia la solicitud); aceptar, sólo con la
+  // convocatoria abierta y en un partido que admite jugadores sueltos. Antes se
+  // aceptaba gente en partidos en vivo, terminados o de equipos.
+  if (accepted) {
+    assertConvocationOpen(match);
+    assertOpenRoster(match, 'join');
+  }
 
   const requestRef = db.collection(`matches/${matchId}/joinRequests`).doc(requesterId);
   const requestSnap = await requestRef.get();
@@ -151,6 +161,7 @@ export const respondJoinRequest = onCall({ region: 'us-central1' }, async (reque
       }),
       playerUids: admin.firestore.FieldValue.arrayUnion(requesterId),
       pendingPlayerUids: admin.firestore.FieldValue.arrayRemove(requesterId),
+      ...staleTeamsPatch(match),
     });
   } else {
     batch.update(matchRef, {
@@ -189,5 +200,106 @@ export const respondJoinRequest = onCall({ region: 'us-central1' }, async (reque
     },
     'RespondJoinRequest',
   );
+
+  // Si con esta persona se completa el cupo, se arman los equipos (igual que
+  // `joinMatch`). Antes el organizador tenía que hacerlo a mano.
+  if (accepted) {
+    await regenerateMatchTeams(db, matchId, undefined, true).catch((error) => {
+      console.error('[respondJoinRequest] Error generando equipos al completarse el cupo', error);
+    });
+  }
+  return { ok: true };
+});
+
+/**
+ * Responder una invitación del organizador ("Falta uno" / invitar jugadores).
+ *
+ * Hasta ahora la invitación se creaba pero el invitado no tenía forma de
+ * aceptarla: `joinMatch` incluso devolvía en silencio si había una invitación
+ * pendiente. Acá la persona acepta (entra sin otra aprobación: ya la aprobó
+ * quien invita) o rechaza.
+ */
+export const respondMatchInvitation = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const matchId = String(request.data?.matchId ?? '');
+  const accepted = request.data?.accepted === true;
+  if (!matchId || matchId.includes('/')) throw new HttpsError('invalid-argument', 'Falta el partido.');
+
+  const db = admin.firestore();
+  const matchRef = db.collection('matches').doc(matchId);
+  let notify: { ownerUid: string; title: string; body: string } | null = null;
+
+  await db.runTransaction(async (tx) => {
+    const matchSnap = await tx.get(matchRef);
+    if (!matchSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+    const match = matchSnap.data()!;
+    const invitations = await tx.get(
+      db.collection(`matches/${matchId}/invitations`).where('playerId', '==', uid).where('status', '==', 'pending'),
+    );
+    if (invitations.empty) throw new HttpsError('not-found', 'La invitación ya no existe.');
+    const respondedAt = new Date().toISOString();
+
+    if (!accepted) {
+      for (const doc of invitations.docs) tx.update(doc.ref, { status: 'declined', respondedAt });
+      return;
+    }
+
+    assertConvocationOpen(match);
+    assertOpenRoster(match, 'join');
+    const playerUids: string[] = Array.isArray(match.playerUids) ? match.playerUids : [];
+    const players: Array<Record<string, unknown>> = Array.isArray(match.players) ? match.players : [];
+    if (!playerUids.includes(uid)) {
+      const matchSize = Number(match.matchSize ?? 0);
+      if (matchSize > 0 && players.length >= matchSize) {
+        throw new HttpsError('failed-precondition', 'El partido está lleno.');
+      }
+      const playerSnap = await tx.get(db.doc(`players/${uid}`));
+      if (!playerSnap.exists) {
+        throw new HttpsError('failed-precondition', 'No se encontró tu perfil de jugador.');
+      }
+      const player = playerSnap.data()!;
+      const payload = {
+        uid,
+        displayName: player.name ?? '',
+        ovr: player.ovr ?? 0,
+        position: player.position ?? '',
+        photoURL: player.photoURL || player.photoUrl || '',
+      };
+      tx.update(matchRef, {
+        players: admin.firestore.FieldValue.arrayUnion(payload),
+        playerUids: admin.firestore.FieldValue.arrayUnion(uid),
+        pendingPlayerUids: admin.firestore.FieldValue.arrayRemove(uid),
+        ...staleTeamsPatch(match),
+      });
+      if (match.ownerUid && match.ownerUid !== uid) {
+        const body = `${payload.displayName || 'Un jugador'} aceptó tu invitación a "${match.title ?? ''}".`;
+        tx.set(db.collection(`users/${match.ownerUid}/notifications`).doc(), {
+          type: 'new_joiner',
+          title: 'Invitación aceptada',
+          message: body,
+          link: `/matches/${matchId}`,
+          isRead: false,
+          createdAt: respondedAt,
+          metadata: { fromUserId: uid, matchId },
+        });
+        notify = { ownerUid: String(match.ownerUid), title: 'Invitación aceptada', body };
+      }
+    }
+    for (const doc of invitations.docs) tx.update(doc.ref, { status: 'accepted', respondedAt });
+  });
+
+  if (notify) {
+    const n: { ownerUid: string; title: string; body: string } = notify;
+    await sendPushToUsers(
+      [n.ownerUid],
+      { title: n.title, body: n.body, type: 'new_joiner', link: `/matches/${matchId}`, extraData: { matchId } },
+      'RespondMatchInvitation',
+    );
+  }
+  if (accepted) {
+    await regenerateMatchTeams(db, matchId, undefined, true).catch((error) => {
+      console.error('[respondMatchInvitation] Error generando equipos', error);
+    });
+  }
   return { ok: true };
 });

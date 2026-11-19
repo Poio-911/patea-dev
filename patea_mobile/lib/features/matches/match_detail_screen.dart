@@ -83,7 +83,20 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   ) async {
     setState(() => _isJoining = true);
     try {
-      if (isUserInMatch) {
+      if (isUserInMatch && match.hasFixedRoster) {
+        // Plantel fijo: nadie se baja, pero puede avisar que no va (o que sí).
+        final unavailable = !match.unavailablePlayerUids.contains(uid);
+        await ref
+            .read(matchServiceProvider)
+            .reportMatchUnavailable(match.id, unavailable: unavailable);
+        if (mounted) {
+          _showSnack(
+            unavailable
+                ? 'Avisamos a los capitanes que no podés ir.'
+                : 'Listo, volvés a figurar como disponible.',
+          );
+        }
+      } else if (isUserInMatch) {
         await ref.read(matchServiceProvider).leaveMatch(match.id, uid);
       } else if (match.type == 'manual' && match.ownerUid != uid) {
         final already = await ref
@@ -117,7 +130,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   Future<void> _handleFinish(MatchModel match) async {
     setState(() => _isFinishing = true);
     try {
-      await ref.read(matchServiceProvider).finishMatch(match.id);
+      final service = ref.read(matchServiceProvider);
+      // El servidor sólo finaliza un partido que estuvo en vivo. Si el
+      // organizador lo jugó sin dirigirlo, "Finalizar" lo inicia primero (con
+      // las mismas validaciones de equipos) y lo cierra: el flujo de siempre,
+      // pero pasando por el estado en vivo.
+      if (match.status == 'upcoming') {
+        await service.startMatch(match.id);
+      }
+      await service.finishMatch(match.id);
       ref.invalidate(teamRivalsProvider);
       ref.invalidate(teamRivalSeriesProvider(match.id));
       if (mounted)
@@ -182,6 +203,60 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     try {
       await ref.read(matchServiceProvider).deleteMatch(match.id);
       if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) _showError('$e');
+    }
+  }
+
+  Future<void> _handleCancel(MatchModel match) async {
+    final reason = TextEditingController();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.c.card,
+        title: Text(
+          '¿Cancelar este partido?',
+          style: AppTypography.headline(size: 16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Queda en el historial como cancelado y los anotados reciben un aviso.',
+              style: AppTypography.body(
+                color: context.c.textSecondary,
+                size: 13,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reason,
+              maxLength: 200,
+              decoration: const InputDecoration(labelText: 'Motivo (opcional)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Volver'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.c.destructive,
+            ),
+            child: const Text('Cancelar partido'),
+          ),
+        ],
+      ),
+    );
+    final text = reason.text;
+    reason.dispose();
+    if (confirm != true) return;
+    try {
+      await ref.read(matchServiceProvider).cancelMatch(match.id, reason: text);
+      if (mounted) _showSnack('Partido cancelado.');
     } catch (e) {
       if (mounted) _showError('$e');
     }
@@ -457,6 +532,13 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         // Organizador o capitán (partidos entre grupos). Borrar y repartir
         // equipos sigue siendo sólo del organizador.
         final isManager = match.isManagedBy(uid);
+        // Miembro de uno de los grupos que participan (aunque no juegue): puede
+        // subir clips, igual que lo dejan las reglas de Firestore y Storage.
+        final activeGroupId = ref.watch(activeGroupIdProvider).asData?.value;
+        final isLinkedGroupMember =
+            activeGroupId != null &&
+            (match.groupId == activeGroupId ||
+                match.participantGroupIds.contains(activeGroupId));
         final isUserInMatch = uid != null && match.playerUids.contains(uid);
         final isPending = uid != null && match.pendingPlayerUids.contains(uid);
         final isMatchFull = match.players.length >= match.matchSize;
@@ -703,7 +785,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         match: match,
                         // Los dos equipos suben: jugadores de ambos y los
                         // capitanes (que pueden no jugar).
-                        canUpload: isUserInMatch || isManager,
+                        canUpload:
+                            isUserInMatch || isManager || isLinkedGroupMember,
                       ),
                     ],
                     const SizedBox(height: 20),
@@ -729,6 +812,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         onReschedule: () => _showRescheduleDialog(match),
                         onChangeVenue: () => _showChangeVenueDialog(match),
                         onDelete: () => _handleDelete(match),
+                        onCancel: match.canCancel
+                            ? () => _handleCancel(match)
+                            : null,
                         onFinish: () => _handleFinish(match),
                       ),
                     ],
@@ -1330,6 +1416,7 @@ class _OrganizerPanel extends StatelessWidget {
   final VoidCallback onReschedule;
   final VoidCallback onChangeVenue;
   final VoidCallback onDelete;
+  final VoidCallback? onCancel;
   final VoidCallback onFinish;
 
   const _OrganizerPanel({
@@ -1344,6 +1431,7 @@ class _OrganizerPanel extends StatelessWidget {
     required this.onReschedule,
     required this.onChangeVenue,
     required this.onDelete,
+    this.onCancel,
     required this.onFinish,
   });
 
@@ -1564,6 +1652,22 @@ class _OrganizerPanel extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (isOwner && onCancel != null)
+                    OutlinedButton.icon(
+                      onPressed: onCancel,
+                      icon: Icon(
+                        Icons.event_busy_rounded,
+                        size: 15,
+                        color: context.c.textSecondary,
+                      ),
+                      label: Text(
+                        'Cancelar Partido',
+                        style: AppTypography.action(
+                          size: 14,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
+                    ),
                   if (isOwner)
                     OutlinedButton.icon(
                       onPressed: onDelete,
@@ -1774,6 +1878,9 @@ class _StickyActionBar extends StatelessWidget {
                   ],
                 ),
               ),
+              // En un partido de plantel fijo nadie "se baja": el servidor lo
+              // rechaza. Si no puede ir, lo avisa a los capitanes ("No puedo ir").
+              ...[
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
@@ -1803,7 +1910,11 @@ class _StickyActionBar extends StatelessWidget {
                           color: context.c.textSecondary,
                         ),
                   label: Text(
-                    'Darme de baja',
+                    !match.hasFixedRoster
+                        ? 'Darme de baja'
+                        : (match.unavailablePlayerUids.contains(uid)
+                              ? 'Sí puedo ir'
+                              : 'No puedo ir'),
                     style: AppTypography.action(
                       size: 15,
                       weight: FontWeight.w600,
@@ -1812,6 +1923,7 @@ class _StickyActionBar extends StatelessWidget {
                   ),
                 ),
               ),
+              ],
             ],
           );
         } else if (isPending) {

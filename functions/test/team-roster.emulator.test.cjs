@@ -60,6 +60,8 @@ test('finalizar dos veces concurrentemente crea una sola tanda de asignaciones',
   await Promise.all(ids.map(id => db.doc(`players/${id}`).update({ownerUid:id})));
   const created = await createMatch.run(request(owner, {title:'Finalizar una vez', type:'manual', matchSize:4,
     date:'2099-12-01', time:'21:00', playerUids:ids}));
+  // Sólo se finaliza un partido que estuvo en vivo: primero se inicia.
+  await startMatch.run(request(owner, {matchId:created.matchId}));
   await Promise.all([finishMatch.run(request(owner, {matchId:created.matchId})), finishMatch.run(request(owner, {matchId:created.matchId}))]);
   const assignments = await db.collection(`matches/${created.matchId}/assignments`).get();
   assert.equal(assignments.size, 8);

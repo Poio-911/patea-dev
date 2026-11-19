@@ -1,7 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { geohashForLocation, geohashQueryBounds, distanceBetween } from 'geofire-common';
-import { assertNotTeamMatch } from '../lib/match-access';
+import { assertOpenRoster } from '../lib/match-access';
+import { assertConvocationOpen } from '../lib/match-state';
 
 /**
  * Callables de Explorar — port de src/lib/actions/{recruitment-actions,
@@ -313,15 +314,24 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
   if (match.ownerUid !== uid) {
     throw new HttpsError('permission-denied', 'No tienes permiso para invitar jugadores a este partido.');
   }
-  assertNotTeamMatch(match);
+  // Sólo se invita a un partido que admite jugadores sueltos y sigue abierto.
+  assertOpenRoster(match, 'invite');
+  assertConvocationOpen(match);
 
   const uniqueIds = [...new Set(playerIds)].filter(Boolean);
   if (uniqueIds.length === 0) throw new HttpsError('invalid-argument', 'No se seleccionaron jugadores.');
+  if (uniqueIds.length > 30 || uniqueIds.some((id) => typeof id !== 'string' || id.includes('/'))) {
+    throw new HttpsError('invalid-argument', 'Lista de jugadores inválida.');
+  }
+  // Antes se invitaba a cualquier id, existiera o no.
+  const profiles = await db.getAll(...uniqueIds.map((id) => db.doc(`players/${id}`)));
+  const existing = new Set(profiles.filter((p) => p.exists).map((p) => p.id));
 
   const batch = db.batch();
   let sent = 0;
   for (const playerId of uniqueIds) {
     if ((match.playerUids as string[] | undefined)?.includes(playerId)) continue;
+    if (!existing.has(playerId) || playerId === match.ownerUid) continue;
     const invitationRef = db.collection(`matches/${matchId}/invitations`).doc();
     batch.set(invitationRef, {
       matchId,

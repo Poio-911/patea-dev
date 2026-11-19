@@ -2,7 +2,9 @@ import { randomUUID } from 'crypto';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
-import { isMatchManager, isTeamMatch } from '../lib/match-access';
+import { hasFixedRoster, isMatchManager } from '../lib/match-access';
+import { assertCancellable, assertDeletable, assertFutureSchedule, assertScheduleOpen } from '../lib/match-state';
+import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
  * Callables de gestión de partido usadas por MatchManagementActions en la
@@ -46,7 +48,7 @@ async function getOwnedMatchOrThrow(matchId: string, uid: string) {
  * partido entre grupos; borrarlo o repartir los equipos sigue siendo del
  * organizador.
  */
-async function getManagedMatchOrThrow(matchId: string, uid: string) {
+export async function getManagedMatchOrThrow(matchId: string, uid: string) {
   const db = admin.firestore();
   const ref = db.collection('matches').doc(matchId);
   const snap = await ref.get();
@@ -136,7 +138,7 @@ export const updateMatchTeams = onCall({ region: 'us-central1' }, async request 
     const match = snap.data();
     if (!match) throw new HttpsError('not-found', 'El partido no existe.');
     if (match.ownerUid !== uid) throw new HttpsError('permission-denied', 'Sólo el organizador puede cambiar los equipos.');
-    if (isTeamMatch(match)) throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
+    if (hasFixedRoster(match)) throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
     requireEditable(match);
     if (isGeneratingTeams(match)) throw new HttpsError('aborted', 'Se están armando los equipos. Esperá unos segundos.');
     const ids = matchRosterIds(match);
@@ -168,8 +170,8 @@ export async function regenerateMatchTeams(
     const match = snap.data();
     if (!match) throw new HttpsError('not-found', 'El partido no existe.');
     if (ownerUid && match.ownerUid !== ownerUid) throw new HttpsError('permission-denied', 'Sólo el organizador puede armar equipos.');
-    if (isTeamMatch(match)) {
-      // Un partido entre equipos nunca se re-equilibra solo; si lo pide una
+    if (hasFixedRoster(match)) {
+      // Un partido entre equipos o de competición nunca se re-equilibra solo; si lo pide una
       // persona, se le explica por qué no.
       if (onlyWhenFull) return null;
       throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
@@ -233,8 +235,133 @@ export async function regenerateMatchTeams(
 export const deleteMatch = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
-  const { ref } = await getOwnedMatchOrThrow(matchId, uid);
-  await ref.delete();
+  const { db, ref, data } = await getOwnedMatchOrThrow(matchId, uid);
+  // Sólo se borra lo que no empezó ni tuvo actividad; competiciones, nunca.
+  assertDeletable(data);
+
+  const recipients = (Array.isArray(data.playerUids) ? data.playerUids : [])
+    .filter((id: unknown): id is string => typeof id === 'string' && !!id && id !== uid);
+  const title = String(data.title ?? 'el partido');
+
+  // `recursiveDelete` también borra mensajes, solicitudes, invitaciones y
+  // presencia: antes quedaban huérfanos.
+  await db.recursiveDelete(ref);
+
+  // El diálogo de la app promete avisar a los anotados; hasta ahora no pasaba.
+  if (recipients.length > 0) {
+    try {
+      const batch = db.batch();
+      const createdAt = new Date().toISOString();
+      for (const playerId of recipients) {
+        batch.set(db.collection(`users/${playerId}/notifications`).doc(), {
+          type: 'match_update',
+          title: 'Partido cancelado',
+          message: `El organizador eliminó "${title}".`,
+          link: '/matches',
+          isRead: false,
+          createdAt,
+        });
+      }
+      await batch.commit();
+      await sendPushToUsers(
+        recipients,
+        { title: 'Partido cancelado', body: `El organizador eliminó "${title}".`, type: 'match_update', link: '/matches' },
+        'DeleteMatch',
+      );
+    } catch (error) {
+      console.error('[deleteMatch] No se pudo avisar a los anotados', error);
+    }
+  }
+  return { ok: true };
+});
+
+/** Avisa a los jugadores y capitanes (menos a quien actúa). Nunca rompe la acción principal. */
+export async function notifyMatchPeople(
+  db: admin.firestore.Firestore,
+  match: Record<string, any>,
+  exceptUid: string,
+  notification: { title: string; message: string; type?: string },
+  tag: string,
+) {
+  const recipients = [
+    ...new Set(
+      [
+        ...(Array.isArray(match.playerUids) ? match.playerUids : []),
+        ...(Array.isArray(match.captains) ? match.captains : []),
+        match.ownerUid,
+      ].filter((id: unknown): id is string => typeof id === 'string' && !!id && id !== exceptUid),
+    ),
+  ];
+  if (recipients.length === 0) return;
+  try {
+    const batch = db.batch();
+    const createdAt = new Date().toISOString();
+    for (const playerId of recipients) {
+      batch.set(db.collection(`users/${playerId}/notifications`).doc(), {
+        type: notification.type ?? 'match_update',
+        title: notification.title,
+        message: notification.message,
+        link: '/matches',
+        isRead: false,
+        createdAt,
+      });
+    }
+    await batch.commit();
+    await sendPushToUsers(
+      recipients,
+      { title: notification.title, body: notification.message, type: notification.type ?? 'match_update', link: '/matches' },
+      tag,
+    );
+  } catch (error) {
+    console.error(`[${tag}] No se pudo avisar`, error);
+  }
+}
+
+/**
+ * Cancelar un partido que no empezó: queda en el historial como `cancelled`,
+ * se avisa a los anotados y, si era un desafío entre equipos todavía pendiente,
+ * se cierra la invitación para que el rival no la siga viendo.
+ */
+export const cancelMatch = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const matchId = String(request.data?.matchId ?? '');
+  const reason = String(request.data?.reason ?? '').trim().slice(0, 200);
+  const { db, ref } = await getManagedMatchOrThrow(matchId, uid);
+
+  const match = await db.runTransaction(async (tx) => {
+    const fresh = (await tx.get(ref)).data();
+    if (!fresh) throw new HttpsError('not-found', 'El partido no existe.');
+    assertCancellable(fresh);
+    // Todas las lecturas van antes de las escrituras.
+    const invitationRef =
+      fresh.challengeStatus === 'pending' && fresh.challengeToTeamId && fresh.challengeInvitationId
+        ? db.doc(`teams/${fresh.challengeToTeamId}/invitations/${fresh.challengeInvitationId}`)
+        : null;
+    const invitation = invitationRef ? await tx.get(invitationRef) : null;
+    tx.update(ref, {
+      status: 'cancelled',
+      cancelledBy: uid,
+      cancelledAt: new Date().toISOString(),
+      ...(reason ? { cancelReason: reason } : {}),
+      isVotingOpen: false,
+      ...(fresh.challengeStatus === 'pending' ? { challengeStatus: 'cancelled' } : {}),
+    });
+    if (invitationRef && invitation) {
+      if (invitation.exists && invitation.data()?.status === 'pending') {
+        tx.update(invitationRef, { status: 'cancelled', respondedBy: uid, respondedAt: new Date().toISOString() });
+      }
+    }
+    return fresh;
+  });
+
+  const title = String(match.title ?? 'el partido');
+  await notifyMatchPeople(
+    db,
+    match,
+    uid,
+    { title: 'Partido cancelado', message: `Se canceló "${title}".${reason ? ` Motivo: ${reason}` : ''}` },
+    'CancelMatch',
+  );
   return { ok: true };
 });
 
@@ -244,8 +371,19 @@ export const updateMatchDate = onCall({ region: 'us-central1' }, async (request)
   const matchId = String(request.data?.matchId ?? '');
   const date = String(request.data?.date ?? '');
   const time = String(request.data?.time ?? '');
-  const { ref } = await getManagedMatchOrThrow(matchId, uid);
-  await ref.update({ date, time });
+  const { ref, data } = await getManagedMatchOrThrow(matchId, uid);
+  assertScheduleOpen(data, 'cambiar la fecha');
+  assertFutureSchedule(date, time);
+  await ref.update({
+    date,
+    time,
+    // Poner fecha a un partido en planificación es confirmarla. Antes quedaba
+    // con fecha pero en `planning` para siempre. Un desafío que todavía no
+    // aceptó el rival no pasa a `upcoming` por esta vía.
+    ...(data.status === 'planning' && data.challengeStatus !== 'pending'
+      ? { status: 'upcoming', isVotingOpen: false }
+      : {}),
+  });
   return { ok: true };
 });
 
@@ -260,7 +398,8 @@ export const updateMatchLocation = onCall({ region: 'us-central1' }, async (requ
     lng: Number(request.data?.locationLng ?? 0) || 0,
     placeId: String(request.data?.locationPlaceId ?? ''),
   };
-  const { ref } = await getManagedMatchOrThrow(matchId, uid);
+  const { ref, data } = await getManagedMatchOrThrow(matchId, uid);
+  assertScheduleOpen(data, 'cambiar la cancha');
   await ref.update({ location });
   return { ok: true };
 });

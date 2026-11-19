@@ -23,7 +23,7 @@ export { cleanupAiCache } from './cleanup-ai-cache';
 export { generateBalancedTeams } from './callable/generate-balanced-teams';
 export { createMatch } from './callable/create-match';
 export { startMatch, updateLiveState, updateLiveMinute, joinMatch, leaveMatch, recordLiveEvent, finishMatch, finalizePendingMatches } from './callable/match-lifecycle';
-export { deleteMatch, updateMatchDate, updateMatchLocation, shuffleTeams, updateMatchTeams } from './callable/match-management';
+export { cancelMatch, deleteMatch, updateMatchDate, updateMatchLocation, shuffleTeams, updateMatchTeams } from './callable/match-management';
 export { createGroup, joinGroupByInviteCode, setActiveGroup, createTeam, updateTeam, updateTeamMembers, deleteTeam, setTeamChallengeOptOut } from './callable/group-management';
 export { searchTeams, challengeTeam, respondTeamChallenge, getMyTeamChallenges } from './callable/team-challenges';
 export { onTeamWrite } from './triggers/on-team-write';
@@ -31,7 +31,8 @@ export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteM
 export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
 export { submitEvaluationSubmission, requestIdentityReveal, respondToIdentityReveal, getEvaluationAudio, finalizeMatchEvaluation } from './callable/evaluations';
 export { generateMatchChronicle } from './callable/match-chronicle';
-export { requestJoinMatch, respondJoinRequest } from './callable/match-join-requests';
+export { requestJoinMatch, respondJoinRequest, respondMatchInvitation } from './callable/match-join-requests';
+export { removeMatchPlayer, reportMatchUnavailable } from './callable/match-roster';
 export { proposeMatchDate, voteMatchDate, confirmMatchDate, proposeMatchLocation, voteMatchLocation, confirmMatchLocation } from './callable/match-planning';
 export { getPlayerEvaluations } from './callable/player-profile';
 export { updateProfile } from './callable/update-profile';
