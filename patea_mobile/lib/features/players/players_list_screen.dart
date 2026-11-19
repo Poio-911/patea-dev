@@ -356,10 +356,11 @@ class _PlayersListScreenState extends ConsumerState<PlayersListScreen> {
                     currentCount: filtered.length,
                     totalCount: players.length,
                     activeFilterCount: _activeFilterCount,
-                    onHelpTap: () => showDialog<void>(
-                      context: context,
-                      builder: (_) => const PateaHelpDialog(),
+                    onHelpTap: () => showContextualHelpSheet(
+                      context,
+                      topic: HelpTopic.players,
                     ),
+                    helpTooltip: 'Jugadores, OVR y atributos',
                     onFiltersTap: _openFilters,
                     actionButton: PateaHeaderActionButton(
                       label: spec(Section.players).action!,

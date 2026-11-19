@@ -10,6 +10,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_states.dart';
@@ -49,10 +50,15 @@ class SocialFeedScreen extends ConsumerWidget {
               16,
               12,
             ),
-            child: const PateaPageHeader(
+            child: PateaPageHeader(
               icon: Icons.forum_outlined,
               title: 'Comunidad Pateá',
               showCountRow: false,
+              helpTooltip: 'Sobre la comunidad',
+              onHelpTap: () => showContextualHelpSheet(
+                context,
+                topic: HelpTopic.community,
+              ),
             ),
           ),
           Expanded(

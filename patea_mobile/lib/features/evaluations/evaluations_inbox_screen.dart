@@ -17,6 +17,7 @@ import '../../core/services/evaluation_service.dart';
 import '../../core/models/evaluation_models.dart';
 import '../../core/constants/sections.dart';
 import '../../core/theme/app_insets.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
 
@@ -152,6 +153,11 @@ class _EvaluationsInboxScreenState extends ConsumerState<EvaluationsInboxScreen>
                               section: Section.evaluations,
                               title: spec(Section.evaluations).title,
                               showCountRow: false,
+                              helpTooltip: 'Evaluaciones y anonimato',
+                              onHelpTap: () => showContextualHelpSheet(
+                                context,
+                                topic: HelpTopic.evaluations,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             PateaActivityCover(

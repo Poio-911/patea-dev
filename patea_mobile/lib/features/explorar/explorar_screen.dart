@@ -28,6 +28,7 @@ import '../../core/widgets/jersey_painter.dart';
 import '../../core/theme/app_insets.dart';
 import '../../core/services/match_service.dart';
 import '../../core/theme/app_radii.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
 
@@ -97,6 +98,11 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
               title: spec(Section.explorar).title,
               description: spec(Section.explorar).description,
               showCountRow: false,
+              helpTooltip: 'Cómo funciona Explorar',
+              onHelpTap: () => showContextualHelpSheet(
+                context,
+                topic: HelpTopic.explore,
+              ),
             ),
           ),
           Padding(

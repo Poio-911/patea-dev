@@ -114,7 +114,7 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
 
                     Row(
                       children: [
-                        // Ayuda
+                        // Ayuda contextual según la sección activa (o tour en Panel)
                         IconButton(
                           tooltip: 'Cómo funciona Pateá',
                           icon: Icon(
@@ -125,10 +125,10 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                           onPressed:
                               onHelpTap ??
                               () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => const PateaHelpDialog(),
+                                final topic = helpTopicForRoute(
+                                  maybeCurrentRoutePath(context),
                                 );
+                                openContextualHelp(context, topic: topic);
                               },
                           visualDensity: VisualDensity.compact,
                           splashRadius: 18,

@@ -59,6 +59,7 @@ class PateaPageHeader extends StatelessWidget {
   final int totalCount;
   final String countLabel;
   final VoidCallback? onHelpTap;
+  final String? helpTooltip;
   final VoidCallback? onFiltersTap;
 
   /// Cuántos filtros hay aplicados. Si los filtros están escondidos detrás del
@@ -82,6 +83,7 @@ class PateaPageHeader extends StatelessWidget {
     this.totalCount = 0,
     this.countLabel = 'jugadores',
     this.onHelpTap,
+    this.helpTooltip,
     this.onFiltersTap,
     this.activeFilterCount = 0,
     this.showCountRow = true,
@@ -140,6 +142,31 @@ class PateaPageHeader extends StatelessWidget {
                 ),
               ),
             ),
+            if (onHelpTap != null)
+              Tooltip(
+                message: helpTooltip ?? 'Ayuda sobre $title',
+                child: Semantics(
+                  button: true,
+                  label: helpTooltip ?? 'Ayuda sobre $title',
+                  child: InkWell(
+                    onTap: onHelpTap,
+                    borderRadius: AppRadii.pillAll,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: 44,
+                        minHeight: 44,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.help_outline_rounded,
+                          size: 20,
+                          color: c.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
         if (description != null) ...[
@@ -167,42 +194,13 @@ class PateaPageHeader extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        '$currentCount/$totalCount $countLabel',
-                        style: AppTypography.body(
-                          size: 12,
-                          weight: FontWeight.w600,
-                          color: c.textSecondary,
-                        ),
-                      ),
-                    ),
-                    if (onHelpTap != null)
-                      Semantics(
-                        button: true,
-                        label: 'Ayuda sobre $countLabel',
-                        child: InkWell(
-                          onTap: onHelpTap,
-                          borderRadius: AppRadii.pillAll,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              minWidth: 44,
-                              minHeight: 44,
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.help_outline_rounded,
-                                size: 17,
-                                color: c.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                Text(
+                  '$currentCount/$totalCount $countLabel',
+                  style: AppTypography.body(
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: c.textSecondary,
+                  ),
                 ),
               InkWell(
                 onTap: onFiltersTap,

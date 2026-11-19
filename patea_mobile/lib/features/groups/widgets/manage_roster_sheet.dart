@@ -131,7 +131,10 @@ class _ManageRosterSheetState extends State<ManageRosterSheet> {
                 const SizedBox(height: 14),
                 Text(
                   'Número de ${entry.player.name}',
-                  style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+                  style: AppTypography.headline(
+                    size: 16,
+                    weight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Expanded(

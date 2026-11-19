@@ -12,6 +12,7 @@ import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_activity_cover.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_snack.dart';
@@ -279,6 +280,11 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
               title: spec(Section.competitions).title,
               description: spec(Section.competitions).description,
               showCountRow: false,
+              helpTooltip: 'Torneos: Ligas y Copas',
+              onHelpTap: () => showContextualHelpSheet(
+                context,
+                topic: HelpTopic.competitions,
+              ),
               actionButton: PateaHeaderActionButton(
                 label: _kind == 0 ? 'Crear liga' : 'Crear copa',
                 onPressed: _create,

@@ -1,4 +1,5 @@
 import '../../core/widgets/patea_activity_cover.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +51,12 @@ class GroupsScreen extends ConsumerWidget {
           style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline_rounded, size: 20),
+            tooltip: 'Grupos y equipos',
+            onPressed: () =>
+                showContextualHelpSheet(context, topic: HelpTopic.groups),
+          ),
           IconButton(
             icon: const Icon(Icons.login, size: 20),
             tooltip: 'Unirse a grupo',

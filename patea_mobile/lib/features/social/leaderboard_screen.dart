@@ -8,6 +8,7 @@ import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/widgets/patea_activity_cover.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_states.dart';
@@ -58,6 +59,14 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
         'Rankings y tablas',
         style: AppTypography.headline(size: 20, weight: FontWeight.w700),
       ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.help_outline_rounded, size: 20),
+          tooltip: 'Cómo se ordenan los rankings',
+          onPressed: () =>
+              showContextualHelpSheet(context, topic: HelpTopic.ranking),
+        ),
+      ],
     ),
     body: ref
         .watch(activeGroupPlayersProvider)

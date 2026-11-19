@@ -91,10 +91,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
     await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
         builder: (_) => PateaBackground(
-          child: CreateTeamScreen(
-            groupId: team.groupId,
-            initialTeam: team,
-          ),
+          child: CreateTeamScreen(groupId: team.groupId, initialTeam: team),
         ),
       ),
     );
@@ -152,7 +149,8 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
         error: (e, _) => PateaError(
           error: e,
           message: 'No se pudo cargar el equipo.',
-          onRetry: () => ref.invalidate(singleTeamStreamProvider(widget.teamId)),
+          onRetry: () =>
+              ref.invalidate(singleTeamStreamProvider(widget.teamId)),
         ),
         data: (team) {
           if (team == null) {
@@ -453,11 +451,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = busy
-        ? const SizedBox(
-            width: 18,
-            height: 18,
-            child: PateaButtonProgress(),
-          )
+        ? const SizedBox(width: 18, height: 18, child: PateaButtonProgress())
         : Icon(icon, size: 20);
     if (label == null) {
       return IconButton(

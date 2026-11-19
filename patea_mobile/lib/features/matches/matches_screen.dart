@@ -22,6 +22,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/models/match_model.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/parallax_background.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_tabs.dart';
 import '../../core/theme/app_insets.dart';
@@ -440,6 +441,11 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                     title: spec(Section.matches).title,
                     description: spec(Section.matches).description,
                     showCountRow: false,
+                    helpTooltip: 'Tipos y ciclo de partidos',
+                    onHelpTap: () => showContextualHelpSheet(
+                      context,
+                      topic: HelpTopic.matches,
+                    ),
                     actionButton: PateaHeaderActionButton(
                       label: spec(Section.matches).action!,
                       onPressed: () => context.push('/matches/create'),

@@ -6,6 +6,7 @@ import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_help_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -275,6 +276,16 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
           'Evaluar partido',
           style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Cómo se evalúa',
+            icon: const Icon(Icons.help_outline_rounded, size: 20),
+            onPressed: () => showContextualHelpSheet(
+              context,
+              topic: HelpTopic.evaluations,
+            ),
+          ),
+        ],
       ),
       body: _isLoading
           ? const PateaLoading()
