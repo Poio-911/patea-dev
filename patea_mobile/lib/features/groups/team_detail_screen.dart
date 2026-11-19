@@ -18,6 +18,7 @@ import 'widgets/manage_roster_sheet.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/group_service.dart';
+import '../../core/services/team_challenge_service.dart';
 import '../../core/models/group_model.dart';
 import '../../core/models/player_model.dart';
 import '../../core/widgets/jersey_painter.dart';
@@ -223,6 +224,11 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                 const SizedBox(height: 18),
               ],
 
+              if (canEdit && team.members.isNotEmpty) ...[
+                _RivalsCard(team: team),
+                const SizedBox(height: 18),
+              ],
+
               if (agenda.isNotEmpty) ...[
                 _SectionLabel(text: 'Próximos partidos', count: agenda.length),
                 const SizedBox(height: 8),
@@ -370,6 +376,108 @@ class _TeamBanner extends StatelessWidget {
                 Container(width: 32, height: 3, color: accent),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rivales: buscar un equipo de otro grupo para desafiar, y decidir si este
+/// equipo recibe desafíos de otros. Sólo lo ve quien puede editar el equipo.
+class _RivalsCard extends ConsumerStatefulWidget {
+  final GroupTeamModel team;
+  const _RivalsCard({required this.team});
+
+  @override
+  ConsumerState<_RivalsCard> createState() => _RivalsCardState();
+}
+
+class _RivalsCardState extends ConsumerState<_RivalsCard> {
+  bool _saving = false;
+
+  Future<void> _setReceives(bool receives) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(teamChallengeServiceProvider)
+          .setTeamChallengeOptOut(
+            teamId: widget.team.id,
+            optOut: !receives,
+          );
+      // El equipo viene de un stream de Firestore: la pantalla se actualiza sola.
+    } catch (e) {
+      if (mounted) {
+        PateaSnack.error(
+          context,
+          challengeErrorMessage(e, fallback: 'No se pudo guardar el cambio.'),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final receives = !widget.team.challengeOptOut;
+    return PateaCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 6, 6),
+      borderColor: c.overlayLine,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Rivales',
+            style: AppTypography.headline(size: 15, weight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Buscá un equipo de otro grupo y mandale un desafío.',
+            style: AppTypography.body(size: 12, color: c.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        context.push('/challenge?teamId=${widget.team.id}'),
+                    icon: const Icon(Icons.search, size: 18),
+                    label: const Text('Buscar rival'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Desafíos recibidos',
+                  icon: const Icon(Icons.inbox_outlined),
+                  onPressed: () => context.push('/challenges'),
+                ),
+              ],
+            ),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Recibir desafíos',
+              style: AppTypography.body(
+                size: 14,
+                weight: FontWeight.w600,
+                color: c.textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              receives
+                  ? 'Otros equipos pueden encontrarlo y desafiarlo.'
+                  : 'Oculto en el buscador: nadie puede desafiarlo.',
+              style: AppTypography.body(size: 12, color: c.textSecondary),
+            ),
+            value: receives,
+            onChanged: _saving ? null : _setReceives,
           ),
         ],
       ),

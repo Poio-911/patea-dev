@@ -6,6 +6,7 @@ import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/services/match_service.dart';
@@ -972,6 +973,17 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 'Elegís dos equipos del grupo, con sus planteles y camisetas.',
             selected: _selectedType == 'by_teams',
             onTap: () => setState(() => _selectedType = 'by_teams'),
+          ),
+          const SizedBox(height: 8),
+          // No es un tipo más de este asistente: el partido nace cuando el otro
+          // equipo acepta, así que lleva a su propia pantalla.
+          _TypeOption(
+            icon: Icons.handshake_outlined,
+            label: 'Desafiar a otro equipo',
+            description:
+                'Buscá un equipo de otro grupo y mandale el desafío. Si acepta, se crea el partido.',
+            selected: false,
+            onTap: () => context.push('/challenge'),
           ),
           const SizedBox(height: 24),
 

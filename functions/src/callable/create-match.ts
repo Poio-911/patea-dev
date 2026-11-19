@@ -206,7 +206,9 @@ export const createMatch = onCall(
       playerUids,
       teams,
       teamsGenerated: teams.length === 2,
-      ...(type === 'by_teams' ? { participantTeamIds: selectedTeams } : {}),
+      ...(type === 'by_teams'
+        ? { participantTeamIds: selectedTeams, participantGroupIds: groupId ? [groupId] : [] }
+        : {}),
       ...(weather ? { weather } : {}),
       events: [],
       createdAt: admin.firestore.FieldValue.serverTimestamp(),

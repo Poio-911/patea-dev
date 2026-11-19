@@ -1,4 +1,5 @@
 import { isGeneratingTeams, matchRosterIds, regenerateMatchTeams } from './match-management';
+import { assertCanJoinMatch, isMatchManager } from '../lib/match-access';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
@@ -33,7 +34,7 @@ export const startMatch = onCall({ region: 'us-central1' }, async (request) => {
   await db.runTransaction(async tx => {
     const data = (await tx.get(ref)).data();
     if (!data) throw new HttpsError('not-found', 'El partido no existe.');
-    if (data.ownerUid !== uid) throw new HttpsError('permission-denied', 'Sólo el organizador puede iniciar el partido.');
+    if (!isMatchManager(data, uid)) throw new HttpsError('permission-denied', 'Sólo el organizador o los capitanes pueden iniciar el partido.');
     if (data.status === 'active') return;
     if (data.status !== 'upcoming') throw new HttpsError('failed-precondition', 'Confirmá fecha y equipos antes de iniciar.');
     if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
@@ -115,8 +116,8 @@ export const updateLiveState = onCall({ region: 'us-central1' }, async (request)
   }
 
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (data.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Solo el organizador puede controlar el partido en vivo.');
+  if (!isMatchManager(data, uid)) {
+    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden controlar el partido en vivo.');
   }
 
   const updates: Record<string, unknown> = {
@@ -176,6 +177,12 @@ export const joinMatch = onCall({ region: 'us-central1' }, async (request) => {
 
     const invitationSnap = await transaction.get(db.collection(`matches/${matchId}/invitations`).doc(uid));
     if (invitationSnap.exists && invitationSnap.data()?.status !== 'declined') return;
+
+    // Hasta acá sólo había idempotencia: no se miraba si el partido admite a
+    // este jugador. Un partido "sólo del grupo" aceptaba a cualquiera que
+    // tuviera el id, y uno entre equipos recibía jugadores sueltos que no
+    // pertenecían a ningún plantel.
+    await assertCanJoinMatch(db, match, uid);
 
     const players: Array<Record<string, unknown>> = Array.isArray(match.players) ? match.players : [];
     const matchSize = Number(match.matchSize ?? 0);
@@ -286,7 +293,7 @@ export async function recordLiveEventCore(db: admin.firestore.Firestore,uid: str
   return db.runTransaction(async tx=>{
     const match=(await tx.get(ref)).data();
     if(!match) throw new HttpsError('not-found','El partido no existe.');
-    if(match.ownerUid!==uid) throw new HttpsError('permission-denied','Sólo el organizador registra eventos.');
+    if(!isMatchManager(match,uid)) throw new HttpsError('permission-denied','Sólo el organizador o los capitanes registran eventos.');
     if(match.status!=='active') throw new HttpsError('failed-precondition','El partido debe estar en vivo y sin cerrar.');
     const events=Array.isArray(match.events)?match.events:[];
     if(events.some((e:any)=>event.id ? e.id===event.id : JSON.stringify(e)===JSON.stringify(event))) return {ok:true};
@@ -416,8 +423,8 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
 
   const db = admin.firestore();
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (data.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Solo el organizador puede finalizar el partido.');
+  if (!isMatchManager(data, uid)) {
+    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden finalizar el partido.');
   }
   if (data.status === 'completed' || data.status === 'evaluated') return { ok: true, assignmentsCount: 0 };
   if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
@@ -457,7 +464,7 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
   await db.runTransaction(async batch => {
     const fresh = (await batch.get(ref)).data();
     if (!fresh) throw new HttpsError('not-found', 'El partido no existe.');
-    if (fresh.ownerUid !== uid) throw new HttpsError('permission-denied', 'Sólo el organizador puede finalizar.');
+    if (!isMatchManager(fresh, uid)) throw new HttpsError('permission-denied', 'Sólo el organizador o los capitanes pueden finalizar.');
     if (fresh.status === 'completed' || fresh.status === 'evaluated') return;
     if (isGeneratingTeams(fresh) || JSON.stringify(fresh.playerUids ?? []) !== JSON.stringify(playerUids) || JSON.stringify(fresh.teams ?? []) !== JSON.stringify(data.teams ?? [])) {
       throw new HttpsError('aborted', 'El plantel cambió. Actualizá el partido antes de finalizar.');

@@ -423,6 +423,16 @@ class MatchModel {
   final MatchLocationModel? locationDetail;
   final String? ownerUid;
   final String? groupId;
+
+  /// Partidos entre equipos: los grupos y equipos que juegan. En un partido
+  /// entre grupos distintos (`intergroup_friendly`) hay dos de cada uno, y el
+  /// partido sólo se guarda con el `groupId` de uno de ellos.
+  final List<String> participantGroupIds;
+  final List<String> participantTeamIds;
+
+  /// Un capitán por equipo en los partidos entre grupos. Fijan fecha y cancha,
+  /// inician y cierran el partido igual que el organizador.
+  final List<String> captains;
   final int matchSize;
   final MatchTeam? teamA;
   final MatchTeam? teamB;
@@ -458,6 +468,21 @@ class MatchModel {
   /// separan terminan diciendo cosas distintas del mismo partido.
   bool needsApprovalFrom(String? uid) => type == 'manual' && ownerUid != uid;
 
+  /// Partido entre equipos con plantel armado ('by_teams' o entre grupos).
+  /// No admite jugadores sueltos: cada uno juega por su equipo.
+  bool get isTeamMatch => type == 'by_teams' || type == 'intergroup_friendly';
+
+  /// Organizador o capitán: quienes pueden fijar fecha y cancha, iniciar,
+  /// dirigir en vivo y cerrar el partido. Borrarlo y repartir los equipos
+  /// sigue siendo sólo del organizador.
+  bool isManagedBy(String? uid) =>
+      uid != null && (ownerUid == uid || captains.contains(uid));
+
+  static List<String> _strList(dynamic raw) => ((raw as List<dynamic>?) ?? const [])
+      .whereType<String>()
+      .where((e) => e.isNotEmpty)
+      .toList();
+
   /// Fechas y canchas propuestas mientras el partido está en 'planning'.
   final List<MatchDateProposal> dateProposals;
   final List<MatchLocationProposal> locationProposals;
@@ -488,6 +513,9 @@ class MatchModel {
     this.locationDetail,
     this.ownerUid,
     this.groupId,
+    this.participantGroupIds = const [],
+    this.participantTeamIds = const [],
+    this.captains = const [],
     this.matchSize = 0,
     this.teamA,
     this.teamB,
@@ -566,6 +594,9 @@ class MatchModel {
       locationDetail: locationDetail,
       ownerUid: _str(data['ownerUid']),
       groupId: _str(data['groupId']),
+      participantGroupIds: _strList(data['participantGroupIds']),
+      participantTeamIds: _strList(data['participantTeamIds']),
+      captains: _strList(data['captains']),
       matchSize: (data['matchSize'] as num?)?.toInt() ?? 0,
       teamA: tA,
       teamB: tB,

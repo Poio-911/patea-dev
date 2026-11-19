@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { sendPushToUsers } from '../lib/fcm-push';
+import { assertCanJoinMatch } from '../lib/match-access';
 
 /**
  * Solicitudes de unión a un partido, con aprobación del organizador.
@@ -39,6 +40,10 @@ export const requestJoinMatch = onCall({ region: 'us-central1' }, async (request
   if (playerUids.includes(uid)) {
     throw new HttpsError('failed-precondition', 'Ya estás en este partido.');
   }
+
+  // Sólo se pide entrada a un partido que admite jugadores sueltos y que es
+  // público, o del propio grupo.
+  await assertCanJoinMatch(db, match, uid);
 
   const pending: string[] = Array.isArray(match.pendingPlayerUids) ? match.pendingPlayerUids : [];
   // Idempotente: volver a pedir no es un error, es no hacer nada.

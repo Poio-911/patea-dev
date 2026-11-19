@@ -189,7 +189,9 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
             );
           }
 
-          final isOrganizer = uid != null && uid == match.ownerUid;
+          // Organizador o capitán: en un partido entre grupos cada equipo
+          // tiene el suyo y los dos pueden dirigir.
+          final isOrganizer = match.isManagedBy(uid);
           // Un partido terminado no se dirige: sin esto, un partido
           // finalizado que nunca pasó por el panel en vivo (liveStatus vacío)
           // mostraba "Iniciar partido" debajo del cartel de FINALIZADO.

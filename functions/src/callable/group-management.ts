@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { buildTeamSearchTokens, normalizeSearchText } from '../lib/team-search';
 
 /**
  * Callables de Grupos y Equipos — port de src/lib/actions/{group-actions,team-actions}.ts.
@@ -23,11 +24,11 @@ const ROLE_PERMISSIONS: Record<GroupRole, GroupPermission[]> = {
   member: ['teams.create'],
 };
 
-function hasPermission(role: GroupRole, permission: GroupPermission): boolean {
+export function hasPermission(role: GroupRole, permission: GroupPermission): boolean {
   return ROLE_PERMISSIONS[role].includes(permission);
 }
 
-function resolveGroupRole(group: admin.firestore.DocumentData, uid: string): GroupRole | null {
+export function resolveGroupRole(group: admin.firestore.DocumentData, uid: string): GroupRole | null {
   if (group.ownerUid === uid) return 'admin';
   const explicit = (group.memberRoles as Array<{ userId: string; role: GroupRole }> | undefined)?.find((m) => m.userId === uid)?.role;
   if (explicit) return explicit;
@@ -130,7 +131,7 @@ export const setActiveGroup = onCall({ region: 'us-central1' }, async (request) 
   return { ok: true, groupName: group.name };
 });
 
-async function getTeamPermissionOrThrow(db: admin.firestore.Firestore, teamId: string, uid: string, permission: GroupPermission) {
+export async function getTeamPermissionOrThrow(db: admin.firestore.Firestore, teamId: string, uid: string, permission: GroupPermission) {
   const teamRef = db.collection('teams').doc(teamId);
   const teamSnap = await teamRef.get();
   if (!teamSnap.exists) throw new HttpsError('not-found', 'Equipo no encontrado.');
@@ -315,6 +316,11 @@ export const createTeam = onCall({ region: 'us-central1' }, async (request) => {
     members,
     createdBy: uid,
     createdAt: new Date().toISOString(),
+    // Para el buscador de rivales (ver lib/team-search.ts). El trigger
+    // `onTeamWrite` los mantiene al día también cuando el nombre se cambia
+    // desde la web.
+    nameLower: normalizeSearchText(name),
+    searchTokens: buildTeamSearchTokens(name),
   });
 
   return { ok: true, id: teamRef.id };
@@ -332,8 +338,32 @@ export const updateTeam = onCall({ region: 'us-central1' }, async (request) => {
   const { teamRef, team } = await getTeamPermissionOrThrow(db, teamId, uid, 'teams.edit');
   // Se sanea DESPUÉS de cargar el equipo para atar el escudo a su grupo.
   const jersey = sanitizeJerseyPayload(request.data?.jersey, { groupId: String(team.groupId ?? '') });
-  await teamRef.update({ name, jersey });
+  await teamRef.update({
+    name,
+    jersey,
+    nameLower: normalizeSearchText(name),
+    searchTokens: buildTeamSearchTokens(name),
+  });
   return { ok: true };
+});
+
+/**
+ * Mostrar u ocultar un equipo en el buscador de rivales.
+ *
+ * Por defecto todos los equipos se pueden buscar y desafiar; esto es el "no
+ * quiero recibir desafíos": el equipo sale de los resultados del buscador y
+ * `challengeTeam` lo rechaza.
+ */
+export const setTeamChallengeOptOut = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const teamId = String(request.data?.teamId ?? '');
+  const optOut = request.data?.optOut === true;
+  if (!teamId || teamId.includes('/')) throw new HttpsError('invalid-argument', 'Falta el equipo.');
+
+  const db = admin.firestore();
+  const { teamRef } = await getTeamPermissionOrThrow(db, teamId, uid, 'teams.edit');
+  await teamRef.update({ challengeOptOut: optOut });
+  return { ok: true, optOut };
 });
 
 /** Port de updateTeamMembersAction. */

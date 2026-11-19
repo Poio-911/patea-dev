@@ -29,6 +29,8 @@ import '../../features/matches/live_match_screen.dart';
 import '../../features/matches/match_detail_screen.dart';
 import '../../features/matches/match_evaluate_screen.dart';
 import '../../features/matches/create_match_screen.dart';
+import '../../features/matches/challenge_team_screen.dart';
+import '../../features/matches/team_challenges_screen.dart';
 import '../../features/competitions/competitions_screen.dart';
 import '../../features/competitions/cup_bracket_screen.dart';
 import '../../features/evaluations/evaluation_form_screen.dart';
@@ -187,6 +189,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/matches/create',
         builder: (context, state) => _withBackground(const CreateMatchScreen()),
+      ),
+      // Desafíos entre equipos de distintos grupos: buscar rival y bandeja
+      // de los que llegaron. `/challenges` es también el destino del aviso
+      // que se manda al equipo desafiado.
+      GoRoute(
+        path: '/challenge',
+        builder: (context, state) => _withBackground(
+          ChallengeTeamScreen(teamId: state.uri.queryParameters['teamId']),
+        ),
+      ),
+      GoRoute(
+        path: '/challenges',
+        builder: (context, state) =>
+            _withBackground(const TeamChallengesScreen()),
       ),
       GoRoute(
         path: '/groups',

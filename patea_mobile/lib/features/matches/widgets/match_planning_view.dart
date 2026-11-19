@@ -39,7 +39,7 @@ class MatchPlanningView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!_isVisible) return const SizedBox.shrink();
 
-    final isCaptain = uid != null && match.ownerUid == uid;
+    final isCaptain = match.isManagedBy(uid);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

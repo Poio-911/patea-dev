@@ -25,6 +25,9 @@ bool canRecruitFor(MatchModel match, String uid, DateTime now) =>
 
 bool isPublicDiscoveryMatch(MatchModel match, String uid, DateTime now) =>
     match.ownerUid != uid &&
+    // Los partidos entre equipos tienen plantel armado: no se ofrecen para
+    // anotarse de a un jugador.
+    !match.isTeamMatch &&
     isDiscoverableFuture(match, now) &&
     (match.matchSize == 0 ||
         match.playerUids.length < match.matchSize ||

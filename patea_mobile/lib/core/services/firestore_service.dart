@@ -441,7 +441,7 @@ class FirestoreService {
     if (groupId == null || groupId.isEmpty) {
       return Stream.value(const <MatchModel>[]);
     }
-    return _firestore
+    final own = _firestore
         .collection('matches')
         .where('groupId', isEqualTo: groupId)
         .orderBy('date', descending: true)
@@ -450,6 +450,21 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs
             .map((doc) => MatchModel.fromFirestore(doc.data(), doc.id))
             .toList());
+
+    // Un partido entre grupos distintos se guarda con el `groupId` de UN solo
+    // equipo: el otro grupo no lo veía en su lista. `participantGroupIds`
+    // tiene a los dos. Usa el índice `participantGroupIds + date DESC`.
+    final shared = _firestore
+        .collection('matches')
+        .where('participantGroupIds', arrayContains: groupId)
+        .orderBy('date', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MatchModel.fromFirestore(doc.data(), doc.id))
+            .toList());
+
+    return mergeMatchLists(own, shared, limit: limit);
   }
 
   Stream<MatchModel?> getMatchStream(String matchId) {
@@ -559,4 +574,83 @@ class FirestoreService {
       );
     });
   }
+}
+
+/// Une los partidos del grupo con los que comparte con otro grupo.
+///
+/// [primary] manda: la lista se emite apenas llega, sin esperar a [secondary].
+/// Si [secondary] falla —por ejemplo, el índice todavía no está desplegado— se
+/// la trata como vacía en vez de romper la lista del grupo. Sin repetidos
+/// (un partido entre dos equipos del mismo grupo aparece en las dos), de más
+/// nuevo a más viejo.
+Stream<List<MatchModel>> mergeMatchLists(
+  Stream<List<MatchModel>> primary,
+  Stream<List<MatchModel>> secondary, {
+  int limit = 50,
+}) {
+  late final StreamController<List<MatchModel>> controller;
+  StreamSubscription<List<MatchModel>>? primarySub;
+  StreamSubscription<List<MatchModel>>? secondarySub;
+  List<MatchModel>? latestPrimary;
+  List<MatchModel> latestSecondary = const [];
+  var primaryDone = false;
+  var secondaryDone = false;
+
+  void closeWhenDone() {
+    if (primaryDone && secondaryDone && !controller.isClosed) {
+      controller.close();
+    }
+  }
+
+  void emit() {
+    final first = latestPrimary;
+    if (first == null || controller.isClosed) return;
+    final byId = <String, MatchModel>{
+      for (final match in first) match.id: match,
+    };
+    for (final match in latestSecondary) {
+      byId.putIfAbsent(match.id, () => match);
+    }
+    final merged = byId.values.toList()
+      ..sort((a, b) {
+        final byDate = b.date.compareTo(a.date);
+        return byDate != 0 ? byDate : a.id.compareTo(b.id);
+      });
+    controller.add(merged.length > limit ? merged.sublist(0, limit) : merged);
+  }
+
+  controller = StreamController<List<MatchModel>>(
+    onListen: () {
+      primarySub = primary.listen(
+        (value) {
+          latestPrimary = value;
+          emit();
+        },
+        onError: controller.addError,
+        onDone: () {
+          primaryDone = true;
+          closeWhenDone();
+        },
+      );
+      secondarySub = secondary.listen(
+        (value) {
+          latestSecondary = value;
+          emit();
+        },
+        onError: (Object _) {
+          latestSecondary = const [];
+          emit();
+        },
+        onDone: () {
+          secondaryDone = true;
+          closeWhenDone();
+        },
+      );
+    },
+    onCancel: () async {
+      await primarySub?.cancel();
+      await secondarySub?.cancel();
+    },
+  );
+  return controller.stream;
 }

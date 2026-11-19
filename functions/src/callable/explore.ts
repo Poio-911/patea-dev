@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { geohashForLocation, geohashQueryBounds, distanceBetween } from 'geofire-common';
+import { assertNotTeamMatch } from '../lib/match-access';
 
 /**
  * Callables de Explorar — port de src/lib/actions/{recruitment-actions,
@@ -312,6 +313,7 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
   if (match.ownerUid !== uid) {
     throw new HttpsError('permission-denied', 'No tienes permiso para invitar jugadores a este partido.');
   }
+  assertNotTeamMatch(match);
 
   const uniqueIds = [...new Set(playerIds)].filter(Boolean);
   if (uniqueIds.length === 0) throw new HttpsError('invalid-argument', 'No se seleccionaron jugadores.');

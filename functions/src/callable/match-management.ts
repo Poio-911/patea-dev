@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
+import { isMatchManager, isTeamMatch } from '../lib/match-access';
 
 /**
  * Callables de gestión de partido usadas por MatchManagementActions en la
@@ -39,6 +40,26 @@ async function getOwnedMatchOrThrow(matchId: string, uid: string) {
   }
   return { db, ref, data };
 }
+
+/**
+ * Organizador o capitán. Fijar fecha y cancha lo hacen los dos capitanes de un
+ * partido entre grupos; borrarlo o repartir los equipos sigue siendo del
+ * organizador.
+ */
+async function getManagedMatchOrThrow(matchId: string, uid: string) {
+  const db = admin.firestore();
+  const ref = db.collection('matches').doc(matchId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+  const data = snap.data()!;
+  if (!isMatchManager(data, uid)) {
+    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden realizar esta acción.');
+  }
+  return { db, ref, data };
+}
+
+const TEAM_MATCH_ROSTER_MESSAGE =
+  'Los equipos de este partido son los planteles de cada equipo: no se reparten ni se re-equilibran.';
 
 /**
  * Mover jugadores entre los dos equipos.
@@ -115,6 +136,7 @@ export const updateMatchTeams = onCall({ region: 'us-central1' }, async request 
     const match = snap.data();
     if (!match) throw new HttpsError('not-found', 'El partido no existe.');
     if (match.ownerUid !== uid) throw new HttpsError('permission-denied', 'Sólo el organizador puede cambiar los equipos.');
+    if (isTeamMatch(match)) throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
     requireEditable(match);
     if (isGeneratingTeams(match)) throw new HttpsError('aborted', 'Se están armando los equipos. Esperá unos segundos.');
     const ids = matchRosterIds(match);
@@ -146,6 +168,12 @@ export async function regenerateMatchTeams(
     const match = snap.data();
     if (!match) throw new HttpsError('not-found', 'El partido no existe.');
     if (ownerUid && match.ownerUid !== ownerUid) throw new HttpsError('permission-denied', 'Sólo el organizador puede armar equipos.');
+    if (isTeamMatch(match)) {
+      // Un partido entre equipos nunca se re-equilibra solo; si lo pide una
+      // persona, se le explica por qué no.
+      if (onlyWhenFull) return null;
+      throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
+    }
     if (onlyWhenFull && (!['planning', 'upcoming'].includes(match.status) || match.teamsGenerated)) return null;
     requireEditable(match);
     const ids = matchRosterIds(match);
@@ -216,7 +244,7 @@ export const updateMatchDate = onCall({ region: 'us-central1' }, async (request)
   const matchId = String(request.data?.matchId ?? '');
   const date = String(request.data?.date ?? '');
   const time = String(request.data?.time ?? '');
-  const { ref } = await getOwnedMatchOrThrow(matchId, uid);
+  const { ref } = await getManagedMatchOrThrow(matchId, uid);
   await ref.update({ date, time });
   return { ok: true };
 });
@@ -232,7 +260,7 @@ export const updateMatchLocation = onCall({ region: 'us-central1' }, async (requ
     lng: Number(request.data?.locationLng ?? 0) || 0,
     placeId: String(request.data?.locationPlaceId ?? ''),
   };
-  const { ref } = await getOwnedMatchOrThrow(matchId, uid);
+  const { ref } = await getManagedMatchOrThrow(matchId, uid);
   await ref.update({ location });
   return { ok: true };
 });

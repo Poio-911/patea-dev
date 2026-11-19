@@ -448,6 +448,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         }
 
         final isOwner = uid != null && match.ownerUid == uid;
+        // Organizador o capitán (partidos entre grupos). Borrar y repartir
+        // equipos sigue siendo sólo del organizador.
+        final isManager = match.isManagedBy(uid);
         final isUserInMatch = uid != null && match.playerUids.contains(uid);
         final isPending = uid != null && match.pendingPlayerUids.contains(uid);
         final isMatchFull = match.players.length >= match.matchSize;
@@ -613,6 +616,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             match: match,
             uid: uid,
             isOwner: isOwner,
+            isManager: isManager,
             isUserInMatch: isUserInMatch,
             isPending: isPending,
             isMatchFull: isMatchFull,
@@ -687,15 +691,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       canChat: isOwner || isUserInMatch,
                       onOpenChat: () => _openMatchChat(context, match),
                     ),
-                    if (isOwner) ...[
+                    if (isManager) ...[
                       const SizedBox(height: 16),
                       _OrganizerPanel(
                         match: match,
+                        isOwner: isOwner,
                         hasTeams: hasTeams,
                         isCompetition: isCompetition,
                         isShuffling: _isShuffling,
                         canFinalize:
-                            isOwner &&
+                            isManager &&
                             match.status == 'upcoming' &&
                             match.players.length >= 2,
                         isFinishing: _isFinishing,
@@ -1290,6 +1295,9 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
 /// Panel completo de administración del organizador visible directamente en la pantalla.
 class _OrganizerPanel extends StatelessWidget {
   final MatchModel match;
+
+  /// Sólo el organizador borra el partido; un capitán gestiona lo demás.
+  final bool isOwner;
   final bool hasTeams;
   final bool isCompetition;
   final bool isShuffling;
@@ -1303,6 +1311,7 @@ class _OrganizerPanel extends StatelessWidget {
 
   const _OrganizerPanel({
     required this.match,
+    required this.isOwner,
     required this.hasTeams,
     required this.isCompetition,
     required this.isShuffling,
@@ -1318,6 +1327,9 @@ class _OrganizerPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canEvaluate = match.status == 'completed';
+    // En un partido entre equipos los planteles son los de cada equipo: no se
+    // reparten, no se re-equilibran y no se completan con jugadores sueltos.
+    final isTeamMatch = match.isTeamMatch;
 
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
@@ -1345,7 +1357,8 @@ class _OrganizerPanel extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   if (match.status == 'upcoming' && !isCompetition) ...[
-                    if (match.players.length < match.matchSize)
+                    if (match.players.length < match.matchSize &&
+                        !isTeamMatch)
                       OutlinedButton.icon(
                         onPressed: () =>
                             RecruitPlayersSheet.show(context, match),
@@ -1371,7 +1384,7 @@ class _OrganizerPanel extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (hasTeams)
+                    if (hasTeams && !isTeamMatch && isOwner)
                       OutlinedButton.icon(
                         onPressed: isShuffling
                             ? null
@@ -1395,7 +1408,8 @@ class _OrganizerPanel extends StatelessWidget {
                           ),
                         ),
                       ),
-                    OutlinedButton.icon(
+                    if (!isTeamMatch && isOwner)
+                      OutlinedButton.icon(
                       onPressed: isShuffling ? null : onShuffle,
                       icon: isShuffling
                           ? const SizedBox(
@@ -1528,7 +1542,8 @@ class _OrganizerPanel extends StatelessWidget {
                       ),
                     ),
                   ],
-                  OutlinedButton.icon(
+                  if (isOwner)
+                    OutlinedButton.icon(
                     onPressed: onDelete,
                     icon: Icon(
                       Icons.delete_outline_rounded,
@@ -1574,6 +1589,9 @@ class _StickyActionBar extends StatelessWidget {
   final MatchModel match;
   final String? uid;
   final bool isOwner;
+
+  /// Organizador o capitán: dirigen en vivo e inician/cierran el partido.
+  final bool isManager;
   final bool isUserInMatch;
   final bool isPending;
   final bool isMatchFull;
@@ -1586,6 +1604,7 @@ class _StickyActionBar extends StatelessWidget {
     required this.match,
     required this.uid,
     required this.isOwner,
+    required this.isManager,
     required this.isUserInMatch,
     required this.isPending,
     required this.isMatchFull,
@@ -1623,7 +1642,7 @@ class _StickyActionBar extends StatelessWidget {
           color: context.c.onPrimary,
         ),
         label: Text(
-          isOwner ? 'Dirigir en vivo' : 'Seguir en vivo',
+          isManager ? 'Dirigir en vivo' : 'Seguir en vivo',
           style: AppTypography.action(size: 16, color: context.c.onPrimary),
         ),
       );
@@ -1652,7 +1671,7 @@ class _StickyActionBar extends StatelessWidget {
         ),
       );
     } else if (match.status == 'upcoming' && !isCompetition) {
-      if (isOwner) {
+      if (isManager) {
         final canFinalize = match.players.length >= 2;
         actionWidget = Row(
           children: [
@@ -1819,7 +1838,9 @@ class _StickyActionBar extends StatelessWidget {
               ),
             ),
           );
-        } else {
+        } else if (!match.isTeamMatch) {
+          // Un partido entre equipos no se pide ni se toma de a un jugador:
+          // el plantel es el de cada equipo.
           actionWidget = ElevatedButton.icon(
             onPressed: isJoining ? null : onJoinLeave,
             style: ElevatedButton.styleFrom(

@@ -284,6 +284,10 @@ class GroupTeamModel {
   final List<TeamMemberEntry> members;
   final String createdBy;
 
+  /// `true` si el equipo no quiere recibir desafíos de otros equipos: no sale
+  /// en el buscador de rivales y el servidor rechaza los desafíos nuevos.
+  final bool challengeOptOut;
+
   GroupTeamModel({
     required this.id,
     required this.name,
@@ -291,6 +295,7 @@ class GroupTeamModel {
     required this.jersey,
     this.members = const [],
     this.createdBy = '',
+    this.challengeOptOut = false,
   });
 
   List<String> get playerIds => members.map((m) => m.playerId).toList();
@@ -312,6 +317,7 @@ class GroupTeamModel {
       jersey: JerseyModel.fromMap(map['jersey'] as Map<String, dynamic>?),
       members: members,
       createdBy: map['createdBy'] as String? ?? '',
+      challengeOptOut: map['challengeOptOut'] == true,
     );
   }
 }
