@@ -116,7 +116,7 @@ void main() {
     },
   );
   testWidgets(
-    'Creation preserves selection across 3 steps and submits the same membership contract once',
+    'Creation preserves selection across 2 steps and submits the same membership contract once',
     (tester) async {
       final service = CreateTeamFake();
       final errors = await montarPantalla(
@@ -128,15 +128,15 @@ void main() {
         tema: AppTheme.lightTheme,
       );
       expect(errors, isEmpty);
-      expect(find.text('Paso 1 de 3 · Camiseta y nombre'), findsOneWidget);
+      expect(find.text('Paso 1 de 2 · Identidad'), findsOneWidget);
       await tester.enterText(find.byType(TextField), '  Equipo del barrio  ');
       await tester.pump();
-      await tap(tester, find.text('Elegir escudo'));
-      expect(find.text('Paso 2 de 3 · Escudo'), findsOneWidget);
+      // Camiseta y escudo viven en el mismo paso: se cambia de pestaña.
+      await tap(tester, find.text('Escudo'));
       await tap(tester, find.text('Diseñar'));
       await tap(tester, find.text('Circular'));
       await tap(tester, find.text('Elegir jugadores'));
-      expect(find.text('Paso 3 de 3 · Plantel'), findsOneWidget);
+      expect(find.text('Paso 2 de 2 · Plantel'), findsOneWidget);
       await tap(tester, find.byType(CheckboxListTile).first);
       await tap(tester, find.byTooltip('Paso anterior'));
       await tap(tester, find.text('Elegir jugadores'));
@@ -161,27 +161,24 @@ void main() {
     },
   );
   testWidgets(
-    'Edit mode opens 2-step flow and submits updated name and crest without roster step',
+    'Edit mode opens a single identity step and submits updated name and crest without roster step',
     (tester) async {
       final service = CreateTeamFake();
       final errors = await montarPantalla(
         tester,
         ProviderScope(
           overrides: [groupServiceProvider.overrideWithValue(service)],
-          child: CreateTeamScreen(
-            groupId: idGrupo,
-            initialTeam: equipos.first,
-          ),
+          child: CreateTeamScreen(groupId: idGrupo, initialTeam: equipos.first),
         ),
         tema: AppTheme.darkTheme,
       );
       expect(errors, isEmpty);
       expect(find.text('Editar equipo'), findsOneWidget);
-      expect(find.text('Paso 1 de 2 · Camiseta y nombre'), findsOneWidget);
+      // Un solo paso: no hay indicador de pasos.
+      expect(find.textContaining('Paso '), findsNothing);
       await tester.enterText(find.byType(TextField), 'Club Renovado');
       await tester.pump();
-      await tap(tester, find.text('Elegir escudo'));
-      expect(find.text('Paso 2 de 2 · Escudo'), findsOneWidget);
+      await tap(tester, find.text('Escudo'));
       await tap(tester, find.text('Diseñar'));
       await tap(tester, find.widgetWithText(ElevatedButton, 'Guardar cambios'));
       expect(service.updates, 1);
@@ -319,7 +316,7 @@ void main() {
         expect(errors, isEmpty);
         await tester.enterText(find.byType(TextField), 'Equipo');
         await tester.pump();
-        await tap(tester, find.text('Elegir escudo'));
+        await tap(tester, find.text('Escudo'));
         await tap(tester, find.text('Diseñar'));
         await tap(tester, find.text('Elegir jugadores'));
         await tap(tester, find.byType(CheckboxListTile).first);

@@ -215,35 +215,35 @@ class AppTheme {
 
       chipTheme: ChipThemeData(
         backgroundColor: c.cardSurface,
-        selectedColor: Color.alphaBlend(
-          c.primary.withValues(alpha: 0.18),
-          c.cardSurface,
-        ),
-        checkmarkColor: c.primary,
+        // El elegido es el primario SÓLIDO con su `onPrimary`. El tinte
+        // translúcido sobre la tarjeta se leía oliva sucio con el neón del
+        // tema oscuro y celeste lavado con el azul del claro: apenas se
+        // distinguía del que no estaba elegido.
+        selectedColor: c.primary,
+        checkmarkColor: c.onPrimary,
         side: BorderSide(color: c.controlBorder),
         labelStyle: AppTypography.body(size: 13, color: c.textPrimary),
         secondaryLabelStyle: AppTypography.body(
           size: 13,
           weight: FontWeight.w600,
-          color: c.primary,
+          color: c.onPrimary,
         ),
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.chipAll),
       ),
 
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
+          // Activo: primario sólido + `onPrimary`. Inactivo: la superficie de
+          // la tarjeta. Mismo criterio en los dos temas (ver `chipTheme`).
           backgroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return Color.alphaBlend(
-                c.primary.withValues(alpha: 0.16),
-                c.cardSurface,
-              );
+              return c.primary;
             }
             return c.cardSurface;
           }),
           foregroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return c.primary;
+              return c.onPrimary;
             }
             return c.textPrimary;
           }),
@@ -323,8 +323,7 @@ class AppTheme {
 
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith(
-          (s) =>
-              s.contains(WidgetState.selected) ? c.primary : c.controlBorder,
+          (s) => s.contains(WidgetState.selected) ? c.primary : c.controlBorder,
         ),
       ),
 

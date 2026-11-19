@@ -1,15 +1,18 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/group_model.dart';
 import '../../core/theme/app_radii.dart';
+import '../../core/theme/app_selection.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/jersey_templates.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/patea_snack.dart';
+import 'crest_crop_sheet.dart';
 
 const popularTeamColors = [
   {'name': 'Rojo', 'hex': '#DC2626'},
@@ -44,8 +47,138 @@ const classicColorCombos = [
 
 Color hexToColor(String hex) => parseJerseyHexColor(hex);
 
-/// Taller unificado de identidad (camiseta + escudo). Reutiliza los dos pasos
-/// abiertos (`JerseyIdentityStep` y `CrestDesignerStep`) con selector superior.
+/// Tono del escenario de la vista previa: fondo + tinta para lo que se dibuja
+/// encima (íconos, damero).
+class _StageTone {
+  final Color base;
+  final Color ink;
+
+  /// Centro del degradé radial: un escalón más claro que [base].
+  final Color glow;
+  const _StageTone(this.base, this.ink, this.glow);
+}
+
+/// El fondo de la vista previa se elige según los colores del equipo, no sólo
+/// según el tema. Una camiseta negra o marino sobre el fondo oscuro desaparece
+/// (su borde también es oscuro), y una blanca sobre el claro, igual. Si los
+/// dos colores del equipo son oscuros el escenario es claro; si son claros, es
+/// oscuro; en cualquier otro caso se usa la superficie del tema.
+_StageTone _stageToneFor(BuildContext context, JerseyModel jersey) {
+  final primary = hexToColor(jersey.primaryColor).computeLuminance();
+  final secondary = hexToColor(jersey.secondaryColor).computeLuminance();
+  final brightest = primary > secondary ? primary : secondary;
+  final darkest = primary < secondary ? primary : secondary;
+
+  if (brightest < 0.2) {
+    // Escenario claro tomado de la paleta clara, sea cual sea el tema actual.
+    const light = PateaColors.light;
+    return _StageTone(light.cardSurface, light.textSecondary, light.card);
+  }
+  if (darkest > 0.6) {
+    // Escenario oscuro tomado de la paleta oscura, sea cual sea el tema.
+    const dark = PateaColors.game;
+    return _StageTone(dark.card, dark.textSecondary, dark.cardSurface);
+  }
+  final c = context.c;
+  return _StageTone(
+    c.cardSurface,
+    c.textSecondary,
+    Color.lerp(c.cardSurface, c.textPrimary, 0.06)!,
+  );
+}
+
+/// Escenario redondeado sobre el que se ve la camiseta/escudo en construcción.
+class _PreviewStage extends StatelessWidget {
+  final JerseyModel jersey;
+  final Widget Function(_StageTone tone) builder;
+  final EdgeInsetsGeometry padding;
+
+  const _PreviewStage({
+    required this.jersey,
+    required this.builder,
+    this.padding = const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = _stageToneFor(context, jersey);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: AppRadii.cardAll,
+        border: Border.all(color: context.c.overlayLine),
+        gradient: RadialGradient(
+          center: const Alignment(0, -0.25),
+          radius: 0.95,
+          colors: [tone.glow, tone.base],
+        ),
+      ),
+      child: builder(tone),
+    );
+  }
+}
+
+/// Pestañas del taller de identidad.
+enum StudioTab {
+  camiseta('Camiseta'),
+  colores('Colores'),
+  escudo('Escudo'),
+  textos('Textos'),
+  marco('Marco');
+
+  final String label;
+  const StudioTab(this.label);
+}
+
+/// ¿Los dos colores se confunden entre sí? Con colores parecidos las franjas,
+/// el emblema y el texto del escudo desaparecen. Se mira a la vez el contraste
+/// de luminancia (WCAG) y la distancia RGB: dos azules distintos pero de igual
+/// brillo se distinguen; un rojo y un naranja, no.
+bool jerseyColorsTooSimilar(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final ratio = (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
+  final dr = (a.r - b.r) * 255;
+  final dg = (a.g - b.g) * 255;
+  final db = (a.b - b.b) * 255;
+  final distance = math.sqrt(dr * dr + dg * dg + db * db);
+  return ratio < 1.8 && distance < 140;
+}
+
+/// Secundario que SÍ se distingue del [primaryHex]: blanco sobre oscuros y
+/// casi negro sobre claros.
+String contrastingSecondaryHex(String primaryHex) =>
+    hexToColor(primaryHex).computeLuminance() > 0.5 ? '#171717' : '#FFFFFF';
+
+/// Cuánto se achica la silueta del escudo por los adornos (0 = nada, 0.25 = 25%).
+double crestOrnamentShrink({
+  required int stars,
+  required bool crownTop,
+  required bool laurel,
+}) {
+  const canvas = Size(100, 100);
+  final plain = crestShieldRect(
+    canvas,
+    hasTopOrnaments: false,
+    hasLaurel: false,
+  );
+  final withOrnaments = crestShieldRect(
+    canvas,
+    hasTopOrnaments: stars > 0 || crownTop,
+    hasLaurel: laurel,
+  );
+  return (1 - withOrnaments.height / plain.height).clamp(0.0, 1.0);
+}
+
+/// Taller unificado de identidad: UN solo lienzo. La camiseta y el escudo
+/// quedan siempre a la vista arriba y las pestañas (Camiseta · Colores ·
+/// Escudo · Textos · Marco) cambian sólo el panel de abajo.
+///
+/// Antes eran dos pasos del asistente con selectores segmentados anidados, y
+/// para ver cómo quedaba un cambio de escudo sobre la camiseta había que
+/// volver de paso.
 class JerseyDesigner extends StatefulWidget {
   final JerseyModel value;
   final ValueChanged<JerseyModel> onChanged;
@@ -53,8 +186,14 @@ class JerseyDesigner extends StatefulWidget {
   final File? localCrestFile;
   final ValueChanged<File?>? onLocalCrestFileChanged;
   final Future<File?> Function()? onPickCrestFile;
+
+  /// Encuadra el archivo elegido antes de usarlo. Por defecto abre
+  /// [showCrestCropSheet]; null devuelto = el usuario canceló.
+  final Future<File?> Function(BuildContext context, File source)?
+  onCropCrestFile;
   final Widget? topHeader;
   final bool expandPanel;
+  final StudioTab initialTab;
 
   const JerseyDesigner({
     super.key,
@@ -64,8 +203,10 @@ class JerseyDesigner extends StatefulWidget {
     this.localCrestFile,
     this.onLocalCrestFileChanged,
     this.onPickCrestFile,
+    this.onCropCrestFile,
     this.topHeader,
     this.expandPanel = false,
+    this.initialTab = StudioTab.camiseta,
   });
 
   @override
@@ -73,132 +214,140 @@ class JerseyDesigner extends StatefulWidget {
 }
 
 class _JerseyDesignerState extends State<JerseyDesigner> {
-  int _section = 0; // 0: Camiseta, 1: Escudo
+  late StudioTab _tab = widget.initialTab;
+  String _activeColorChannel = 'primary';
+  bool _isPickingImage = false;
+  late final TextEditingController _textController;
+  late final TextEditingController _subtitleController;
+
+  JerseyModel get _value => widget.value;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.value.crestText);
+    _subtitleController = TextEditingController(
+      text: widget.value.crestSubtitle,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant JerseyDesigner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value.crestText != widget.value.crestText &&
+        _textController.text != widget.value.crestText) {
+      _textController.text = widget.value.crestText;
+    }
+    if (oldWidget.value.crestSubtitle != widget.value.crestSubtitle &&
+        _subtitleController.text != widget.value.crestSubtitle) {
+      _subtitleController.text = widget.value.crestSubtitle;
+    }
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _subtitleController.dispose();
+    super.dispose();
+  }
+
+  // ---------------------------------------------------------------------
+  // Acciones
+  // ---------------------------------------------------------------------
+
+  void _swapColors() {
+    widget.onChanged(
+      _value.copyWith(
+        primaryColor: _value.secondaryColor,
+        secondaryColor: _value.primaryColor,
+      ),
+    );
+  }
+
+  Future<void> _pickPng() async {
+    if (_isPickingImage) return;
+    setState(() => _isPickingImage = true);
+    try {
+      final File? picked;
+      if (widget.onPickCrestFile != null) {
+        picked = await widget.onPickCrestFile!();
+      } else {
+        // Sin maxWidth/maxHeight/imageQuality para conservar la transparencia
+        // alfa del PNG original al elegirlo de galería.
+        final xFile = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+        );
+        picked = xFile != null ? File(xFile.path) : null;
+      }
+      if (!mounted || picked == null) return;
+
+      final cropper =
+          widget.onCropCrestFile ??
+          (BuildContext ctx, File f) =>
+              showCrestCropSheet(ctx, f, circular: _value.crestClipCircle);
+      final cropped = await cropper(context, picked);
+      // Cancelar el encuadre deja todo como estaba.
+      if (!mounted || cropped == null) return;
+
+      widget.onLocalCrestFileChanged?.call(cropped);
+      widget.onChanged(_value.copyWith(crestMode: 'uploaded'));
+    } catch (e) {
+      if (mounted) {
+        PateaSnack.error(context, 'No pudimos abrir esa imagen.');
+      }
+    } finally {
+      if (mounted) setState(() => _isPickingImage = false);
+    }
+  }
+
+  void _selectCrestMode(String mode) {
+    final value = _value;
+    if (mode == 'none') {
+      widget.onLocalCrestFileChanged?.call(null);
+      widget.onChanged(value.copyWith(crestMode: 'none'));
+      return;
+    }
+    if (mode == 'custom') {
+      final shape = value.crestShape == 'none' || value.crestShape.isEmpty
+          ? 'classic'
+          : value.crestShape;
+      final layouts = crestLayoutsForShape(shape);
+      final layout = layouts.any((l) => l['id'] == value.crestLayout)
+          ? value.crestLayout
+          : JerseyModel.defaultLayoutForShape(shape);
+      widget.onChanged(
+        value.copyWith(
+          crestMode: 'custom',
+          crestShape: shape,
+          crestLayout: layout,
+        ),
+      );
+      return;
+    }
+    widget.onChanged(value.copyWith(crestMode: 'uploaded'));
+  }
+
+  void _selectShape(String shape) {
+    final validLayouts = crestLayoutsForShape(shape);
+    final nextLayout = validLayouts.any((l) => l['id'] == _value.crestLayout)
+        ? _value.crestLayout
+        : JerseyModel.defaultLayoutForShape(shape);
+    widget.onChanged(
+      _value.copyWith(
+        crestMode: 'custom',
+        crestShape: shape,
+        crestLayout: nextLayout,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Estructura
+  // ---------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    final selector = Padding(
-      padding: EdgeInsets.fromLTRB(
-        widget.expandPanel ? 20 : 0,
-        widget.expandPanel ? 8 : 0,
-        widget.expandPanel ? 20 : 0,
-        8,
-      ),
-      child: SegmentedButton<int>(
-        showSelectedIcon: false,
-        segments: const [
-          ButtonSegment<int>(
-            value: 0,
-            label: Text('Camiseta', maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          ButtonSegment<int>(
-            value: 1,
-            label: Text('Escudo', maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-        ],
-        selected: {_section},
-        onSelectionChanged: (s) => setState(() => _section = s.first),
-      ),
-    );
-
-    final content = _section == 0
-        ? JerseyIdentityStep(
-            value: widget.value,
-            onChanged: widget.onChanged,
-            teamName: widget.teamName,
-            localCrestFile: widget.localCrestFile,
-            topHeader: widget.topHeader,
-            expandPanel: widget.expandPanel,
-            onTapCrestPreview: () => setState(() => _section = 1),
-          )
-        : CrestDesignerStep(
-            value: widget.value,
-            onChanged: widget.onChanged,
-            teamName: widget.teamName,
-            localCrestFile: widget.localCrestFile,
-            onLocalCrestFileChanged: widget.onLocalCrestFileChanged,
-            onPickCrestFile: widget.onPickCrestFile,
-            expandPanel: widget.expandPanel,
-          );
-
-    if (widget.expandPanel) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          selector,
-          Expanded(child: content),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        selector,
-        const SizedBox(height: 8),
-        content,
-      ],
-    );
-  }
-}
-
-/// Paso 1 del taller: Nombre del equipo, vista previa abierta fija arriba y
-/// controles sin cajas para `Diseño` y `Colores`.
-class JerseyIdentityStep extends StatefulWidget {
-  final JerseyModel value;
-  final ValueChanged<JerseyModel> onChanged;
-  final String? teamName;
-  final File? localCrestFile;
-  final Widget? topHeader;
-  final bool expandPanel;
-  final VoidCallback? onTapCrestPreview;
-
-  const JerseyIdentityStep({
-    super.key,
-    required this.value,
-    required this.onChanged,
-    this.teamName,
-    this.localCrestFile,
-    this.topHeader,
-    this.expandPanel = false,
-    this.onTapCrestPreview,
-  });
-
-  @override
-  State<JerseyIdentityStep> createState() => _JerseyIdentityStepState();
-}
-
-class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
-  int _mode = 0; // 0: Diseño, 1: Colores
-  String _activeColorChannel = 'primary';
-
-  String _previewSecondaryForGrid(JerseyModel value) {
-    if (value.primaryColor.toUpperCase() !=
-        value.secondaryColor.toUpperCase()) {
-      return value.secondaryColor;
-    }
-    final lum = hexToColor(value.primaryColor).computeLuminance();
-    return lum > 0.5 ? '#171717' : '#FFFFFF';
-  }
-
-  void _swapColors() {
-    final value = widget.value;
-    widget.onChanged(
-      value.copyWith(
-        primaryColor: value.secondaryColor,
-        secondaryColor: value.primaryColor,
-      ),
-    );
-  }
-
-  Widget _buildPinnedStage(BuildContext context) {
-    final value = widget.value;
-    final template = getJerseyTemplate(value.pattern);
-    final hasAnyCrest =
-        value.hasCrest ||
-        (value.crestMode == 'uploaded' && widget.localCrestFile != null);
-
-    return Column(
+    final header = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -206,8 +355,55 @@ class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
           widget.topHeader!,
           const SizedBox(height: 14),
         ],
-        // Escenario abierto sin cajas anidadas ni bordes pesados
-        Row(
+        _buildStage(context),
+        const SizedBox(height: 8),
+        _buildStageCaption(context),
+        const SizedBox(height: 8),
+        _StudioTabBar(
+          tabs: StudioTab.values,
+          selected: _tab,
+          onSelected: (t) => setState(() => _tab = t),
+        ),
+      ],
+    );
+    final panel = _buildPanel(context);
+
+    if (widget.expandPanel) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: header,
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: panel,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [header, const SizedBox(height: 12), panel],
+    );
+  }
+
+  bool get _hasAnyCrest =>
+      _value.hasCrest ||
+      (_value.crestMode == 'uploaded' && widget.localCrestFile != null);
+
+  Widget _buildStage(BuildContext context) {
+    final value = _value;
+    return _PreviewStage(
+      jersey: value,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      builder: (tone) => SizedBox(
+        height: 112,
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Spacer(),
@@ -215,75 +411,104 @@ class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
               jersey: value,
               teamName: widget.teamName,
               localCrestFile: widget.localCrestFile,
-              size: 92,
+              size: 104,
             ),
-            if (hasAnyCrest) ...[
-              const SizedBox(width: 18),
+            const SizedBox(width: 20),
+            if (_hasAnyCrest)
               GestureDetector(
-                onTap: widget.onTapCrestPreview,
-                child: TeamCrestWidget(
-                  jersey: value,
-                  teamName: widget.teamName,
-                  localCrestFile: widget.localCrestFile,
-                  size: 52,
+                onTap: () => setState(() => _tab = StudioTab.escudo),
+                child: value.crestMode == 'uploaded'
+                    ? _CrestCheckerboard(
+                        size: 84,
+                        child: TeamCrestWidget(
+                          jersey: value,
+                          teamName: widget.teamName,
+                          localCrestFile: widget.localCrestFile,
+                          size: 70,
+                        ),
+                      )
+                    : TeamCrestWidget(
+                        jersey: value,
+                        teamName: widget.teamName,
+                        localCrestFile: widget.localCrestFile,
+                        size: 84,
+                      ),
+              )
+            else
+              // Sin escudo todavía: una invitación a hacerlo, no un hueco.
+              GestureDetector(
+                onTap: () => setState(() => _tab = StudioTab.escudo),
+                child: SizedBox(
+                  width: 84,
+                  height: 84,
+                  child: Icon(
+                    Icons.shield_outlined,
+                    size: 44,
+                    color: tone.ink.withValues(alpha: 0.5),
+                  ),
                 ),
               ),
-            ],
             const Spacer(),
           ],
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                (widget.teamName ?? '').trim().isEmpty
-                    ? template.label
-                    : '${widget.teamName!.trim()} · ${template.label}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: context.c.textSecondary,
-                ),
-              ),
+      ),
+    );
+  }
+
+  Widget _buildStageCaption(BuildContext context) {
+    final template = getJerseyTemplate(_value.pattern);
+    final name = (widget.teamName ?? '').trim();
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            name.isEmpty ? template.label : '$name · ${template.label}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.body(
+              size: 13,
+              weight: FontWeight.w600,
+              color: context.c.textSecondary,
             ),
-            TextButton.icon(
-              onPressed: _swapColors,
-              icon: const Icon(Icons.swap_horiz, size: 17),
-              label: const Text('Invertir'),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              ),
-            ),
-          ],
+          ),
         ),
-        const SizedBox(height: 6),
-        Divider(height: 1, color: context.c.overlayLine),
-        const SizedBox(height: 12),
-        SegmentedButton<int>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment<int>(
-              value: 0,
-              label: Text('Diseño', maxLines: 1, overflow: TextOverflow.ellipsis),
-            ),
-            ButtonSegment<int>(
-              value: 1,
-              label: Text('Colores', maxLines: 1, overflow: TextOverflow.ellipsis),
-            ),
-          ],
-          selected: {_mode},
-          onSelectionChanged: (s) => setState(() => _mode = s.first),
+        TextButton.icon(
+          onPressed: _swapColors,
+          icon: const Icon(Icons.swap_horiz, size: 17),
+          label: const Text('Invertir'),
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          ),
         ),
       ],
     );
   }
 
+  Widget _buildPanel(BuildContext context) {
+    return switch (_tab) {
+      StudioTab.camiseta => _buildDesignGrid(context),
+      StudioTab.colores => _buildColorsPanel(context),
+      StudioTab.escudo => _buildCrestPanel(context),
+      StudioTab.textos => _buildTextPanel(context),
+      StudioTab.marco => _buildFramePanel(context),
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // Pestaña: Camiseta
+  // ---------------------------------------------------------------------
+
+  String _previewSecondaryForGrid(JerseyModel value) {
+    if (value.primaryColor.toUpperCase() !=
+        value.secondaryColor.toUpperCase()) {
+      return value.secondaryColor;
+    }
+    return contrastingSecondaryHex(value.primaryColor);
+  }
+
   Widget _buildDesignGrid(BuildContext context) {
-    final value = widget.value;
+    final value = _value;
     final patterns = jerseyTemplates.keys
         .where((k) => k != 'solid')
         .toList(growable: false);
@@ -314,19 +539,8 @@ class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
               borderRadius: AppRadii.cardAll,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 140),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? context.c.primary.withValues(alpha: 0.14)
-                      : Colors.transparent,
-                  borderRadius: AppRadii.cardAll,
-                  border: selected
-                      ? Border.all(
-                          color: context.c.primary.withValues(alpha: 0.7),
-                          width: 1.5,
-                        )
-                      : null,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+                decoration: pateaSelectableDecoration(context, selected),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -367,16 +581,34 @@ class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
     );
   }
 
+  // ---------------------------------------------------------------------
+  // Pestaña: Colores
+  // ---------------------------------------------------------------------
+
   Widget _buildColorsPanel(BuildContext context) {
-    final value = widget.value;
+    final value = _value;
     final activeTemplate = getJerseyTemplate(value.pattern);
     final activeHex = _activeColorChannel == 'primary'
         ? value.primaryColor
         : value.secondaryColor;
+    final tooSimilar = jerseyColorsTooSimilar(
+      hexToColor(value.primaryColor),
+      hexToColor(value.secondaryColor),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (tooSimilar) ...[
+          _SimilarColorsBanner(
+            onFix: () => widget.onChanged(
+              value.copyWith(
+                secondaryColor: contrastingSecondaryHex(value.primaryColor),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
         const _FieldSectionHeader('Combinaciones clásicas'),
         const SizedBox(height: 8),
         SingleChildScrollView(
@@ -433,7 +665,11 @@ class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
           segments: const [
             ButtonSegment<String>(
               value: 'primary',
-              label: Text('Principal', maxLines: 1, overflow: TextOverflow.ellipsis),
+              label: Text(
+                'Principal',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             ButtonSegment<String>(
               value: 'secondary',
@@ -454,10 +690,7 @@ class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
           const SizedBox(height: 8),
           Text(
             'Esta camiseta lisa usa un solo color. Elegí un diseño con franjas o sumá un escudo para ver el secundario.',
-            style: AppTypography.body(
-              size: 12,
-              color: context.c.textSecondary,
-            ),
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
         ],
         const SizedBox(height: 14),
@@ -483,265 +716,12 @@ class _JerseyIdentityStepState extends State<JerseyIdentityStep> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final activePanel = _mode == 0
-        ? _buildDesignGrid(context)
-        : _buildColorsPanel(context);
+  // ---------------------------------------------------------------------
+  // Pestaña: Escudo
+  // ---------------------------------------------------------------------
 
-    if (widget.expandPanel) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-            child: _buildPinnedStage(context),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: activePanel,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildPinnedStage(context),
-        const SizedBox(height: 12),
-        activePanel,
-      ],
-    );
-  }
-}
-
-/// Paso 2 del taller: Escudo modular guiado por silueta + carga de PNG propio
-/// con fondo transparente.
-class CrestDesignerStep extends StatefulWidget {
-  final JerseyModel value;
-  final ValueChanged<JerseyModel> onChanged;
-  final String? teamName;
-  final File? localCrestFile;
-  final ValueChanged<File?>? onLocalCrestFileChanged;
-  final Future<File?> Function()? onPickCrestFile;
-  final bool expandPanel;
-
-  const CrestDesignerStep({
-    super.key,
-    required this.value,
-    required this.onChanged,
-    this.teamName,
-    this.localCrestFile,
-    this.onLocalCrestFileChanged,
-    this.onPickCrestFile,
-    this.expandPanel = false,
-  });
-
-  @override
-  State<CrestDesignerStep> createState() => _CrestDesignerStepState();
-}
-
-class _CrestDesignerStepState extends State<CrestDesignerStep> {
-  bool _previewOnJersey = false;
-  bool _isPickingImage = false;
-  late TextEditingController _textController;
-  late TextEditingController _subtitleController;
-
-  @override
-  void initState() {
-    super.initState();
-    _textController = TextEditingController(text: widget.value.crestText);
-    _subtitleController = TextEditingController(
-      text: widget.value.crestSubtitle,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant CrestDesignerStep oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value.crestText != widget.value.crestText &&
-        _textController.text != widget.value.crestText) {
-      _textController.text = widget.value.crestText;
-    }
-    if (oldWidget.value.crestSubtitle != widget.value.crestSubtitle &&
-        _subtitleController.text != widget.value.crestSubtitle) {
-      _subtitleController.text = widget.value.crestSubtitle;
-    }
-  }
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    _subtitleController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickPng() async {
-    if (_isPickingImage) return;
-    setState(() => _isPickingImage = true);
-    try {
-      final File? picked;
-      if (widget.onPickCrestFile != null) {
-        picked = await widget.onPickCrestFile!();
-      } else {
-        // Sin maxWidth/maxHeight/imageQuality para conservar la transparencia
-        // alfa del PNG original al elegirlo de galería.
-        final xFile = await ImagePicker().pickImage(
-          source: ImageSource.gallery,
-        );
-        picked = xFile != null ? File(xFile.path) : null;
-      }
-      if (!mounted || picked == null) return;
-      widget.onLocalCrestFileChanged?.call(picked);
-      widget.onChanged(widget.value.copyWith(crestMode: 'uploaded'));
-    } catch (e) {
-      if (mounted) {
-        PateaSnack.error(context, 'No pudimos abrir esa imagen.');
-      }
-    } finally {
-      if (mounted) setState(() => _isPickingImage = false);
-    }
-  }
-
-  void _selectMode(String mode) {
-    final value = widget.value;
-    if (mode == 'none') {
-      widget.onLocalCrestFileChanged?.call(null);
-      widget.onChanged(value.copyWith(crestMode: 'none'));
-      return;
-    }
-    if (mode == 'custom') {
-      final shape = value.crestShape == 'none' || value.crestShape.isEmpty
-          ? 'classic'
-          : value.crestShape;
-      final layouts = crestLayoutsForShape(shape);
-      final layout = layouts.any((l) => l['id'] == value.crestLayout)
-          ? value.crestLayout
-          : JerseyModel.defaultLayoutForShape(shape);
-      widget.onChanged(
-        value.copyWith(
-          crestMode: 'custom',
-          crestShape: shape,
-          crestLayout: layout,
-        ),
-      );
-      return;
-    }
-    widget.onChanged(value.copyWith(crestMode: 'uploaded'));
-  }
-
-  void _selectShape(String shape) {
-    final validLayouts = crestLayoutsForShape(shape);
-    final nextLayout = validLayouts.any((l) => l['id'] == widget.value.crestLayout)
-        ? widget.value.crestLayout
-        : JerseyModel.defaultLayoutForShape(shape);
-    widget.onChanged(
-      widget.value.copyWith(
-        crestMode: 'custom',
-        crestShape: shape,
-        crestLayout: nextLayout,
-      ),
-    );
-  }
-
-  Widget _buildPinnedStage(BuildContext context) {
-    final value = widget.value;
-    final hasUploadedVisual =
-        value.crestMode == 'uploaded' &&
-        (widget.localCrestFile != null || value.crestUrl.trim().isNotEmpty);
-    final hasVisualCrest = value.crestMode == 'custom' || hasUploadedVisual;
-
-    final preview = Center(
-      child: _previewOnJersey
-          ? JerseyWidget(
-              jersey: value,
-              teamName: widget.teamName,
-              localCrestFile: widget.localCrestFile,
-              size: 112,
-            )
-          : !hasVisualCrest
-          ? SizedBox(
-              width: 96,
-              height: 96,
-              child: Center(
-                child: Icon(
-                  Icons.shield_outlined,
-                  size: 46,
-                  color: context.c.textSecondary.withValues(alpha: 0.45),
-                ),
-              ),
-            )
-          : value.crestMode == 'uploaded'
-          ? _CrestCheckerboard(
-              size: 108,
-              child: TeamCrestWidget(
-                jersey: value,
-                teamName: widget.teamName,
-                localCrestFile: widget.localCrestFile,
-                size: 92,
-              ),
-            )
-          : TeamCrestWidget(
-              jersey: value,
-              teamName: widget.teamName,
-              localCrestFile: widget.localCrestFile,
-              size: 108,
-            ),
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(height: 112, child: preview),
-        if (hasVisualCrest) ...[
-          const SizedBox(height: 10),
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 260),
-              child: SegmentedButton<bool>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment<bool>(
-                    value: false,
-                    label: Text(
-                      'Escudo',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  ButtonSegment<bool>(
-                    value: true,
-                    label: Text(
-                      'En camiseta',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-                selected: {_previewOnJersey},
-                onSelectionChanged: (s) =>
-                    setState(() => _previewOnJersey = s.first),
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        Divider(height: 1, color: context.c.overlayLine),
-      ],
-    );
-  }
-
-  Widget _buildModeControls(BuildContext context) {
-    final value = widget.value;
-    final defaultInitials = JerseyModel.initialsFromTeamName(
-      widget.teamName ?? '',
-    );
-    final mode = value.crestMode;
-
+  Widget _buildCrestPanel(BuildContext context) {
+    final mode = _value.crestMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -774,7 +754,7 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             ),
           ],
           selected: {mode},
-          onSelectionChanged: (s) => _selectMode(s.first),
+          onSelectionChanged: (s) => _selectCrestMode(s.first),
         ),
         const SizedBox(height: 18),
         if (mode == 'none')
@@ -782,7 +762,7 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
         else if (mode == 'uploaded')
           _buildUploadedBody(context)
         else
-          _buildCustomDesignerBody(context, defaultInitials),
+          _buildCustomCrestBody(context),
       ],
     );
   }
@@ -796,10 +776,7 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
           Text(
             'Podés dejar solo la camiseta o sumar un escudo para el pecho y la ficha del equipo.',
             textAlign: TextAlign.center,
-            style: AppTypography.body(
-              size: 13,
-              color: context.c.textSecondary,
-            ),
+            style: AppTypography.body(size: 13, color: context.c.textSecondary),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -808,7 +785,7 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             runSpacing: 8,
             children: [
               OutlinedButton.icon(
-                onPressed: () => _selectMode('custom'),
+                onPressed: () => _selectCrestMode('custom'),
                 icon: const Icon(Icons.auto_awesome_outlined, size: 18),
                 label: const Text('Diseñar escudo'),
               ),
@@ -825,7 +802,7 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
   }
 
   Widget _buildUploadedBody(BuildContext context) {
-    final value = widget.value;
+    final value = _value;
     final hasImage =
         widget.localCrestFile != null || value.crestUrl.trim().isNotEmpty;
 
@@ -834,8 +811,8 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
       children: [
         Text(
           hasImage
-              ? 'Tu archivo PNG se estampa manteniendo su fondo transparente.'
-              : 'Elegí un PNG con fondo transparente desde tu galería.',
+              ? 'Tu imagen se estampa manteniendo su fondo transparente.'
+              : 'Elegí una imagen con fondo transparente desde tu galería y encuadrala.',
           style: AppTypography.body(size: 13, color: context.c.textSecondary),
         ),
         const SizedBox(height: 14),
@@ -848,7 +825,7 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
                 label: Text(
                   _isPickingImage
                       ? 'Abriendo galería...'
-                      : (hasImage ? 'Cambiar PNG' : 'Elegir PNG de galería'),
+                      : (hasImage ? 'Cambiar imagen' : 'Elegir de galería'),
                 ),
               ),
             ),
@@ -860,10 +837,7 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
                     : () {
                         widget.onLocalCrestFileChanged?.call(null);
                         widget.onChanged(
-                          value.copyWith(
-                            crestUrl: '',
-                            crestMode: 'uploaded',
-                          ),
+                          value.copyWith(crestUrl: '', crestMode: 'uploaded'),
                         );
                       },
                 child: Text(
@@ -890,36 +864,70 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             ),
           ),
           subtitle: Text(
-            'Útil si tu imagen tiene fondo cuadrado.',
-            style: AppTypography.body(
-              size: 12,
-              color: context.c.textSecondary,
-            ),
+            'Útil si tu imagen tiene fondo cuadrado. Se ve en el encuadre.',
+            style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
           value: value.crestClipCircle,
-          onChanged: (enabled) => widget.onChanged(
-            value.copyWith(crestClipCircle: enabled),
-          ),
+          onChanged: (enabled) =>
+              widget.onChanged(value.copyWith(crestClipCircle: enabled)),
         ),
       ],
     );
   }
 
-  Widget _buildCustomDesignerBody(
-    BuildContext context,
-    String defaultInitials,
-  ) {
-    final value = widget.value;
+  Widget _buildCustomCrestBody(BuildContext context) {
+    final value = _value;
     final shapeLayouts = crestLayoutsForShape(value.crestShape);
-    final shapeLabel =
-        crestShapeOptions.firstWhere(
-          (s) => s['id'] == value.crestShape,
-          orElse: () => {'label': 'Escudo'},
-        )['label']!;
+    final shapeLabel = crestShapeOptions.firstWhere(
+      (s) => s['id'] == value.crestShape,
+      orElse: () => {'label': 'Escudo'},
+    )['label']!;
+
+    Widget divider() => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Divider(height: 1, color: context.c.overlayLine),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // 0. Plantillas: el camino corto. Lo de abajo es para ajustar.
+        const _FieldSectionHeader('Plantillas'),
+        const SizedBox(height: 4),
+        Text(
+          'Elegí un punto de partida y después ajustalo.',
+          style: AppTypography.body(size: 12, color: context.c.textSecondary),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 92,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: crestPresets.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final preset = crestPresets[index];
+              return SizedBox(
+                width: 84,
+                child: _BorderlessPreviewTile(
+                  semanticsLabel: 'Plantilla ${preset.label}',
+                  label: preset.label,
+                  selected: preset.matches(value),
+                  onTap: () => widget.onChanged(preset.applyTo(value)),
+                  preview: TeamCrestWidget(
+                    jersey: preset.applyTo(value),
+                    teamName: widget.teamName,
+                    overrideMode: 'custom',
+                    overrideShowStars: true,
+                    size: 44,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        divider(),
+
         // 1. Forma
         const _FieldSectionHeader('Forma del escudo'),
         const SizedBox(height: 10),
@@ -948,12 +956,9 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
               ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Divider(height: 1, color: context.c.overlayLine),
-        ),
+        divider(),
 
-        // 2. Interior propio de la forma + Emblema
+        // 2. Interior propio de la forma + emblema
         _FieldSectionHeader('Interior · $shapeLabel'),
         const SizedBox(height: 10),
         SizedBox(
@@ -964,13 +969,12 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final item = shapeLayouts[index];
-              final selected = value.crestLayout == item['id'];
               return SizedBox(
                 width: 84,
                 child: _BorderlessPreviewTile(
                   semanticsLabel: 'Interior ${item['label']}',
                   label: item['label']!,
-                  selected: selected,
+                  selected: value.crestLayout == item['id'],
                   onTap: () => widget.onChanged(
                     value.copyWith(
                       crestMode: 'custom',
@@ -1001,13 +1005,12 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final sym = crestSymbolOptions[index];
-              final selected = value.crestSymbol == sym['id'];
               return SizedBox(
                 width: 78,
                 child: _BorderlessPreviewTile(
                   semanticsLabel: 'Emblema ${sym['label']}',
                   label: sym['label']!,
-                  selected: selected,
+                  selected: value.crestSymbol == sym['id'],
                   onTap: () => widget.onChanged(
                     value.copyWith(
                       crestMode: 'custom',
@@ -1027,12 +1030,55 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             },
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Divider(height: 1, color: context.c.overlayLine),
-        ),
+      ],
+    );
+  }
 
-        // 3. Textos, ubicación y tipografía
+  // ---------------------------------------------------------------------
+  // Pestañas: Textos y Marco (sólo tienen sentido con un escudo propio)
+  // ---------------------------------------------------------------------
+
+  Widget _needsCustomCrest(BuildContext context, String what) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _value.crestMode == 'uploaded'
+                ? '$what se ajusta en los escudos diseñados acá. Tu imagen se usa tal cual.'
+                : '$what se ajusta una vez que diseñás un escudo.',
+            textAlign: TextAlign.center,
+            style: AppTypography.body(size: 13, color: context.c.textSecondary),
+          ),
+          const SizedBox(height: 14),
+          Center(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                _selectCrestMode('custom');
+                setState(() => _tab = StudioTab.escudo);
+              },
+              icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+              label: const Text('Diseñar escudo'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextPanel(BuildContext context) {
+    if (_value.crestMode != 'custom') {
+      return _needsCustomCrest(context, 'El texto');
+    }
+    final value = _value;
+    final defaultInitials = JerseyModel.initialsFromTeamName(
+      widget.teamName ?? '',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         const _FieldSectionHeader('Textos y tipografía'),
         const SizedBox(height: 10),
         TextField(
@@ -1107,13 +1153,25 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             value.copyWith(crestMode: 'custom', crestFont: s.first),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Divider(height: 1, color: context.c.overlayLine),
-        ),
+      ],
+    );
+  }
 
-        // 4. Marco y ornamentos
-        const _FieldSectionHeader('Marco y detalles'),
+  Widget _buildFramePanel(BuildContext context) {
+    if (_value.crestMode != 'custom') {
+      return _needsCustomCrest(context, 'El marco');
+    }
+    final value = _value;
+    final shrink = crestOrnamentShrink(
+      stars: value.crestStars,
+      crownTop: value.crestCrownTop,
+      laurel: value.crestLaurel,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _FieldSectionHeader('Color del marco'),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -1132,22 +1190,27 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
               ),
           ],
         ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          children: [
-            for (final stars in [0, 1, 2, 3])
-              ChoiceChip(
-                selected: value.crestStars == stars,
-                label: Text(
-                  stars == 0 ? 'Sin ★' : '${'★' * stars} $stars',
-                ),
-                onSelected: (_) => widget.onChanged(
-                  value.copyWith(crestMode: 'custom', crestStars: stars),
-                ),
-              ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Divider(height: 1, color: context.c.overlayLine),
+        ),
+        // Un solo lugar para todos los adornos: estrellas, corona y laureles.
+        const _FieldSectionHeader('Adornos'),
+        const SizedBox(height: 8),
+        const _FieldSubLabel('Estrellas de campeonato'),
+        const SizedBox(height: 6),
+        SegmentedButton<int>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment<int>(value: 0, label: Text('Sin')),
+            ButtonSegment<int>(value: 1, label: Text('★')),
+            ButtonSegment<int>(value: 2, label: Text('★★')),
+            ButtonSegment<int>(value: 3, label: Text('★★★')),
           ],
+          selected: {value.crestStars},
+          onSelectionChanged: (s) => widget.onChanged(
+            value.copyWith(crestMode: 'custom', crestStars: s.first),
+          ),
         ),
         const SizedBox(height: 8),
         SwitchListTile(
@@ -1180,37 +1243,125 @@ class _CrestDesignerStepState extends State<CrestDesignerStep> {
             value.copyWith(crestMode: 'custom', crestCrownTop: enabled),
           ),
         ),
+        if (shrink >= 0.2)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: context.c.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Con estos adornos el escudo se ve un ${(shrink * 100).round()}% más chico. Si querés más protagonismo, probá quitar uno.',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
+}
+
+/// Barra de pestañas del taller: deslizable, así entra a 320 px y con texto
+/// grande sin cortar etiquetas ni desbordar.
+class _StudioTabBar extends StatelessWidget {
+  final List<StudioTab> tabs;
+  final StudioTab selected;
+  final ValueChanged<StudioTab> onSelected;
+
+  const _StudioTabBar({
+    required this.tabs,
+    required this.selected,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (widget.expandPanel) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final c = context.c;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-            child: _buildPinnedStage(context),
-          ),
+          for (final tab in tabs)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Semantics(
+                button: true,
+                selected: tab == selected,
+                label: 'Pestaña ${tab.label}',
+                excludeSemantics: true,
+                child: InkWell(
+                  borderRadius: AppRadii.chipAll,
+                  onTap: () => onSelected(tab),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tab == selected ? c.primary : Colors.transparent,
+                      borderRadius: AppRadii.chipAll,
+                      border: Border.all(
+                        color: tab == selected ? c.primary : c.controlBorder,
+                      ),
+                    ),
+                    child: Text(
+                      tab.label,
+                      maxLines: 1,
+                      style: AppTypography.action(
+                        size: 14,
+                        color: tab == selected ? c.onPrimary : c.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Aviso cuando principal y secundario se confunden entre sí.
+class _SimilarColorsBanner extends StatelessWidget {
+  final VoidCallback onFix;
+  const _SimilarColorsBanner({required this.onFix});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: c.cardSurface,
+        borderRadius: AppRadii.cardAll,
+        border: Border.all(color: c.controlBorder),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.contrast, size: 20, color: c.textSecondary),
+          const SizedBox(width: 10),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-              child: _buildModeControls(context),
+            child: Text(
+              'Los dos colores se parecen: las franjas y el escudo pierden detalle.',
+              style: AppTypography.body(size: 12, color: c.textPrimary),
             ),
           ),
+          TextButton(onPressed: onFix, child: const Text('Contrastar')),
         ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildPinnedStage(context),
-        const SizedBox(height: 14),
-        _buildModeControls(context),
-      ],
+      ),
     );
   }
 }
@@ -1249,6 +1400,134 @@ class _FieldSubLabel extends StatelessWidget {
   }
 }
 
+/// Plantilla de escudo: un punto de partida completo (silueta, interior,
+/// emblema, tipografía y adornos). Antes había que recorrer cuatro secciones
+/// para llegar a un escudo decente; ahora se elige una plantilla y recién
+/// después se ajusta. NO toca los colores del equipo ni los textos.
+class CrestPreset {
+  final String id;
+  final String label;
+  final String shape;
+  final String layout;
+  final String symbol;
+  final String textLayout;
+  final String font;
+  final String borderColor;
+  final int stars;
+  final bool laurel;
+  final bool crownTop;
+
+  const CrestPreset({
+    required this.id,
+    required this.label,
+    required this.shape,
+    required this.layout,
+    required this.symbol,
+    this.textLayout = 'auto',
+    this.font = 'bold',
+    this.borderColor = '',
+    this.stars = 0,
+    this.laurel = false,
+    this.crownTop = false,
+  });
+
+  JerseyModel applyTo(JerseyModel base) => base.copyWith(
+    crestMode: 'custom',
+    crestShape: shape,
+    crestLayout: layout,
+    crestSymbol: symbol,
+    crestTextLayout: textLayout,
+    crestFont: font,
+    crestBorderColor: borderColor,
+    crestStars: stars,
+    crestLaurel: laurel,
+    crestCrownTop: crownTop,
+  );
+
+  /// Es la plantilla activa si TODO lo que ella define coincide.
+  bool matches(JerseyModel v) =>
+      v.crestMode == 'custom' &&
+      v.crestShape == shape &&
+      v.crestLayout == layout &&
+      v.crestSymbol == symbol &&
+      v.crestTextLayout == textLayout &&
+      v.crestFont == font &&
+      v.crestBorderColor == borderColor &&
+      v.crestStars == stars &&
+      v.crestLaurel == laurel &&
+      v.crestCrownTop == crownTop;
+}
+
+/// Todas combinan una silueta con un interior que ESA silueta soporta (ver
+/// `crestLayoutsForShape`); un test lo verifica.
+const crestPresets = <CrestPreset>[
+  CrestPreset(
+    id: 'barrio',
+    label: 'De barrio',
+    shape: 'classic',
+    layout: 'chief',
+    symbol: 'none',
+  ),
+  CrestPreset(
+    id: 'campeon',
+    label: 'Campeón',
+    shape: 'classic',
+    layout: 'stripes',
+    symbol: 'star',
+    font: 'classic',
+    borderColor: '#D97706',
+    stars: 3,
+  ),
+  CrestPreset(
+    id: 'historico',
+    label: 'Histórico',
+    shape: 'crest',
+    layout: 'framed',
+    symbol: 'crown',
+    font: 'classic',
+    borderColor: '#CBD5E1',
+  ),
+  CrestPreset(
+    id: 'medallon',
+    label: 'Medallón',
+    shape: 'circle',
+    layout: 'ring',
+    symbol: 'none',
+    font: 'condensed',
+  ),
+  CrestPreset(
+    id: 'solar',
+    label: 'Solar',
+    shape: 'circle',
+    layout: 'sunburst',
+    symbol: 'sun',
+    borderColor: '#D97706',
+  ),
+  CrestPreset(
+    id: 'rayo',
+    label: 'Rayo',
+    shape: 'diamond',
+    layout: 'bevel',
+    symbol: 'bolt',
+    font: 'condensed',
+  ),
+  CrestPreset(
+    id: 'copero',
+    label: 'Copero',
+    shape: 'heater',
+    layout: 'quarters',
+    symbol: 'trophy',
+    laurel: true,
+  ),
+  CrestPreset(
+    id: 'pelotero',
+    label: 'Pelotero',
+    shape: 'oval',
+    layout: 'double_ring',
+    symbol: 'ball',
+  ),
+];
+
 class _MiniDot extends StatelessWidget {
   final Color color;
   const _MiniDot({required this.color});
@@ -1283,8 +1562,8 @@ class _PortraitStyleSwatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final checkColor = color.computeLuminance() > 0.55
-        ? const Color(0xFF171717)
-        : const Color(0xFFFFFFFF);
+        ? PateaColors.light.textPrimary
+        : PateaColors.game.textPrimary;
     return Semantics(
       button: true,
       label: label,
@@ -1352,19 +1631,8 @@ class _BorderlessPreviewTile extends StatelessWidget {
         borderRadius: AppRadii.cardAll,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-          decoration: BoxDecoration(
-            color: selected
-                ? context.c.primary.withValues(alpha: 0.14)
-                : Colors.transparent,
-            borderRadius: AppRadii.cardAll,
-            border: selected
-                ? Border.all(
-                    color: context.c.primary.withValues(alpha: 0.7),
-                    width: 1.5,
-                  )
-                : null,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          decoration: pateaSelectableDecoration(context, selected),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

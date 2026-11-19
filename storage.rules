@@ -71,10 +71,26 @@ service firebase.storage {
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
+    // Pertenecer al grupo: `groups/{groupId}.members` es la fuente de verdad
+    // (la misma que usan las Cloud Functions). Si el grupo no existe, `get`
+    // falla y la escritura se deniega.
+    function isGroupMember(groupId) {
+      return isSignedIn()
+        && request.auth.uid in firestore.get(
+          /databases/(default)/documents/groups/$(groupId)
+        ).data.members;
+    }
+
     // Escudos de equipos (PNG o imagen personalizada subida por el creador).
+    // Escribir exige ser miembro del grupo: antes cualquier usuario con sesión
+    // podía subir hasta 5 MB a la carpeta de cualquier grupo. Borrar sólo pide
+    // ser el dueño del archivo, para poder limpiar aunque ya haya salido.
     match /team-crests/{groupId}/{userId}/{allPaths=**} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && isGroupMember(groupId)
+        && isValidImage();
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 

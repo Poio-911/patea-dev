@@ -52,6 +52,35 @@ test('sanitizeJerseyPayload valida crestUrl en modo PNG subido y rechaza URLs ex
   );
 });
 
+test('sanitizeJerseyPayload sólo acepta escudos del bucket del proyecto, de team-crests y del grupo', () => {
+  const project = 'https://firebasestorage.googleapis.com/v0/b/mil-disculpis.firebasestorage.app/o/';
+  const build = (url) => () =>
+    sanitizeJerseyPayload({ type: 'plain', crestMode: 'uploaded', crestUrl: url }, { groupId: 'g1' });
+
+  // Válidas: Firebase y el host de GCS, ambas dentro de team-crests/g1/.
+  assert.equal(
+    build(`${project}team-crests%2Fg1%2Fu%2Fcrest.png?alt=media&token=1`)().crestMode,
+    'uploaded',
+  );
+  assert.equal(
+    build('https://storage.googleapis.com/mil-disculpis.firebasestorage.app/team-crests/g1/u/c.png')().crestMode,
+    'uploaded',
+  );
+
+  // Otro bucket, otra carpeta, otro grupo, http y escape con '..' se rechazan.
+  const rejected = [
+    'https://firebasestorage.googleapis.com/v0/b/otro-proyecto.appspot.com/o/team-crests%2Fg1%2Fu%2Fc.png',
+    `${project}profile-images%2Fu%2Ffoto.png`,
+    `${project}team-crests%2Fg2%2Fu%2Fc.png`,
+    `${project}team-crests%2Fg1%2F..%2F..%2Fprofile-images%2Fu%2Ffoto.png`,
+    'http://firebasestorage.googleapis.com/v0/b/mil-disculpis.firebasestorage.app/o/team-crests%2Fg1%2Fu%2Fc.png',
+    'https://firebasestorage.googleapis.com.evil.example/v0/b/mil-disculpis.firebasestorage.app/o/team-crests%2Fg1%2Fu%2Fc.png',
+  ];
+  for (const url of rejected) {
+    assert.throws(build(url), /Storage del proyecto/, url);
+  }
+});
+
 test('sanitizeJerseyPayload normaliza escudo vectorial con textos, forma, estrellas y adornos', () => {
   const res = sanitizeJerseyPayload({
     type: 'multi_stripes',
@@ -76,7 +105,7 @@ test('sanitizeJerseyPayload normaliza escudo vectorial con textos, forma, estrel
   assert.equal(res.crestLayout, 'ring');
   assert.equal(res.crestSymbol, 'crown');
   assert.equal(res.crestText, 'LOS GALÁCTICOS');
-  assert.equal(res.crestInitials, 'LOS ');
+  assert.equal(res.crestInitials, 'LOS');
   assert.equal(res.crestSubtitle, 'EST. 2026');
   assert.equal(res.crestTextLayout, 'auto');
   assert.equal(res.crestFont, 'classic');

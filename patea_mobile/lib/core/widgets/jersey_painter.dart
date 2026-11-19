@@ -91,7 +91,8 @@ class _JerseyWidgetState extends State<JerseyWidget> {
   Widget _buildLayeredJersey(String coloredSvg) {
     final hasAnyCrest =
         widget.jersey.hasCrest ||
-        (widget.jersey.crestMode == 'uploaded' && widget.localCrestFile != null);
+        (widget.jersey.crestMode == 'uploaded' &&
+            widget.localCrestFile != null);
     final showBadge = widget.showCrest && hasAnyCrest && widget.size >= 40;
     final svgPicture = SvgPicture.string(
       coloredSvg,
@@ -276,10 +277,8 @@ class TeamCrestWidget extends StatelessWidget {
             fit: BoxFit.contain,
             filterQuality: FilterQuality.medium,
             placeholder: (_, _) => SizedBox(width: size, height: size),
-            errorWidget: (_, _, _) => Icon(
-              Icons.shield_outlined,
-              size: size * 0.6,
-            ),
+            errorWidget: (_, _, _) =>
+                Icon(Icons.shield_outlined, size: size * 0.6),
           ),
         );
       }
@@ -296,16 +295,14 @@ class TeamCrestWidget extends StatelessWidget {
 
     final validLayouts = crestLayoutsForShape(shape);
     var layout = overrideLayout ?? jersey.crestLayout;
-    if (overrideShape != null &&
-        !validLayouts.any((l) => l['id'] == layout)) {
+    if (overrideShape != null && !validLayouts.any((l) => l['id'] == layout)) {
       layout = JerseyModel.defaultLayoutForShape(shape);
     }
 
     final symbol = overrideSymbol ?? jersey.crestSymbol;
     final rawText = jersey.crestText.trim().toUpperCase();
     final fallbackInitials = JerseyModel.initialsFromTeamName(teamName ?? '');
-    final resolvedText =
-        rawText.isNotEmpty ? rawText : fallbackInitials;
+    final resolvedText = rawText.isNotEmpty ? rawText : fallbackInitials;
     final allowOrnaments = overrideShowStars ?? showStars;
     final starsCount = allowOrnaments ? jersey.crestStars.clamp(0, 3) : 0;
     final showCrownTop = allowOrnaments && jersey.crestCrownTop;
@@ -348,6 +345,43 @@ class TeamCrestWidget extends StatelessWidget {
       child: Center(child: child),
     );
   }
+}
+
+/// Rectángulo donde se dibuja la silueta del escudo dentro de un lienzo
+/// [size]. Es público porque el taller lo usa para avisar cuánto achican los
+/// adornos al escudo, y para testear que lo achican SIN deformarlo.
+///
+/// La forma SIN adornos fija la proporción del escudo. Antes se achicaba
+/// sólo el alto cuando había estrellas o corona (de 0.91h a 0.75h) y el
+/// ancho quedaba igual: el escudo se aplastaba y un círculo dejaba de serlo.
+/// Ahora el espacio que roban los adornos se reparte escalando todo el
+/// escudo parejo y centrándolo, así la silueta no cambia de forma.
+Rect crestShieldRect(
+  Size size, {
+  required bool hasTopOrnaments,
+  required bool hasLaurel,
+}) {
+  final w = size.width;
+  final h = size.height;
+  final base = Rect.fromLTRB(w * 0.08, h * 0.05, w * 0.92, h * 0.96);
+  final available = Rect.fromLTRB(
+    hasLaurel ? w * 0.14 : w * 0.08,
+    hasTopOrnaments ? h * 0.21 : h * 0.05,
+    hasLaurel ? w * 0.86 : w * 0.92,
+    hasLaurel ? h * 0.90 : h * 0.96,
+  );
+  final scale = math.min(
+    available.width / base.width,
+    available.height / base.height,
+  );
+  final boxW = base.width * scale;
+  final boxH = base.height * scale;
+  return Rect.fromLTWH(
+    available.center.dx - boxW / 2,
+    available.top,
+    boxW,
+    boxH,
+  );
 }
 
 class _TeamCrestPainter extends CustomPainter {
@@ -445,20 +479,6 @@ class _TeamCrestPainter extends CustomPainter {
     'halves',
   }.contains(layout);
 
-  Rect _shieldRect(
-    Size size, {
-    required bool hasTopOrnaments,
-    required bool hasLaurel,
-  }) {
-    final w = size.width;
-    final h = size.height;
-    final left = hasLaurel ? w * 0.14 : w * 0.08;
-    final right = hasLaurel ? w * 0.86 : w * 0.92;
-    final top = hasTopOrnaments ? h * 0.21 : h * 0.05;
-    final bottom = hasLaurel ? h * 0.90 : h * 0.96;
-    return Rect.fromLTRB(left, top, right, bottom);
-  }
-
   Path _buildShieldPath(Rect box) {
     final l = box.left;
     final t = box.top;
@@ -476,11 +496,7 @@ class _TeamCrestPainter extends CustomPainter {
 
       case 'oval':
         p.addOval(
-          Rect.fromCenter(
-            center: box.center,
-            width: w * 0.82,
-            height: h,
-          ),
+          Rect.fromCenter(center: box.center, width: w * 0.82, height: h),
         );
         return p;
 
@@ -524,7 +540,14 @@ class _TeamCrestPainter extends CustomPainter {
           t + h * 0.12,
         );
         p.lineTo(l + w * 0.95, t + h * 0.53);
-        p.cubicTo(l + w * 0.95, t + h * 0.79, l + w * 0.68, t + h * 0.91, cx, b);
+        p.cubicTo(
+          l + w * 0.95,
+          t + h * 0.79,
+          l + w * 0.68,
+          t + h * 0.91,
+          cx,
+          b,
+        );
         p.cubicTo(
           l + w * 0.32,
           t + h * 0.91,
@@ -541,7 +564,12 @@ class _TeamCrestPainter extends CustomPainter {
         p.quadraticBezierTo(cx, t, l + w * 0.95, t + h * 0.08);
         p.lineTo(l + w * 0.95, t + h * 0.50);
         p.quadraticBezierTo(l + w * 0.92, t + h * 0.80, cx, b);
-        p.quadraticBezierTo(l + w * 0.08, t + h * 0.80, l + w * 0.05, t + h * 0.50);
+        p.quadraticBezierTo(
+          l + w * 0.08,
+          t + h * 0.80,
+          l + w * 0.05,
+          t + h * 0.50,
+        );
         p.close();
         return p;
 
@@ -551,7 +579,14 @@ class _TeamCrestPainter extends CustomPainter {
         p.lineTo(cx, t);
         p.lineTo(l + w * 0.95, t + h * 0.05);
         p.lineTo(l + w * 0.95, t + h * 0.54);
-        p.cubicTo(l + w * 0.95, t + h * 0.79, l + w * 0.69, t + h * 0.91, cx, b);
+        p.cubicTo(
+          l + w * 0.95,
+          t + h * 0.79,
+          l + w * 0.69,
+          t + h * 0.91,
+          cx,
+          b,
+        );
         p.cubicTo(
           l + w * 0.31,
           t + h * 0.91,
@@ -608,11 +643,7 @@ class _TeamCrestPainter extends CustomPainter {
                 width: math.min(w, h),
                 height: math.min(w, h),
               )
-            : Rect.fromCenter(
-                center: box.center,
-                width: w * 0.82,
-                height: h,
-              );
+            : Rect.fromCenter(center: box.center, width: w * 0.82, height: h);
         final innerRect = Rect.fromCenter(
           center: box.center,
           width: outerRect.width * 0.58,
@@ -635,11 +666,7 @@ class _TeamCrestPainter extends CustomPainter {
                 width: math.min(w, h),
                 height: math.min(w, h),
               )
-            : Rect.fromCenter(
-                center: box.center,
-                width: w * 0.82,
-                height: h,
-              );
+            : Rect.fromCenter(center: box.center, width: w * 0.82, height: h);
         for (final scale in [0.80, 0.58]) {
           canvas.drawOval(
             Rect.fromCenter(
@@ -916,7 +943,12 @@ class _TeamCrestPainter extends CustomPainter {
     }
   }
 
-  void _drawTopCrown(Canvas canvas, Size size, Rect box, {required bool hasStars}) {
+  void _drawTopCrown(
+    Canvas canvas,
+    Size size,
+    Rect box, {
+    required bool hasStars,
+  }) {
     final w = size.width;
     final crownW = w * (hasStars ? 0.30 : 0.36);
     final crownH = (box.top * (hasStars ? 0.50 : 0.68)).clamp(4.5, 18.0);
@@ -986,7 +1018,10 @@ class _TeamCrestPainter extends CustomPainter {
             pt.dx + leafLen * math.cos(leafAngle),
             pt.dy + leafLen * math.sin(leafAngle),
           );
-          final mid = Offset((pt.dx + leafTip.dx) / 2, (pt.dy + leafTip.dy) / 2);
+          final mid = Offset(
+            (pt.dx + leafTip.dx) / 2,
+            (pt.dy + leafTip.dy) / 2,
+          );
           canvas.save();
           canvas.translate(mid.dx, mid.dy);
           canvas.rotate(leafAngle);
@@ -1048,7 +1083,9 @@ class _TeamCrestPainter extends CustomPainter {
       final tp = painters[i];
       final charStep = ((tp.width + tracking) * scale) / meanR;
       final halfStep = (tp.width * scale / 2) / meanR;
-      final theta = isBottom ? (cursorAngle - halfStep) : (cursorAngle + halfStep);
+      final theta = isBottom
+          ? (cursorAngle - halfStep)
+          : (cursorAngle + halfStep);
       final pt = Offset(
         center.dx + rx * math.cos(theta),
         center.dy + ry * math.sin(theta),
@@ -1088,7 +1125,10 @@ class _TeamCrestPainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      bg.paint(canvas, Offset(center.dx - bg.width / 2, center.dy - bg.height / 2));
+      bg.paint(
+        canvas,
+        Offset(center.dx - bg.width / 2, center.dy - bg.height / 2),
+      );
     }
 
     final fg = TextPainter(
@@ -1098,7 +1138,10 @@ class _TeamCrestPainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    fg.paint(canvas, Offset(center.dx - fg.width / 2, center.dy - fg.height / 2));
+    fg.paint(
+      canvas,
+      Offset(center.dx - fg.width / 2, center.dy - fg.height / 2),
+    );
   }
 
   void _paintRibbonBanner(Canvas canvas, Rect box, {required String text}) {
@@ -1148,7 +1191,9 @@ class _TeamCrestPainter extends CustomPainter {
     );
 
     final label = text.length > 10 ? text.substring(0, 10) : text;
-    final sizeFactor = label.length >= 8 ? 0.46 : (label.length >= 5 ? 0.54 : 0.62);
+    final sizeFactor = label.length >= 8
+        ? 0.46
+        : (label.length >= 5 ? 0.54 : 0.62);
     _paintTextWithContrast(
       canvas,
       text: label,
@@ -1442,7 +1487,7 @@ class _TeamCrestPainter extends CustomPainter {
     final hasStars = starsCount > 0 && w >= 24;
     final hasCrown = showCrownTop && w >= 24;
     final hasLaurel = showLaurel && w >= 28;
-    final box = _shieldRect(
+    final box = crestShieldRect(
       size,
       hasTopOrnaments: hasStars || hasCrown,
       hasLaurel: hasLaurel,
@@ -1467,9 +1512,15 @@ class _TeamCrestPainter extends CustomPainter {
           Offset(box.center.dx + w * (hasCrown ? 0.24 : 0.11), starY),
         ],
         _ => [
-          Offset(box.center.dx - w * (hasCrown ? 0.26 : 0.19), starY + h * 0.025),
+          Offset(
+            box.center.dx - w * (hasCrown ? 0.26 : 0.19),
+            starY + h * 0.025,
+          ),
           Offset(box.center.dx, hasCrown ? box.top * 0.24 : starY - h * 0.01),
-          Offset(box.center.dx + w * (hasCrown ? 0.26 : 0.19), starY + h * 0.025),
+          Offset(
+            box.center.dx + w * (hasCrown ? 0.26 : 0.19),
+            starY + h * 0.025,
+          ),
         ],
       };
       for (final pos in positions) {
@@ -1499,16 +1550,17 @@ class _TeamCrestPainter extends CustomPainter {
     canvas.drawRect(
       Rect.fromLTWH(box.left, box.top, box.width, box.height * 0.55),
       Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.18),
-            Colors.white.withValues(alpha: 0.0),
-          ],
-        ).createShader(
-          Rect.fromLTWH(box.left, box.top, box.width, box.height * 0.55),
-        ),
+        ..shader =
+            LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.18),
+                Colors.white.withValues(alpha: 0.0),
+              ],
+            ).createShader(
+              Rect.fromLTWH(box.left, box.top, box.width, box.height * 0.55),
+            ),
     );
     canvas.restore();
 
@@ -1572,8 +1624,14 @@ class _TeamCrestPainter extends CustomPainter {
     final haloNeeded = _hasBusyPattern && layout != 'ring';
 
     if (usesRingArc) {
-      final rxBase = (shape == 'circle' ? math.min(box.width, box.height) : box.width * 0.82) / 2;
-      final ryBase = (shape == 'circle' ? math.min(box.width, box.height) : box.height) / 2;
+      final rxBase =
+          (shape == 'circle'
+              ? math.min(box.width, box.height)
+              : box.width * 0.82) /
+          2;
+      final ryBase =
+          (shape == 'circle' ? math.min(box.width, box.height) : box.height) /
+          2;
       final ringRx = rxBase * 0.79;
       final ringRy = ryBase * 0.79;
       final arcSize = (box.width * 0.105).clamp(4.0, 13.0);
@@ -1640,7 +1698,8 @@ class _TeamCrestPainter extends CustomPainter {
       }
       final bodyCenter = Offset(
         box.center.dx,
-        box.top + (crestSubtitle.isNotEmpty ? box.height * 0.56 : box.height * 0.60),
+        box.top +
+            (crestSubtitle.isNotEmpty ? box.height * 0.56 : box.height * 0.60),
       );
       if (symbol != 'none') {
         _paintSymbol(
@@ -1746,10 +1805,7 @@ class _TeamCrestPainter extends CustomPainter {
       _paintSymbol(
         canvas,
         size,
-        Offset(
-          box.center.dx,
-          box.center.dy - (hasSub ? box.height * 0.07 : 0),
-        ),
+        Offset(box.center.dx, box.center.dy - (hasSub ? box.height * 0.07 : 0)),
         box.width * 0.29,
         inkColor,
         drawBacking: haloNeeded,
@@ -1805,7 +1861,9 @@ class _TeamCrestPainter extends CustomPainter {
       final len = crestText.length;
       final textSize = len >= 9
           ? box.width * 0.135
-          : (len >= 5 ? box.width * 0.175 : (len >= 3 ? box.width * 0.24 : box.width * 0.30));
+          : (len >= 5
+                ? box.width * 0.175
+                : (len >= 3 ? box.width * 0.24 : box.width * 0.30));
       _paintTextWithContrast(
         canvas,
         text: crestText,

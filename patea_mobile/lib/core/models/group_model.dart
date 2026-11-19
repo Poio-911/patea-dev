@@ -79,6 +79,13 @@ class JerseyModel {
     if (crestMode == null) {
       if (crestUrl != null && crestUrl.trim().isNotEmpty) {
         nextMode = 'uploaded';
+      } else if (crestUrl != null && nextMode == 'uploaded') {
+        // Se borró la URL sin decir el modo: un escudo "subido" sin imagen no
+        // existe, así que vuelve a "sin escudo" en vez de quedar en un estado
+        // donde `isUploadedCrest` da falso pero el modo sigue diciendo
+        // "uploaded". Quien quiera quedarse en el modo (la pantalla de subida
+        // lo hace para mostrar el selector) lo pasa explícito en `crestMode`.
+        nextMode = 'none';
       } else if (crestShape != null &&
           crestShape.isNotEmpty &&
           crestShape != 'none' &&

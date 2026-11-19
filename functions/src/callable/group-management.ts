@@ -151,20 +151,81 @@ function isValidHexColor(value: unknown): value is string {
   return typeof value === 'string' && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value.trim());
 }
 
-function isAllowedCrestUrl(value: unknown): value is string {
+const DEFAULT_PROJECT_ID = 'mil-disculpis';
+const CREST_STORAGE_FOLDER = 'team-crests';
+
+/** Buckets del propio proyecto: los de la config de Functions o los por defecto. */
+function projectStorageBuckets(): string[] {
+  const buckets = new Set<string>();
+  const projectId =
+    process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || DEFAULT_PROJECT_ID;
+  buckets.add(`${projectId}.firebasestorage.app`);
+  buckets.add(`${projectId}.appspot.com`);
+  try {
+    const configured = JSON.parse(process.env.FIREBASE_CONFIG ?? '{}')?.storageBucket;
+    if (typeof configured === 'string' && configured) buckets.add(configured);
+  } catch {
+    // FIREBASE_CONFIG ausente o inválido: alcanzan los buckets por defecto.
+  }
+  return [...buckets];
+}
+
+function safeDecode(value: string): string | null {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Un escudo subido es válido sólo si es una URL https del Storage de ESTE
+ * proyecto y apunta a `team-crests/` (y, si se conoce, al grupo del equipo).
+ * Chequear nada más el host dejaba apuntar a cualquier objeto de cualquier
+ * bucket de Firebase.
+ */
+function isAllowedCrestUrl(value: unknown, groupId?: string): value is string {
   if (typeof value !== 'string') return false;
-  const trimmed = value.trim();
-  return (
-    trimmed.startsWith('https://firebasestorage.googleapis.com/') ||
-    trimmed.startsWith('https://storage.googleapis.com/')
-  );
+  let url: URL;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:') return false;
+
+  let bucket: string;
+  let objectPath: string | null;
+  if (url.hostname === 'firebasestorage.googleapis.com') {
+    const match = /^\/v0\/b\/([^/]+)\/o\/(.+)$/.exec(url.pathname);
+    if (!match) return false;
+    bucket = match[1];
+    objectPath = safeDecode(match[2]);
+  } else if (url.hostname === 'storage.googleapis.com') {
+    const match = /^\/([^/]+)\/(.+)$/.exec(url.pathname);
+    if (!match) return false;
+    bucket = match[1];
+    objectPath = safeDecode(match[2]);
+  } else {
+    return false;
+  }
+
+  if (objectPath === null || objectPath.includes('..')) return false;
+  if (!projectStorageBuckets().includes(bucket)) return false;
+  const requiredPrefix = groupId
+    ? `${CREST_STORAGE_FOLDER}/${groupId}/`
+    : `${CREST_STORAGE_FOLDER}/`;
+  return objectPath.startsWith(requiredPrefix);
 }
 
 /**
  * Normaliza el payload de camiseta y escudo conservando compatibilidad con
  * la web (`type`, `primaryColor`, `secondaryColor`) y validando `crestUrl`.
  */
-export function sanitizeJerseyPayload(raw: unknown): Record<string, unknown> {
+export function sanitizeJerseyPayload(
+  raw: unknown,
+  options: { groupId?: string } = {},
+): Record<string, unknown> {
   const input = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const out: Record<string, unknown> = {
     type: typeof input.type === 'string' && input.type.trim() ? input.type.trim().slice(0, 40) : 'plain',
@@ -176,7 +237,7 @@ export function sanitizeJerseyPayload(raw: unknown): Record<string, unknown> {
   if (mode === 'none') return out;
 
   if (input.crestUrl !== undefined && String(input.crestUrl).trim() !== '') {
-    if (!isAllowedCrestUrl(input.crestUrl)) {
+    if (!isAllowedCrestUrl(input.crestUrl, options.groupId)) {
       throw new HttpsError('invalid-argument', 'El escudo debe estar alojado en el Storage del proyecto.');
     }
     out.crestMode = 'uploaded';
@@ -203,7 +264,7 @@ export function sanitizeJerseyPayload(raw: unknown): Record<string, unknown> {
       : (typeof input.crestInitials === 'string' ? input.crestInitials.trim().slice(0, 14) : '');
     if (crestText) {
       out.crestText = crestText;
-      out.crestInitials = crestText.slice(0, 4);
+      out.crestInitials = crestText.slice(0, 4).trim();
     }
     if (typeof input.crestSubtitle === 'string' && input.crestSubtitle.trim()) {
       out.crestSubtitle = input.crestSubtitle.trim().slice(0, 10);
@@ -233,7 +294,7 @@ export const createTeam = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const groupId = String(request.data?.groupId ?? '');
   const name = String(request.data?.name ?? '').trim();
-  const jersey = sanitizeJerseyPayload(request.data?.jersey);
+  const jersey = sanitizeJerseyPayload(request.data?.jersey, { groupId });
   const members = Array.isArray(request.data?.members) ? request.data.members : [];
 
   if (name.length < 2) throw new HttpsError('invalid-argument', 'El nombre del equipo es muy corto.');
@@ -264,12 +325,13 @@ export const updateTeam = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const teamId = String(request.data?.teamId ?? '');
   const name = String(request.data?.name ?? '').trim();
-  const jersey = sanitizeJerseyPayload(request.data?.jersey);
 
   if (name.length < 2) throw new HttpsError('invalid-argument', 'El nombre del equipo es muy corto.');
 
   const db = admin.firestore();
-  const { teamRef } = await getTeamPermissionOrThrow(db, teamId, uid, 'teams.edit');
+  const { teamRef, team } = await getTeamPermissionOrThrow(db, teamId, uid, 'teams.edit');
+  // Se sanea DESPUÉS de cargar el equipo para atar el escudo a su grupo.
+  const jersey = sanitizeJerseyPayload(request.data?.jersey, { groupId: String(team.groupId ?? '') });
   await teamRef.update({ name, jersey });
   return { ok: true };
 });

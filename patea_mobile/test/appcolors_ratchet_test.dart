@@ -33,7 +33,12 @@ void main() {
   // Each file has its own cap; every other UI file keeps a zero allowance.
   const artworkBudgets = {
     'lib/core/widgets/player_avatar_fallback.dart': 40,
-    'lib/core/widgets/jersey_painter.dart': 23,
+    // 23 -> 34: el rediseño del escudo (`18deb80c`) dibuja bordes, esmaltes y
+    // metales con colores fijos —un escudo dorado es dorado en los dos
+    // temas—. Ya estaba por encima del tope cuando se hizo ese commit; se
+    // sube a lo medido en vez de dejar el trinquete en rojo, y de acá no debe
+    // seguir creciendo.
+    'lib/core/widgets/jersey_painter.dart': 34,
     'lib/core/widgets/ovr_accent.dart': 15,
     'lib/features/players/portrait_studio_screen.dart': 2,
   };
@@ -48,7 +53,9 @@ void main() {
     final totales = {for (final k in patrones.keys) k: 0};
     final porArchivo = <String, int>{};
 
-    for (final f in Directory('lib').listSync(recursive: true).whereType<File>()) {
+    for (final f in Directory(
+      'lib',
+    ).listSync(recursive: true).whereType<File>()) {
       final path = f.path.replaceAll(r'\', '/');
       if (!path.endsWith('.dart')) continue;
       // `core/theme/` es justamente donde los colores tienen que estar.
@@ -66,21 +73,28 @@ void main() {
 
     final total = totales.values.reduce((a, b) => a + b);
     for (final entry in porArchivo.entries) {
-      expect(entry.value, lessThanOrEqualTo(artworkBudgets[entry.key] ?? 0),
-        reason: '${entry.key} agrega colores fuera del tema sin una excepción de arte aprobada.');
+      expect(
+        entry.value,
+        lessThanOrEqualTo(artworkBudgets[entry.key] ?? 0),
+        reason:
+            '${entry.key} agrega colores fuera del tema sin una excepción de arte aprobada.',
+      );
     }
     final top = porArchivo.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     // ignore: avoid_print
-    print('Colores fuera del tema: $total / $presupuesto\n'
-        '  ${totales.entries.map((e) => '${e.key} ${e.value}').join(' · ')}\n'
-        '${top.take(8).map((e) => '  ${e.value}  ${e.key}').join('\n')}');
+    print(
+      'Colores fuera del tema: $total / $presupuesto\n'
+      '  ${totales.entries.map((e) => '${e.key} ${e.value}').join(' · ')}\n'
+      '${top.take(8).map((e) => '  ${e.value}  ${e.key}').join('\n')}',
+    );
 
     expect(
       total,
       lessThanOrEqualTo(presupuesto),
-      reason: 'Hay $total colores fuera del tema y el presupuesto es '
+      reason:
+          'Hay $total colores fuera del tema y el presupuesto es '
           '$presupuesto.\nUn archivo nuevo debería tomarlos de `context.c`. '
           'Si el aumento es a propósito,\nsubí el presupuesto y dejá dicho por '
           'qué.',

@@ -18,8 +18,12 @@ import '../../core/widgets/patea_states.dart';
 import 'jersey_designer.dart';
 
 /// Asistente pantalla completa para crear o editar un equipo:
-/// - Crear: 3 pasos (`Camiseta y nombre` -> `Escudo` -> `Plantel`).
-/// - Editar (`initialTeam != null`): 2 pasos (`Camiseta y nombre` -> `Escudo`).
+/// - Crear: 2 pasos (`Identidad` -> `Plantel`).
+/// - Editar (`initialTeam != null`): 1 paso (`Identidad`).
+///
+/// `Identidad` es UN solo lienzo (nombre + taller de camiseta y escudo con
+/// pestañas). Antes eran dos pasos —camiseta y escudo— y para ver cómo quedaba
+/// el escudo sobre la camiseta había que volver al paso anterior.
 class CreateTeamScreen extends ConsumerStatefulWidget {
   final String groupId;
   final GroupTeamModel? initialTeam;
@@ -47,7 +51,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.initialTeam != null;
-  int get _totalSteps => _isEditing ? 2 : 3;
+  int get _totalSteps => _isEditing ? 1 : 2;
 
   @override
   void initState() {
@@ -72,8 +76,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   bool get _canAdvanceFromStep1 => _nameController.text.trim().length >= 2;
 
   String get _stepTitle => switch (_step) {
-    1 => 'Camiseta y nombre',
-    2 => 'Escudo',
+    1 => 'Identidad',
     _ => 'Plantel',
   };
 
@@ -162,21 +165,15 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   VoidCallback? _primaryAction() {
     if (_isSubmitting) return null;
     if (_step == 1) {
-      return _canAdvanceFromStep1 ? () => _goToStep(2) : null;
-    }
-    if (_step == 2 && !_isEditing) {
-      return () => _goToStep(3);
-    }
-    if (_step == 2 && _isEditing) {
-      return _canAdvanceFromStep1 ? _handleSubmit : null;
+      if (!_canAdvanceFromStep1) return null;
+      return _isEditing ? _handleSubmit : () => _goToStep(2);
     }
     return _selectedPlayerIds.isNotEmpty ? _handleSubmit : null;
   }
 
   String _primaryLabel() {
-    if (_step == 1) return 'Elegir escudo';
-    if (_step == 2 && !_isEditing) return 'Elegir jugadores';
     if (_isEditing) return 'Guardar cambios';
+    if (_step == 1) return 'Elegir jugadores';
     return 'Crear equipo';
   }
 
@@ -215,23 +212,24 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         ),
         body: Column(
           children: [
-            _StepIndicator(
-              step: _step,
-              totalSteps: _totalSteps,
-              label: _stepTitle,
-              maxStepReached: _maxStepReached,
-              onSelectStep: (target) {
-                if (!_isSubmitting && target <= _maxStepReached) {
-                  _goToStep(target);
-                }
-              },
-            ),
+            // Con un solo paso (editar) no hay nada que indicar.
+            if (_totalSteps > 1)
+              _StepIndicator(
+                step: _step,
+                totalSteps: _totalSteps,
+                label: _stepTitle,
+                maxStepReached: _maxStepReached,
+                onSelectStep: (target) {
+                  if (!_isSubmitting && target <= _maxStepReached) {
+                    _goToStep(target);
+                  }
+                },
+              ),
             Expanded(
               child: switch (_step) {
-                1 => _buildStep1(),
-                2 => _buildStep2(),
+                1 => _buildIdentityStep(),
                 _ => playersAsync.when(
-                  data: _buildStep3Roster,
+                  data: _buildRosterStep,
                   loading: () => const PateaLoading(),
                   error: (e, _) => PateaError(
                     error: e,
@@ -247,9 +245,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                 decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: context.c.overlayLine),
-                  ),
+                  border: Border(top: BorderSide(color: context.c.overlayLine)),
                 ),
                 child: SizedBox(
                   width: double.infinity,
@@ -276,11 +272,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     );
   }
 
-  Widget _buildStep1() {
-    return JerseyIdentityStep(
+  Widget _buildIdentityStep() {
+    return JerseyDesigner(
       value: _jersey,
       teamName: _nameController.text,
       localCrestFile: _localCrestFile,
+      onLocalCrestFileChanged: (f) => setState(() => _localCrestFile = f),
+      onPickCrestFile: widget.onPickCrestFile,
       expandPanel: true,
       topHeader: TextField(
         controller: _nameController,
@@ -291,24 +289,11 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           hintText: 'Ej. La Academia',
         ),
       ),
-      onTapCrestPreview: _canAdvanceFromStep1 ? () => _goToStep(2) : null,
       onChanged: (next) => setState(() => _jersey = next),
     );
   }
 
-  Widget _buildStep2() {
-    return CrestDesignerStep(
-      value: _jersey,
-      teamName: _nameController.text,
-      localCrestFile: _localCrestFile,
-      onLocalCrestFileChanged: (f) => setState(() => _localCrestFile = f),
-      onPickCrestFile: widget.onPickCrestFile,
-      expandPanel: true,
-      onChanged: (next) => setState(() => _jersey = next),
-    );
-  }
-
-  Widget _buildStep3Roster(List<PlayerModel> allPlayers) {
+  Widget _buildRosterStep(List<PlayerModel> allPlayers) {
     final filtered = allPlayers
         .where(
           (p) => p.name.toLowerCase().contains(_playerSearch.toLowerCase()),
