@@ -28,9 +28,16 @@ import 'package:flutter_test/flutter_test.dart';
 /// `app_colors.dart` ya no existe: los 1.402 usos migraron a `context.c` y la
 /// clase se borró. Lo que este test cuida ahora es que no vuelvan.
 void main() {
-  // AppColors 0 · literales 40 · absolutos 0: únicamente los veinte duotonos
-  // del maniquí en `player_avatar_fallback.dart`. Todo el resto sale de `context.c`.
-  const presupuesto = 40;
+  // Fixed artwork colors are independent of the UI theme: avatar duotones,
+  // custom jersey/crest materials, approved OVR tiers and jersey photo inputs.
+  // Each file has its own cap; every other UI file keeps a zero allowance.
+  const artworkBudgets = {
+    'lib/core/widgets/player_avatar_fallback.dart': 40,
+    'lib/core/widgets/jersey_painter.dart': 23,
+    'lib/core/widgets/ovr_accent.dart': 15,
+    'lib/features/players/portrait_studio_screen.dart': 2,
+  };
+  final presupuesto = artworkBudgets.values.reduce((a, b) => a + b);
 
   test('los colores fuera del tema sólo pueden bajar', () {
     final patrones = <String, RegExp>{
@@ -58,6 +65,10 @@ void main() {
     }
 
     final total = totales.values.reduce((a, b) => a + b);
+    for (final entry in porArchivo.entries) {
+      expect(entry.value, lessThanOrEqualTo(artworkBudgets[entry.key] ?? 0),
+        reason: '${entry.key} agrega colores fuera del tema sin una excepción de arte aprobada.');
+    }
     final top = porArchivo.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 

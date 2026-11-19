@@ -74,8 +74,8 @@ void main() {
       (tester) async {
         await mount(tester, const CreatePlayerDialog(), theme);
         expect(tester.takeException(), isNull);
-        await tester.ensureVisible(find.text('Guardar jugador'));
-        expect(find.text('Guardar jugador').hitTestable(), findsOneWidget);
+        await tester.ensureVisible(find.text('Añadir jugador'));
+        expect(find.text('Añadir jugador').hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

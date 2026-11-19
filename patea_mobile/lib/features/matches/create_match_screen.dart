@@ -17,6 +17,7 @@ import '../../core/models/player_model.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/player_select_card.dart';
+import '../../core/utils/clock.dart';
 
 /// Port de add-match-dialog.tsx (web): wizard de 3 pasos (2 si es
 /// colaborativo).
@@ -67,7 +68,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   // Paso 1
   bool _isPlanning = false;
-  DateTime? _selectedDate = DateTime.now().add(const Duration(days: 1));
+  DateTime? _selectedDate;
   TimeOfDay? _selectedTime = const TimeOfDay(hour: 21, minute: 0);
   LocationSuggestion? _selectedLocation;
   List<LocationSuggestion> _locationSuggestions = [];
@@ -99,6 +100,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   final _locationService = LocationService();
   final _weatherService = WeatherService();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = ref.read(clockProvider)().add(const Duration(days: 1));
+  }
 
   @override
   void dispose() {
@@ -153,7 +160,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final location = _selectedLocation!;
     final date = _selectedDate!;
     final time = _selectedTime!;
-    final now = DateTime.now();
+    final now = ref.read(clockProvider)();
     final lastDay = DateTime(now.year, now.month, now.day + 15);
     if (DateTime(date.year, date.month, date.day).isAfter(lastDay)) {
       setState(() => _weatherOutsideRange = true);
@@ -194,9 +201,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final picked = await showDatePicker(
       context: context,
       locale: const Locale('es'),
-      initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: _selectedDate ?? ref.read(clockProvider)().add(const Duration(days: 1)),
+      firstDate: ref.read(clockProvider)(),
+      lastDate: ref.read(clockProvider)().add(const Duration(days: 365)),
     );
     if (picked != null && mounted) {
       setState(() => _selectedDate = picked);
@@ -256,7 +263,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         _selectedTime!.hour,
         _selectedTime!.minute,
       );
-      if (!kickoff.isAfter(DateTime.now())) {
+      if (!kickoff.isAfter(ref.read(clockProvider)())) {
         PateaSnack.error(context, 'Elegí una fecha y hora futuras.');
         return;
       }

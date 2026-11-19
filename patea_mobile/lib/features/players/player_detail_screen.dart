@@ -148,7 +148,7 @@ class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
                   ),
                 ),
               if (isOwnProfile &&
-                  ref.watch(hasManualPlayerClaimProvider).value == true)
+                  ref.watch(hasManualPlayerClaimProvider).asData?.value == true)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: TextButton.icon(
