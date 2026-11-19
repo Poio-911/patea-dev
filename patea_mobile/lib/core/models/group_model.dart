@@ -2,52 +2,109 @@ class JerseyModel {
   final String pattern;
   final String primaryColor;
   final String secondaryColor;
-  final String crestShape; // 'none', 'classic', 'spanish', 'heater', 'circle', 'crest', 'oval', 'diamond', 'hexagon'
-  final String crestPattern; // 'diagonal', 'stripes', 'halves', 'quarters', 'band', 'solid'
-  final String crestSymbol; // 'initials', 'star', 'crown', 'ball', 'sun', 'wings', 'laurel', 'bolt', 'flame', 'swords', 'tower', 'trophy'
-  final String crestInitials;
-  final bool crestShowBanner;
-  final String crestBorderColor; // '' (auto), '#D97706' (oro), '#CBD5E1' (plata), '#FFFFFF', '#171717'
+  final String crestMode; // 'none', 'custom', 'uploaded'
+  final String crestShape; // 'classic', 'circle', 'oval', 'heater', 'crest', 'diamond'
+  final String crestLayout; // adaptado a crestShape
+  final String crestSymbol; // 'none', 'star', 'crown', 'ball', 'sun', 'wings', 'laurel', 'bolt', 'flame', 'swords', 'tower', 'trophy'
+  final String crestText;
+  final String crestSubtitle;
+  final String crestTextLayout; // 'auto', 'center', 'banner', 'none'
+  final String crestFont; // 'bold', 'classic', 'condensed'
+  final String crestBorderColor; // '' (auto), '#D97706', '#CBD5E1', '#FFFFFF', '#171717'
   final int crestStars; // 0..3
+  final bool crestLaurel;
+  final bool crestCrownTop;
+  final String crestUrl;
+  final bool crestClipCircle;
 
   JerseyModel({
     this.pattern = 'plain',
     this.primaryColor = '#1E90FF',
     this.secondaryColor = '#FFFFFF',
-    this.crestShape = 'none',
-    this.crestPattern = 'diagonal',
-    this.crestSymbol = 'initials',
-    this.crestInitials = '',
-    this.crestShowBanner = false,
+    String? crestMode,
+    this.crestShape = 'classic',
+    this.crestLayout = 'chief',
+    this.crestSymbol = 'crown',
+    this.crestText = '',
+    this.crestSubtitle = '',
+    this.crestTextLayout = 'auto',
+    this.crestFont = 'bold',
     this.crestBorderColor = '',
     this.crestStars = 0,
-  });
+    this.crestLaurel = false,
+    this.crestCrownTop = false,
+    this.crestUrl = '',
+    this.crestClipCircle = false,
+  }) : crestMode = crestMode ??
+            (crestUrl.trim().isNotEmpty ? 'uploaded' : 'none');
 
-  bool get hasCrest => crestShape.isNotEmpty && crestShape != 'none';
+  bool get hasCrest =>
+      (crestMode == 'uploaded' && crestUrl.trim().isNotEmpty) ||
+      (crestMode == 'custom' && crestShape.isNotEmpty && crestShape != 'none');
+
+  bool get isUploadedCrest =>
+      crestMode == 'uploaded' && crestUrl.trim().isNotEmpty;
+
+  /// Layouts interiores válidos para la silueta [shape].
+  static String defaultLayoutForShape(String shape) {
+    return switch (shape) {
+      'circle' || 'oval' => 'ring',
+      'diamond' => 'bevel',
+      _ => 'chief',
+    };
+  }
 
   JerseyModel copyWith({
     String? pattern,
     String? primaryColor,
     String? secondaryColor,
+    String? crestMode,
     String? crestShape,
-    String? crestPattern,
+    String? crestLayout,
     String? crestSymbol,
-    String? crestInitials,
-    bool? crestShowBanner,
+    String? crestText,
+    String? crestSubtitle,
+    String? crestTextLayout,
+    String? crestFont,
     String? crestBorderColor,
     int? crestStars,
+    bool? crestLaurel,
+    bool? crestCrownTop,
+    String? crestUrl,
+    bool? crestClipCircle,
   }) {
+    final nextShape = crestShape ?? this.crestShape;
+    final nextUrl = crestUrl ?? this.crestUrl;
+    var nextMode = crestMode ?? this.crestMode;
+    if (crestMode == null) {
+      if (crestUrl != null && crestUrl.trim().isNotEmpty) {
+        nextMode = 'uploaded';
+      } else if (crestShape != null &&
+          crestShape.isNotEmpty &&
+          crestShape != 'none' &&
+          nextMode == 'none') {
+        nextMode = 'custom';
+      }
+    }
+
     return JerseyModel(
       pattern: pattern ?? this.pattern,
       primaryColor: primaryColor ?? this.primaryColor,
       secondaryColor: secondaryColor ?? this.secondaryColor,
-      crestShape: crestShape ?? this.crestShape,
-      crestPattern: crestPattern ?? this.crestPattern,
+      crestMode: nextMode,
+      crestShape: nextShape,
+      crestLayout: crestLayout ?? this.crestLayout,
       crestSymbol: crestSymbol ?? this.crestSymbol,
-      crestInitials: crestInitials ?? this.crestInitials,
-      crestShowBanner: crestShowBanner ?? this.crestShowBanner,
+      crestText: crestText ?? this.crestText,
+      crestSubtitle: crestSubtitle ?? this.crestSubtitle,
+      crestTextLayout: crestTextLayout ?? this.crestTextLayout,
+      crestFont: crestFont ?? this.crestFont,
       crestBorderColor: crestBorderColor ?? this.crestBorderColor,
       crestStars: crestStars ?? this.crestStars,
+      crestLaurel: crestLaurel ?? this.crestLaurel,
+      crestCrownTop: crestCrownTop ?? this.crestCrownTop,
+      crestUrl: nextUrl,
+      crestClipCircle: crestClipCircle ?? this.crestClipCircle,
     );
   }
 
@@ -61,7 +118,17 @@ class JerseyModel {
         .toList(growable: false);
     if (words.length >= 2) {
       final significant = words
-          .where((w) => !const {'de', 'del', 'la', 'las', 'el', 'los', 'y'}.contains(w.toLowerCase()))
+          .where(
+            (w) => !const {
+              'de',
+              'del',
+              'la',
+              'las',
+              'el',
+              'los',
+              'y',
+            }.contains(w.toLowerCase()),
+          )
           .toList(growable: false);
       final source = significant.length >= 2 ? significant : words;
       return source.take(3).map((w) => w[0]).join().toUpperCase();
@@ -70,38 +137,115 @@ class JerseyModel {
     return single.length <= 3 ? single : single.substring(0, 2);
   }
 
+  static String _legacyPatternToLayout(String shape, String? legacyPattern) {
+    return switch (legacyPattern) {
+      'stripes' => 'stripes',
+      'halves' => 'halves',
+      'quarters' => 'quarters',
+      'band' => shape == 'circle' || shape == 'oval' ? 'stripes_band' : 'chief',
+      'solid' => shape == 'circle' || shape == 'oval' ? 'double_ring' : 'framed',
+      'diagonal' => 'diagonal',
+      _ => defaultLayoutForShape(shape),
+    };
+  }
+
   factory JerseyModel.fromMap(Map<String, dynamic>? map) {
     if (map == null) return JerseyModel();
+    final rawUrl = (map['crestUrl'] as String?)?.trim() ?? '';
+    final rawShape = (map['crestShape'] as String?)?.trim() ?? '';
+    final rawMode = (map['crestMode'] as String?)?.trim() ?? '';
+    final resolvedMode = switch (rawMode) {
+      'uploaded' when rawUrl.isNotEmpty => 'uploaded',
+      'custom' => 'custom',
+      'none' => 'none',
+      _ => rawUrl.isNotEmpty
+          ? 'uploaded'
+          : (rawShape.isNotEmpty && rawShape != 'none' ? 'custom' : 'none'),
+    };
+    final resolvedShape =
+        rawShape.isEmpty || rawShape == 'none' ? 'classic' : rawShape;
+    final rawLayout = (map['crestLayout'] as String?)?.trim() ?? '';
+    final resolvedLayout = rawLayout.isNotEmpty
+        ? rawLayout
+        : _legacyPatternToLayout(
+            resolvedShape,
+            map['crestPattern'] as String?,
+          );
+    final rawText =
+        (map['crestText'] as String?) ??
+        (map['crestInitials'] as String?) ??
+        '';
+    final rawSymbol = (map['crestSymbol'] as String?)?.trim() ?? '';
+    final resolvedTextLayout =
+        (map['crestTextLayout'] as String?)?.trim() ??
+        ((map['crestShowBanner'] as bool?) == true ? 'banner' : 'auto');
+
     return JerseyModel(
       // La web guarda el tipo de camiseta en 'type' (ver Jersey en src/lib/types.ts);
       // 'pattern' se acepta como fallback por si hay datos viejos.
       pattern: map['type'] ?? map['pattern'] ?? 'plain',
       primaryColor: map['primaryColor'] ?? '#1E90FF',
       secondaryColor: map['secondaryColor'] ?? '#FFFFFF',
-      crestShape: (map['crestShape'] as String?) ?? 'none',
-      crestPattern: (map['crestPattern'] as String?) ?? 'diagonal',
-      crestSymbol: (map['crestSymbol'] as String?) ?? 'initials',
-      crestInitials: (map['crestInitials'] as String?) ?? '',
-      crestShowBanner: (map['crestShowBanner'] as bool?) ?? false,
+      crestMode: resolvedMode,
+      crestShape: resolvedShape,
+      crestLayout: resolvedLayout,
+      crestSymbol: rawSymbol == 'initials' || rawSymbol.isEmpty
+          ? (rawSymbol == 'initials' ? 'none' : 'crown')
+          : rawSymbol,
+      crestText: rawText,
+      crestSubtitle: (map['crestSubtitle'] as String?) ?? '',
+      crestTextLayout: resolvedTextLayout,
+      crestFont: (map['crestFont'] as String?) ?? 'bold',
       crestBorderColor: (map['crestBorderColor'] as String?) ?? '',
       crestStars: ((map['crestStars'] as num?)?.toInt() ?? 0).clamp(0, 3),
+      crestLaurel: (map['crestLaurel'] as bool?) ?? false,
+      crestCrownTop: (map['crestCrownTop'] as bool?) ?? false,
+      crestUrl: rawUrl,
+      crestClipCircle: (map['crestClipCircle'] as bool?) ?? false,
     );
   }
 
   Map<String, dynamic> toMap() {
+    if (crestMode == 'uploaded' && crestUrl.trim().isNotEmpty) {
+      return {
+        'type': pattern,
+        'primaryColor': primaryColor,
+        'secondaryColor': secondaryColor,
+        'crestMode': 'uploaded',
+        'crestUrl': crestUrl.trim(),
+        if (crestClipCircle) 'crestClipCircle': true,
+      };
+    }
+
+    if (crestMode == 'custom' && crestShape != 'none') {
+      final cleanText = crestText.trim().toUpperCase();
+      final cleanSub = crestSubtitle.trim().toUpperCase();
+      return {
+        'type': pattern,
+        'primaryColor': primaryColor,
+        'secondaryColor': secondaryColor,
+        'crestMode': 'custom',
+        'crestShape': crestShape,
+        'crestLayout': crestLayout,
+        'crestSymbol': crestSymbol,
+        if (cleanText.isNotEmpty) 'crestText': cleanText,
+        if (cleanText.isNotEmpty)
+          'crestInitials':
+              cleanText.length <= 4 ? cleanText : cleanText.substring(0, 4),
+        if (cleanSub.isNotEmpty) 'crestSubtitle': cleanSub,
+        'crestTextLayout': crestTextLayout,
+        'crestFont': crestFont,
+        if (crestBorderColor.isNotEmpty) 'crestBorderColor': crestBorderColor,
+        if (crestStars > 0) 'crestStars': crestStars.clamp(0, 3),
+        if (crestLaurel) 'crestLaurel': true,
+        if (crestCrownTop) 'crestCrownTop': true,
+      };
+    }
+
     return {
       'type': pattern,
       'primaryColor': primaryColor,
       'secondaryColor': secondaryColor,
-      if (hasCrest) 'crestShape': crestShape,
-      if (hasCrest) 'crestPattern': crestPattern,
-      if (hasCrest) 'crestSymbol': crestSymbol,
-      if (hasCrest && crestInitials.trim().isNotEmpty)
-        'crestInitials': crestInitials.trim().toUpperCase(),
-      if (hasCrest && crestShowBanner) 'crestShowBanner': true,
-      if (hasCrest && crestBorderColor.isNotEmpty)
-        'crestBorderColor': crestBorderColor,
-      if (hasCrest && crestStars > 0) 'crestStars': crestStars.clamp(0, 3),
     };
   }
 }

@@ -21,7 +21,8 @@ import '../../core/services/group_service.dart';
 import '../../core/models/group_model.dart';
 import '../../core/models/player_model.dart';
 import '../../core/widgets/jersey_painter.dart';
-import 'jersey_designer.dart';
+import '../../core/widgets/patea_background.dart';
+import 'create_team_screen.dart';
 
 /// Detalle de equipo: plantel separado en titulares y suplentes, trofeos,
 /// próximos partidos y las acciones que tu rol habilita.
@@ -87,103 +88,16 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
   }
 
   Future<void> _showEditDialog(GroupTeamModel team) async {
-    final controller = TextEditingController(text: team.name);
-    JerseyModel jersey = team.jersey;
-    bool submitting = false;
-
-    final route = ModalBottomSheetRoute<void>(
-      isScrollControlled: true,
-      backgroundColor: context.c.card,
-      shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.88,
-          ),
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 12,
-              bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 14),
-                    decoration: BoxDecoration(
-                      color: context.c.textSecondary.withValues(alpha: 0.35),
-                      borderRadius: AppRadii.pillAll,
-                    ),
-                  ),
-                ),
-                Text('Editar equipo', style: AppTypography.headline(size: 20)),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: JerseyDesigner(
-                    value: jersey,
-                    teamName: controller.text,
-                    expandPanel: true,
-                    topHeader: TextField(
-                      controller: controller,
-                      onChanged: (_) => setSheetState(() {}),
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre del equipo',
-                        isDense: true,
-                      ),
-                    ),
-                    onChanged: (j) => setSheetState(() => jersey = j),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: submitting
-                      ? null
-                      : () async {
-                          if (controller.text.trim().length < 2) return;
-                          setSheetState(() => submitting = true);
-                          try {
-                            await ref
-                                .read(groupServiceProvider)
-                                .updateTeam(
-                                  teamId: team.id,
-                                  name: controller.text.trim(),
-                                  jersey: jersey.toMap(),
-                                );
-                            if (context.mounted) Navigator.pop(context);
-                          } catch (e) {
-                            setSheetState(() => submitting = false);
-                            if (context.mounted) {
-                              PateaSnack.error(context, '$e');
-                            }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.c.primary,
-                    foregroundColor: context.c.onPrimary,
-                  ),
-                  child: submitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: PateaButtonProgress(),
-                        )
-                      : const Text('Guardar'),
-                ),
-              ],
-            ),
+    await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PateaBackground(
+          child: CreateTeamScreen(
+            groupId: team.groupId,
+            initialTeam: team,
           ),
         ),
       ),
     );
-    await Navigator.of(context, rootNavigator: true).push(route);
-    await route.completed;
-    controller.dispose();
   }
 
   Future<void> _showEditMembersSheet(

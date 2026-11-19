@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:patea_mobile/core/models/group_model.dart';
 import 'package:patea_mobile/core/services/group_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
-import 'package:patea_mobile/core/widgets/patea_card.dart';
 import 'package:patea_mobile/features/groups/create_team_screen.dart';
 import 'package:patea_mobile/features/groups/groups_screen.dart';
 import 'package:patea_mobile/features/groups/team_detail_screen.dart';
@@ -18,7 +18,10 @@ import 'goldens/arnes.dart';
 
 class CreateTeamFake extends Fake implements GroupService {
   int sends = 0;
+  int updates = 0;
+  int uploads = 0;
   String? name;
+  Map<String, dynamic>? jersey;
   List<Map<String, dynamic>>? members;
   final response = Completer<String>();
   @override
@@ -30,8 +33,29 @@ class CreateTeamFake extends Fake implements GroupService {
   }) {
     sends++;
     this.name = name;
+    this.jersey = jersey;
     this.members = members;
     return response.future;
+  }
+
+  @override
+  Future<void> updateTeam({
+    required String teamId,
+    required String name,
+    required Map<String, dynamic> jersey,
+  }) async {
+    updates++;
+    this.name = name;
+    this.jersey = jersey;
+  }
+
+  @override
+  Future<String> uploadTeamCrest({
+    required String groupId,
+    required File file,
+  }) async {
+    uploads++;
+    return 'https://firebasestorage.googleapis.com/v0/b/mil-disculpis/crest.png';
   }
 }
 
@@ -48,7 +72,7 @@ void main() {
   }
 
   testWidgets(
-    'Jersey selection has the intended border and colors preserve the other channel',
+    'Jersey selection has clean selected semantics and colors preserve the other channel',
     (tester) async {
       var jersey = JerseyModel(
         primaryColor: '#2563EB',
@@ -75,11 +99,7 @@ void main() {
       final first = find.byWidgetPredicate(
         (w) => w is Semantics && w.properties.label == 'Diseño de camiseta 1',
       );
-      final card = tester.widget<PateaCard>(
-        find.descendant(of: first, matching: find.byType(PateaCard)),
-      );
-      expect(card.borderWidth, 2);
-      expect(card.width, isNull);
+      expect(tester.widget<Semantics>(first).properties.selected, isTrue);
       await tap(
         tester,
         find.byWidgetPredicate(
@@ -87,7 +107,7 @@ void main() {
         ),
       );
       expect(jersey.pattern, 'vertical');
-      await tap(tester, find.text('2. Colores'));
+      await tap(tester, find.text('Colores'));
       await tap(tester, find.text('Secundario'));
       await tap(tester, find.byTooltip('Rojo'));
       expect(jersey.primaryColor, '#2563EB');
@@ -96,7 +116,7 @@ void main() {
     },
   );
   testWidgets(
-    'Creation preserves selection across steps and submits the same membership contract once',
+    'Creation preserves selection across 3 steps and submits the same membership contract once',
     (tester) async {
       final service = CreateTeamFake();
       final errors = await montarPantalla(
@@ -108,11 +128,17 @@ void main() {
         tema: AppTheme.lightTheme,
       );
       expect(errors, isEmpty);
+      expect(find.text('Paso 1 de 3 · Camiseta y nombre'), findsOneWidget);
       await tester.enterText(find.byType(TextField), '  Equipo del barrio  ');
       await tester.pump();
+      await tap(tester, find.text('Elegir escudo'));
+      expect(find.text('Paso 2 de 3 · Escudo'), findsOneWidget);
+      await tap(tester, find.text('Diseñar'));
+      await tap(tester, find.text('Circular'));
       await tap(tester, find.text('Elegir jugadores'));
+      expect(find.text('Paso 3 de 3 · Plantel'), findsOneWidget);
       await tap(tester, find.byType(CheckboxListTile).first);
-      await tap(tester, find.text('Atrás'));
+      await tap(tester, find.byTooltip('Paso anterior'));
       await tap(tester, find.text('Elegir jugadores'));
       expect(
         tester
@@ -123,12 +149,44 @@ void main() {
       await tap(tester, find.widgetWithText(ElevatedButton, 'Crear equipo'));
       expect(service.sends, 1);
       expect(service.name, 'Equipo del barrio');
+      expect(service.jersey?['crestMode'], 'custom');
+      expect(service.jersey?['crestShape'], 'circle');
       expect(service.members, [
         {'playerId': jugadores.first.id, 'number': 1, 'status': 'titular'},
       ]);
       await tester.pumpWidget(const SizedBox.shrink());
       service.response.complete('new-team');
       await tester.pump();
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'Edit mode opens 2-step flow and submits updated name and crest without roster step',
+    (tester) async {
+      final service = CreateTeamFake();
+      final errors = await montarPantalla(
+        tester,
+        ProviderScope(
+          overrides: [groupServiceProvider.overrideWithValue(service)],
+          child: CreateTeamScreen(
+            groupId: idGrupo,
+            initialTeam: equipos.first,
+          ),
+        ),
+        tema: AppTheme.darkTheme,
+      );
+      expect(errors, isEmpty);
+      expect(find.text('Editar equipo'), findsOneWidget);
+      expect(find.text('Paso 1 de 2 · Camiseta y nombre'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'Club Renovado');
+      await tester.pump();
+      await tap(tester, find.text('Elegir escudo'));
+      expect(find.text('Paso 2 de 2 · Escudo'), findsOneWidget);
+      await tap(tester, find.text('Diseñar'));
+      await tap(tester, find.widgetWithText(ElevatedButton, 'Guardar cambios'));
+      expect(service.updates, 1);
+      expect(service.name, 'Club Renovado');
+      expect(service.jersey?['crestMode'], 'custom');
       expect(tester.takeException(), isNull);
     },
   );
@@ -261,6 +319,8 @@ void main() {
         expect(errors, isEmpty);
         await tester.enterText(find.byType(TextField), 'Equipo');
         await tester.pump();
+        await tap(tester, find.text('Elegir escudo'));
+        await tap(tester, find.text('Diseñar'));
         await tap(tester, find.text('Elegir jugadores'));
         await tap(tester, find.byType(CheckboxListTile).first);
         expect(tester.takeException(), isNull);

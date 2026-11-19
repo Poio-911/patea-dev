@@ -147,12 +147,93 @@ async function getTeamPermissionOrThrow(db: admin.firestore.Firestore, teamId: s
   return { teamRef, team };
 }
 
+function isValidHexColor(value: unknown): value is string {
+  return typeof value === 'string' && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value.trim());
+}
+
+function isAllowedCrestUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  return (
+    trimmed.startsWith('https://firebasestorage.googleapis.com/') ||
+    trimmed.startsWith('https://storage.googleapis.com/')
+  );
+}
+
+/**
+ * Normaliza el payload de camiseta y escudo conservando compatibilidad con
+ * la web (`type`, `primaryColor`, `secondaryColor`) y validando `crestUrl`.
+ */
+export function sanitizeJerseyPayload(raw: unknown): Record<string, unknown> {
+  const input = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const out: Record<string, unknown> = {
+    type: typeof input.type === 'string' && input.type.trim() ? input.type.trim().slice(0, 40) : 'plain',
+    primaryColor: isValidHexColor(input.primaryColor) ? input.primaryColor.trim() : '#2563EB',
+    secondaryColor: isValidHexColor(input.secondaryColor) ? input.secondaryColor.trim() : '#FFFFFF',
+  };
+
+  const mode = typeof input.crestMode === 'string' ? input.crestMode.trim() : '';
+  if (mode === 'none') return out;
+
+  if (input.crestUrl !== undefined && String(input.crestUrl).trim() !== '') {
+    if (!isAllowedCrestUrl(input.crestUrl)) {
+      throw new HttpsError('invalid-argument', 'El escudo debe estar alojado en el Storage del proyecto.');
+    }
+    out.crestMode = 'uploaded';
+    out.crestUrl = input.crestUrl.trim();
+    if (input.crestClipCircle === true) out.crestClipCircle = true;
+    return out;
+  }
+
+  const shape = typeof input.crestShape === 'string' ? input.crestShape.trim().slice(0, 24) : '';
+  if (mode === 'custom' || (shape && shape !== 'none')) {
+    out.crestMode = 'custom';
+    out.crestShape = shape && shape !== 'none' ? shape : 'classic';
+    if (typeof input.crestLayout === 'string' && input.crestLayout.trim()) {
+      out.crestLayout = input.crestLayout.trim().slice(0, 24);
+    }
+    if (typeof input.crestPattern === 'string' && input.crestPattern.trim()) {
+      out.crestPattern = input.crestPattern.trim().slice(0, 24);
+    }
+    if (typeof input.crestSymbol === 'string' && input.crestSymbol.trim()) {
+      out.crestSymbol = input.crestSymbol.trim().slice(0, 24);
+    }
+    const crestText = typeof input.crestText === 'string'
+      ? input.crestText.trim().slice(0, 14)
+      : (typeof input.crestInitials === 'string' ? input.crestInitials.trim().slice(0, 14) : '');
+    if (crestText) {
+      out.crestText = crestText;
+      out.crestInitials = crestText.slice(0, 4);
+    }
+    if (typeof input.crestSubtitle === 'string' && input.crestSubtitle.trim()) {
+      out.crestSubtitle = input.crestSubtitle.trim().slice(0, 10);
+    }
+    if (typeof input.crestTextLayout === 'string' && input.crestTextLayout.trim()) {
+      out.crestTextLayout = input.crestTextLayout.trim().slice(0, 20);
+    }
+    if (typeof input.crestFont === 'string' && input.crestFont.trim()) {
+      out.crestFont = input.crestFont.trim().slice(0, 20);
+    }
+    if (isValidHexColor(input.crestBorderColor)) {
+      out.crestBorderColor = input.crestBorderColor.trim();
+    }
+    if (typeof input.crestStars === 'number' && Number.isFinite(input.crestStars)) {
+      out.crestStars = Math.max(0, Math.min(3, Math.round(input.crestStars)));
+    }
+    if (input.crestLaurel === true) out.crestLaurel = true;
+    if (input.crestCrownTop === true) out.crestCrownTop = true;
+    if (input.crestShowBanner === true) out.crestShowBanner = true;
+  }
+
+  return out;
+}
+
 /** Port de createTeamAction. */
 export const createTeam = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const groupId = String(request.data?.groupId ?? '');
   const name = String(request.data?.name ?? '').trim();
-  const jersey = request.data?.jersey ?? {};
+  const jersey = sanitizeJerseyPayload(request.data?.jersey);
   const members = Array.isArray(request.data?.members) ? request.data.members : [];
 
   if (name.length < 2) throw new HttpsError('invalid-argument', 'El nombre del equipo es muy corto.');
@@ -183,7 +264,9 @@ export const updateTeam = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const teamId = String(request.data?.teamId ?? '');
   const name = String(request.data?.name ?? '').trim();
-  const jersey = request.data?.jersey ?? {};
+  const jersey = sanitizeJerseyPayload(request.data?.jersey);
+
+  if (name.length < 2) throw new HttpsError('invalid-argument', 'El nombre del equipo es muy corto.');
 
   const db = admin.firestore();
   const { teamRef } = await getTeamPermissionOrThrow(db, teamId, uid, 'teams.edit');

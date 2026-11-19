@@ -1,7 +1,12 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import '../models/group_permissions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'callable_functions.dart';
@@ -71,6 +76,88 @@ class GroupService {
 
   Future<void> deleteTeam(String teamId) async {
     await callFunction('deleteTeam', {'teamId': teamId});
+  }
+
+  /// Sube el escudo del equipo preservando el canal alfa en formato PNG y
+  /// escalándolo a un máximo de 512 px de lado si supera ese tamaño.
+  Future<String> uploadTeamCrest({
+    required String groupId,
+    required File file,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) throw Exception('No hay sesión activa.');
+
+    final rawBytes = await file.readAsBytes();
+    if (rawBytes.lengthInBytes > 12 * 1024 * 1024) {
+      throw Exception('La imagen es demasiado grande (máximo 12 MB).');
+    }
+
+    final pngBytes = await _normalizeCrestPng(
+      rawBytes,
+      isAlreadyPng: file.path.toLowerCase().endsWith('.png'),
+    );
+
+    final ref = FirebaseStorage.instance.ref(
+      'team-crests/$groupId/$uid/crest_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    await ref.putData(pngBytes, SettableMetadata(contentType: 'image/png'));
+    return ref.getDownloadURL();
+  }
+
+  Future<Uint8List> _normalizeCrestPng(
+    Uint8List rawBytes, {
+    required bool isAlreadyPng,
+  }) async {
+    final codec = await ui.instantiateImageCodec(rawBytes);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    try {
+      const maxDim = 512;
+      if (isAlreadyPng &&
+          image.width <= maxDim &&
+          image.height <= maxDim &&
+          rawBytes.lengthInBytes <= 2 * 1024 * 1024) {
+        return rawBytes;
+      }
+
+      final scale = math.min(
+        1.0,
+        maxDim / math.max(image.width, image.height).toDouble(),
+      );
+      final targetW = math.max(1, (image.width * scale).round());
+      final targetH = math.max(1, (image.height * scale).round());
+
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      canvas.drawImageRect(
+        image,
+        ui.Rect.fromLTWH(
+          0,
+          0,
+          image.width.toDouble(),
+          image.height.toDouble(),
+        ),
+        ui.Rect.fromLTWH(0, 0, targetW.toDouble(), targetH.toDouble()),
+        ui.Paint()..filterQuality = ui.FilterQuality.high,
+      );
+      final picture = recorder.endRecording();
+      final resized = await picture.toImage(targetW, targetH);
+      try {
+        final byteData = await resized.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
+        if (byteData == null) {
+          throw Exception('No se pudo procesar el PNG del escudo.');
+        }
+        return byteData.buffer.asUint8List();
+      } finally {
+        resized.dispose();
+        picture.dispose();
+      }
+    } finally {
+      image.dispose();
+      codec.dispose();
+    }
   }
 }
 

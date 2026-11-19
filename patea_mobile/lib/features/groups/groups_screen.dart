@@ -473,7 +473,11 @@ class _ActiveGroupView extends ConsumerWidget {
                               padding: const EdgeInsets.all(10),
                               child: Row(
                                 children: [
-                                  JerseyWidget(jersey: team.jersey, size: 36),
+                                  JerseyWidget(
+                                    jersey: team.jersey,
+                                    teamName: team.name,
+                                    size: 36,
+                                  ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(

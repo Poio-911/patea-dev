@@ -71,6 +71,13 @@ service firebase.storage {
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
+    // Escudos de equipos (PNG o imagen personalizada subida por el creador).
+    match /team-crests/{groupId}/{userId}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
     // Clips del partido: el gol de Nico al 23'. El uid va en la ruta para que
     // cada uno pueda borrar lo suyo y nada más.
     match /match-clips/{matchId}/{userId}/{allPaths=**} {
