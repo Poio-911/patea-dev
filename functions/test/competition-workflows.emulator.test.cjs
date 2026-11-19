@@ -5,10 +5,9 @@ const enabled = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 let db, manage, sync, startLeague, event;
 if (enabled) {
   const admin = require("firebase-admin");
-  const app = admin.initializeApp(
-    { projectId: "demo-patea-competitions" },
-    "competitions",
-  );
+  // Production helpers use the default Admin app initialized by index.ts.
+  // Keep the same wiring, confined to the explicit emulator-only demo project.
+  const app = admin.initializeApp({ projectId: "demo-patea-competitions" });
   db = app.firestore();
   ({
     manageCompetitionCore: manage,
