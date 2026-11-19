@@ -101,7 +101,8 @@ workflows:
       groups:
         - patea_ios
       flutter: 3.41.4
-      xcode: latest
+      # Pin reproducible and use the less congested pool recommended by support.
+      xcode: '26.5'
       cocoapods: default
 
       # Firma con material guardado en Codemagic, no emitido al vuelo. Se
