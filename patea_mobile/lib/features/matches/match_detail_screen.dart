@@ -637,7 +637,9 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (isOwner && hasTeams) ...[
+                    // En un partido entre equipos no se corrige moviendo
+                    // jugadores: los planteles son los de cada equipo.
+                    if (isOwner && hasTeams && !match.isTeamMatch) ...[
                       const SizedBox(height: 10),
                       DuplicatePlayersAlert(match: match),
                     ],
@@ -682,13 +684,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       const SizedBox(height: 20),
                       MatchClipsView(
                         match: match,
-                        canUpload: isUserInMatch || isOwner,
+                        // Los dos equipos suben: jugadores de ambos y los
+                        // capitanes (que pueden no jugar).
+                        canUpload: isUserInMatch || isManager,
                       ),
                     ],
                     const SizedBox(height: 20),
                     _ChatPreviewCard(
                       matchId: match.id,
-                      canChat: isOwner || isUserInMatch,
+                      canChat: isManager || isUserInMatch,
                       onOpenChat: () => _openMatchChat(context, match),
                     ),
                     if (isManager) ...[

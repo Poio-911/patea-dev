@@ -42,12 +42,21 @@ service cloud.firestore {
       return isAuthenticated() && matchData(matchId).ownerUid == request.auth.uid;
     }
 
+    // Participa quien organiza, quien juega (`playerUids` trae a los jugadores
+    // de LOS DOS equipos en un partido entre equipos) o es capitán. Los
+    // capitanes de un partido entre grupos distintos no siempre juegan —el
+    // creador del equipo puede ser el DT— y tienen que poder subir clips y
+    // escribir en el chat de su partido igual que el rival.
     function isMatchParticipant(matchId) {
       return isAuthenticated() && (
         isMatchOwner(matchId)
         || (
           matchData(matchId).playerUids != null
           && request.auth.uid in matchData(matchId).playerUids
+        )
+        || (
+          matchData(matchId).captains != null
+          && request.auth.uid in matchData(matchId).captains
         )
       );
     }
@@ -209,7 +218,9 @@ service cloud.firestore {
       // Clips del partido. El archivo vive en Storage; acá va la ficha:
       // minuto, quién lo subió y a qué jugador corresponde.
       //
-      // Sólo suben los que están en el partido (el organizador incluido).
+      // Sólo suben los que están en el partido (el organizador y los
+      // capitanes incluidos). En un partido entre equipos suben los jugadores
+      // de AMBOS equipos, no sólo los del que lo organiza.
       // Es la línea más razonable: el que filma desde el costado suele ser
       // uno de ellos, y abrirlo a cualquiera autenticado convierte esto en
       // un buzón donde cualquiera puede tirar video en el partido ajeno.

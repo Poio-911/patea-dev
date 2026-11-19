@@ -25,7 +25,11 @@ class EditTeamsSheet extends ConsumerStatefulWidget {
 
   const EditTeamsSheet({super.key, required this.match});
 
-  static Future<void> show(BuildContext context, MatchModel match) {
+  static Future<void> show(BuildContext context, MatchModel match) async {
+    // Defensa en profundidad: los botones ya no se ofrecen en partidos entre
+    // equipos, y el servidor lo rechaza igual. Si alguien llega hasta acá, el
+    // editor no se abre: ahí los planteles son los de cada equipo.
+    if (match.isTeamMatch) return;
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,

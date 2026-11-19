@@ -69,7 +69,7 @@ class _MatchChatScreenState extends ConsumerState<MatchChatScreen> {
         widget.match;
     if (text.isEmpty ||
         user == null ||
-        !(match.ownerUid == user.uid || match.playerUids.contains(user.uid))) {
+        !(match.isManagedBy(user.uid) || match.playerUids.contains(user.uid))) {
       return;
     }
     final profile = ref
@@ -117,7 +117,7 @@ class _MatchChatScreenState extends ConsumerState<MatchChatScreen> {
         widget.match;
     final allowed =
         user != null &&
-        (match.ownerUid == user.uid || match.playerUids.contains(user.uid));
+        (match.isManagedBy(user.uid) || match.playerUids.contains(user.uid));
     if (user != null) ref.watch(singlePlayerStreamProvider(user.uid));
     return Scaffold(
       backgroundColor: context.c.background,
