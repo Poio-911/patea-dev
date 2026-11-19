@@ -96,6 +96,19 @@ final activeGroupMatchesProvider = StreamProvider<List<MatchModel>>((ref) {
   return ref.watch(firestoreServiceProvider).getMatchesStream(groupId: groupAsync.value);
 });
 
+final userDisplayNameProvider = FutureProvider.family<String?, String>((
+  ref,
+  uid,
+) async {
+  if (uid.isEmpty) return null;
+  final data = await ref.watch(firestoreServiceProvider).getUserProfile(uid);
+  final name =
+      (data?['displayName'] as String?) ?? (data?['name'] as String?);
+  if (name == null) return null;
+  final trimmed = name.trim();
+  return trimmed.isEmpty ? null : trimmed;
+});
+
 final singlePlayerStreamProvider = StreamProvider.family<PlayerModel?, String>((ref, playerId) {
   final uid = ref.watch(currentUidProvider);
   final authPhoto = ref.watch(currentAuthPhotoUrlProvider);

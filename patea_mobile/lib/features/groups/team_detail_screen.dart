@@ -198,6 +198,19 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
           final trophies =
               ref.watch(teamTrophiesProvider(team.id)).value ?? const [];
 
+          String? creatorName;
+          if (team.createdBy.isNotEmpty) {
+            final matchingPlayer = groupPlayers.where(
+              (p) => p.id == team.createdBy || p.ownerUid == team.createdBy,
+            );
+            if (matchingPlayer.isNotEmpty) {
+              creatorName = matchingPlayer.first.name;
+            } else {
+              creatorName =
+                  ref.watch(userDisplayNameProvider(team.createdBy)).value;
+            }
+          }
+
           final matches =
               ref.watch(matchesStreamProvider(team.groupId)).value ?? const [];
           // La web cruza por nombre de equipo, no por id: los partidos guardan
@@ -210,7 +223,11 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 28),
             children: [
-              _TeamBanner(team: team, trophies: trophies),
+              _TeamBanner(
+                team: team,
+                trophies: trophies,
+                creatorName: creatorName,
+              ),
               const SizedBox(height: 14),
 
               if (canEdit || canDelete) ...[
@@ -298,7 +315,12 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
 class _TeamBanner extends StatelessWidget {
   final GroupTeamModel team;
   final List<TeamTrophy> trophies;
-  const _TeamBanner({required this.team, required this.trophies});
+  final String? creatorName;
+  const _TeamBanner({
+    required this.team,
+    required this.trophies,
+    this.creatorName,
+  });
   @override
   Widget build(BuildContext context) {
     final accent = _parseColor(team.jersey.primaryColor, context.c.primary);
@@ -349,6 +371,30 @@ class _TeamBanner extends StatelessWidget {
                     color: context.c.textSecondary,
                   ),
                 ),
+                if (creatorName != null && creatorName!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline_rounded,
+                        size: 14,
+                        color: context.c.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Creado por $creatorName',
+                          style: AppTypography.body(
+                            size: 12.5,
+                            color: context.c.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 for (final trophy in trophies)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
