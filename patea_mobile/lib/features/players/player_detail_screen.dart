@@ -22,6 +22,10 @@ import '../../core/widgets/patea_tabs.dart';
 import '../../core/widgets/player_avatar_fallback.dart';
 import 'widgets/player_match_debrief.dart';
 import 'widgets/player_teams_list.dart';
+import 'create_player_dialog.dart';
+import 'manual_player_recovery.dart';
+import '../../core/services/player_service.dart';
+import '../../core/widgets/patea_snack.dart';
 
 /// Vista unificada de `/players/:id` y `/profile`.
 ///
@@ -48,6 +52,37 @@ class PlayerDetailScreen extends ConsumerStatefulWidget {
 class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
   int _activeTab = 0;
 
+  Future<void> _removeManual(PlayerModel player) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Quitar del plantel?'),
+        content: Text(
+          '${player.name} dejará de aparecer en el plantel. Sus partidos y evaluaciones anteriores se conservan. Si tiene partidos pendientes, primero quitá su convocatoria.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Quitar jugador'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(playerServiceProvider).deleteManualPlayer(player.id);
+      if (!mounted) return;
+      PateaSnack.ok(context, 'Jugador quitado del plantel');
+      context.go('/players');
+    } catch (e) {
+      if (mounted) PateaSnack.error(context, 'No se pudo quitar: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final playerAsync = ref.watch(singlePlayerStreamProvider(widget.playerId));
@@ -60,14 +95,17 @@ class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
         error: (err, _) => PateaError(
           error: err,
           message: 'No pudimos cargar el perfil del jugador.',
-          onRetry: () => ref.invalidate(singlePlayerStreamProvider(widget.playerId)),
+          onRetry: () =>
+              ref.invalidate(singlePlayerStreamProvider(widget.playerId)),
         ),
         data: (player) {
-          if (player == null) return _NotFound(asOwnProfile: widget.asOwnProfile);
+          if (player == null)
+            return _NotFound(asOwnProfile: widget.asOwnProfile);
 
           final isOwnProfile = currentUid == player.id;
           final hasOwnAccount = player.hasAccount;
-          final showProgression = hasOwnAccount;
+          final showProgression =
+              hasOwnAccount || player.stats.matchesPlayed > 0;
           final tabs = [
             const PateaTab('Partidos'),
             if (showProgression) const PateaTab('Progresión'),
@@ -83,6 +121,41 @@ class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
                 isOwnProfile: isOwnProfile && hasOwnAccount,
                 asOwnProfile: widget.asOwnProfile,
               ),
+              if (player.isManual &&
+                  !player.archived &&
+                  player.ownerUid == currentUid)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => showDialog<bool>(
+                            context: context,
+                            builder: (_) => CreatePlayerDialog(player: player),
+                          ),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('Editar jugador'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: 'Quitar del plantel',
+                        onPressed: () => _removeManual(player),
+                        icon: const Icon(Icons.person_remove_outlined),
+                      ),
+                    ],
+                  ),
+                ),
+              if (isOwnProfile)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: TextButton.icon(
+                    onPressed: () => showManualPlayerRecovery(context),
+                    icon: const Icon(Icons.manage_history, size: 18),
+                    label: const Text('Recuperar historial sin cuenta'),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
                 child: _CareerStatsBand(player: player),
@@ -275,7 +348,7 @@ class _HeroCardHeader extends StatelessWidget {
                             children: [
                               if (player.isManual)
                                 TextSpan(
-                                  text: ' · Manual',
+                                  text: ' · Sin cuenta',
                                   style: AppTypography.code(
                                     size: 12,
                                     color: c.textSecondary,
@@ -295,7 +368,9 @@ class _HeroCardHeader extends StatelessWidget {
                               children: [
                                 Positioned.fill(
                                   child: ColoredBox(
-                                    color: c.ratingAccent.withValues(alpha: 0.7),
+                                    color: c.ratingAccent.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ),
                                 ),
                                 Positioned(
@@ -328,13 +403,18 @@ class _HeroCardHeader extends StatelessWidget {
                             ),
                           ),
                           Transform(
-                            transform: Matrix4.identity()..setEntry(0, 1, -0.12),
+                            transform: Matrix4.identity()
+                              ..setEntry(0, 1, -0.12),
                             child: Text(
                               '${player.ovr}',
-                              style: AppTypography.sportNumber(
-                                size: 52,
-                                color: c.ratingAccent,
-                              ).copyWith(height: 0.95, fontWeight: FontWeight.w700),
+                              style:
+                                  AppTypography.sportNumber(
+                                    size: 52,
+                                    color: c.ratingAccent,
+                                  ).copyWith(
+                                    height: 0.95,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                             ),
                           ),
                         ],
@@ -356,7 +436,10 @@ class _HeroCardHeader extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       meta,
-                      style: AppTypography.body(size: 12, color: c.textSecondary),
+                      style: AppTypography.body(
+                        size: 12,
+                        color: c.textSecondary,
+                      ),
                     ),
                   ],
                   if (isOwnProfile) ...[
@@ -368,7 +451,9 @@ class _HeroCardHeader extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           backgroundColor: c.cardSurface,
                           foregroundColor: c.textPrimary,
-                          side: BorderSide(color: c.primary.withValues(alpha: 0.45)),
+                          side: BorderSide(
+                            color: c.primary.withValues(alpha: 0.45),
+                          ),
                           shape: const RoundedRectangleBorder(
                             borderRadius: AppRadii.chipAll,
                           ),
@@ -378,7 +463,11 @@ class _HeroCardHeader extends StatelessWidget {
                           ),
                           minimumSize: const Size(0, 44),
                         ),
-                        icon: Icon(Icons.edit_outlined, size: 16, color: c.primary),
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          size: 16,
+                          color: c.primary,
+                        ),
                         label: Text(
                           'Editar perfil',
                           style: AppTypography.action(color: c.textPrimary),
@@ -480,9 +569,7 @@ class _OverlayCircleButton extends StatelessWidget {
         color: c.isDarkSurface
             ? c.photoFallback.withValues(alpha: 0.72)
             : c.card.withValues(alpha: 0.90),
-        shape: CircleBorder(
-          side: BorderSide(color: c.overlayLine),
-        ),
+        shape: CircleBorder(side: BorderSide(color: c.overlayLine)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -614,7 +701,8 @@ class _BandDivider extends StatelessWidget {
   const _BandDivider({required this.color});
 
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 24, color: color);
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 24, color: color);
 }
 
 class _ProgressionTab extends ConsumerWidget {
@@ -639,11 +727,8 @@ class _ProgressionTab extends ConsumerWidget {
           message: 'No se pudo cargar la progresión.',
           compact: true,
         ),
-        data: (history) => OvrProgressionChart(
-          player: player,
-          history: history,
-          height: 220,
-        ),
+        data: (history) =>
+            OvrProgressionChart(player: player, history: history, height: 220),
       ),
     );
   }
@@ -676,7 +761,10 @@ class _BioAndTeamsTab extends StatelessWidget {
               children: [
                 Text(
                   'Ficha personal',
-                  style: AppTypography.headline(size: 13, weight: FontWeight.w700),
+                  style: AppTypography.headline(
+                    size: 13,
+                    weight: FontWeight.w700,
+                  ),
                 ),
                 if (hasBio) ...[
                   const SizedBox(height: 8),
@@ -694,18 +782,27 @@ class _BioAndTeamsTab extends StatelessWidget {
                         player.nationality!.trim().isNotEmpty)
                       Text(
                         'Nacionalidad: ${player.nationality!.trim()}',
-                        style: AppTypography.body(size: 12, color: c.textSecondary),
+                        style: AppTypography.body(
+                          size: 12,
+                          color: c.textSecondary,
+                        ),
                       ),
                     if (player.preferredFoot != null &&
                         player.preferredFoot!.trim().isNotEmpty)
                       Text(
                         'Pie hábil: ${player.preferredFoot!.trim()}',
-                        style: AppTypography.body(size: 12, color: c.textSecondary),
+                        style: AppTypography.body(
+                          size: 12,
+                          color: c.textSecondary,
+                        ),
                       ),
                     if (player.birthYear != null)
                       Text(
                         'Nacimiento: ${player.birthYear}',
-                        style: AppTypography.body(size: 12, color: c.textSecondary),
+                        style: AppTypography.body(
+                          size: 12,
+                          color: c.textSecondary,
+                        ),
                       ),
                   ],
                 ),
@@ -750,16 +847,21 @@ class _NotFound extends StatelessWidget {
             Text(
               asOwnProfile
                   ? 'Tu cuenta quedó incompleta. Cerrá sesión y volvé a entrar: '
-                      'se repara sola.'
+                        'se repara sola.'
                   : 'Puede haber sido eliminado del plantel.',
               textAlign: TextAlign.center,
-              style: AppTypography.body(size: 12, color: context.c.textSecondary),
+              style: AppTypography.body(
+                size: 12,
+                color: context.c.textSecondary,
+              ),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
               onPressed: () => context.go(asOwnProfile ? '/' : '/players'),
               icon: const Icon(Icons.arrow_back, size: 16),
-              label: Text(asOwnProfile ? 'Volver al Panel' : 'Volver al Plantel'),
+              label: Text(
+                asOwnProfile ? 'Volver al Panel' : 'Volver al Plantel',
+              ),
             ),
           ],
         ),

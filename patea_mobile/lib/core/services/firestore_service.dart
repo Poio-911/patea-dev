@@ -232,8 +232,21 @@ class FirestoreService {
   }
 
   Stream<PlayerModel?> getPlayerStream(String playerId) {
-    return _firestore.collection('players').doc(playerId).snapshots().map((doc) {
+    return _firestore.collection('players').doc(playerId).snapshots().asyncMap((
+      doc,
+    ) async {
       if (!doc.exists || doc.data() == null) return null;
+      final claimedBy = doc.data()!['claimedBy'];
+      if (claimedBy is String &&
+          claimedBy.isNotEmpty &&
+          claimedBy != playerId) {
+        final linked = await _firestore
+            .collection('players')
+            .doc(claimedBy)
+            .get();
+        if (linked.exists && linked.data() != null)
+          return PlayerModel.fromFirestore(linked.data()!, linked.id);
+      }
       return PlayerModel.fromFirestore(doc.data()!, doc.id);
     });
   }

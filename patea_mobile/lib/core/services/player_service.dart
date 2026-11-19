@@ -9,6 +9,21 @@ final playerServiceProvider = Provider<PlayerService>((ref) {
 /// `players` tiene `allow create: if false` en firestore.rules a
 /// propósito — pasa por la Cloud Function `createManualPlayer`.
 class PlayerService {
+  Future<Map<String, dynamic>> getManualContact(String id) async =>
+      await callFunction('getManualPlayerContact', {'playerId': id});
+
+  Future<void> saveManualPlayer(Map<String, dynamic> data) async {
+    await callFunction('createManualPlayer', data);
+  }
+
+  Future<void> updateManualPlayer(String id, Map<String, dynamic> data) async {
+    await callFunction('updateManualPlayer', {...data, 'playerId': id});
+  }
+
+  Future<void> deleteManualPlayer(String id) async {
+    await callFunction('deleteManualPlayer', {'playerId': id});
+  }
+
   Future<String> createManualPlayer({
     required String groupId,
     required String name,

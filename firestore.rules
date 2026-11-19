@@ -104,6 +104,11 @@ service cloud.firestore {
       }
     }
 
+    // Contacto para recuperar perfiles sin cuenta: únicamente Cloud Functions.
+    match /manualPlayerContacts/{playerId} {
+      allow read, write: if false;
+    }
+
     // ---------- Jugadores ----------
 
     match /players/{playerId} {

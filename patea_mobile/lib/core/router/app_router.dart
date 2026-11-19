@@ -19,6 +19,7 @@ import '../../features/splash/splash_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/players/players_list_screen.dart';
+import '../../features/players/manual_player_recovery.dart';
 import '../../features/players/player_detail_screen.dart';
 import '../../features/players/edit_profile_screen.dart';
 import '../../features/players/player_history_screen.dart';
@@ -420,7 +421,7 @@ class _ScaffoldWithNavBar extends ConsumerWidget {
       // las 5 secciones compartan la misma foto random y no haga falta
       // repetirlo en cada una (antes solo lo tenían Panel y Jugadores;
       // Partidos/Explorar/Evaluaciones se quedaban sin fondo).
-      body: PateaBackground(child: navigationShell),
+      body: PateaBackground(child: ManualClaimGate(child: navigationShell)),
       bottomNavigationBar: ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),

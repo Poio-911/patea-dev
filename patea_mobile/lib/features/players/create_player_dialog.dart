@@ -1,561 +1,411 @@
-import '../../core/widgets/patea_button_progress.dart';
 import 'package:flutter/material.dart';
-import '../../core/theme/app_radii.dart';
-import '../../core/widgets/patea_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/patea_colors.dart';
-import '../../core/theme/app_typography.dart';
-import '../../core/services/player_service.dart';
+import '../../core/models/player_model.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/services/player_service.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/patea_colors.dart';
 import '../../core/utils/ovr_calculator.dart';
+import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/patea_button_progress.dart';
 
+/// Shared create/edit form. Contact details are fetched through an owner-only
+/// callable and never stored in the publicly readable player document.
 class CreatePlayerDialog extends ConsumerStatefulWidget {
-  const CreatePlayerDialog({super.key});
-
+  const CreatePlayerDialog({super.key, this.player});
+  final PlayerModel? player;
   @override
   ConsumerState<CreatePlayerDialog> createState() => _CreatePlayerDialogState();
 }
 
 class _CreatePlayerDialogState extends ConsumerState<CreatePlayerDialog> {
-  final _nameController = TextEditingController();
-  String _position = 'DEL';
-  int _ovr = 70;
-  int _pac = 70;
-  int _sho = 70;
-  int _pas = 70;
-  int _dri = 70;
-  int _def = 70;
-  int _phy = 70;
-  bool _isLoading = false;
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _form = GlobalKey<FormState>();
+  late String _position;
+  late Map<String, int> _attrs;
+  bool _saving = false;
+  bool _loading = false;
+  bool _contactFailed = false;
+  bool get _editing => widget.player != null;
+  bool get _earnedStats => (widget.player?.stats.matchesPlayed ?? 0) > 0;
+  int get _ovr => OvrCalculator.computeOvr(_attrs, _position);
 
   @override
   void initState() {
     super.initState();
-    _recalcOvr();
+    final p = widget.player;
+    _name.text = p?.name ?? '';
+    _position = p?.position ?? 'DEL';
+    _attrs = {
+      'pac': p?.pac ?? 70,
+      'sho': p?.sho ?? 70,
+      'pas': p?.pas ?? 70,
+      'dri': p?.dri ?? 70,
+      'def': p?.def ?? 70,
+      'phy': p?.phy ?? 70,
+    };
+    if (p != null) _loadContact();
+  }
+
+  Future<void> _loadContact() async {
+    setState(() {
+      _loading = true;
+      _contactFailed = false;
+    });
+    try {
+      final contact = await ref
+          .read(playerServiceProvider)
+          .getManualContact(widget.player!.id);
+      if (!mounted) return;
+      _email.text = contact['email'] as String? ?? '';
+      _phone.text = contact['phone'] as String? ?? '';
+    } catch (_) {
+      if (mounted) setState(() => _contactFailed = true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _name.dispose();
+    _email.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
-  void _recalcOvr() {
-    setState(() {
-      _ovr = OvrCalculator.computeOvr({
-        'pac': _pac,
-        'sho': _sho,
-        'pas': _pas,
-        'dri': _dri,
-        'def': _def,
-        'phy': _phy,
-      }, _position);
-    });
-  }
-
-  Future<void> _handleSave() async {
-    if (_nameController.text.trim().isEmpty) {
-      PateaSnack.error(context, 'Por favor ingresá un nombre para el jugador');
-      return;
-    }
-
-    final user = ref.read(authServiceProvider).currentUser;
-    if (user == null) return;
-
-    setState(() => _isLoading = true);
-
+  Future<void> _save() async {
+    if (!_form.currentState!.validate()) return;
+    final uid = ref.read(authServiceProvider).currentUser?.uid;
+    if (uid == null) return;
+    setState(() => _saving = true);
     try {
-      final groupId = await ref.read(activeGroupIdStreamProvider(user.uid).future);
-      if (groupId == null) {
-        throw Exception('No tenés un grupo activo. Elegí uno en "Mis Grupos" primero.');
+      final service = ref.read(playerServiceProvider);
+      final data = <String, dynamic>{
+        'name': _name.text.trim(),
+        'position': _position,
+        ..._attrs,
+        'email': _email.text.trim(),
+        'phone': _phone.text.trim(),
+      };
+      if (_editing) {
+        await service.updateManualPlayer(widget.player!.id, data);
+      } else {
+        final groupId = await ref.read(activeGroupIdStreamProvider(uid).future);
+        if (groupId == null)
+          throw Exception('Elegí un grupo antes de añadir jugadores.');
+        await service.saveManualPlayer({...data, 'groupId': groupId});
       }
-
-      await ref.read(playerServiceProvider).createManualPlayer(
-        groupId: groupId,
-        name: _nameController.text.trim(),
-        position: _position,
-        ovr: _ovr,
-        pac: _pac,
-        sho: _sho,
-        pas: _pas,
-        dri: _dri,
-        def: _def,
-        phy: _phy,
+      if (!mounted) return;
+      PateaSnack.ok(
+        context,
+        _editing ? 'Jugador actualizado' : 'Jugador añadido al plantel',
       );
-
-      if (mounted) {
-        PateaSnack.ok(context, '¡Jugador añadido al vestuario!');
-        Navigator.pop(context);
-      }
+      Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) {
-        PateaSnack.error(context, 'Error al crear jugador: $e');
-      }
+      if (mounted) PateaSnack.error(context, 'No se pudo guardar: $e');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _saving = false);
     }
   }
 
-  Color _getOvrColor(int val, PateaColors c) {
-    if (val >= 85) return c.eliteBorder;
-    if (val >= 75) return c.goldText;
-    if (val >= 65) return c.isDarkSurface ? c.brandVolt : c.primary;
-    return c.textSecondary;
-  }
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final isGk = _position == 'POR';
-    final posColor = c.positionColor(_position);
-    final ovrColor = _getOvrColor(_ovr, c);
-
-    // Atributos y etiquetas según posición (GK vs Outfield)
-    final List<Map<String, dynamic>> attrConfigs = isGk
-        ? [
-            {
-              'key': 'dri',
-              'label': 'Reflejos',
-              'code': 'REF',
-              'val': _dri,
-              'isKey': true,
-              'onChanged': (int v) { _dri = v; _recalcOvr(); },
-            },
-            {
-              'key': 'def',
-              'label': 'Estirada',
-              'code': 'EST',
-              'val': _def,
-              'isKey': true,
-              'onChanged': (int v) { _def = v; _recalcOvr(); },
-            },
-            {
-              'key': 'sho',
-              'label': 'Parada',
-              'code': 'PAR',
-              'val': _sho,
-              'isKey': false,
-              'onChanged': (int v) { _sho = v; _recalcOvr(); },
-            },
-            {
-              'key': 'phy',
-              'label': 'Posición',
-              'code': 'POS',
-              'val': _phy,
-              'isKey': false,
-              'onChanged': (int v) { _phy = v; _recalcOvr(); },
-            },
-            {
-              'key': 'pas',
-              'label': 'Saque',
-              'code': 'SAQ',
-              'val': _pas,
-              'isKey': false,
-              'onChanged': (int v) { _pas = v; _recalcOvr(); },
-            },
-            {
-              'key': 'pac',
-              'label': 'Velocidad',
-              'code': 'VEL',
-              'val': _pac,
-              'isKey': false,
-              'onChanged': (int v) { _pac = v; _recalcOvr(); },
-            },
-          ]
-        : [
-            {
-              'key': 'pac',
-              'label': 'Ritmo',
-              'code': 'RIT',
-              'val': _pac,
-              'isKey': _position == 'DEL',
-              'onChanged': (int v) { _pac = v; _recalcOvr(); },
-            },
-            {
-              'key': 'sho',
-              'label': 'Tiro',
-              'code': 'TIR',
-              'val': _sho,
-              'isKey': _position == 'DEL',
-              'onChanged': (int v) { _sho = v; _recalcOvr(); },
-            },
-            {
-              'key': 'pas',
-              'label': 'Pase',
-              'code': 'PAS',
-              'val': _pas,
-              'isKey': _position == 'MED',
-              'onChanged': (int v) { _pas = v; _recalcOvr(); },
-            },
-            {
-              'key': 'dri',
-              'label': 'Regate',
-              'code': 'REG',
-              'val': _dri,
-              'isKey': _position == 'MED' || _position == 'DEL',
-              'onChanged': (int v) { _dri = v; _recalcOvr(); },
-            },
-            {
-              'key': 'def',
-              'label': 'Defensa',
-              'code': 'DEF',
-              'val': _def,
-              'isKey': _position == 'DEF',
-              'onChanged': (int v) { _def = v; _recalcOvr(); },
-            },
-            {
-              'key': 'phy',
-              'label': 'Físico',
-              'code': 'FIS',
-              'val': _phy,
-              'isKey': _position == 'DEF',
-              'onChanged': (int v) { _phy = v; _recalcOvr(); },
-            },
-          ];
-
+    final labels = _position == 'POR'
+        ? {
+            'pac': 'Velocidad',
+            'sho': 'Parada',
+            'pas': 'Saque',
+            'dri': 'Reflejos',
+            'def': 'Estirada',
+            'phy': 'Posición',
+          }
+        : {
+            'pac': 'Ritmo',
+            'sho': 'Tiro',
+            'pas': 'Pase',
+            'dri': 'Regate',
+            'def': 'Defensa',
+            'phy': 'Físico',
+          };
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: c.card,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 440),
-        decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: AppRadii.surfaceAll,
-          border: Border.all(color: c.overlayLine, width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: c.isDarkSurface
-                  ? c.photoFallback.withValues(alpha: 0.55)
-                  : c.textPrimary.withValues(alpha: 0.16),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
         child: ClipRRect(
-          borderRadius: AppRadii.surfaceAll,
+          borderRadius: BorderRadius.circular(24),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // El OVR pasa a otra línea cuando el texto necesita más ancho.
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: posColor.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: posColor.withValues(alpha: 0.4)),
+            padding: const EdgeInsets.all(22),
+            child: Form(
+              key: _form,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _editing ? 'Editar jugador' : 'Sumar al plantel',
+                          style: AppTypography.headline(
+                            size: 22,
+                            weight: FontWeight.w700,
                           ),
-                          child: Icon(Icons.person_add_alt_1_rounded, size: 20, color: posColor),
                         ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Nuevo jugador',
-                              style: AppTypography.headline(size: 16, weight: FontWeight.w800, letterSpacing: 0.5),
-                            ),
-                            Text(
-                              'Añadí un jugador al plantel',
-                              style: AppTypography.body(size: 12, color: c.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    // OVR Pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: ovrColor.withValues(alpha: 0.15),
-                        borderRadius: AppRadii.pillAll,
-                        border: Border.all(color: ovrColor.withValues(alpha: 0.6), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: ovrColor.withValues(alpha: 0.25),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'OVR',
-                            style: AppTypography.body(size: 12, weight: FontWeight.w600, color: ovrColor),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            '$_ovr',
-                            style: AppTypography.sportNumber(size: 20, color: c.textPrimary),
-                          ),
-                        ],
+                      IconButton(
+                        tooltip: 'Cerrar',
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
                       ),
+                    ],
+                  ),
+                  Text(
+                    'Sin cuenta, con lugar en el equipo.',
+                    style: AppTypography.body(size: 13, color: c.textSecondary),
+                  ),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: _name,
+                    maxLength: 80,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre o apodo',
+                      counterText: '',
                     ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-
-                // Campo Nombre
-                TextField(
-                  controller: _nameController,
-                  style: AppTypography.body(color: c.textPrimary, weight: FontWeight.w600),
-                  decoration: InputDecoration(
-                    labelText: 'Nombre o Apodo',
-                    labelStyle: AppTypography.body(color: c.textSecondary, size: 13),
-                    prefixIcon: Icon(Icons.badge_outlined, color: c.primary, size: 20),
-                    filled: true,
-                    fillColor: c.overlaySubtle,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppRadii.cardAll,
-                      borderSide: BorderSide(color: c.overlayLine),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppRadii.cardAll,
-                      borderSide: BorderSide(color: c.primary, width: 1.5),
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Ingresá un nombre'
+                        : null,
+                  ),
+                  const SizedBox(height: 22),
+                  Text(
+                    '¿Dónde juega?',
+                    style: AppTypography.body(
+                      size: 14,
+                      weight: FontWeight.w600,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // Selector de Posición con Chips estilizados
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Posición',
-                      style: AppTypography.body(size: 12, weight: FontWeight.w600, color: c.textSecondary),
-                    ),
-                    Text(
-                      isGk ? 'Guantes y reflejos' : 'Jugador de campo',
-                      style: AppTypography.body(size: 12, color: c.textSecondary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: ['DEL', 'MED', 'DEF', 'POR'].map((pos) {
-                    final isSelected = _position == pos;
-                    final chipPosColor = c.positionColor(pos);
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                        child: InkWell(
-                          onTap: () {
-                            setState(() {
-                              _position = pos;
-                              _recalcOvr();
-                            });
-                          },
-                          borderRadius: AppRadii.cardAll,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? chipPosColor.withValues(alpha: 0.22)
-                                  : c.overlaySubtle,
-                              borderRadius: AppRadii.cardAll,
-                              border: Border.all(
-                                color: isSelected ? chipPosColor : c.overlayLine,
-                                width: isSelected ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                pos,
-                                style: AppTypography.headline(
-                                  size: 12,
-                                  weight: FontWeight.w800,
-                                  color: isSelected ? chipPosColor : c.textSecondary,
-                                ),
-                              ),
-                            ),
+                  const SizedBox(height: 10),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'POR', label: Text('POR')),
+                      ButtonSegment(value: 'DEF', label: Text('DEF')),
+                      ButtonSegment(value: 'MED', label: Text('MED')),
+                      ButtonSegment(value: 'DEL', label: Text('DEL')),
+                    ],
+                    selected: {_position},
+                    showSelectedIcon: false,
+                    onSelectionChanged: _saving
+                        ? null
+                        : (v) => setState(() => _position = v.first),
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.person_outline_rounded,
+                        color: c.textSecondary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Puede jugar y recibir evaluaciones aunque todavía no use Pateá.',
+                          style: AppTypography.body(
+                            size: 12,
+                            color: c.textSecondary,
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-
-                // Separador de Atributos
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: c.overlayLine, height: 1)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        isGk ? 'Atributos de arquero' : 'Atributos base',
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(color: c.overlayLine),
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Center(child: PateaButtonProgress()),
+                    ),
+                  if (_contactFailed)
+                    TextButton.icon(
+                      onPressed: _loadContact,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Reintentar carga del contacto'),
+                    ),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    childrenPadding: const EdgeInsets.only(bottom: 18),
+                    shape: const Border(),
+                    collapsedShape: const Border(),
+                    title: Text(
+                      'Vincular su futura cuenta',
+                      style: AppTypography.body(
+                        size: 14,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Correo o teléfono · opcional',
+                      style: AppTypography.body(
+                        size: 12,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                    children: [
+                      Text(
+                        'Si se registra con este contacto y lo verifica, le preguntaremos si es este jugador para recuperar su historial. Sólo vos podés ver y editar estos datos.',
                         style: AppTypography.body(
                           size: 12,
-                          weight: FontWeight.w600,
                           color: c.textSecondary,
                         ),
                       ),
-                    ),
-                    Expanded(child: Divider(color: c.overlayLine, height: 1)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // Sliders de Atributos
-                ...attrConfigs.map((cfg) => _buildAttributeRow(
-                  c: c,
-                  label: cfg['label'] as String,
-                  code: cfg['code'] as String,
-                  value: cfg['val'] as int,
-                  isKey: cfg['isKey'] as bool,
-                  onChanged: cfg['onChanged'] as ValueChanged<int>,
-                )),
-
-                const SizedBox(height: 20),
-
-                // Botón de Guardar
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: c.primary,
-                    foregroundColor: c.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: const PateaButtonProgress(),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.check_circle_outline_rounded, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Guardar jugador',
-                              style: AppTypography.action(
-                                size: 15,
-                                weight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _email,
+                        enabled: !_loading && !_contactFailed,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        decoration: const InputDecoration(
+                          labelText: 'Correo electrónico',
                         ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttributeRow({
-    required PateaColors c,
-    required String label,
-    required String code,
-    required int value,
-    required bool isKey,
-    required ValueChanged<int> onChanged,
-  }) {
-    final valueColor = _getOvrColor(value, c);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: isKey ? c.primary.withValues(alpha: 0.06) : c.overlaySubtle,
-          borderRadius: AppRadii.cardAll,
-          border: Border.all(
-            color: isKey ? c.primary.withValues(alpha: 0.3) : c.overlayLine.withValues(alpha: 0.5),
-            width: isKey ? 1.0 : 0.6,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Badge con código (ej: REF, EST, RIT)
-            Container(
-              width: 34,
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              decoration: BoxDecoration(
-                color: isKey ? c.primary.withValues(alpha: 0.2) : c.overlayLine,
-                borderRadius: AppRadii.hairAll,
-              ),
-              child: Center(
-                child: Text(
-                  code,
-                  style: AppTypography.body(
-                    size: 12,
-                    weight: FontWeight.w600,
-                    color: isKey ? c.primary : c.textPrimary,
+                        validator: (v) =>
+                            v != null &&
+                                v.trim().isNotEmpty &&
+                                !RegExp(
+                                  r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                ).hasMatch(v.trim())
+                            ? 'Revisá el correo'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _phone,
+                        enabled: !_loading && !_contactFailed,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: 'Teléfono con código de país',
+                          hintText: '+59899123456',
+                        ),
+                        validator: (v) =>
+                            v != null &&
+                                v.trim().isNotEmpty &&
+                                !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(
+                                  v.replaceAll(RegExp(r'[\s().-]'), ''),
+                                )
+                            ? 'Usá + y el código de país'
+                            : null,
+                      ),
+                    ],
                   ),
-                ),
+                  Divider(color: c.overlayLine),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    shape: const Border(),
+                    collapsedShape: const Border(),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _earnedStats
+                                ? 'Atributos del jugador'
+                                : 'Ajustar nivel inicial',
+                            style: AppTypography.body(
+                              size: 14,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '$_ovr',
+                          style: AppTypography.sportNumber(
+                            size: 28,
+                            color: c.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'OVR',
+                          style: AppTypography.body(
+                            size: 10,
+                            color: c.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    subtitle: Text(
+                      _earnedStats
+                          ? 'Su nivel evoluciona con las evaluaciones'
+                          : '6 atributos · podés dejarlos en 70',
+                      style: AppTypography.body(
+                        size: 12,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                    children: [
+                      for (final e in labels.entries)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      e.value,
+                                      style: AppTypography.body(size: 13),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_attrs[e.key]}',
+                                    style: AppTypography.body(
+                                      size: 14,
+                                      weight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Slider(
+                                value: _attrs[e.key]!.toDouble(),
+                                min: 20,
+                                max: 99,
+                                divisions: 79,
+                                label: '${_attrs[e.key]}',
+                                onChanged: _earnedStats || _saving
+                                    ? null
+                                    : (v) => setState(
+                                        () => _attrs[e.key] = v.round(),
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: _saving || _loading || _contactFailed
+                        ? null
+                        : _save,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: _saving
+                        ? const PateaButtonProgress()
+                        : Text(_editing ? 'Guardar cambios' : 'Añadir jugador'),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-
-            // Nombre completo del atributo
-            SizedBox(
-              width: 78,
-              child: Text(
-                label,
-                style: AppTypography.body(
-                  size: 12,
-                  weight: isKey ? FontWeight.w700 : FontWeight.w500,
-                  color: isKey ? c.textPrimary : c.textSecondary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // Slider
-            Expanded(
-              child: SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  trackHeight: 3.5,
-                  activeTrackColor: isKey ? c.primary : c.textSecondary,
-                  inactiveTrackColor: c.overlayLine,
-                  thumbColor: isKey ? c.primary : c.textPrimary,
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                ),
-                child: Slider(
-                  value: value.toDouble(),
-                  min: 40,
-                  max: 99,
-                  onChanged: (val) => onChanged(val.round()),
-                ),
-              ),
-            ),
-
-            // Valor numérico
-            SizedBox(
-              width: 28,
-              child: Text(
-                '$value',
-                textAlign: TextAlign.end,
-                style: AppTypography.sportNumber(
-                  size: 15,
-                  color: valueColor,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

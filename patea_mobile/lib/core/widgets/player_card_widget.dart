@@ -335,51 +335,6 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
               ),
             ),
           ),
-          if (widget.player.isManual)
-            Positioned(
-              top: compact ? 8 : 12,
-              left: inset,
-              child: Builder(
-                builder: (context) {
-                  final overPhoto = widget.photoStyle == CardPhotoStyle.halfTop;
-                  final badgeBg = overPhoto
-                      ? c.photoFallback.withValues(alpha: 0.80)
-                      : c.cardSurface;
-                  final manualColor = overPhoto ? c.onPhoto : c.textPrimary;
-                  return DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: AppRadii.chipAll,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.edit_note_rounded,
-                            size: compact ? 13 : 14,
-                            color: manualColor,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            'Manual',
-                            style: AppTypography.body(
-                              size: 12,
-                              weight: FontWeight.w600,
-                              color: manualColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
           Positioned(
             left: inset,
             right: inset,
@@ -409,14 +364,29 @@ class _PlayerCardWidgetState extends State<PlayerCardWidget> {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
-                            child: Text(
-                              widget.player.position.toUpperCase(),
-                              style: AppTypography.body(
-                                size: 12,
-                                height: 1.2,
-                                weight: FontWeight.w700,
-                                color: positionColor,
-                              ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.player.position.toUpperCase(),
+                                  style: AppTypography.body(
+                                    size: 12,
+                                    height: 1.2,
+                                    weight: FontWeight.w700,
+                                    color: positionColor,
+                                  ),
+                                ),
+                                if (widget.player.isManual)
+                                  Text(
+                                    'Sin cuenta',
+                                    style: AppTypography.body(
+                                      size: 10,
+                                      height: 1.2,
+                                      color: c.textSecondary,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),

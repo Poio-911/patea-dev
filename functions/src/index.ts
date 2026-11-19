@@ -25,7 +25,7 @@ export { createMatch } from './callable/create-match';
 export { startMatch, updateLiveState, updateLiveMinute, joinMatch, leaveMatch, recordLiveEvent, finishMatch, finalizePendingMatches } from './callable/match-lifecycle';
 export { deleteMatch, updateMatchDate, updateMatchLocation, shuffleTeams, updateMatchTeams } from './callable/match-management';
 export { createGroup, joinGroupByInviteCode, setActiveGroup, createTeam, updateTeam, updateTeamMembers, deleteTeam } from './callable/group-management';
-export { createManualPlayer } from './callable/player-management';
+export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteManualPlayer, findManualPlayerClaims, claimManualPlayer } from './callable/manual-player-management';
 export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
 export { submitEvaluationSubmission, respondToIdentityReveal, finalizeMatchEvaluation } from './callable/evaluations';
 export { generateMatchChronicle } from './callable/match-chronicle';

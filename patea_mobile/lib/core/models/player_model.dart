@@ -99,6 +99,7 @@ class PlayerModel {
   final String? aiSourcePhotoUrl;
   final String? ownerUid;
   final String? groupId;
+  final bool archived;
   final PlayerStats stats;
 
   // Datos del perfil que el jugador edita. Opcionales: un jugador creado a
@@ -130,6 +131,7 @@ class PlayerModel {
     this.aiSourcePhotoUrl,
     this.ownerUid,
     this.groupId,
+    this.archived = false,
     this.preferredFoot,
     this.bio,
     this.birthYear,
@@ -172,6 +174,7 @@ class PlayerModel {
       aiSourcePhotoUrl: nonEmptyPhotoUrl(data['aiSourcePhotoUrl'] as String?),
       ownerUid: data['ownerUid'],
       groupId: data['groupId'],
+      archived: data['archived'] == true,
       preferredFoot: data['preferredFoot'] as String?,
       bio: data['bio'] as String?,
       birthYear: (data['birthYear'] as num?)?.toInt(),
@@ -199,6 +202,7 @@ class PlayerModel {
       'aiSourcePhotoUrl': aiSourcePhotoUrl,
       'ownerUid': ownerUid,
       'groupId': groupId,
+      'archived': archived,
       'preferredFoot': preferredFoot,
       'bio': bio,
       'birthYear': birthYear,
@@ -230,6 +234,7 @@ class PlayerModel {
     aiSourcePhotoUrl: aiSourcePhotoUrl,
     ownerUid: ownerUid,
     groupId: groupId,
+    archived: archived,
     preferredFoot: preferredFoot,
     bio: bio,
     birthYear: birthYear,

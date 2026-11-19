@@ -108,7 +108,10 @@ void main() {
         final position = tester.getRect(find.text('MED'));
         final score = tester.getRect(find.text('50'));
         expect(name.bottom, lessThanOrEqualTo(position.top));
-        expect((position.center.dy - score.center.dy).abs(), lessThan(2));
+        final accountStatus = tester.getRect(find.text('Sin cuenta'));
+        expect(position.bottom, lessThanOrEqualTo(accountStatus.top));
+        final identityBlock = position.expandToInclude(accountStatus);
+        expect((identityBlock.center.dy - score.center.dy).abs(), lessThan(2));
         expect(tester.takeException(), isNull);
       },
     );

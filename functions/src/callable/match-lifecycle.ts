@@ -325,10 +325,9 @@ function isRealUser(player: LifecyclePlayer): boolean {
 }
 
 /**
- * Port 1:1 de generateEvaluationAssignments en
- * src/lib/actions/match-actions.ts — NO simplificar ni "mejorar" el
- * algoritmo, la web depende de este mismo shuffle+round-robin para que las
- * asignaciones de evaluación (matches/{id}/assignments) salgan parejas.
+ * Shuffle + round-robin compartido con la web. Conserva las primeras dos
+ * asignaciones por cuenta y completa cobertura para planteles con jugadores
+ * sin cuenta: son sujetos de evaluación, nunca evaluadores.
  */
 export function generateEvaluationAssignments(
   match: { id: string; playerUids: string[]; teams?: LifecycleTeam[] },
@@ -384,6 +383,19 @@ export function generateEvaluationAssignments(
     });
   });
 
+  // A manual player can receive reviews but cannot submit them. With few
+  // accounts in a large roster, two peers each used to leave manual subjects
+  // with no human review at all. Cover those subjects without assigning them
+  // the impossible task of evaluating someone else.
+  for (const subject of matchPlayers) {
+    if (incomingCounts[subject.id] > 0) continue;
+    const eligible = realPlayerUids.filter(uid => uid !== subject.id);
+    eligible.sort((a, b) => assignments.filter(x => x.evaluatorId === a).length - assignments.filter(x => x.evaluatorId === b).length);
+    if (eligible.length) {
+      assignments.push({matchId: match.id, evaluatorId: eligible[0], subjectId: subject.id, status: 'pending'});
+      incomingCounts[subject.id] += 1;
+    }
+  }
   return assignments;
 }
 

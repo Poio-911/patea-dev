@@ -15,6 +15,7 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
     await env.withSecurityRulesDisabled(async context => {
       const db = context.firestore();
       const fixtures = {
+        'manualPlayerContacts/manual': {createdBy:'alice',email:'private@example.com',phone:'+59899123456'},
         'leagues/privacy-league': {ownerUid:'organizer',isPublic:true},
         'cups/privacy-cup': {ownerUid:'organizer',isPublic:true},
         'competitionApplications/privacy-application': {competitionId:'privacy-league',competitionType:'league',submittedBy:'alice',teamId:'team',status:'pending'},
@@ -33,6 +34,15 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
     });
   });
   after(async () => { await env?.cleanup(); });
+
+  it('el contacto manual no se puede leer, listar ni escribir desde ningún cliente', async () => {
+    for (const uid of ['alice', 'bob', 'organizer']) {
+      const db = env.authenticatedContext(uid).firestore();
+      await assertFails(getDoc(doc(db, 'manualPlayerContacts/manual')));
+      await assertFails(getDocs(collection(db, 'manualPlayerContacts')));
+      await assertFails(setDoc(doc(db, 'manualPlayerContacts/manual'), {email:'hijack@example.com'}));
+    }
+  });
 
   it('solamente el autor lee evaluaciones crudas no reveladas', async () => {
     for (const uid of ['bob', 'stranger', 'organizer']) {
