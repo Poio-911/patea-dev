@@ -96,31 +96,51 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       backgroundColor: context.c.card,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
       builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
+        builder: (context, setSheetState) => ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.88,
           ),
-          child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 12,
+              bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Editar equipo', style: AppTypography.headline(size: 20)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre del equipo',
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: context.c.textSecondary.withValues(alpha: 0.35),
+                      borderRadius: AppRadii.pillAll,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                JerseyDesigner(
-                  value: jersey,
-                  onChanged: (j) => setSheetState(() => jersey = j),
+                Text('Editar equipo', style: AppTypography.headline(size: 20)),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: JerseyDesigner(
+                    value: jersey,
+                    teamName: controller.text,
+                    expandPanel: true,
+                    topHeader: TextField(
+                      controller: controller,
+                      onChanged: (_) => setSheetState(() {}),
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre del equipo',
+                        isDense: true,
+                      ),
+                    ),
+                    onChanged: (j) => setSheetState(() => jersey = j),
+                  ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: submitting
                       ? null
@@ -133,11 +153,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                                 .updateTeam(
                                   teamId: team.id,
                                   name: controller.text.trim(),
-                                  jersey: {
-                                    'type': jersey.pattern,
-                                    'primaryColor': jersey.primaryColor,
-                                    'secondaryColor': jersey.secondaryColor,
-                                  },
+                                  jersey: jersey.toMap(),
                                 );
                             if (context.mounted) Navigator.pop(context);
                           } catch (e) {
@@ -370,19 +386,37 @@ class _TeamBanner extends StatelessWidget {
         children: [
           SizedBox(
             width: 86,
-            child: JerseyWidget(jersey: team.jersey, size: 80),
+            child: JerseyWidget(
+              jersey: team.jersey,
+              teamName: team.name,
+              size: 80,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  team.name,
-                  style: AppTypography.headline(
-                    size: 25,
-                    weight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    if (team.jersey.hasCrest) ...[
+                      TeamCrestWidget(
+                        jersey: team.jersey,
+                        teamName: team.name,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        team.name,
+                        style: AppTypography.headline(
+                          size: 25,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -511,7 +545,7 @@ class _ActionButton extends StatelessWidget {
             child: PateaButtonProgress(),
           )
         : Icon(icon, size: 20);
-    if (label == null)
+    if (label == null) {
       return IconButton(
         tooltip: danger ? 'Eliminar equipo' : 'Opciones',
         onPressed: onTap,
@@ -523,6 +557,7 @@ class _ActionButton extends StatelessWidget {
         ),
         icon: child,
       );
+    }
     final content = Text(
       label!,
       style: AppTypography.body(

@@ -12,6 +12,7 @@ import '../../core/services/firestore_service.dart';
 import '../../core/services/group_service.dart';
 import '../../core/models/group_model.dart';
 import '../../core/models/player_model.dart';
+import '../../core/widgets/jersey_painter.dart';
 import 'jersey_designer.dart';
 
 /// Port de create-team-dialog.tsx + JerseyDesigner (team-builder/jersey-designer.tsx):
@@ -76,11 +77,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           .createTeam(
             groupId: widget.groupId,
             name: _nameController.text.trim(),
-            jersey: {
-              'type': _jersey.pattern,
-              'primaryColor': _jersey.primaryColor,
-              'secondaryColor': _jersey.secondaryColor,
-            },
+            jersey: _jersey.toMap(),
             members: members,
           );
 
@@ -208,26 +205,20 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   }
 
   Widget _buildStep1() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: _nameController,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'Nombre del equipo',
-              prefixIcon: Icon(Icons.shield_outlined),
-            ),
-          ),
-          const SizedBox(height: 24),
-          JerseyDesigner(
-            value: _jersey,
-            onChanged: (j) => setState(() => _jersey = j),
-          ),
-        ],
+    return JerseyDesigner(
+      value: _jersey,
+      teamName: _nameController.text,
+      expandPanel: true,
+      topHeader: TextField(
+        controller: _nameController,
+        onChanged: (_) => setState(() {}),
+        decoration: const InputDecoration(
+          labelText: 'Nombre del equipo',
+          prefixIcon: Icon(Icons.shield_outlined),
+          isDense: true,
+        ),
       ),
+      onChanged: (j) => setState(() => _jersey = j),
     );
   }
 
@@ -241,9 +232,39 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
           child: Column(
             children: [
+              Row(
+                children: [
+                  JerseyWidget(
+                    jersey: _jersey,
+                    teamName: _nameController.text,
+                    size: 36,
+                  ),
+                  if (_jersey.hasCrest) ...[
+                    const SizedBox(width: 8),
+                    TeamCrestWidget(
+                      jersey: _jersey,
+                      teamName: _nameController.text,
+                      size: 28,
+                    ),
+                  ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _nameController.text.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.headline(
+                        size: 16,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -255,7 +276,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     ),
                   ),
                   Text(
-                    '${_selectedPlayerIds.length} seleccionados',
+                    _selectedPlayerIds.isEmpty
+                        ? 'Elegí al menos 1'
+                        : '${_selectedPlayerIds.length} seleccionados',
                     style: AppTypography.body(
                       size: 12,
                       color: context.c.textSecondary,

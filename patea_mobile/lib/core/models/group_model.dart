@@ -1,13 +1,74 @@
 class JerseyModel {
-  final String pattern; // plain, vertical, band, chevron, thirds, lines
+  final String pattern;
   final String primaryColor;
   final String secondaryColor;
+  final String crestShape; // 'none', 'classic', 'spanish', 'heater', 'circle', 'crest', 'oval', 'diamond', 'hexagon'
+  final String crestPattern; // 'diagonal', 'stripes', 'halves', 'quarters', 'band', 'solid'
+  final String crestSymbol; // 'initials', 'star', 'crown', 'ball', 'sun', 'wings', 'laurel', 'bolt', 'flame', 'swords', 'tower', 'trophy'
+  final String crestInitials;
+  final bool crestShowBanner;
+  final String crestBorderColor; // '' (auto), '#D97706' (oro), '#CBD5E1' (plata), '#FFFFFF', '#171717'
+  final int crestStars; // 0..3
 
   JerseyModel({
     this.pattern = 'plain',
     this.primaryColor = '#1E90FF',
     this.secondaryColor = '#FFFFFF',
+    this.crestShape = 'none',
+    this.crestPattern = 'diagonal',
+    this.crestSymbol = 'initials',
+    this.crestInitials = '',
+    this.crestShowBanner = false,
+    this.crestBorderColor = '',
+    this.crestStars = 0,
   });
+
+  bool get hasCrest => crestShape.isNotEmpty && crestShape != 'none';
+
+  JerseyModel copyWith({
+    String? pattern,
+    String? primaryColor,
+    String? secondaryColor,
+    String? crestShape,
+    String? crestPattern,
+    String? crestSymbol,
+    String? crestInitials,
+    bool? crestShowBanner,
+    String? crestBorderColor,
+    int? crestStars,
+  }) {
+    return JerseyModel(
+      pattern: pattern ?? this.pattern,
+      primaryColor: primaryColor ?? this.primaryColor,
+      secondaryColor: secondaryColor ?? this.secondaryColor,
+      crestShape: crestShape ?? this.crestShape,
+      crestPattern: crestPattern ?? this.crestPattern,
+      crestSymbol: crestSymbol ?? this.crestSymbol,
+      crestInitials: crestInitials ?? this.crestInitials,
+      crestShowBanner: crestShowBanner ?? this.crestShowBanner,
+      crestBorderColor: crestBorderColor ?? this.crestBorderColor,
+      crestStars: crestStars ?? this.crestStars,
+    );
+  }
+
+  /// Extrae hasta 2-3 iniciales deportivas a partir del nombre del equipo.
+  static String initialsFromTeamName(String name) {
+    final cleaned = name.trim();
+    if (cleaned.isEmpty) return 'FC';
+    final words = cleaned
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList(growable: false);
+    if (words.length >= 2) {
+      final significant = words
+          .where((w) => !const {'de', 'del', 'la', 'las', 'el', 'los', 'y'}.contains(w.toLowerCase()))
+          .toList(growable: false);
+      final source = significant.length >= 2 ? significant : words;
+      return source.take(3).map((w) => w[0]).join().toUpperCase();
+    }
+    final single = words.first.toUpperCase();
+    return single.length <= 3 ? single : single.substring(0, 2);
+  }
 
   factory JerseyModel.fromMap(Map<String, dynamic>? map) {
     if (map == null) return JerseyModel();
@@ -17,6 +78,13 @@ class JerseyModel {
       pattern: map['type'] ?? map['pattern'] ?? 'plain',
       primaryColor: map['primaryColor'] ?? '#1E90FF',
       secondaryColor: map['secondaryColor'] ?? '#FFFFFF',
+      crestShape: (map['crestShape'] as String?) ?? 'none',
+      crestPattern: (map['crestPattern'] as String?) ?? 'diagonal',
+      crestSymbol: (map['crestSymbol'] as String?) ?? 'initials',
+      crestInitials: (map['crestInitials'] as String?) ?? '',
+      crestShowBanner: (map['crestShowBanner'] as bool?) ?? false,
+      crestBorderColor: (map['crestBorderColor'] as String?) ?? '',
+      crestStars: ((map['crestStars'] as num?)?.toInt() ?? 0).clamp(0, 3),
     );
   }
 
@@ -25,6 +93,15 @@ class JerseyModel {
       'type': pattern,
       'primaryColor': primaryColor,
       'secondaryColor': secondaryColor,
+      if (hasCrest) 'crestShape': crestShape,
+      if (hasCrest) 'crestPattern': crestPattern,
+      if (hasCrest) 'crestSymbol': crestSymbol,
+      if (hasCrest && crestInitials.trim().isNotEmpty)
+        'crestInitials': crestInitials.trim().toUpperCase(),
+      if (hasCrest && crestShowBanner) 'crestShowBanner': true,
+      if (hasCrest && crestBorderColor.isNotEmpty)
+        'crestBorderColor': crestBorderColor,
+      if (hasCrest && crestStars > 0) 'crestStars': crestStars.clamp(0, 3),
     };
   }
 }

@@ -87,6 +87,7 @@ void main() {
         ),
       );
       expect(jersey.pattern, 'vertical');
+      await tap(tester, find.text('2. Colores'));
       await tap(tester, find.text('Secundario'));
       await tap(tester, find.byTooltip('Rojo'));
       expect(jersey.primaryColor, '#2563EB');

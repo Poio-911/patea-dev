@@ -6,6 +6,7 @@ import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/theme/app_typography.dart';
 import 'package:patea_mobile/core/theme/patea_colors.dart';
 import 'package:patea_mobile/core/widgets/player_card_widget.dart';
+import 'package:patea_mobile/core/utils/player_attribute_highlight.dart';
 
 PlayerModel _player({
   bool tied = false,
@@ -57,6 +58,15 @@ Color? _color(WidgetTester tester, String text) =>
     tester.widget<Text>(find.text(text)).style?.color;
 
 void main() {
+  test('standout threshold is strictly above 70', () {
+    for (final score in [50, 70, 71]) {
+      final player = PlayerModel.fromFirestore({
+        'name': 'Prueba', 'position': 'DEL',
+        for (final key in ['pac', 'sho', 'pas', 'dri', 'def', 'phy']) key: score,
+      }, 'threshold');
+      expect(playerAttributeHighlight(player), score > 70 ? 'SHO' : isNull);
+    }
+  });
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     GoogleFonts.config.allowRuntimeFetching = false;
@@ -102,13 +112,16 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
-    testWidgets('all tied maximum attributes are marked, light=$light', (
+    testWidgets('only the position-priority tied maximum is marked, light=$light', (
       tester,
     ) async {
       await _mount(tester, _player(tied: true), light);
       final maxima = tester.widgetList<Text>(find.text('93')).toList();
       expect(maxima, hasLength(2));
-      expect(maxima.every((text) => text.style?.color == amber), isTrue);
+      expect(maxima.where((text) => text.style?.color == amber), hasLength(1));
+      final regateRow = find.ancestor(of: find.text('REG'), matching: find.byType(Row)).first;
+      final regateValue = tester.widget<Text>(find.descendant(of: regateRow, matching: find.text('93')));
+      expect(regateValue.style?.color, amber);
       expect(_color(tester, '81'), isNot(amber));
     });
     testWidgets(
