@@ -444,6 +444,12 @@ class MatchModel {
   /// Motivo que dio quien canceló el partido (si lo dio).
   final String? cancelReason;
 
+  /// `false` cuando entró o salió alguien y los equipos ya armados no lo reflejan.
+  final bool? teamsGenerated;
+
+  /// Quienes un responsable sacó de este partido (se pueden volver a sumar).
+  final List<MatchPlayerEntry> removedPlayers;
+
   /// Quienes pidieron entrar y todavía esperan respuesta del organizador.
   /// Sólo se llena en partidos 'manual': ver requestJoinMatch.
   final List<String> pendingPlayerUids;
@@ -488,6 +494,13 @@ class MatchModel {
   bool get hasFixedRoster => isTeamMatch || isCompetitionMatch;
 
   bool get isCancelled => status == 'cancelled';
+
+  /// Hay equipos armados pero la lista de jugadores cambió después.
+  bool get teamsOutOfSync =>
+      !hasFixedRoster &&
+      teamsGenerated == false &&
+      ((teamA?.players.isNotEmpty ?? false) ||
+          (teamB?.players.isNotEmpty ?? false));
 
   /// Se puede cancelar mientras no empezó y no es de una competición.
   bool get canCancel =>
@@ -553,6 +566,8 @@ class MatchModel {
     this.playerUids = const [],
     this.unavailablePlayerUids = const [],
     this.cancelReason,
+    this.teamsGenerated,
+    this.removedPlayers = const [],
     this.pendingPlayerUids = const [],
     this.players = const [],
     this.events = const [],
@@ -647,6 +662,11 @@ class MatchModel {
               .whereType<String>()
               .toList(),
       cancelReason: data['cancelReason'] as String?,
+      teamsGenerated: data['teamsGenerated'] as bool?,
+      removedPlayers: ((data['removedPlayers'] as List<dynamic>?) ?? const [])
+          .whereType<Map>()
+          .map((p) => MatchPlayerEntry.fromMap(p.cast<String, dynamic>()))
+          .toList(),
       pendingPlayerUids: ((data['pendingPlayerUids'] as List<dynamic>?) ?? const [])
           .whereType<String>()
           .toList(),

@@ -261,3 +261,13 @@ pueden subir"**), chat con edición sólo propia, subcolecciones sensibles cerra
 Cada paso lleva tests, y todo lo de A y B **requiere desplegar** funciones y
 reglas para tener efecto. El estado de despliegue actual se debe confirmar antes de
 empezar.
+
+## Estado de implementación
+
+Los bloques A (servidor), B (reglas) y C (funciones nuevas y pantallas) están implementados.
+
+**Decisiones que quedaron así a propósito**
+
+- `leagues` y `cups`: el dueño de la competición sigue escribiendo directo (la web arma llaves y fixtures desde el cliente). Un tercero no puede: sólo el dueño. No se cierra sin migrar antes esas pantallas a funciones.
+- Documento principal del partido (`matches/{id}`): la lectura sigue abierta a cualquier usuario con sesión. Las consultas de lista (grupo, públicos, explorar) no pueden demostrar el vínculo con el grupo en las reglas, así que restringirla exige rediseñar esas consultas. Lo que cuelga del partido (clips, chat, presencia, solicitudes, autoevaluaciones, asignaciones) sí está acotado.
+- Plantel de una competición: se cambia desde el equipo; `removeMatchPlayer` no actúa sobre partidos de competición.

@@ -9,6 +9,7 @@ import 'package:patea_mobile/core/services/match_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/utils/explore_filters.dart';
 import 'package:patea_mobile/features/matches/match_detail_screen.dart';
+import 'package:patea_mobile/features/matches/widgets/match_roster_tools.dart';
 
 import 'goldens/arnes.dart';
 
@@ -22,6 +23,21 @@ class FakeMatchService extends MatchService {
 
   @override
   Future<void> finishMatch(String matchId) async => calls.add('finishMatch');
+
+  @override
+  Future<void> respondMatchInvitation(String matchId, bool accepted) async =>
+      calls.add('invitation:$accepted');
+
+  @override
+  Future<void> removeMatchPlayer(
+    String matchId,
+    String playerId, {
+    bool restore = false,
+  }) async => calls.add('remove:$playerId:$restore');
+
+  @override
+  Future<void> cancelMatch(String matchId, {String? reason}) async =>
+      calls.add('cancel');
 }
 
 void main() {
@@ -36,6 +52,8 @@ void main() {
     int matchSize = 10,
     String? groupId,
     List<String> participantGroupIds = const [],
+    bool? teamsGenerated,
+    String? cancelReason,
   }) => MatchModel(
     id: 'ms1',
     title: 'Los Galácticos vs La Furia Roja',
@@ -47,6 +65,8 @@ void main() {
     ownerUid: owner,
     groupId: groupId,
     participantGroupIds: participantGroupIds,
+    teamsGenerated: teamsGenerated,
+    cancelReason: cancelReason,
     playerUids: playerUids ?? partidos.first.playerUids,
     players: partidos.first.players,
     teamA: partidos.first.teamA,
@@ -58,6 +78,7 @@ void main() {
     WidgetTester tester,
     MatchModel match, {
     FakeMatchService? service,
+    bool invited = false,
   }) async {
     await montarPantalla(
       tester,
@@ -68,6 +89,7 @@ void main() {
           'ms1',
         ).overrideWith((ref) => Stream.value(match)),
         matchClipsProvider('ms1').overrideWith((ref) => Stream.value(const [])),
+        myMatchInvitationProvider('ms1').overrideWith((ref) => Stream.value(invited)),
         if (service != null) matchServiceProvider.overrideWithValue(service),
       ],
     );
@@ -257,5 +279,58 @@ void main() {
         expect(find.text('Subir'), findsNothing);
       },
     );
+  });
+
+  // ------------------------------------------------------ pantallas nuevas
+
+  group('invitaciones, equipos y cancelación', () {
+    testWidgets('el invitado ve Aceptar / Rechazar y acepta', (tester) async {
+      final service = FakeMatchService();
+      await abrir(
+        tester,
+        partido(
+          type: 'collaborative',
+          owner: 'otro',
+          playerUids: ['uid-2'],
+        ),
+        service: service,
+        invited: true,
+      );
+      expect(find.text('Te invitaron a este partido'), findsOneWidget);
+      await tester.ensureVisible(find.text('Aceptar'));
+      await tester.tap(find.text('Aceptar'));
+      await tester.pump();
+      expect(service.calls, ['invitation:true']);
+    });
+
+    testWidgets('sin invitación no hay banner', (tester) async {
+      await abrir(
+        tester,
+        partido(type: 'collaborative', owner: 'otro', playerUids: ['uid-2']),
+      );
+      expect(find.text('Te invitaron a este partido'), findsNothing);
+    });
+
+    testWidgets('un partido cancelado muestra el aviso y el motivo', (tester) async {
+      await abrir(
+        tester,
+        partido(type: 'collaborative', status: 'cancelled', cancelReason: 'Llueve'),
+      );
+      expect(find.textContaining('fue cancelado'), findsOneWidget);
+      expect(find.textContaining('Llueve'), findsOneWidget);
+    });
+
+    testWidgets('equipos desactualizados: el organizador ve el aviso', (tester) async {
+      await abrir(
+        tester,
+        partido(type: 'collaborative', teamsGenerated: false),
+      );
+      expect(find.textContaining('ya no están actualizados'), findsOneWidget);
+    });
+
+    testWidgets('en una competición el organizador puede dirigir', (tester) async {
+      await abrir(tester, partido(type: 'league', status: 'upcoming'));
+      expect(find.text('Dirigir'), findsOneWidget);
+    });
   });
 }

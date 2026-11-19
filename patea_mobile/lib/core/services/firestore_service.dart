@@ -93,7 +93,12 @@ final activeGroupPlayersProvider = StreamProvider<List<PlayerModel>>((ref) {
 final activeGroupMatchesProvider = StreamProvider<List<MatchModel>>((ref) {
   final groupAsync = ref.watch(activeGroupIdProvider);
   if (groupAsync.isLoading) return const Stream<List<MatchModel>>.empty();
-  return ref.watch(firestoreServiceProvider).getMatchesStream(groupId: groupAsync.value);
+  return ref
+      .watch(firestoreServiceProvider)
+      .getMatchesStream(
+        groupId: groupAsync.value,
+        uid: ref.watch(currentUidProvider),
+      );
 });
 
 final userDisplayNameProvider = FutureProvider.family<String?, String>((
@@ -147,7 +152,9 @@ final singleTeamStreamProvider = StreamProvider.family<GroupTeamModel?, String>(
 });
 
 final matchesStreamProvider = StreamProvider.family<List<MatchModel>, String?>((ref, groupId) {
-  return ref.watch(firestoreServiceProvider).getMatchesStream(groupId: groupId);
+  return ref
+      .watch(firestoreServiceProvider)
+      .getMatchesStream(groupId: groupId, uid: ref.watch(currentUidProvider));
 });
 
 final singleMatchStreamProvider = StreamProvider.family<MatchModel?, String>((ref, matchId) {
@@ -449,6 +456,7 @@ class FirestoreService {
   // Usa el índice `groupId ASC, date DESC`, ya existente.
   Stream<List<MatchModel>> getMatchesStream({
     String? groupId,
+    String? uid,
     int limit = QueryLimits.matches,
   }) {
     if (groupId == null || groupId.isEmpty) {
@@ -477,7 +485,21 @@ class FirestoreService {
             .map((doc) => MatchModel.fromFirestore(doc.data(), doc.id))
             .toList());
 
-    return mergeMatchLists(own, shared, limit: limit);
+    final groupMatches = mergeMatchLists(own, shared, limit: limit);
+    if (uid == null || uid.isEmpty) return groupMatches;
+
+    // Los partidos en los que estoy anotado aunque sean de otro grupo (un
+    // desafío, un partido de un amigo). Sin orderBy: no necesita otro índice;
+    // el orden lo pone la mezcla.
+    final mine = _firestore
+        .collection('matches')
+        .where('playerUids', arrayContains: uid)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MatchModel.fromFirestore(doc.data(), doc.id))
+            .toList());
+    return mergeMatchLists(groupMatches, mine, limit: limit);
   }
 
   Stream<MatchModel?> getMatchStream(String matchId) {

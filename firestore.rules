@@ -292,6 +292,13 @@ service cloud.firestore {
           && (resource.data.uploadedBy == request.auth.uid || isMatchManager(matchId));
       }
 
+      // Autoevaluaciones: sólo quienes participan del partido (el resumen del
+      // jugador las junta). Antes las leía cualquier usuario con sesión.
+      match /selfEvaluations/{selfEvaluationId} {
+        allow read: if isMatchParticipant(matchId);
+        allow write: if false;
+      }
+
       // Solicitudes para entrar: las ve el organizador (y quien pidió), nadie más.
       // Traen el perfil de cada solicitante.
       match /joinRequests/{requesterId} {
@@ -331,7 +338,7 @@ service cloud.firestore {
       match /{subcollection}/{docId} {
         // Reglas aditivas: no volver a abrir las rutas privadas de arriba.
         allow read: if isAuthenticated()
-          && !(subcollection in ['messages', 'invitations', 'assignments', 'processedSubmissions', 'joinRequests', 'clips', 'presence']);
+          && !(subcollection in ['messages', 'invitations', 'assignments', 'processedSubmissions', 'joinRequests', 'clips', 'presence', 'selfEvaluations']);
         allow write: if false;
       }
     }
@@ -359,8 +366,10 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Las autoevaluaciones (goles, asistencias, cómo se sintió) las lee su autor
+    // en una consulta de grupo; el servidor (Admin SDK) no pasa por las reglas.
     match /{path=**}/selfEvaluations/{selfEvaluationId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && resource.data.get('playerId', '') == request.auth.uid;
       allow write: if false;
     }
 

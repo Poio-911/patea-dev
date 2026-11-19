@@ -32,6 +32,7 @@ import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/player_card_preview.dart';
 import 'widgets/edit_teams_sheet.dart';
 import 'widgets/join_requests_section.dart';
+import 'widgets/match_roster_tools.dart';
 import 'widgets/match_clips_view.dart';
 import 'widgets/match_planning_view.dart';
 import 'widgets/match_story_view.dart';
@@ -751,6 +752,48 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         match.status == 'upcoming') ...[
                       const SizedBox(height: 14),
                       JoinRequestsSection(matchId: match.id),
+                    ],
+                    if (match.isCancelled) ...[
+                      const SizedBox(height: 14),
+                      PateaCard(
+                        color: context.c.cardSurface,
+                        radius: AppRadii.cardAll,
+                        borderColor: context.c.destructive.withValues(
+                          alpha: 0.4,
+                        ),
+                        padding: const EdgeInsets.all(14),
+                        child: Text(
+                          match.cancelReason == null ||
+                                  match.cancelReason!.isEmpty
+                              ? 'Este partido fue cancelado.'
+                              : 'Este partido fue cancelado. Motivo: ${match.cancelReason}',
+                          style: AppTypography.body(size: 13),
+                        ),
+                      ),
+                    ],
+                    if (!isUserInMatch &&
+                        uid != null &&
+                        (match.status == 'planning' ||
+                            match.status == 'upcoming')) ...[
+                      const SizedBox(height: 14),
+                      MatchInvitationBanner(match: match),
+                    ],
+                    if (isManager &&
+                        match.teamsOutOfSync &&
+                        (match.status == 'planning' ||
+                            match.status == 'upcoming')) ...[
+                      const SizedBox(height: 14),
+                      TeamsOutOfSyncBanner(
+                        busy: _isShuffling,
+                        onRebuild: () => _handleShuffle(match),
+                      ),
+                    ],
+                    if (isManager &&
+                        !isCompetition &&
+                        (match.status == 'planning' ||
+                            match.status == 'upcoming')) ...[
+                      const SizedBox(height: 6),
+                      ManageRosterSection(match: match),
                     ],
                     if (match.status == 'evaluated' ||
                         match.status == 'completed' ||
@@ -1789,6 +1832,25 @@ class _StickyActionBar extends StatelessWidget {
         ),
         label: Text(
           isOwner ? 'Ver evaluaciones' : 'Evaluar partido',
+          style: AppTypography.action(size: 16, color: context.c.onPrimary),
+        ),
+      );
+    } else if (match.status == 'upcoming' && isCompetition && isManager) {
+      // Los partidos de una competición también se dirigen desde acá: la pantalla
+      // en vivo ofrece iniciar, y al finalizar el resultado llega solo a la
+      // tabla o la llave (`syncCompetitionResult`).
+      actionWidget = ElevatedButton.icon(
+        onPressed: () => context.push('/matches/${match.id}/live'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: context.c.primary,
+          foregroundColor: context.c.onPrimary,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
+        ),
+        icon: const Icon(Icons.play_arrow_rounded, size: 20),
+        label: Text(
+          'Dirigir',
           style: AppTypography.action(size: 16, color: context.c.onPrimary),
         ),
       );

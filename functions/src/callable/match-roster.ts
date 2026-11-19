@@ -98,9 +98,18 @@ export const removeMatchPlayer = onCall({ region: 'us-central1' }, async (reques
     if (current.size) excluded[teamId] = [...current];
     else delete excluded[teamId];
 
-    const patch: Record<string, unknown> = { rosterExclusions: excluded };
+    const removed: any[] = Array.isArray(match.removedPlayers) ? match.removedPlayers : [];
+    const patch: Record<string, unknown> = {
+      rosterExclusions: excluded,
+      removedPlayers: removed.filter((r) => r?.uid !== playerId),
+    };
     if (!restore) {
       if (!playerUids.includes(playerId)) throw new HttpsError('not-found', 'Esa persona no está en el partido.');
+      const entry = players.find((p) => p.uid === playerId);
+      patch.removedPlayers = [
+        ...removed.filter((r) => r?.uid !== playerId),
+        entry ?? { uid: playerId, displayName: 'Jugador', ovr: 0, position: '', photoURL: '' },
+      ];
       const nextTeams = withoutPlayer(teams, playerId);
       if (nextTeams.some((team: any) => (team.players ?? []).length === 0)) {
         throw new HttpsError('failed-precondition', 'Cada equipo necesita al menos un jugador.');

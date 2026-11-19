@@ -51,6 +51,7 @@ describe('reglas de contenido del partido', { skip: !process.env.FIRESTORE_EMULA
         'matches/done/clips/pl_0': clip('pl'),
         'matches/done/clips/legacy-1700000000000': clip('plB'),
         'matches/done/joinRequests/outsider': { uid: 'outsider', displayName: 'X' },
+        'matches/done/selfEvaluations/s1': { playerId: 'pl', goals: 1 },
         'matches/done/assignments/a1': { evaluatorId: 'plB', subjectId: 'pl' },
         'matches/legacy/assignments/a1': { evaluatorId: 'pl', subjectId: 'x' },
       };
@@ -149,6 +150,18 @@ describe('reglas de contenido del partido', { skip: !process.env.FIRESTORE_EMULA
       await assertFails(getDoc(doc(as(uid), 'matches/done/joinRequests/outsider')));
     }
     await assertFails(setDoc(doc(as('org'), 'matches/done/joinRequests/x'), { uid: 'x' }));
+  });
+
+  // ------------------------------------------------------- autoevaluaciones
+
+  it('las autoevaluaciones las leen los participantes, no un tercero ni un miembro del grupo', async () => {
+    for (const uid of ['org', 'cap', 'pl', 'plB']) {
+      await assertSucceeds(getDoc(doc(as(uid), 'matches/done/selfEvaluations/s1')));
+    }
+    for (const uid of ['outsider', 'member']) {
+      await assertFails(getDoc(doc(as(uid), 'matches/done/selfEvaluations/s1')));
+    }
+    await assertFails(setDoc(doc(as('pl'), 'matches/done/selfEvaluations/s2'), { playerId: 'pl' }));
   });
 
   // ------------------------------------------------------------ asignaciones
