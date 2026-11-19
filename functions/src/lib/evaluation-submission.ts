@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import * as admin from 'firebase-admin';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { canonicalPerformanceTags, CanonicalTag } from './performance-tags';
+import { isValidEvaluationAudioPath } from './text-performance-analyzer';
 
 export type NormalizedEvaluation = {
   assignmentId: string;
@@ -10,6 +11,8 @@ export type NormalizedEvaluation = {
   rating?: number;
   performanceTags?: CanonicalTag[];
   textDescription?: string;
+  audioPath?: string;
+  audioDurationSec?: number;
 };
 
 export type NormalizedSubmission = {
@@ -92,12 +95,24 @@ export function normalizeSubmission(raw: unknown): NormalizedSubmission {
         return tagById.get(tag.id)!;
       });
     } else if (evaluation.evaluationType === 'text') {
-      const text = optionalText(evaluation.textDescription, 500);
-      if (!text || text.length < 10) invalid('La descripción debe tener entre 10 y 500 caracteres.');
-      result.textDescription = text;
-      // Un cliente puede inventar aiAttributeChanges/aiConfidence. El texto se
-      // conserva como testimonio; sólo un análisis ejecutado en servidor puede
-      // autorizar cambios de atributos. Nunca se persisten efectos IA del cliente.
+      const audioPath = optionalText(evaluation.audioPath, 240);
+      if (audioPath) {
+        result.audioPath = audioPath;
+        if (evaluation.audioDurationSec !== undefined && evaluation.audioDurationSec !== null) {
+          const dur = Number(evaluation.audioDurationSec);
+          if (!Number.isFinite(dur) || dur < 1 || dur > 75) {
+            invalid('La duración del audio debe estar entre 1 y 75 segundos.');
+          }
+          result.audioDurationSec = Math.round(dur);
+        }
+      } else {
+        const text = optionalText(evaluation.textDescription, 500);
+        if (!text || text.length < 10) invalid('La descripción debe tener entre 10 y 500 caracteres.');
+        result.textDescription = text;
+      }
+      // Un cliente puede inventar aiAttributeChanges/aiConfidence. El texto/audio
+      // se conserva; sólo un análisis ejecutado en servidor puede autorizar
+      // cambios de atributos. Nunca se persisten efectos IA del cliente.
     } else {
       invalid('Tipo de evaluación inválido.');
     }
@@ -145,6 +160,9 @@ export async function validateEvaluationSubmission(
       throw new HttpsError('permission-denied', 'La evaluación no corresponde a una asignación propia.');
     }
     if (assignment.status !== 'pending') throw new HttpsError('failed-precondition', 'La asignación ya fue completada.');
+    if (evaluation.audioPath && !isValidEvaluationAudioPath(evaluation.audioPath, matchId, evaluatorId)) {
+      throw new HttpsError('permission-denied', 'La ruta del audio no corresponde a esta evaluación.');
+    }
   }
   const pendingCount = [...assignments.values()].filter(a => a.status === 'pending').length;
   if (pendingCount !== form.evaluations.length) invalid('Debés completar todas tus asignaciones pendientes.');

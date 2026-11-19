@@ -614,7 +614,9 @@ class _IdentityRequestCardState extends ConsumerState<_IdentityRequestCard> {
           ),
           const SizedBox(height: 10),
           Text(
-            '${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó.',
+            r.hasAudio
+                ? '${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó. Si aceptás, va a ver tu nombre y poder escuchar tu nota de voz.'
+                : '${r.fromPlayerName} quiere saber que fuiste vos quien lo evaluó.',
             style: AppTypography.body(size: 12, color: context.c.textSecondary),
           ),
           const SizedBox(height: 12),

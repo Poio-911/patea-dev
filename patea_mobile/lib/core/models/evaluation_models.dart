@@ -122,10 +122,16 @@ class PlayerEvaluationDraft {
   final String displayName;
   final String photoURL;
   final String position;
+  final int currentOvr;
+  final Map<String, int> currentAttributes;
   String evaluationType; // 'points' | 'tags' | 'text'
+  String reviewMode; // 'write' | 'audio' (cuando evaluationType == 'text')
   double rating;
   List<PerformanceTagItem> performanceTags;
   String textDescription;
+  String? localAudioPath;
+  String? uploadedAudioPath;
+  int audioDurationSec;
   TextPerformancePreview? aiPreview;
   final List<PerformanceTagItem> tagPool;
 
@@ -136,12 +142,31 @@ class PlayerEvaluationDraft {
     required this.photoURL,
     required this.position,
     required this.tagPool,
+    this.currentOvr = 60,
+    Map<String, int>? currentAttributes,
     this.evaluationType = 'points',
+    this.reviewMode = 'write',
     this.rating = 5,
     List<PerformanceTagItem>? performanceTags,
     this.textDescription = '',
+    this.localAudioPath,
+    this.uploadedAudioPath,
+    this.audioDurationSec = 0,
     this.aiPreview,
-  }) : performanceTags = performanceTags ?? [];
+  }) : currentAttributes = currentAttributes ??
+           {
+             'pac': currentOvr,
+             'sho': currentOvr,
+             'pas': currentOvr,
+             'dri': currentOvr,
+             'def': currentOvr,
+             'phy': currentOvr,
+           },
+       performanceTags = performanceTags ?? [];
+
+  bool get isAudioReview => evaluationType == 'text' && reviewMode == 'audio';
+  bool get hasReadyAudio =>
+      uploadedAudioPath != null && uploadedAudioPath!.trim().isNotEmpty;
 
   Map<String, dynamic> toSubmissionMap() {
     return {
@@ -166,7 +191,11 @@ class PlayerEvaluationDraft {
                   'effects': t.effects.entries.map((e) => {'attribute': e.key, 'change': e.value}).toList(),
                 })
             .toList(),
-      if (evaluationType == 'text') 'textDescription': textDescription.trim(),
+      if (evaluationType == 'text' && isAudioReview && hasReadyAudio) ...{
+        'audioPath': uploadedAudioPath!.trim(),
+        if (audioDurationSec > 0) 'audioDurationSec': audioDurationSec,
+      } else if (evaluationType == 'text')
+        'textDescription': textDescription.trim(),
     };
   }
 }
@@ -178,11 +207,13 @@ class IdentityRevealRequest {
   final String fromPlayerName;
   final String fromPlayerPhotoUrl;
   final String matchTitle;
+  final bool hasAudio;
 
   IdentityRevealRequest({
     required this.evaluationId,
     required this.fromPlayerName,
     required this.fromPlayerPhotoUrl,
     required this.matchTitle,
+    this.hasAudio = false,
   });
 }

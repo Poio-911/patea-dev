@@ -66,7 +66,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Pateá accede a tus fotos para que elijas la foto de tu carta de jugador o un clip ya grabado del partido.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Pateá graba el audio junto con los clips del partido.</string>
+	<string>Pateá usa el micrófono para grabar notas de voz en evaluaciones y audio junto con los clips del partido.</string>
 
 	<!-- Ubicación: el Mercado de Fichajes busca jugadores libres por cercanía
 	     a la cancha del partido. -->

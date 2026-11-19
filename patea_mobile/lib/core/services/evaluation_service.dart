@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'callable_functions.dart';
 import 'firestore_service.dart' show currentUidProvider;
@@ -176,6 +182,7 @@ class EvaluationService {
         fromPlayerName: (playerData?['name'] as String?) ?? 'Jugador',
         fromPlayerPhotoUrl: (playerData?['photoUrl'] as String?) ?? (playerData?['photoURL'] as String?) ?? '',
         matchTitle: (matchData?['title'] as String?) ?? 'Partido',
+        hasAudio: (data['audioPath'] as String?)?.trim().isNotEmpty == true,
       ));
     }
     return requests;
@@ -201,15 +208,46 @@ class EvaluationService {
     });
   }
 
+  Future<void> requestIdentityReveal(String evaluationId) async {
+    await callFunction('requestIdentityReveal', {'evaluationId': evaluationId});
+  }
+
   Future<void> respondToIdentityReveal(String evaluationId, String response) async {
     await callFunction('respondToIdentityReveal', {'evaluationId': evaluationId, 'response': response});
   }
 
+  /// Sube una nota de voz de evaluación a la ruta privada del autor en Storage.
+  Future<String> uploadEvaluationAudio({
+    required String matchId,
+    required String assignmentId,
+    required File file,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception('Debés iniciar sesión para subir la nota de voz.');
+    }
+    final bytes = await file.readAsBytes();
+    if (bytes.length > 2 * 1024 * 1024) {
+      throw Exception('El audio supera el límite de 2 MB.');
+    }
+    final storagePath = 'evaluation-audios/$matchId/$uid/$assignmentId.m4a';
+    final ref = FirebaseStorage.instance.ref(storagePath);
+    await ref.putData(
+      bytes,
+      SettableMetadata(contentType: 'audio/mp4'),
+    );
+    return storagePath;
+  }
+
   /// Analiza una reseña libre para mostrar el impacto estimado en atributos.
+  /// Si se pasan `matchId` y `assignmentId`, el servidor cachea el resultado
+  /// para reutilizarlo al enviar sin duplicar gasto de IA.
   Future<TextPerformancePreview> analyzeTextPerformance({
     required String text,
     required String playerPosition,
     required String playerName,
+    String? matchId,
+    String? assignmentId,
   }) async {
     final result = await callFunction(
       'analyzeTextPerformance',
@@ -217,10 +255,55 @@ class EvaluationService {
         'text': text.trim(),
         'playerPosition': playerPosition,
         'playerName': playerName,
+        if (matchId != null && matchId.isNotEmpty) 'matchId': matchId,
+        if (assignmentId != null && assignmentId.isNotEmpty)
+          'assignmentId': assignmentId,
       },
       timeout: const Duration(seconds: 60),
     );
     return TextPerformancePreview.fromMap(result);
+  }
+
+  /// Analiza una nota de voz ya subida a Storage; devuelve sólo resumen +
+  /// cambios de atributos (sin transcripción cruda) y deja el análisis cacheado
+  /// en el servidor para evitar doble llamada al enviar.
+  Future<TextPerformancePreview> analyzeAudioPerformance({
+    required String matchId,
+    required String assignmentId,
+    required String audioPath,
+    required int audioDurationSec,
+  }) async {
+    final result = await callFunction(
+      'analyzeAudioPerformance',
+      {
+        'matchId': matchId,
+        'assignmentId': assignmentId,
+        'audioPath': audioPath,
+        'audioDurationSec': audioDurationSec,
+      },
+      timeout: const Duration(seconds: 60),
+    );
+    return TextPerformancePreview.fromMap(result);
+  }
+
+  /// Descarga los bytes de una nota de voz únicamente si la identidad fue
+  /// revelada (o si la consulta el propio evaluador).
+  Future<({Uint8List bytes, String mimeType, int? durationSec})>
+  loadEvaluationAudio(String evaluationId) async {
+    final result = await callFunction(
+      'getEvaluationAudio',
+      {'evaluationId': evaluationId},
+      timeout: const Duration(seconds: 30),
+    );
+    final raw = (result['audioBase64'] as String?) ?? '';
+    if (raw.isEmpty) {
+      throw Exception('Audio no disponible.');
+    }
+    return (
+      bytes: base64Decode(raw),
+      mimeType: (result['mimeType'] as String?) ?? 'audio/mp4',
+      durationSec: (result['durationSec'] as num?)?.toInt(),
+    );
   }
 
   /// Solo el organizador; agrega los assignments incompletos con el

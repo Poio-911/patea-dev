@@ -1,13 +1,19 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+
 import '../../core/widgets/patea_evaluation_mark.dart';
 import '../../core/widgets/patea_button_progress.dart';
-import 'package:flutter/material.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_help_dialog.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/constants/performance_tags.dart';
@@ -18,6 +24,11 @@ import '../../core/models/evaluation_models.dart';
 import '../../core/widgets/player_position_badge.dart';
 import '../../core/widgets/patea_tabs.dart';
 import '../../core/utils/dates.dart';
+import '../../core/utils/ovr_calculator.dart';
+import 'widgets/evaluation_audio_player.dart';
+
+const int _minEvaluationTags = 3;
+const int _maxEvaluationTags = 5;
 
 List<PerformanceTagItem> _randomTagPool(String position) {
   final tags = PerformanceTagsData.getTagsForPosition(position);
@@ -25,7 +36,7 @@ List<PerformanceTagItem> _randomTagPool(String position) {
     ..shuffle();
   final negative = tags.where((t) => t.impact == 'negative').toList()
     ..shuffle();
-  final pool = [...positive.take(6), ...negative.take(4)];
+  final pool = [...positive.take(5), ...negative.take(5)];
   pool.shuffle();
   return pool;
 }
@@ -125,6 +136,15 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
               displayName: p.name,
               photoURL: p.photoUrl ?? '',
               position: p.position,
+              currentOvr: p.ovr,
+              currentAttributes: {
+                'pac': p.pac,
+                'sho': p.sho,
+                'pas': p.pas,
+                'dri': p.dri,
+                'def': p.def,
+                'phy': p.phy,
+              },
               tagPool: _randomTagPool(p.position),
             );
           })
@@ -149,19 +169,31 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
   Future<void> _submit() async {
     if (_isSubmitting) return;
     for (final d in _drafts) {
-      if (d.evaluationType == 'tags' && d.performanceTags.length < 3) {
+      if (d.evaluationType == 'tags' &&
+          (d.performanceTags.length < _minEvaluationTags ||
+              d.performanceTags.length > _maxEvaluationTags)) {
         PateaSnack.info(
           context,
-          'Elegí al menos 3 etiquetas para ${d.displayName}.',
+          'Elegí entre $_minEvaluationTags y $_maxEvaluationTags etiquetas para ${d.displayName}.',
         );
         return;
       }
-      if (d.evaluationType == 'text' && d.textDescription.trim().length < 10) {
-        PateaSnack.info(
-          context,
-          'Escribí al menos 10 caracteres en la reseña de ${d.displayName}.',
-        );
-        return;
+      if (d.evaluationType == 'text') {
+        if (d.isAudioReview) {
+          if (!d.hasReadyAudio) {
+            PateaSnack.info(
+              context,
+              'Grabá y esperá el análisis del audio para ${d.displayName}.',
+            );
+            return;
+          }
+        } else if (d.textDescription.trim().length < 10) {
+          PateaSnack.info(
+            context,
+            'Escribí al menos 10 caracteres en la reseña de ${d.displayName}.',
+          );
+          return;
+        }
       }
     }
 
@@ -341,7 +373,7 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
           ),
         const SizedBox(height: 10),
         Text(
-          'Valorá lo que pasó en la cancha. Podés usar una nota o describir el rendimiento con etiquetas.',
+          'Valorá lo que pasó en la cancha con nota, etiquetas o reseña (escrita o por voz). Todos los métodos pesan igual.',
           style: AppTypography.body(size: 14, color: context.c.textSecondary),
         ),
         const SizedBox(height: 24),
@@ -364,6 +396,16 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
                 label: 'Asistencias',
                 value: _evaluatorAssists,
                 onChanged: (v) => setState(() => _evaluatorAssists = v),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Tus goles y asistencias suman un micro-bono parejo al cerrar el partido.',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
               ),
               if (mvpCandidates.isNotEmpty) ...[
                 const SizedBox(height: 14),
@@ -425,7 +467,11 @@ class _EvaluationFormScreenState extends ConsumerState<EvaluationFormScreen> {
         ),
         const SizedBox(height: 16),
         for (final draft in _drafts)
-          _PlayerEvaluationCard(draft: draft, onChanged: () => setState(() {})),
+          _PlayerEvaluationCard(
+            matchId: widget.matchId,
+            draft: draft,
+            onChanged: () => setState(() {}),
+          ),
         const SizedBox(height: 8),
         Text(
           'Antes de enviar vas a poder revisar tus notas.',
@@ -527,81 +573,349 @@ class _CounterDial extends StatelessWidget {
   );
 }
 
+EvaluationImpactPreview? _computeDraftImpact(PlayerEvaluationDraft draft) {
+  if (draft.evaluationType == 'points') {
+    return OvrCalculator.previewFromPoints(
+      currentAttributes: draft.currentAttributes,
+      currentOvr: draft.currentOvr,
+      position: draft.position,
+      rating: draft.rating,
+    );
+  }
+  if (draft.evaluationType == 'tags') {
+    if (draft.performanceTags.isEmpty) return null;
+    return OvrCalculator.previewFromTags(
+      currentAttributes: draft.currentAttributes,
+      currentOvr: draft.currentOvr,
+      tags: draft.performanceTags,
+    );
+  }
+  final ai = draft.aiPreview;
+  if (ai == null) return null;
+  return OvrCalculator.previewFromAI(
+    currentAttributes: draft.currentAttributes,
+    currentOvr: draft.currentOvr,
+    aiChanges: ai.attributeChanges,
+  );
+}
+
+String _ovrTransitionLabel(EvaluationImpactPreview preview) {
+  if (preview.ovrDelta > 0) {
+    return 'OVR ${preview.oldOvr} → ${preview.newOvr} (+${preview.ovrDelta})';
+  }
+  if (preview.ovrDelta < 0) {
+    return 'OVR ${preview.oldOvr} → ${preview.newOvr} (${preview.ovrDelta})';
+  }
+  return 'OVR ${preview.oldOvr} · Sin cambio';
+}
+
 class _PlayerEvaluationCard extends StatelessWidget {
+  final String matchId;
   final PlayerEvaluationDraft draft;
   final VoidCallback onChanged;
-  const _PlayerEvaluationCard({required this.draft, required this.onChanged});
+  const _PlayerEvaluationCard({
+    required this.matchId,
+    required this.draft,
+    required this.onChanged,
+  });
   @override
-  Widget build(BuildContext context) => PateaCard(
-    color: context.c.card,
-    radius: AppRadii.cardAll,
-    margin: const EdgeInsets.only(bottom: 16),
-    padding: const EdgeInsets.all(18),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            PateaAvatar(
-              photoUrl: draft.photoURL,
-              seed: draft.subjectId,
-              size: 54,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return PateaCard(
+      color: c.card,
+      radius: AppRadii.cardAll,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              PateaAvatar(
+                photoUrl: draft.photoURL,
+                seed: draft.subjectId,
+                size: 54,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      draft.displayName,
+                      style: AppTypography.body(
+                        size: 17,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    PlayerPositionBadge(
+                      position: draft.position,
+                      showFullName: true,
+                      dense: true,
+                      fontSize: 12,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    draft.displayName,
-                    style: AppTypography.body(
-                      size: 17,
+                    'OVR',
+                    style: AppTypography.code(
+                      size: 10,
                       weight: FontWeight.w700,
+                      color: c.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  PlayerPositionBadge(
-                    position: draft.position,
-                    showFullName: true,
-                    dense: true,
-                    fontSize: 12,
+                  Text(
+                    '${draft.currentOvr}',
+                    style: AppTypography.sportNumber(
+                      size: 24,
+                      color: c.ovrTextColor(draft.currentOvr),
+                    ),
                   ),
                 ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          PateaTabs(
+            tabs: const [
+              PateaTab('Nota'),
+              PateaTab('Etiquetas'),
+              PateaTab('Reseña'),
+            ],
+            active: draft.evaluationType == 'points'
+                ? 0
+                : draft.evaluationType == 'tags'
+                    ? 1
+                    : 2,
+            onChanged: (i) {
+              draft.evaluationType = i == 0
+                  ? 'points'
+                  : i == 1
+                      ? 'tags'
+                      : 'text';
+              onChanged();
+            },
+          ),
+          const SizedBox(height: 18),
+          if (draft.evaluationType == 'points')
+            _PointsEditor(draft: draft, onChanged: onChanged)
+          else if (draft.evaluationType == 'tags')
+            _TagsEditor(draft: draft, onChanged: onChanged)
+          else
+            _ResenaEditor(
+              matchId: matchId,
+              draft: draft,
+              onChanged: onChanged,
+            ),
+          const SizedBox(height: 16),
+          _EvaluationImpactStrip(draft: draft),
+        ],
+      ),
+    );
+  }
+}
+
+class _EvaluationImpactStrip extends StatelessWidget {
+  final PlayerEvaluationDraft draft;
+
+  const _EvaluationImpactStrip({required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final preview = _computeDraftImpact(draft);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Divider(height: 1, color: c.overlayLine),
+        const SizedBox(height: 14),
+        if (preview == null) ...[
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Text(
+                'Impacto estimado',
+                style: AppTypography.body(
+                  size: 12.5,
+                  weight: FontWeight.w700,
+                  color: c.textSecondary,
+                ),
+              ),
+              Text(
+                'OVR ${draft.currentOvr}',
+                style: AppTypography.code(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: c.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            draft.evaluationType == 'tags'
+                ? 'Elegí entre $_minEvaluationTags y $_maxEvaluationTags etiquetas para ver cómo se mueven los atributos y el OVR.'
+                : draft.isAudioReview
+                    ? 'Al detener la grabación calculamos el impacto estimado en atributos y OVR.'
+                    : 'Tocá «Ver impacto» para previsualizar cómo mueve los atributos y el OVR.',
+            style: AppTypography.body(
+              size: 12,
+              color: c.textSecondary,
+              height: 1.35,
+            ),
+          ),
+        ] else ...[
+          _buildPreviewBody(context, preview),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPreviewBody(
+    BuildContext context,
+    EvaluationImpactPreview preview,
+  ) {
+    final c = context.c;
+    final Color ovrTone = preview.ovrDelta > 0
+        ? c.success
+        : preview.ovrDelta < 0
+            ? c.destructive
+            : c.textSecondary;
+    final deltas = preview.nonZeroDeltas;
+    final aiSummary = draft.evaluationType == 'text'
+        ? (draft.aiPreview?.summary.trim() ?? '')
+        : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            Text(
+              'Impacto estimado',
+              style: AppTypography.body(
+                size: 12.5,
+                weight: FontWeight.w700,
+                color: c.textSecondary,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: preview.ovrDelta == 0
+                    ? c.cardSurface
+                    : ovrTone.withValues(alpha: 0.14),
+                borderRadius: AppRadii.chipAll,
+              ),
+              child: Text(
+                _ovrTransitionLabel(preview),
+                style: AppTypography.code(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: ovrTone,
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 18),
-        PateaTabs(
-          tabs: const [
-            PateaTab('Nota'),
-            PateaTab('Etiquetas'),
-            PateaTab('Reseña'),
-          ],
-          active: draft.evaluationType == 'points'
-              ? 0
-              : draft.evaluationType == 'tags'
-                  ? 1
-                  : 2,
-          onChanged: (i) {
-            draft.evaluationType = i == 0
-                ? 'points'
-                : i == 1
-                    ? 'tags'
-                    : 'text';
-            onChanged();
-          },
-        ),
-        const SizedBox(height: 18),
-        if (draft.evaluationType == 'points')
-          _PointsEditor(draft: draft, onChanged: onChanged)
-        else if (draft.evaluationType == 'tags')
-          _TagsEditor(draft: draft, onChanged: onChanged)
+        if (aiSummary.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            aiSummary,
+            style: AppTypography.body(
+              size: 12.5,
+              color: c.textSecondary,
+              height: 1.35,
+            ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        if (deltas.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final entry in deltas)
+                _AttributeDeltaChip(
+                  label: _attrLabels[entry.key] ?? entry.key.toUpperCase(),
+                  delta: entry.value,
+                ),
+            ],
+          )
         else
-          _ResenaEditor(draft: draft, onChanged: onChanged),
+          Text(
+            draft.evaluationType == 'points' && draft.rating.round() == 5
+                ? 'Nota neutra · no modifica atributos ni OVR.'
+                : 'Sin cambios netos en atributos.',
+            style: AppTypography.body(size: 12, color: c.textSecondary),
+          ),
+        if (draft.evaluationType == 'tags' &&
+            draft.performanceTags.length < _minEvaluationTags) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Te faltan ${_minEvaluationTags - draft.performanceTags.length} etiqueta(s) más para poder enviar.',
+            style: AppTypography.body(
+              size: 11.5,
+              weight: FontWeight.w600,
+              color: c.warningText,
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        Text(
+          'Tu aporte estimado · al cerrar el partido se promedia con el resto del grupo.',
+          style: AppTypography.body(
+            size: 11.5,
+            color: c.textSecondary,
+            height: 1.3,
+          ),
+        ),
       ],
-    ),
-  );
+    );
+  }
+}
+
+class _AttributeDeltaChip extends StatelessWidget {
+  final String label;
+  final int delta;
+
+  const _AttributeDeltaChip({required this.label, required this.delta});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final positive = delta > 0;
+    final tone = positive ? c.success : c.destructive;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.13),
+        borderRadius: AppRadii.chipAll,
+      ),
+      child: Text(
+        '${positive ? '+' : ''}$delta $label',
+        style: AppTypography.code(
+          size: 11.5,
+          weight: FontWeight.w700,
+          color: tone,
+        ),
+      ),
+    );
+  }
 }
 
 String _ratingDescription(double value) => value >= 9
@@ -660,15 +974,35 @@ class _PointsEditor extends StatelessWidget {
         },
       ),
       Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '1 · Le costó',
-            style: AppTypography.body(size: 12, color: context.c.textSecondary),
+          Expanded(
+            child: Text(
+              '1 · Le costó',
+              style: AppTypography.body(
+                size: 11.5,
+                color: context.c.textSecondary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           Text(
-            '10 · Determinante',
-            style: AppTypography.body(size: 12, color: context.c.textSecondary),
+            '5 · Neutro',
+            textAlign: TextAlign.center,
+            style: AppTypography.body(
+              size: 11.5,
+              color: context.c.textSecondary,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              '10 · Figura',
+              textAlign: TextAlign.end,
+              style: AppTypography.body(
+                size: 11.5,
+                color: context.c.textSecondary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -680,68 +1014,151 @@ class _TagsEditor extends StatelessWidget {
   final PlayerEvaluationDraft draft;
   final VoidCallback onChanged;
   const _TagsEditor({required this.draft, required this.onChanged});
+
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text(
-        draft.performanceTags.length < 3
-            ? 'Elegí al menos 3 acciones que describan su partido.'
-            : '${draft.performanceTags.length} acciones seleccionadas',
-        style: AppTypography.body(size: 13, color: context.c.textSecondary),
-      ),
-      const SizedBox(height: 12),
-      for (final positive in [true, false]) ...[
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(
-            positive ? 'Lo que aportó' : 'Lo que puede mejorar',
-            style: AppTypography.body(size: 14, weight: FontWeight.w700),
-          ),
-        ),
-        for (final tag in draft.tagPool.where(
-          (t) => (t.impact == 'positive') == positive,
-        ))
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            activeColor: context.c.primary,
-            value: draft.performanceTags.any((t) => t.id == tag.id),
-            title: Text(
-              tag.name,
-              style: AppTypography.body(size: 14, weight: FontWeight.w600),
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final count = draft.performanceTags.length;
+    final atMax = count >= _maxEvaluationTags;
+    final isReady = count >= _minEvaluationTags;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            Text(
+              !isReady
+                  ? 'Elegí entre $_minEvaluationTags y $_maxEvaluationTags acciones.'
+                  : atMax
+                      ? 'Máximo alcanzado · tocá una para cambiarla.'
+                      : 'Listo · podés sumar hasta $_maxEvaluationTags acciones.',
+              style: AppTypography.body(size: 13, color: c.textSecondary),
             ),
-            subtitle: Text(
-              tag.description,
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: isReady
+                    ? c.success.withValues(alpha: 0.14)
+                    : c.cardSurface,
+                borderRadius: AppRadii.chipAll,
+              ),
+              child: Text(
+                '$count / $_maxEvaluationTags',
+                style: AppTypography.code(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: isReady ? c.success : c.textSecondary,
+                ),
               ),
             ),
-            onChanged: (_) {
-              final selected = draft.performanceTags.any((t) => t.id == tag.id);
-              if (selected) {
-                draft.performanceTags.removeWhere((t) => t.id == tag.id);
-              } else {
-                draft.performanceTags.add(tag);
-              }
-              onChanged();
-            },
+          ],
+        ),
+        const SizedBox(height: 10),
+        for (final positive in [true, false]) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              positive ? 'Lo que aportó' : 'Lo que puede mejorar',
+              style: AppTypography.body(size: 14, weight: FontWeight.w700),
+            ),
           ),
+          for (final tag in draft.tagPool.where(
+            (t) => (t.impact == 'positive') == positive,
+          ))
+            Builder(
+              builder: (context) {
+                final selected = draft.performanceTags.any(
+                  (t) => t.id == tag.id,
+                );
+                final canToggle = selected || !atMax;
+                final tone = positive ? c.success : c.destructive;
+                return CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  activeColor: c.primary,
+                  value: selected,
+                  title: Text(
+                    tag.name,
+                    style: AppTypography.body(
+                      size: 14,
+                      weight: FontWeight.w600,
+                      color: canToggle ? c.textPrimary : c.textSecondary,
+                    ),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tag.description,
+                          style: AppTypography.body(
+                            size: 12,
+                            color: c.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            for (final eff in tag.effects.entries)
+                              Text(
+                                '${eff.value > 0 ? '+' : '-'}${_attrLabels[eff.key] ?? eff.key.toUpperCase()}',
+                                style: AppTypography.code(
+                                  size: 11,
+                                  weight: FontWeight.w700,
+                                  color: canToggle
+                                      ? tone
+                                      : c.textSecondary.withValues(alpha: 0.7),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  onChanged: canToggle
+                      ? (_) {
+                          if (selected) {
+                            draft.performanceTags.removeWhere(
+                              (t) => t.id == tag.id,
+                            );
+                          } else if (draft.performanceTags.length <
+                              _maxEvaluationTags) {
+                            draft.performanceTags.add(tag);
+                          }
+                          onChanged();
+                        }
+                      : null,
+                );
+              },
+            ),
+        ],
       ],
-    ],
-  );
+    );
+  }
 }
 
 String _draftSummaryLabel(PlayerEvaluationDraft draft) {
-  if (draft.evaluationType == 'points') return '${draft.rating.round()}/10';
-  if (draft.evaluationType == 'tags') {
-    return '${draft.performanceTags.length} etiquetas';
+  final preview = _computeDraftImpact(draft);
+  final ovrSuffix = preview != null ? ' · ${_ovrTransitionLabel(preview)}' : '';
+
+  if (draft.evaluationType == 'points') {
+    return '${draft.rating.round()}/10$ovrSuffix';
   }
-  final count = draft.aiPreview?.attributeChanges.length;
-  return count != null && count > 0
-      ? 'Reseña ($count impactos)'
-      : 'Reseña escrita';
+  if (draft.evaluationType == 'tags') {
+    return '${draft.performanceTags.length} etiquetas$ovrSuffix';
+  }
+  if (draft.isAudioReview) {
+    return 'Nota de voz (${formatAudioDuration(draft.audioDurationSec)})$ovrSuffix';
+  }
+  return 'Reseña escrita$ovrSuffix';
 }
 
 const Map<String, String> _attrLabels = {
@@ -754,18 +1171,35 @@ const Map<String, String> _attrLabels = {
 };
 
 class _ResenaEditor extends ConsumerStatefulWidget {
+  final String matchId;
   final PlayerEvaluationDraft draft;
   final VoidCallback onChanged;
 
-  const _ResenaEditor({required this.draft, required this.onChanged});
+  const _ResenaEditor({
+    required this.matchId,
+    required this.draft,
+    required this.onChanged,
+  });
 
   @override
   ConsumerState<_ResenaEditor> createState() => _ResenaEditorState();
 }
 
 class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
+  static const int _minAudioSeconds = 3;
+  static const int _maxAudioSeconds = 60;
+
   late final TextEditingController _controller;
+  AudioRecorder? _recorder;
+  StreamSubscription<Amplitude>? _ampSub;
+  Timer? _recordTimer;
+
+  bool _recording = false;
+  int _elapsedSec = 0;
+  final List<double> _waveLevels = List<double>.filled(16, 0.14);
+
   bool _analyzing = false;
+  String? _statusMessage;
   String? _error;
 
   @override
@@ -785,11 +1219,14 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
 
   @override
   void dispose() {
+    _recordTimer?.cancel();
+    _ampSub?.cancel();
+    _recorder?.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _previewImpact() async {
+  Future<void> _previewWrittenImpact() async {
     final text = _controller.text.trim();
     if (text.length < 10) {
       setState(() => _error = 'Escribí al menos 10 caracteres para ver el impacto.');
@@ -797,6 +1234,7 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
     }
     setState(() {
       _analyzing = true;
+      _statusMessage = 'Leyendo tu reseña…';
       _error = null;
     });
     try {
@@ -804,28 +1242,272 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
             text: text,
             playerPosition: widget.draft.position,
             playerName: widget.draft.displayName,
+            matchId: widget.matchId,
+            assignmentId: widget.draft.assignmentId,
           );
       if (!mounted) return;
       setState(() {
         widget.draft.aiPreview = preview;
         _analyzing = false;
+        _statusMessage = null;
       });
       widget.onChanged();
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _analyzing = false;
+        _statusMessage = null;
         _error = 'No pudimos calcular el impacto ahora. Igual podés enviar tu reseña.';
       });
     }
   }
 
+  Future<void> _startRecording() async {
+    if (_recording || _analyzing) return;
+    setState(() => _error = null);
+    try {
+      final recorder = _recorder ??= AudioRecorder();
+      final permitted = await recorder.hasPermission();
+      if (!permitted) {
+        if (mounted) {
+          setState(
+            () => _error = 'Necesitamos permiso de micrófono para grabar tu nota de voz.',
+          );
+        }
+        return;
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final outPath =
+          '${tempDir.path}${Platform.pathSeparator}patea_eval_${widget.draft.assignmentId}.m4a';
+      final existing = File(outPath);
+      if (await existing.exists()) {
+        await existing.delete();
+      }
+
+      await recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 64000,
+          sampleRate: 44100,
+          numChannels: 1,
+        ),
+        path: outPath,
+      );
+
+      _elapsedSec = 0;
+      _ampSub?.cancel();
+      _ampSub = recorder
+          .onAmplitudeChanged(const Duration(milliseconds: 120))
+          .listen((amp) {
+            if (!mounted) return;
+            final norm = ((amp.current + 50) / 50).clamp(0.10, 1.0);
+            setState(() {
+              _waveLevels.removeAt(0);
+              _waveLevels.add(norm);
+            });
+          });
+
+      _recordTimer?.cancel();
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() => _elapsedSec += 1);
+        if (_elapsedSec >= _maxAudioSeconds) {
+          _stopRecordingAndAnalyze();
+        }
+      });
+
+      if (mounted) {
+        setState(() {
+          _recording = true;
+          widget.draft.aiPreview = null;
+          widget.draft.uploadedAudioPath = null;
+        });
+        widget.onChanged();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _recording = false;
+          _error = 'No pudimos iniciar el micrófono. Probá de nuevo.';
+        });
+      }
+    }
+  }
+
+  Future<void> _stopRecordingAndAnalyze() async {
+    if (!_recording) return;
+    _recordTimer?.cancel();
+    _ampSub?.cancel();
+    final elapsed = _elapsedSec;
+    String? recordedPath;
+    try {
+      recordedPath = await _recorder?.stop();
+    } catch (_) {
+      recordedPath = null;
+    }
+
+    if (!mounted) return;
+    setState(() => _recording = false);
+
+    if (recordedPath == null || elapsed < _minAudioSeconds) {
+      if (recordedPath != null) {
+        final f = File(recordedPath);
+        if (f.existsSync()) f.deleteSync();
+      }
+      setState(() {
+        _error = 'Grabá al menos $_minAudioSeconds segundos para contar cómo jugó.';
+      });
+      return;
+    }
+
+    widget.draft.localAudioPath = recordedPath;
+    widget.draft.audioDurationSec = elapsed;
+    widget.draft.uploadedAudioPath = null;
+    widget.draft.aiPreview = null;
+    widget.onChanged();
+
+    await _uploadAndAnalyzeAudio();
+  }
+
+  Future<void> _uploadAndAnalyzeAudio() async {
+    final localPath = widget.draft.localAudioPath;
+    if (localPath == null || _analyzing) return;
+    final file = File(localPath);
+    if (!await file.exists()) {
+      setState(() => _error = 'No encontramos el audio grabado. Probá grabando de nuevo.');
+      return;
+    }
+
+    setState(() {
+      _analyzing = true;
+      _statusMessage = 'Subiendo y calculando impacto…';
+      _error = null;
+    });
+
+    try {
+      final service = ref.read(evaluationServiceProvider);
+      final storagePath = await service.uploadEvaluationAudio(
+        matchId: widget.matchId,
+        assignmentId: widget.draft.assignmentId,
+        file: file,
+      );
+      if (!mounted) return;
+      widget.draft.uploadedAudioPath = storagePath;
+
+      final preview = await service.analyzeAudioPerformance(
+        matchId: widget.matchId,
+        assignmentId: widget.draft.assignmentId,
+        audioPath: storagePath,
+        audioDurationSec: widget.draft.audioDurationSec,
+      );
+      if (!mounted) return;
+      setState(() {
+        widget.draft.aiPreview = preview;
+        _analyzing = false;
+        _statusMessage = null;
+      });
+      widget.onChanged();
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().contains('comentario claro')
+          ? 'No pudimos escuchar un comentario claro en el audio. Probá grabando de nuevo.'
+          : 'No pudimos analizar el audio ahora. Podés reintentar o regrabar.';
+      setState(() {
+        _analyzing = false;
+        _statusMessage = null;
+        _error = msg;
+      });
+      widget.onChanged();
+    }
+  }
+
+  Future<void> _clearAudio() async {
+    if (_recording) {
+      _recordTimer?.cancel();
+      _ampSub?.cancel();
+      try {
+        await _recorder?.stop();
+      } catch (_) {}
+    }
+    final local = widget.draft.localAudioPath;
+    if (local != null) {
+      final f = File(local);
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _recording = false;
+      _elapsedSec = 0;
+      _error = null;
+      widget.draft.localAudioPath = null;
+      widget.draft.uploadedAudioPath = null;
+      widget.draft.audioDurationSec = 0;
+      widget.draft.aiPreview = null;
+    });
+    widget.onChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final preview = widget.draft.aiPreview;
-    final len = widget.draft.textDescription.trim().length;
+    final isAudio = widget.draft.reviewMode == 'audio';
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<String>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment<String>(
+              value: 'write',
+              icon: Icon(Icons.edit_note_rounded, size: 17),
+              label: Text('Escribir', maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+            ButtonSegment<String>(
+              value: 'audio',
+              icon: Icon(Icons.mic_rounded, size: 17),
+              label: Text('Audio', maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ],
+          selected: {widget.draft.reviewMode},
+          onSelectionChanged: _recording || _analyzing
+              ? null
+              : (s) {
+                  setState(() {
+                    widget.draft.reviewMode = s.first;
+                    widget.draft.aiPreview = null;
+                    _error = null;
+                  });
+                  widget.onChanged();
+                },
+        ),
+        const SizedBox(height: 14),
+        if (!isAudio)
+          _buildWrittenSection(context)
+        else
+          _buildAudioSection(context),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            _error!,
+            style: AppTypography.body(size: 12, color: c.destructive),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildWrittenSection(BuildContext context) {
+    final c = context.c;
+    final len = widget.draft.textDescription.trim().length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -833,7 +1515,7 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
           'Contá con tus palabras cómo jugó hoy.',
           style: AppTypography.body(size: 13, color: c.textSecondary),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         TextField(
           controller: _controller,
           minLines: 3,
@@ -865,7 +1547,7 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
               ),
             ),
             OutlinedButton.icon(
-              onPressed: _analyzing || len < 10 ? null : _previewImpact,
+              onPressed: _analyzing || len < 10 ? null : _previewWrittenImpact,
               icon: _analyzing
                   ? const SizedBox(
                       width: 16,
@@ -877,74 +1559,147 @@ class _ResenaEditorState extends ConsumerState<_ResenaEditor> {
             ),
           ],
         ),
-        if (_error != null) ...[
-          const SizedBox(height: 10),
-          Text(
-            _error!,
-            style: AppTypography.body(
-              size: 12,
-              color: Theme.of(context).colorScheme.error,
-            ),
-          ),
-        ],
-        if (preview != null) ...[
-          const SizedBox(height: 14),
-          PateaCard(
-            color: c.cardSurface,
-            radius: AppRadii.cardAll,
-            borderColor: c.border,
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lectura del partido',
-                  style: AppTypography.body(size: 13, weight: FontWeight.w700),
+      ],
+    );
+  }
+
+  Widget _buildAudioSection(BuildContext context) {
+    final c = context.c;
+    final hasLocalAudio = widget.draft.localAudioPath != null;
+
+    if (_recording) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: c.destructive,
+                  shape: BoxShape.circle,
                 ),
-                if (preview.summary.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    preview.summary,
-                    style: AppTypography.body(size: 12, color: c.textSecondary),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Grabando… ${formatAudioDuration(_elapsedSec)} / ${formatAudioDuration(_maxAudioSeconds)}',
+                style: AppTypography.code(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  color: c.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 38,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (final lvl in _waveLevels)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 110),
+                    width: 4,
+                    height: (lvl * 34).clamp(5.0, 34.0),
+                    decoration: BoxDecoration(
+                      color: c.primary,
+                      borderRadius: AppRadii.pillAll,
+                    ),
                   ),
-                ],
-                if (preview.attributeChanges.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      for (final ch in preview.attributeChanges)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: (ch.change >= 0
-                                    ? c.primary
-                                    : Theme.of(context).colorScheme.error)
-                                .withValues(alpha: 0.14),
-                            borderRadius: AppRadii.chipAll,
-                          ),
-                          child: Text(
-                            '${ch.change >= 0 ? '+' : ''}${ch.change} ${_attrLabels[ch.attribute] ?? ch.attribute}',
-                            style: AppTypography.code(
-                              size: 12,
-                              weight: FontWeight.w700,
-                              color: ch.change >= 0
-                                  ? c.primary
-                                  : Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: _stopRecordingAndAnalyze,
+            style: FilledButton.styleFrom(
+              backgroundColor: c.destructive,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            icon: const Icon(Icons.stop_rounded, size: 20),
+            label: const Text('Detener y calcular impacto'),
+          ),
         ],
+      );
+    }
+
+    if (hasLocalAudio) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          EvaluationAudioPlayer(
+            localFilePath: widget.draft.localAudioPath,
+            durationSec: widget.draft.audioDurationSec,
+            trailing: IconButton(
+              tooltip: 'Borrar audio',
+              onPressed: _analyzing ? null : _clearAudio,
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: c.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (_analyzing)
+            Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: PateaButtonProgress(),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _statusMessage ?? 'Analizando tu nota de voz…',
+                    style: AppTypography.body(size: 12.5, color: c.textSecondary),
+                  ),
+                ),
+              ],
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _startRecording,
+                  icon: const Icon(Icons.mic_rounded, size: 17),
+                  label: const Text('Grabar de nuevo'),
+                ),
+                if (!widget.draft.hasReadyAudio || widget.draft.aiPreview == null)
+                  FilledButton.icon(
+                    onPressed: _uploadAndAnalyzeAudio,
+                    icon: const Icon(Icons.auto_graph_rounded, size: 17),
+                    label: const Text('Reintentar análisis'),
+                  ),
+              ],
+            ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Contá con tu voz cómo jugó hoy (3 a 60 s). Tu voz queda protegida mientras la evaluación sea anónima.',
+          style: AppTypography.body(size: 13, color: c.textSecondary, height: 1.4),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: _analyzing ? null : _startRecording,
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+          ),
+          icon: const Icon(Icons.mic_rounded, size: 20),
+          label: const Text('Grabar nota de voz'),
+        ),
       ],
     );
   }

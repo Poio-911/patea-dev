@@ -2,7 +2,17 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { submissionKey, validDocumentId, validateEvaluationSubmission } from '../lib/evaluation-submission';
-import { analyzeTextPerformanceCore, TextPerformanceResult } from '../lib/text-performance-analyzer';
+import {
+  analyzeAudioPerformanceCore,
+  analyzeTextPerformanceCore,
+  hashEvaluationInput,
+  isValidEvaluationAudioPath,
+  TextPerformanceResult,
+} from '../lib/text-performance-analyzer';
+
+type ResolvedAiAnalysis = TextPerformanceResult & {
+  transcript?: string;
+};
 
 /**
  * Lee nuevamente el documento dentro de la transacción: el evento puede llegar
@@ -16,37 +26,108 @@ export async function processSubmission(
   if (!validDocumentId(submissionId)) return 'rejected';
   const sourceRef = db.doc(`evaluationSubmissions/${submissionId}`);
 
-  // Pre-analiza en servidor las evaluaciones de tipo 'text' fuera de la
-  // transacción de Firestore para no repetir llamadas a Vertex AI ante retries.
-  const aiAnalysisByAssignment = new Map<string, TextPerformanceResult>();
+  // Pre-analiza o reutiliza caché verificado en servidor para evaluaciones 'text'
+  // (escritas o por nota de voz) fuera de la transacción para no repetir llamadas
+  // a Vertex AI ante retries.
+  const aiAnalysisByAssignment = new Map<string, ResolvedAiAnalysis>();
   const initialSnap = await sourceRef.get();
   if (initialSnap.exists) {
-    const rawSub = initialSnap.data()?.submission as Record<string, unknown> | undefined;
+    const initialData = initialSnap.data()!;
+    const rawMatchId = typeof initialData.matchId === 'string' ? initialData.matchId : '';
+    const rawEvaluatorId = typeof initialData.evaluatorId === 'string' ? initialData.evaluatorId : '';
+    const rawSub = initialData.submission as Record<string, unknown> | undefined;
     const rawEvals = Array.isArray(rawSub?.evaluations) ? rawSub!.evaluations : [];
     const textEvals = rawEvals.filter(
       (ev: any) =>
         ev &&
         typeof ev === 'object' &&
         ev.evaluationType === 'text' &&
-        typeof ev.textDescription === 'string' &&
-        ev.textDescription.trim().length >= 10 &&
         validDocumentId(ev.assignmentId) &&
-        validDocumentId(ev.subjectId),
+        validDocumentId(ev.subjectId) &&
+        ((typeof ev.textDescription === 'string' && ev.textDescription.trim().length >= 10) ||
+          (typeof ev.audioPath === 'string' && ev.audioPath.trim().length > 0)),
     );
-    if (textEvals.length > 0) {
+    if (textEvals.length > 0 && validDocumentId(rawMatchId) && validDocumentId(rawEvaluatorId)) {
       await Promise.all(
         textEvals.map(async (ev: any) => {
           try {
+            const assignmentId = String(ev.assignmentId);
+            const cacheRef = db.doc(
+              `matches/${rawMatchId}/assignments/${assignmentId}/private/aiAnalysis`,
+            );
+            const cachedSnap = await cacheRef.get();
+            const cached = cachedSnap.exists ? cachedSnap.data() : undefined;
+
+            if (typeof ev.audioPath === 'string' && ev.audioPath.trim().length > 0) {
+              const audioPath = ev.audioPath.trim();
+              if (!isValidEvaluationAudioPath(audioPath, rawMatchId, rawEvaluatorId)) return;
+
+              const file = admin.storage().bucket().file(audioPath);
+              const [exists] = await file.exists();
+              if (!exists) return;
+              const [metadata] = await file.getMetadata();
+              const audioMd5 = String(metadata.md5Hash ?? metadata.generation ?? '');
+
+              if (
+                cached &&
+                cached.kind === 'audio' &&
+                cached.audioPath === audioPath &&
+                cached.audioMd5 === audioMd5 &&
+                typeof cached.transcript === 'string' &&
+                Array.isArray(cached.attributeChanges) &&
+                typeof cached.summary === 'string'
+              ) {
+                aiAnalysisByAssignment.set(assignmentId, {
+                  transcript: cached.transcript,
+                  summary: cached.summary,
+                  confidence: Number(cached.confidence ?? 0.7),
+                  attributeChanges: cached.attributeChanges,
+                });
+                return;
+              }
+
+              const [[audioBuffer], pSnap] = await Promise.all([
+                file.download(),
+                db.doc(`players/${ev.subjectId}`).get(),
+              ]);
+              const pData = pSnap.exists ? pSnap.data() : undefined;
+              const analyzed = await analyzeAudioPerformanceCore({
+                audioBuffer,
+                mimeType: String(metadata.contentType || 'audio/mp4'),
+                playerPosition: typeof pData?.position === 'string' ? pData.position : 'MED',
+                playerName: typeof pData?.name === 'string' ? pData.name : 'Jugador',
+              });
+              aiAnalysisByAssignment.set(assignmentId, analyzed);
+              return;
+            }
+
+            const cleanText = String(ev.textDescription).trim();
+            const inputHash = hashEvaluationInput(cleanText);
+            if (
+              cached &&
+              cached.kind === 'text' &&
+              cached.inputHash === inputHash &&
+              Array.isArray(cached.attributeChanges) &&
+              typeof cached.summary === 'string'
+            ) {
+              aiAnalysisByAssignment.set(assignmentId, {
+                summary: cached.summary,
+                confidence: Number(cached.confidence ?? 0.7),
+                attributeChanges: cached.attributeChanges,
+              });
+              return;
+            }
+
             const pSnap = await db.doc(`players/${ev.subjectId}`).get();
             const pData = pSnap.exists ? pSnap.data() : undefined;
             const analyzed = await analyzeTextPerformanceCore({
-              text: String(ev.textDescription),
+              text: cleanText,
               playerPosition: typeof pData?.position === 'string' ? pData.position : 'MED',
               playerName: typeof pData?.name === 'string' ? pData.name : 'Jugador',
             });
-            aiAnalysisByAssignment.set(String(ev.assignmentId), analyzed);
+            aiAnalysisByAssignment.set(assignmentId, analyzed);
           } catch (err) {
-            console.error('Server-side text evaluation analysis failed', {
+            console.error('Server-side text/audio evaluation analysis failed', {
               assignmentId: ev.assignmentId,
               message: err instanceof Error ? err.message : 'Unknown error',
             });
@@ -132,8 +213,18 @@ export async function processSubmission(
       if (evaluation.evaluationType === 'points') data.rating = evaluation.rating;
       if (evaluation.evaluationType === 'tags') data.performanceTags = evaluation.performanceTags;
       if (evaluation.evaluationType === 'text') {
-        data.textDescription = evaluation.textDescription;
         const analyzed = aiAnalysisByAssignment.get(evaluation.assignmentId);
+        if (evaluation.audioPath) {
+          data.audioPath = evaluation.audioPath;
+          if (evaluation.audioDurationSec !== undefined) {
+            data.audioDurationSec = evaluation.audioDurationSec;
+          }
+          if (analyzed?.transcript) {
+            data.textDescription = analyzed.transcript;
+          }
+        } else if (evaluation.textDescription) {
+          data.textDescription = evaluation.textDescription;
+        }
         if (analyzed) {
           data.aiAttributeChanges = analyzed.attributeChanges;
           data.aiSummary = analyzed.summary;
@@ -171,6 +262,7 @@ export const processEvaluationSubmission = onDocumentCreated({
   document: 'evaluationSubmissions/{submissionId}',
   region: 'us-central1',
   retry: true,
+  memory: '512MiB',
 }, async event => {
   const result = await processSubmission(admin.firestore(), event.params.submissionId);
   console.log(`[ProcessSubmission] ${result}`);

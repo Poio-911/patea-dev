@@ -2,6 +2,11 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { submissionKey, validateEvaluationSubmission } from '../lib/evaluation-submission';
 import { sendPushToUsers } from '../lib/fcm-push';
+import {
+  computeMatchProgression,
+  equivalentRatingFromVector,
+  vectorForPeerEvaluation,
+} from '../lib/ovr-progression';
 
 /**
  * Callables de Evaluaciones — port de src/lib/actions/evaluation-actions.ts.
@@ -22,130 +27,11 @@ function requireAuth(request: { auth?: { uid: string } | null }): string {
   return request.auth.uid;
 }
 
-// --- Player progression logic — port 1:1 de server-actions.ts (líneas ~34-155). ---
-// No "simplificar" estos números: son los mismos que ya rigen la progresión
-// de OVR en la web, cambiarlos desincroniza el progreso entre plataformas.
-const OVR_PROGRESSION = {
-  BASELINE_RATING: 5,
-  MAX_STEP: 1.5,
-  MIN_OVR: 40,
-  MAX_OVR: 99,
-  MIN_ATTRIBUTE: 20,
-  MAX_ATTRIBUTE: 99,
-};
-
-type Attr = 'pac' | 'sho' | 'pas' | 'dri' | 'def' | 'phy';
-const ATTRS: Attr[] = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
-
-function calculateOvrChange(currentOvr: number, avgRating: number): number {
-  if (avgRating === OVR_PROGRESSION.BASELINE_RATING) return 0;
-  const ratingDelta = avgRating - OVR_PROGRESSION.BASELINE_RATING;
-  let scale = 0.3;
-  if (currentOvr < 50) scale = 0.5;
-  else if (currentOvr < 60) scale = 0.4;
-  else if (currentOvr < 70) scale = 0.3;
-  else if (currentOvr < 80) scale = 0.2;
-  else if (currentOvr < 90) scale = 0.1;
-  else scale = 0.05;
-  const rawDelta = ratingDelta * scale;
-  return Math.max(-OVR_PROGRESSION.MAX_STEP, Math.min(OVR_PROGRESSION.MAX_STEP, rawDelta));
-}
-
-const POSITION_WEIGHTS: Record<string, Record<Attr, number>> = {
-  DEL: { pac: 0.25, sho: 0.35, pas: 0.15, dri: 0.15, def: 0.05, phy: 0.05 },
-  MED: { pac: 0.15, sho: 0.15, pas: 0.3, dri: 0.2, def: 0.1, phy: 0.1 },
-  DEF: { pac: 0.15, sho: 0.05, pas: 0.15, dri: 0.05, def: 0.4, phy: 0.2 },
-  POR: { pac: 0.1, sho: 0.05, pas: 0.1, dri: 0.05, def: 0.5, phy: 0.2 },
-};
-const DEFAULT_WEIGHTS: Record<Attr, number> = { pac: 0.166, sho: 0.166, pas: 0.166, dri: 0.166, def: 0.166, phy: 0.166 };
-
-function attributeMultiplier(currentVal: number): number {
-  if (currentVal >= 92) return 0.1;
-  if (currentVal >= 85) return 0.2;
-  if (currentVal >= 75) return 0.4;
-  if (currentVal >= 60) return 0.7;
-  return 1.0;
-}
-
-function clampAttr(v: number): number {
-  return Math.max(OVR_PROGRESSION.MIN_ATTRIBUTE, Math.min(OVR_PROGRESSION.MAX_ATTRIBUTE, v));
-}
-
-function calculateAttributeChangesFromPoints(
-  currentAttrs: Record<Attr, number>,
-  ovrChange: number,
-  position: string
-): Record<Attr, number> {
-  if (ovrChange === 0) return currentAttrs;
-  const newAttributes = { ...currentAttrs };
-  const weights = POSITION_WEIGHTS[position] || DEFAULT_WEIGHTS;
-  const totalPointsToAdd = ovrChange * 6;
-  let accumulatedError = 0;
-
-  for (const attr of ATTRS) {
-    const currentVal = newAttributes[attr];
-    const targetShare = totalPointsToAdd * weights[attr];
-    const multiplier = attributeMultiplier(currentVal);
-    const effectiveShare = targetShare > 0 ? targetShare * multiplier : targetShare;
-    const pointWithDecimal = effectiveShare + accumulatedError;
-    const pointRounded = effectiveShare > 0 ? Math.ceil(pointWithDecimal) : Math.floor(pointWithDecimal);
-    accumulatedError = pointWithDecimal - pointRounded;
-    newAttributes[attr] = clampAttr(currentVal + pointRounded);
-  }
-  return newAttributes;
-}
-
-function calculateAttributeChangesFromTags(
-  currentAttrs: Record<Attr, number>,
-  tags: Array<{ effects?: Array<{ attribute: string; change: number }> }>
-): Record<Attr, number> {
-  const newAttributes = { ...currentAttrs };
-  for (const tag of tags || []) {
-    for (const effect of tag.effects || []) {
-      const key = effect.attribute as Attr;
-      if (typeof newAttributes[key] !== 'number') continue;
-      const currentVal = newAttributes[key];
-      const rawChange = effect.change * attributeMultiplier(currentVal);
-      const integerChange = rawChange > 0 ? Math.ceil(rawChange) : Math.floor(rawChange);
-      newAttributes[key] = clampAttr(currentVal + integerChange);
-    }
-  }
-  // Cap net delta per attribute to ±5
-  const NET_CAP = 5;
-  for (const attr of ATTRS) {
-    const delta = newAttributes[attr] - currentAttrs[attr];
-    if (Math.abs(delta) > NET_CAP) {
-      newAttributes[attr] = currentAttrs[attr] + (delta > 0 ? NET_CAP : -NET_CAP);
-    }
-  }
-  return newAttributes;
-}
-
-function calculateAttributeChangesFromAI(
-  currentAttrs: Record<Attr, number>,
-  aiChanges: Array<{ attribute: string; change: number }>
-): Record<Attr, number> {
-  const newAttributes = { ...currentAttrs };
-  for (const change of aiChanges || []) {
-    const key = change.attribute as Attr;
-    if (typeof newAttributes[key] !== 'number') continue;
-    const currentVal = newAttributes[key];
-    const rawChange = change.change * attributeMultiplier(currentVal);
-    const integerChange = rawChange > 0 ? Math.ceil(rawChange) : Math.floor(rawChange);
-    newAttributes[key] = clampAttr(currentVal + integerChange);
-  }
-  return newAttributes;
-}
-
 /**
- * Port de finalizeMatchEvaluationAction (server-actions.ts ~L4221-4502).
- * Deliberadamente NO portado (dominios fuera de este barrido, ver plan):
- * La sincronización de liga/copa ahora la realiza syncCompetitionResult al
- * observar el resultado final, compartido por web y móvil. No se duplican
- * aquí avances ni clasificaciones. Quedan fuera achievements/gamification y la
- * publicación de actividad social (`publishOvrChangeActivity`, Sección 9).
- * El núcleo — la única parte que de verdad hace progresar el OVR — sí está
- * completo y sin recortes.
+ * Finaliza la evaluación del partido y actualiza OVR + atributos mediante el
+ * motor unificado (`lib/ovr-progression.ts`), donde Nota, Etiquetas, Reseña
+ * escrita y Nota de voz tienen exactamente el mismo peso y se promedian entre
+ * evaluadores, más un micro-bono uniforme por goles/asistencias.
  */
 export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
@@ -223,12 +109,6 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
       (peerEvalsByPlayer[ev.playerId] ||= []).push(ev);
     }
 
-    const allCompletedPointEvals = matchPeerEvals.filter((ev) => ev.rating !== undefined && ev.rating !== null);
-    const matchAvgRating =
-      allCompletedPointEvals.length > 0
-        ? allCompletedPointEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0) / allCompletedPointEvals.length
-        : 5;
-
     const playerIdsToUpdate: string[] = [...new Set<string>(match.playerUids || [])];
     const playerRefs = playerIdsToUpdate.map((id) => db.collection('players').doc(id));
     // Leer jugadores DENTRO de la transacción y antes de cualquier escritura:
@@ -238,6 +118,17 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
     playerDocsSnaps.forEach((d) => {
       if (d.exists) playerDocsMap.set(d.id, { id: d.id, ...d.data() });
     });
+
+    const completedEquivalentRatings: number[] = [];
+    for (const ev of matchPeerEvals) {
+      const subjectPosition = playerDocsMap.get(ev.playerId)?.position || 'MED';
+      const vec = vectorForPeerEvaluation(ev, subjectPosition);
+      if (vec) completedEquivalentRatings.push(equivalentRatingFromVector(vec));
+    }
+    const matchAvgRating =
+      completedEquivalentRatings.length > 0
+        ? completedEquivalentRatings.reduce((sum, r) => sum + r, 0) / completedEquivalentRatings.length
+        : 5;
 
     const pendingAssignments = assignments.filter((a) => a.status === 'pending');
     for (const assignment of pendingAssignments) {
@@ -279,53 +170,30 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
       if (!player) continue;
 
       const playerPeerEvals = peerEvalsByPlayer[playerId] || [];
-      const pointBasedEvals = playerPeerEvals.filter((ev) => ev.rating !== undefined && ev.rating !== null);
-      const tagBasedEvals = playerPeerEvals.filter((ev) => ev.performanceTags && ev.performanceTags.length > 0);
-      const textBasedEvals = playerPeerEvals.filter((ev) => ev.aiAttributeChanges && ev.aiAttributeChanges.length > 0);
-
-      let updatedAttributes: Record<Attr, number> = {
-        pac: player.pac,
-        sho: player.sho,
-        pas: player.pas,
-        dri: player.dri,
-        def: player.def,
-        phy: player.phy,
-      };
-      let ovrChangeFromPoints = 0;
-
-      if (tagBasedEvals.length > 0) {
-        const combinedTags = tagBasedEvals.flatMap((ev) => ev.performanceTags || []);
-        updatedAttributes = calculateAttributeChangesFromTags(updatedAttributes, combinedTags);
-      }
-      if (textBasedEvals.length > 0) {
-        const allAiChanges = textBasedEvals.flatMap((ev) => ev.aiAttributeChanges || []);
-        updatedAttributes = calculateAttributeChangesFromAI(updatedAttributes, allAiChanges);
-      }
-
       const playerSelfEval = selfEvalsByPlayerId.get(playerId);
       const goalsInMatch = playerSelfEval?.goals || 0;
       const assistsInMatch = playerSelfEval?.assists || 0;
-      let avgRating = 5;
 
-      if (pointBasedEvals.length > 0) {
-        const totalRating = pointBasedEvals.reduce((sum, ev) => sum + (ev.rating || 0), 0);
-        avgRating = totalRating / pointBasedEvals.length;
-        ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
-      } else {
-        if (goalsInMatch >= 2 || assistsInMatch >= 2 || goalsInMatch + assistsInMatch >= 3) avgRating = 8;
-        else if (goalsInMatch === 1 || assistsInMatch === 1) avgRating = 7;
-        else avgRating = 5;
-        ovrChangeFromPoints = calculateOvrChange(player.ovr, avgRating);
-      }
+      const progression = computeMatchProgression({
+        currentAttrs: {
+          pac: player.pac,
+          sho: player.sho,
+          pas: player.pas,
+          dri: player.dri,
+          def: player.def,
+          phy: player.phy,
+        },
+        currentOvr: player.ovr,
+        position: player.position || 'MED',
+        peerEvaluations: playerPeerEvals,
+        goals: goalsInMatch,
+        assists: assistsInMatch,
+      });
 
-      if (ovrChangeFromPoints !== 0) {
-        updatedAttributes = calculateAttributeChangesFromPoints(updatedAttributes, ovrChangeFromPoints, player.position || 'MED');
-      }
-
-      let newOvr = Math.round(
-        (updatedAttributes.pac + updatedAttributes.sho + updatedAttributes.pas + updatedAttributes.dri + updatedAttributes.def + updatedAttributes.phy) / 6
-      );
-      newOvr = Math.max(OVR_PROGRESSION.MIN_OVR, Math.min(OVR_PROGRESSION.MAX_OVR, newOvr));
+      const updatedAttributes = progression.updatedAttributes;
+      const attributeDeltas = progression.attributeDeltas;
+      const newOvr = progression.newOvr;
+      const avgRating = progression.equivalentRating;
 
       const newMatchesPlayed = (player.stats?.matchesPlayed || 0) + 1;
       const newTotalGoals = (player.stats?.goals || 0) + goalsInMatch;
@@ -347,15 +215,6 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
         'stats.averageRating': newAvgRating,
         'stats.mvpCount': (player.stats?.mvpCount || 0) + (playerId === matchMvpId ? 1 : 0),
       });
-
-      const attributeDeltas: Record<Attr, number> = {
-        pac: updatedAttributes.pac - player.pac,
-        sho: updatedAttributes.sho - player.sho,
-        pas: updatedAttributes.pas - player.pas,
-        dri: updatedAttributes.dri - player.dri,
-        def: updatedAttributes.def - player.def,
-        phy: updatedAttributes.phy - player.phy,
-      };
 
       transaction.set(db.collection(`players/${playerId}/ovrHistory`).doc(), {
         date: new Date().toISOString(),
@@ -460,7 +319,10 @@ export const respondToIdentityReveal = onCall({ region: 'us-central1' }, async (
       evaluatorPhotoUrl,
     });
 
-    const body = `${evaluatorDisplayName} aceptó revelar su identidad.`;
+    const hasAudio = typeof evaluation.audioPath === 'string' && evaluation.audioPath.trim().length > 0;
+    const body = hasAudio
+      ? `${evaluatorDisplayName} aceptó revelar su identidad. Ya podés escuchar su nota de voz.`
+      : `${evaluatorDisplayName} aceptó revelar su identidad.`;
     await db.collection('users').doc(evaluation.playerId).collection('notifications').add({
       type: 'identity_reveal_requested',
       title: '✅ ¡Identidad revelada!',
@@ -468,7 +330,7 @@ export const respondToIdentityReveal = onCall({ region: 'us-central1' }, async (
       link: `/players/${evaluation.playerId}`,
       isRead: false,
       createdAt: new Date().toISOString(),
-      metadata: { evaluationId, evaluatorName: evaluatorDisplayName },
+      metadata: { evaluationId, evaluatorName: evaluatorDisplayName, hasAudio },
     });
 
     await sendPushToUsers(
@@ -490,4 +352,126 @@ export const respondToIdentityReveal = onCall({ region: 'us-central1' }, async (
   }
 
   return { ok: true };
+});
+
+/**
+ * Permite al jugador evaluado pedir conocer quién dejó una evaluación anónima.
+ * Si la evaluación fue una nota de voz, avisa al evaluador que al aceptar
+ * también se habilita escuchar su audio.
+ */
+export const requestIdentityReveal = onCall({ region: 'us-central1' }, async (request) => {
+  const requesterId = requireAuth(request);
+  const evaluationId = String(request.data?.evaluationId ?? '').trim();
+  if (!evaluationId || evaluationId.includes('/')) {
+    throw new HttpsError('invalid-argument', 'Evaluación no válida.');
+  }
+
+  const db = admin.firestore();
+  const evalRef = db.collection('evaluations').doc(evaluationId);
+  const evalSnap = await evalRef.get();
+  if (!evalSnap.exists) throw new HttpsError('not-found', 'Evaluación no encontrada.');
+  const evaluation = evalSnap.data()!;
+
+  if (evaluation.playerId !== requesterId) {
+    throw new HttpsError('permission-denied', 'Sólo podés pedir revelar tus propias evaluaciones.');
+  }
+  if (evaluation.autoGenerated === true || !evaluation.evaluatorId || evaluation.evaluatorId === 'AI') {
+    throw new HttpsError('failed-precondition', 'Esta evaluación fue automática y no tiene autor.');
+  }
+  if (evaluation.identityRevealed === true || evaluation.identityRequestStatus === 'accepted') {
+    return { ok: true, status: 'accepted' };
+  }
+  if (evaluation.identityRequestStatus === 'pending') {
+    return { ok: true, status: 'pending' };
+  }
+
+  const [playerSnap, matchSnap] = await Promise.all([
+    db.collection('players').doc(requesterId).get(),
+    evaluation.matchId ? db.collection('matches').doc(String(evaluation.matchId)).get() : Promise.resolve(null),
+  ]);
+  const playerName = (playerSnap.data()?.name as string) || 'Un compañero';
+  const matchTitle = (matchSnap?.data()?.title as string) || 'un partido';
+  const hasAudio = typeof evaluation.audioPath === 'string' && evaluation.audioPath.trim().length > 0;
+
+  await evalRef.update({
+    identityRequestStatus: 'pending',
+    identityRequestedAt: new Date().toISOString(),
+  });
+
+  const body = hasAudio
+    ? `${playerName} quiere saber quién lo evaluó en ${matchTitle}. Si aceptás, va a ver tu nombre y poder escuchar tu nota de voz.`
+    : `${playerName} quiere saber quién lo evaluó en ${matchTitle}.`;
+
+  await db.collection('users').doc(String(evaluation.evaluatorId)).collection('notifications').add({
+    type: 'identity_reveal_requested',
+    title: 'Solicitud de identidad',
+    message: body,
+    link: '/evaluations',
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    metadata: { evaluationId, fromPlayerId: requesterId, hasAudio },
+  });
+
+  await sendPushToUsers(
+    [String(evaluation.evaluatorId)],
+    {
+      title: 'Solicitud de identidad',
+      body,
+      type: 'identity_reveal_requested',
+      link: '/evaluations',
+      extraData: { evaluationId },
+    },
+    'RequestIdentityReveal',
+  );
+
+  return { ok: true, status: 'pending' };
+});
+
+/**
+ * Entrega el audio de una evaluación en base64 únicamente cuando el autor
+ * aceptó revelar su identidad (`identityRevealed === true`) o si lo pide el
+ * propio evaluador. Así nunca se expone una URL pública en Storage.
+ */
+export const getEvaluationAudio = onCall({ region: 'us-central1', timeoutSeconds: 30 }, async (request) => {
+  const uid = requireAuth(request);
+  const evaluationId = String(request.data?.evaluationId ?? '').trim();
+  if (!evaluationId || evaluationId.includes('/')) {
+    throw new HttpsError('invalid-argument', 'Evaluación no válida.');
+  }
+
+  const db = admin.firestore();
+  const evalSnap = await db.collection('evaluations').doc(evaluationId).get();
+  if (!evalSnap.exists) throw new HttpsError('not-found', 'Evaluación no encontrada.');
+  const evaluation = evalSnap.data()!;
+
+  const audioPath = typeof evaluation.audioPath === 'string' ? evaluation.audioPath.trim() : '';
+  if (!audioPath) {
+    throw new HttpsError('not-found', 'Esta evaluación no tiene nota de voz.');
+  }
+
+  const isAuthor = evaluation.evaluatorId === uid;
+  const isRevealed = evaluation.identityRevealed === true;
+  if (!isAuthor && !isRevealed) {
+    throw new HttpsError(
+      'permission-denied',
+      'El audio permanece privado hasta que el evaluador acepte revelar su identidad.',
+    );
+  }
+
+  const file = admin.storage().bucket().file(audioPath);
+  const [exists] = await file.exists();
+  if (!exists) {
+    throw new HttpsError('not-found', 'El archivo de audio ya no está disponible.');
+  }
+  const [[buffer], [metadata]] = await Promise.all([file.download(), file.getMetadata()]);
+  if (buffer.length > 2.5 * 1024 * 1024) {
+    throw new HttpsError('failed-precondition', 'El audio excede el tamaño admitido.');
+  }
+
+  return {
+    ok: true,
+    audioBase64: buffer.toString('base64'),
+    mimeType: String(metadata.contentType || 'audio/mp4'),
+    durationSec: typeof evaluation.audioDurationSec === 'number' ? evaluation.audioDurationSec : null,
+  };
 });

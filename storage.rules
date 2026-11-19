@@ -32,9 +32,22 @@ service firebase.storage {
         && request.resource.contentType.matches('video/.*');
     }
 
-    // Piso general: leer requiere sesión, escribir requiere regla explícita.
-    match /{allPaths=**} {
+    /// Una nota de voz de evaluación: hasta 60 segundos AAC/M4A (~500 KB).
+    /// 2 MB da margen holgado bloqueando archivos arbitrarios.
+    function isValidAudio() {
+      return request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*');
+    }
+
+    // Piso general: leer requiere sesión salvo `evaluation-audios` (privados
+    // por autor para preservar el anonimato hasta que acepte revelarse).
+    match /{file} {
       allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /{folder}/{rest=**} {
+      allow read: if isSignedIn() && folder != 'evaluation-audios';
       allow write: if false;
     }
 
@@ -99,6 +112,15 @@ service firebase.storage {
     match /match-clips/{matchId}/{userId}/{allPaths=**} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && request.auth.uid == userId && isValidClip();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Notas de voz de evaluaciones: SOLO el autor puede leer/escribir/borrar
+    // directo desde el SDK. El jugador evaluado sólo accede mediante la Cloud
+    // Function `getEvaluationAudio` si `identityRevealed == true`.
+    match /evaluation-audios/{matchId}/{userId}/{allPaths=**} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidAudio();
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
   }

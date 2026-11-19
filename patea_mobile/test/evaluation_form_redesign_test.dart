@@ -122,4 +122,48 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Unified impact preview updates live in Nota and enforces 3-5 cap in Etiquetas', (tester) async {
+    final service = EvaluationEditorFake();
+    await mount(tester, service);
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -550));
+    await tester.pumpAndSettle();
+
+    // En Nota (por defecto 5/10), ya se muestra el bloque unificado Impacto estimado.
+    expect(find.text('Impacto estimado'), findsWidgets);
+    expect(find.textContaining('Sin cambio'), findsWidgets);
+    expect(find.text('5 · Neutro'), findsWidgets);
+
+    // Subir el primer slider a 10/10 debe actualizar el OVR estimado y chips en vivo.
+    final firstSlider = find.byType(Slider).first;
+    await tester.ensureVisible(firstSlider);
+    await tester.pump();
+    final sliderBox = tester.getRect(firstSlider);
+    await tester.tapAt(Offset(sliderBox.right - 6, sliderBox.center.dy));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('→'), findsWidgets);
+
+    // Cambiar a Etiquetas: debe mostrar contador 0 / 5 y bloquear a partir de 5.
+    await tap(tester, find.text('Etiquetas').first);
+    expect(find.text('0 / 5'), findsOneWidget);
+
+    for (var i = 0; i < 5; i++) {
+      final tile = find.byType(CheckboxListTile).at(i);
+      await tap(tester, tile);
+    }
+    expect(find.text('5 / 5'), findsOneWidget);
+
+    // La 6ª etiqueta no seleccionada queda deshabilitada para respetar el tope de 5.
+    final sixthTile = tester.widget<CheckboxListTile>(find.byType(CheckboxListTile).at(5));
+    expect(sixthTile.value, isFalse);
+    expect(sixthTile.onChanged, isNull);
+
+    // Cambiar a Reseña (Escribir y Audio) mantiene el bloque unificado Impacto estimado.
+    await tap(tester, find.text('Reseña').first);
+    expect(find.text('Impacto estimado'), findsWidgets);
+    await tap(tester, find.text('Audio').first);
+    expect(find.text('Impacto estimado'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
 }

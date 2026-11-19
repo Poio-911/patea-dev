@@ -29,7 +29,7 @@ export { searchTeams, challengeTeam, respondTeamChallenge, getMyTeamChallenges }
 export { onTeamWrite } from './triggers/on-team-write';
 export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteManualPlayer, findManualPlayerClaims, claimManualPlayer } from './callable/manual-player-management';
 export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
-export { submitEvaluationSubmission, respondToIdentityReveal, finalizeMatchEvaluation } from './callable/evaluations';
+export { submitEvaluationSubmission, requestIdentityReveal, respondToIdentityReveal, getEvaluationAudio, finalizeMatchEvaluation } from './callable/evaluations';
 export { generateMatchChronicle } from './callable/match-chronicle';
 export { requestJoinMatch, respondJoinRequest } from './callable/match-join-requests';
 export { proposeMatchDate, voteMatchDate, confirmMatchDate, proposeMatchLocation, voteMatchLocation, confirmMatchLocation } from './callable/match-planning';
@@ -37,7 +37,7 @@ export { getPlayerEvaluations } from './callable/player-profile';
 export { updateProfile } from './callable/update-profile';
 export { initializeUserProfile } from './callable/initialize-user-profile';
 export { generatePlayerPhoto, applyPlayerPhoto } from './callable/generate-player-photo';
-export { analyzeTextPerformance } from './callable/analyze-text-performance';
+export { analyzeTextPerformance, analyzeAudioPerformance } from './callable/analyze-text-performance';
 // NOTE: onUserCreate requires GCIP (paid plan). Client-side rollback in register/page.tsx is used instead.
 
 export { startLeagueTournament } from './callable/league-management';

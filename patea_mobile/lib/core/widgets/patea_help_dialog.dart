@@ -811,17 +811,17 @@ class _PateaSectionHelpSheetState extends State<PateaSectionHelpSheet> {
         _HelpIconRow(
           icon: Icons.rate_review_outlined,
           color: c.primary,
-          title: 'Nota o etiquetas',
+          title: 'Nota, etiquetas o reseña (texto o voz)',
           desc:
-              'Después de cada partido se te asignan compañeros para valorar. Podés dar puntaje del 1 al 10 (5 es neutro) o elegir al menos 3 etiquetas de rendimiento, votar al MVP y cargar tus goles/asistencias.',
+              'Después de cada partido se te asignan compañeros para valorar. Podés dar puntaje del 1 al 10 (5 es neutro), elegir de 3 a 5 etiquetas o dejar una reseña escrita o por nota de voz, más voto al MVP y tus goles/asistencias.',
         ),
         const SizedBox(height: 12),
         _HelpIconRow(
           icon: Icons.trending_up_rounded,
           color: c.primary,
-          title: 'Impacto en el plantel',
+          title: 'Impacto parejo en el plantel',
           desc:
-              'Cuando cierran las devoluciones se recalcula el OVR y los atributos de cada jugador. Los jugadores manuales también reciben notas pero no emiten votos.',
+              'Todos los métodos pesan igual y se promedian entre los evaluadores al cerrar el partido, más un pequeño bono parejo por goles y asistencias. En cada tarjeta ves el impacto estimado antes de enviar.',
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -842,7 +842,7 @@ class _PateaSectionHelpSheetState extends State<PateaSectionHelpSheet> {
           color: c.primary,
           title: 'Anónimas + pestaña Solicitudes',
           desc:
-              'Tu nombre nunca se muestra al jugador evaluado. Si alguien quiere saber quién le dejó una devolución, te llega un pedido en Solicitudes y vos elegís si revelarlo.',
+              'Tu nombre y tu nota de voz nunca se muestran mientras la evaluación sea anónima (sólo el resumen). Si el compañero pide saber quién lo evaluó, te llega acá en Solicitudes para elegir si revelar identidad y habilitar el audio.',
         ),
       ],
     );
