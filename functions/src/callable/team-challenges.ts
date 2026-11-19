@@ -424,6 +424,9 @@ export const challengeTeam = onCall(REGION, async (request) => {
       tx.update(targetMatchRef, {
         title: customTitle || existingMatch.title || matchTitle,
         participantGroupIds,
+        // El segundo grupo, para que sus miembros vean el partido en su lista
+        // (las reglas no pueden consultar `participantGroupIds`).
+        secondaryGroupId: participantGroupIds.find((g) => g !== cleanId(existingMatch.groupId)) ?? null,
         participantTeamIds: [fromTeamId, toTeamId],
         teams: [builtFromTeam, pendingToTeamStub],
         players: fromPlayers,
@@ -450,6 +453,7 @@ export const challengeTeam = onCall(REGION, async (request) => {
         captains: [uid],
         groupId: fromGroupId || null,
         participantGroupIds,
+        secondaryGroupId: participantGroupIds.find((g) => g !== fromGroupId) ?? null,
         participantTeamIds: [fromTeamId, toTeamId],
         location,
         ...(weather ? { weather } : {}),
@@ -544,6 +548,7 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
           challengeToTeamId: '',
           challengeToTeamName: '',
           participantGroupIds: fromGroupId ? [fromGroupId] : [],
+          secondaryGroupId: null,
           participantTeamIds: fromTeamId ? [fromTeamId] : [],
           teams: keptTeams,
         });
@@ -631,6 +636,7 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
         matchSize: Math.max(2, players.length),
         captains,
         participantGroupIds: groupIds,
+        secondaryGroupId: groupIds.find((g) => g !== cleanId(existingMatch?.groupId)) ?? null,
         participantTeamIds: [fromTeamId, toTeamId],
         location,
         players,
@@ -657,6 +663,7 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
         captains,
         groupId: cleanId(fromTeam.groupId) || cleanId(toTeam.groupId) || null,
         participantGroupIds: groupIds,
+        secondaryGroupId: groupIds.find((g) => g !== (cleanId(fromTeam.groupId) || cleanId(toTeam.groupId))) ?? null,
         participantTeamIds: [fromTeamId, toTeamId],
         location,
         players,

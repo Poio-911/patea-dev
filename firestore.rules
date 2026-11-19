@@ -84,6 +84,31 @@ service cloud.firestore {
       return isMatchParticipant(matchId) || isGroupLinked(matchId);
     }
 
+    // ¿Puede leer el documento principal del partido? Recibe los datos del
+    // documento (`resource.data`) para valer también en las consultas de lista:
+    // público, mío (organizo, capitaneo o juego), de uno de mis grupos, o de una
+    // competición (tablas y llaves las ve cualquiera con sesión).
+    function canReadMatchDoc(m) {
+      return isAuthenticated() && (
+        m.get('isPublic', false) == true
+        || m.get('ownerUid', '') == request.auth.uid
+        || request.auth.uid in m.get('playerUids', [])
+        || request.auth.uid in m.get('captains', [])
+        || m.get('type', '') in ['league', 'cup', 'league_final']
+        || m.get('leagueInfo', null) != null
+        || (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && (
+            m.get('groupId', '-') in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', [])
+            || m.get('groupId', '-') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeGroupId', '--')
+            || m.get('secondaryGroupId', '-') in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', [])
+            || m.get('secondaryGroupId', '-') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeGroupId', '--')
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', []).hasAny(m.get('participantGroupIds', []))
+          )
+        )
+      );
+    }
+
     // Lo que ve cualquiera: un partido público. Lo privado, sólo vinculados.
     function canSeeMatchContent(matchId) {
       return isAuthenticated() && (
@@ -224,7 +249,9 @@ service cloud.firestore {
     // ---------- Partidos ----------
 
     match /matches/{matchId} {
-      allow read: if isAuthenticated();
+      // Antes lo leía cualquier usuario con sesión: plantel, resultado y ubicación
+      // de partidos privados de otros grupos.
+      allow read: if canReadMatchDoc(resource.data);
       allow create, update, delete: if false;
 
       // Chat en vivo: participantes y organizador.
@@ -428,31 +455,29 @@ service cloud.firestore {
 
     // ---------- Competiciones ----------
 
+    // Las competiciones las escribe sólo el servidor (callables de ligas y copas):
+    // antes el dueño podía pisar tablas, llaves y partidos desde el cliente.
     match /leagues/{leagueId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false;
 
       match /{subcollection}/{docId} {
         allow read: if isAuthenticated() && (subcollection != 'applications'
           || resource.data.get('submittedBy', '') == request.auth.uid
           || get(/databases/$(database)/documents/leagues/$(leagueId)).data.ownerUid == request.auth.uid);
-        allow write: if isAuthenticated()
-          && get(/databases/$(database)/documents/leagues/$(leagueId)).data.ownerUid == request.auth.uid;
+        allow write: if false;
       }
     }
 
     match /cups/{cupId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.ownerUid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false;
 
       match /{subcollection}/{docId} {
         allow read: if isAuthenticated() && (subcollection != 'applications'
           || resource.data.get('submittedBy', '') == request.auth.uid
           || get(/databases/$(database)/documents/cups/$(cupId)).data.ownerUid == request.auth.uid);
-        allow write: if isAuthenticated()
-          && get(/databases/$(database)/documents/cups/$(cupId)).data.ownerUid == request.auth.uid;
+        allow write: if false;
       }
     }
 

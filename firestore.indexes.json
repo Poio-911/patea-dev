@@ -269,6 +269,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "secondaryGroupId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "groupId",
           "order": "ASCENDING"
         },

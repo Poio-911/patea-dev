@@ -473,11 +473,12 @@ class FirestoreService {
             .toList());
 
     // Un partido entre grupos distintos se guarda con el `groupId` de UN solo
-    // equipo: el otro grupo no lo veía en su lista. `participantGroupIds`
-    // tiene a los dos. Usa el índice `participantGroupIds + date DESC`.
+    // equipo: el otro grupo lo ve por `secondaryGroupId` (las reglas no pueden
+    // consultar el arreglo `participantGroupIds`). Índice `secondaryGroupId +
+    // date DESC`.
     final shared = _firestore
         .collection('matches')
-        .where('participantGroupIds', arrayContains: groupId)
+        .where('secondaryGroupId', isEqualTo: groupId)
         .orderBy('date', descending: true)
         .limit(limit)
         .snapshots()

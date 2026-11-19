@@ -264,10 +264,10 @@ empezar.
 
 ## Estado de implementación
 
-Los bloques A (servidor), B (reglas) y C (funciones nuevas y pantallas) están implementados.
+Los bloques A (servidor), B (reglas) y C (funciones nuevas y pantallas) están implementados, sin pendientes.
 
-**Decisiones que quedaron así a propósito**
-
-- `leagues` y `cups`: el dueño de la competición sigue escribiendo directo (la web arma llaves y fixtures desde el cliente). Un tercero no puede: sólo el dueño. No se cierra sin migrar antes esas pantallas a funciones.
-- Documento principal del partido (`matches/{id}`): la lectura sigue abierta a cualquier usuario con sesión. Las consultas de lista (grupo, públicos, explorar) no pueden demostrar el vínculo con el grupo en las reglas, así que restringirla exige rediseñar esas consultas. Lo que cuelga del partido (clips, chat, presencia, solicitudes, autoevaluaciones, asignaciones) sí está acotado.
+- `leagues` y `cups` (y sus subcolecciones) se escriben sólo desde el servidor. La web que las escribía directo deja de poder hacerlo.
+- El documento principal del partido (`matches/{id}`) lo leen: partidos públicos, el organizador, capitanes y jugadores, miembros de los grupos que participan y cualquiera para partidos de competición. El segundo grupo de un partido entre grupos se consulta por `secondaryGroupId` (las reglas no pueden consultar arreglos); los partidos existentes se completan con `functions/scripts/backfill-secondary-group.js`.
 - Plantel de una competición: se cambia desde el equipo; `removeMatchPlayer` no actúa sobre partidos de competición.
+
+**Al desplegar:** functions, `firestore.rules`, `storage.rules` e índices (nuevo: `matches` por `secondaryGroupId` + `date`); luego correr el script de relleno una vez.
