@@ -1,3 +1,4 @@
+import '../groups/team_rivals_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -146,7 +147,18 @@ class _ChallengeTeamScreenState extends ConsumerState<ChallengeTeamScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ChallengeSheet(from: mine, to: rival),
+      builder: (_) => ChallengeSheet(
+        from: mine,
+        to: rival,
+        isRematch:
+            ref
+                .read(teamRivalsProvider((mine.id, false)))
+                .asData
+                ?.value
+                .rivals
+                .any((r) => r.id == rival.id && r.played > 0) ??
+            false,
+      ),
     );
     if (sent == true && mounted) {
       setState(() => _sentTo.add(rival.id));
@@ -318,6 +330,8 @@ class _ChallengeTeamScreenState extends ConsumerState<ChallengeTeamScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 14),
+        TeamRivalsPanel(team: mine, limit: 5, preview: true),
       ];
     }
     if (_searching && _results.isEmpty) {
@@ -347,14 +361,60 @@ class _ChallengeTeamScreenState extends ConsumerState<ChallengeTeamScreen> {
       ];
     }
 
+    final saved = {
+      for (final rival
+          in ref
+                  .watch(teamRivalsProvider((mine.id, false)))
+                  .asData
+                  ?.value
+                  .rivals ??
+              [])
+        rival.id: rival,
+    };
     return [
-      for (final team in _results)
+      for (final team in _results) ...[
         _TeamResultTile(
           team: team,
           query: _query,
-          sent: _sentTo.contains(team.id),
-          onChallenge: () => _openChallenge(team, mine),
+          sent:
+              _sentTo.contains(team.id) ||
+              saved[team.id]?.pendingChallenge == true,
+          onChallenge: () => saved[team.id]?.upcomingMatchId != null
+              ? context.push('/matches/${saved[team.id]!.upcomingMatchId}')
+              : _openChallenge(team, mine),
         ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            icon: Icon(
+              saved.containsKey(team.id)
+                  ? Icons.star_rounded
+                  : Icons.star_outline_rounded,
+              size: 18,
+            ),
+            label: Text(
+              saved[team.id]?.played != null && saved[team.id]!.played > 0
+                  ? 'Ya jugaron ${saved[team.id]!.played} veces'
+                  : saved.containsKey(team.id)
+                  ? 'Rival guardado'
+                  : 'Guardar rival',
+            ),
+            onPressed: saved.containsKey(team.id)
+                ? null
+                : () async {
+                    try {
+                      await ref
+                          .read(teamChallengeServiceProvider)
+                          .setTeamRival(mine.id, team.id, save: true);
+                      ref.invalidate(teamRivalsProvider);
+                    } catch (e) {
+                      if (context.mounted)
+                        PateaSnack.error(context, challengeErrorMessage(e));
+                    }
+                  },
+          ),
+        ),
+      ],
     ];
   }
 }
@@ -466,8 +526,14 @@ class _TeamResultTile extends StatelessWidget {
 class ChallengeSheet extends ConsumerStatefulWidget {
   final GroupTeamModel from;
   final TeamSearchResult to;
+  final bool isRematch;
 
-  const ChallengeSheet({super.key, required this.from, required this.to});
+  const ChallengeSheet({
+    super.key,
+    required this.from,
+    required this.to,
+    this.isRematch = false,
+  });
 
   @override
   ConsumerState<ChallengeSheet> createState() => _ChallengeSheetState();
@@ -480,6 +546,12 @@ class _ChallengeSheetState extends ConsumerState<ChallengeSheet> {
   TimeOfDay? _time;
   bool _sending = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isRematch) _message.text = '¿Revancha?';
+  }
 
   @override
   void dispose() {
@@ -533,6 +605,7 @@ class _ChallengeSheetState extends ConsumerState<ChallengeSheet> {
                 : '${_two(_time!.hour)}:${_two(_time!.minute)}',
             locationName: _venue.text,
           );
+      ref.invalidate(teamRivalsProvider);
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {

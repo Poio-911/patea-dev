@@ -1,6 +1,7 @@
 # Fase 2 — Rivales guardados ("equipos para volver a jugar")
 
-> Estado: **plan, sin implementar.** Continúa lo hecho en las fases 0 y 1
+> Estado: **implementado el 19/11/2026.** Ver [cierre de implementación](FASE_2_RIVALES_IMPLEMENTACION_2026-11-19.md) para decisiones finales, pruebas y despliegue.
+> La especificación original se conserva como referencia; el cierre documenta los ajustes. Continúa lo hecho en las fases 0 y 1
 > (commit `9f252316`). Este documento es la especificación completa: decisiones,
 > modelo de datos, backend, app, pruebas, migración y orden de despliegue.
 

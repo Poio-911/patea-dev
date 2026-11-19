@@ -1,3 +1,5 @@
+import 'widgets/team_rival_series.dart';
+import '../../core/services/team_challenge_service.dart';
 import 'match_chat_screen.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import 'dart:async';
@@ -114,6 +116,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     setState(() => _isFinishing = true);
     try {
       await ref.read(matchServiceProvider).finishMatch(match.id);
+      ref.invalidate(teamRivalsProvider);
+      ref.invalidate(teamRivalSeriesProvider(match.id));
       if (mounted)
         _showSnack('Partido finalizado. Ya se habilitaron las evaluaciones.');
     } catch (e) {
@@ -637,6 +641,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (match.type == 'intergroup_friendly')
+                      TeamRivalSeries(matchId: match.id),
                     // En un partido entre equipos no se corrige moviendo
                     // jugadores: los planteles son los de cada equipo.
                     if (isOwner && hasTeams && !match.isTeamMatch) ...[
@@ -731,7 +737,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         body: PateaError(
           error: e,
           message: 'No pudimos cargar este partido.',
-          onRetry: () => ref.invalidate(singleMatchStreamProvider(widget.matchId)),
+          onRetry: () =>
+              ref.invalidate(singleMatchStreamProvider(widget.matchId)),
         ),
       ),
     );
@@ -1100,7 +1107,8 @@ class _PlayerMatchBadges extends StatelessWidget {
             _MiniBadge(
               icon: Icons.trending_up_rounded,
               text: assists > 1 ? '$assists' : null,
-              semanticsLabel: '$assists ${assists == 1 ? 'asistencia' : 'asistencias'}',
+              semanticsLabel:
+                  '$assists ${assists == 1 ? 'asistencia' : 'asistencias'}',
               color: context.c.textSecondary,
             ),
           if (reds > 0)
@@ -1361,8 +1369,7 @@ class _OrganizerPanel extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   if (match.status == 'upcoming' && !isCompetition) ...[
-                    if (match.players.length < match.matchSize &&
-                        !isTeamMatch)
+                    if (match.players.length < match.matchSize && !isTeamMatch)
                       OutlinedButton.icon(
                         onPressed: () =>
                             RecruitPlayersSheet.show(context, match),
@@ -1414,36 +1421,36 @@ class _OrganizerPanel extends StatelessWidget {
                       ),
                     if (!isTeamMatch && isOwner)
                       OutlinedButton.icon(
-                      onPressed: isShuffling ? null : onShuffle,
-                      icon: isShuffling
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: PateaButtonProgress(),
-                            )
-                          : const Icon(Icons.shuffle_rounded, size: 15),
-                      label: Text(
-                        hasTeams
-                            ? 'Recalcular equilibrio'
-                            : 'Equilibrar equipos',
+                        onPressed: isShuffling ? null : onShuffle,
+                        icon: isShuffling
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: PateaButtonProgress(),
+                              )
+                            : const Icon(Icons.shuffle_rounded, size: 15),
+                        label: Text(
+                          hasTeams
+                              ? 'Recalcular equilibrio'
+                              : 'Equilibrar equipos',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: context.c.cardSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                          foregroundColor: context.c.primary,
+                          side: BorderSide(
+                            color: context.c.primary.withValues(alpha: 0.4),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: context.c.cardSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                        foregroundColor: context.c.primary,
-                        side: BorderSide(
-                          color: context.c.primary.withValues(alpha: 0.4),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadii.cardAll,
-                        ),
-                      ),
-                    ),
                     OutlinedButton.icon(
                       onPressed: onReschedule,
                       icon: const Icon(Icons.calendar_month_outlined, size: 15),
@@ -1548,36 +1555,36 @@ class _OrganizerPanel extends StatelessWidget {
                   ],
                   if (isOwner)
                     OutlinedButton.icon(
-                    onPressed: onDelete,
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 15,
-                      color: context.c.destructive,
-                    ),
-                    label: Text(
-                      'Eliminar Partido',
-                      style: AppTypography.action(
-                        size: 14,
+                      onPressed: onDelete,
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        size: 15,
                         color: context.c.destructive,
                       ),
+                      label: Text(
+                        'Eliminar Partido',
+                        style: AppTypography.action(
+                          size: 14,
+                          color: context.c.destructive,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: context.c.cardSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                        foregroundColor: context.c.destructive,
+                        side: BorderSide(
+                          color: context.c.destructive.withValues(alpha: 0.4),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
+                      ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: context.c.cardSurface.withValues(
-                        alpha: 0.5,
-                      ),
-                      foregroundColor: context.c.destructive,
-                      side: BorderSide(
-                        color: context.c.destructive.withValues(alpha: 0.4),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.cardAll,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -1640,11 +1647,7 @@ class _StickyActionBar extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: AppRadii.cardAll),
         ),
-        icon: Icon(
-          Icons.sensors_rounded,
-          size: 20,
-          color: context.c.onPrimary,
-        ),
+        icon: Icon(Icons.sensors_rounded, size: 20, color: context.c.onPrimary),
         label: Text(
           isManager ? 'Dirigir en vivo' : 'Seguir en vivo',
           style: AppTypography.action(size: 16, color: context.c.onPrimary),
@@ -1922,11 +1925,17 @@ class _ChatPreviewCard extends ConsumerWidget {
   final VoidCallback onOpenChat;
   final bool canChat;
 
-  const _ChatPreviewCard({required this.matchId, required this.onOpenChat, required this.canChat});
+  const _ChatPreviewCard({
+    required this.matchId,
+    required this.onOpenChat,
+    required this.canChat,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lastMsg = canChat ? ref.watch(matchLastMessageStreamProvider(matchId)).asData?.value : null;
+    final lastMsg = canChat
+        ? ref.watch(matchLastMessageStreamProvider(matchId)).asData?.value
+        : null;
 
     return PateaCard(
       color: context.c.card,
@@ -1981,7 +1990,9 @@ class _ChatPreviewCard extends ConsumerWidget {
                 const SizedBox(height: 10),
                 if (lastMsg == null)
                   Text(
-                    canChat ? 'Sin mensajes aún. Tocá para iniciar la charla.' : 'Solo participantes y organizador.',
+                    canChat
+                        ? 'Sin mensajes aún. Tocá para iniciar la charla.'
+                        : 'Solo participantes y organizador.',
                     style: AppTypography.body(
                       size: 12,
                       color: context.c.textSecondary,
@@ -2017,7 +2028,7 @@ void _showPlayerCardModal(
 }
 
 void _openMatchChat(BuildContext context, MatchModel match) {
-  Navigator.of(context).push(MaterialPageRoute<void>(
-    builder: (_) => MatchChatScreen(match: match),
-  ));
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(builder: (_) => MatchChatScreen(match: match)),
+  );
 }

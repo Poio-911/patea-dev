@@ -1,3 +1,4 @@
+import { cleanupTeamRivals } from '../lib/team-rivals-store';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { buildTeamSearchTokens, normalizeSearchText } from '../lib/team-search';
@@ -386,5 +387,6 @@ export const deleteTeam = onCall({ region: 'us-central1' }, async (request) => {
   const db = admin.firestore();
   const { teamRef } = await getTeamPermissionOrThrow(db, teamId, uid, 'teams.delete');
   await teamRef.delete();
+  await cleanupTeamRivals(db, teamId);
   return { ok: true };
 });

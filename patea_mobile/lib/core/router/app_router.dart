@@ -1,3 +1,4 @@
+import '../../features/groups/team_rivals_screen.dart';
 import '../widgets/section_icon.dart';
 import '../../features/competitions/league_detail_screen.dart';
 import 'dart:async';
@@ -214,6 +215,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final groupId = state.uri.queryParameters['groupId'] ?? '';
           return _withBackground(CreateTeamScreen(groupId: groupId));
         },
+      ),
+      GoRoute(
+        path: '/groups/teams/:id/rivals',
+        builder: (context, state) => _withBackground(
+          TeamRivalsScreen(teamId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/groups/teams/:id',

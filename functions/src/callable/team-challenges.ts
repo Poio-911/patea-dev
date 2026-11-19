@@ -1,7 +1,10 @@
+import { buildChallengeTeams } from '../lib/challenge-roster';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { sendPushToUsers } from '../lib/fcm-push';
 import { buildMatchDateTime } from '../lib/match-date';
+import { acceptedRivals, challengeState, teamAccess } from '../lib/team-rivals-store';
+import { rivalDocId } from '../lib/team-rivals';
 import {
   MAX_QUERY_LENGTH,
   matchesTeamQuery,
@@ -220,17 +223,34 @@ export const challengeTeam = onCall(REGION, async (request) => {
   }
 
   const invitations = db.collection(`teams/${toTeamId}/invitations`);
-  const existing = await invitations
-    .where('fromTeamId', '==', fromTeamId)
-    .where('status', '==', 'pending')
-    .limit(1)
-    .get();
-  if (!existing.empty) throw new HttpsError('already-exists', 'Ya le enviaste un desafío a este equipo.');
-
   const [fromGroup, toGroup] = await Promise.all([groupOf(db, fromTeam), groupOf(db, toTeam)]);
 
   const invitationRef = invitations.doc();
-  await invitationRef.set({
+  const isRematch = await db.runTransaction(async tx => {
+    const freshFrom = await teamAccess(db, uid, fromTeamId, true, tx);
+    const freshTo = await tx.get(db.doc(`teams/${toTeamId}`));
+    const opponent = freshTo.data();
+    if (!opponent || opponent.challengeOptOut || opponent.groupId === freshFrom.data.groupId || !memberCount(opponent) || !memberCount(freshFrom.data)) throw new HttpsError('failed-precondition', 'Revisá los equipos y si reciben desafíos.');
+    const limitRef = db.doc(`teamChallengeLimits/${fromTeamId}`);
+    const limit = (await tx.get(limitRef)).data();
+    const state = await challengeState(tx, db, fromTeamId, toTeamId);
+    if (state.upcoming) throw new HttpsError('already-exists', 'Ya tienen un partido acordado.');
+    if (state.pair.invitationPath) {
+      const prior = await tx.get(db.doc(state.pair.invitationPath));
+      if (prior.data()?.status === 'pending') throw new HttpsError('already-exists', 'Ya hay un desafío pendiente entre estos equipos.');
+    }
+    const sent = await tx.get(db.collectionGroup('invitations').where('fromTeamId', '==', fromTeamId).where('status', '==', 'pending').limit(11));
+    const daily = await tx.get(db.collectionGroup('invitations').where('fromTeamId', '==', fromTeamId).where('createdAt', '>=', new Date(Date.now() - 86400000).toISOString()).limit(21));
+    const incoming = await tx.get(db.collection(`teams/${fromTeamId}/invitations`).where('fromTeamId', '==', toTeamId));
+    if (sent.docs.some(d => d.data().toTeamId === toTeamId && d.data().status === 'pending') || incoming.docs.some(d => d.data().status === 'pending')) throw new HttpsError('already-exists', 'Ya hay un desafío pendiente entre estos equipos.');
+    if (sent.size >= 10) throw new HttpsError('resource-exhausted', 'Tu equipo ya tiene demasiados desafíos pendientes.');
+    if (daily.size >= 20) throw new HttpsError('resource-exhausted', 'Tu equipo alcanzó los 20 desafíos en 24 horas.');
+    const rivalRef = db.doc(`teamRivals/${rivalDocId(fromTeamId, toTeamId)}`);
+    const rival = (await tx.get(rivalRef)).data();
+    tx.set(limitRef, {revision: Number(limit?.revision ?? 0) + 1, lastSentAt: new Date().toISOString()});
+    tx.set(state.pairRef, {invitationPath: invitationRef.path, updatedAt: new Date().toISOString()});
+    if (rival) tx.update(rivalRef, {lastChallengeAt: new Date().toISOString()});
+    tx.set(invitationRef, {
     type: 'team_challenge',
     status: 'pending',
     fromTeamId,
@@ -246,14 +266,17 @@ export const challengeTeam = onCall(REGION, async (request) => {
     ...(message ? { message } : {}),
     ...(proposal ? { proposedDate: proposal.date, proposedTime: proposal.time } : {}),
     ...(proposedLocationName ? { proposedLocationName } : {}),
+    isRematch: Number(rival?.played ?? 0) > 0,
+  });
+    return Number(rival?.played ?? 0) > 0;
   });
 
   await notifyUsers(
     db,
     teamManagerUids(toTeam, toGroup),
     {
-      type: 'team_challenge',
-      title: '¡Desafío recibido!',
+      type: isRematch ? 'team_rematch' : 'team_challenge',
+      title: isRematch ? '¡Te proponen una revancha!' : '¡Desafío recibido!',
       message: `"${fromTeam.name}"${fromGroup?.name ? ` (${fromGroup.name})` : ''} quiere jugar contra "${toTeam.name}".`,
       link: '/challenges',
       metadata: { invitationId: invitationRef.id, toTeamId, fromTeamId },
@@ -268,50 +291,7 @@ export const challengeTeam = onCall(REGION, async (request) => {
 // Responder
 // ---------------------------------------------------------------------------
 
-function canonicalPlayer(id: string, p: Doc) {
-  return {
-    uid: id,
-    displayName: String(p.name ?? p.displayName ?? 'Jugador'),
-    ovr: Number(p.ovr ?? 50),
-    position: String(p.position ?? 'MED'),
-    photoURL: String(p.photoURL ?? p.photoUrl ?? ''),
-  };
-}
-
-/**
- * Arma los dos equipos del partido desde los planteles de cada equipo. Nada
- * viene del cliente. Falla si un equipo queda sin jugadores o si un mismo
- * jugador está en los dos.
- */
-export function buildChallengeTeams(
-  teamDocs: Array<{ id: string; data: Doc }>,
-  playersById: Map<string, Doc>,
-): Array<Doc> {
-  const assigned = new Set<string>();
-  return teamDocs.map(({ data }) => {
-    const players: Array<Doc> = [];
-    for (const member of Array.isArray(data.members) ? data.members : []) {
-      const id = String(member?.playerId ?? '');
-      if (!id) continue;
-      if (assigned.has(id)) {
-        throw new HttpsError('failed-precondition', 'Un jugador está en los dos equipos. Revisá los planteles.');
-      }
-      const profile = playersById.get(id);
-      if (!profile) throw new HttpsError('failed-precondition', 'Un equipo tiene jugadores sin perfil. Revisá su plantel.');
-      assigned.add(id);
-      players.push(canonicalPlayer(id, profile));
-    }
-    if (players.length === 0) throw new HttpsError('failed-precondition', 'Cada equipo necesita un plantel propio.');
-    const totalOVR = players.reduce((sum, p) => sum + p.ovr, 0);
-    return {
-      name: data.name ?? 'Equipo',
-      jersey: data.jersey ?? null,
-      players,
-      totalOVR,
-      averageOVR: players.length ? totalOVR / players.length : 0,
-    };
-  });
-}
+export { buildChallengeTeams } from '../lib/challenge-roster';
 
 export const respondTeamChallenge = onCall(REGION, async (request) => {
   const uid = requireAuth(request);
@@ -328,6 +308,8 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
   const matchRef = db.collection('matches').doc(`challenge_${invitationId}`);
 
   const result = await db.runTransaction(async (tx) => {
+    const freshTo = await teamAccess(db, uid, toTeamId, true, tx);
+    const toTeam = freshTo.data;
     const invitationSnap = await tx.get(invitationRef);
     const invitation = invitationSnap.data() as Doc | undefined;
     if (!invitation || invitation.type !== 'team_challenge') {
@@ -389,6 +371,10 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
     const captains = [...new Set([String(invitation.createdBy ?? ''), uid].filter(Boolean))];
     const groupIds = [...new Set([toTeam.groupId, fromTeam.groupId].map((g) => cleanId(g)).filter(Boolean))];
 
+    const pairState = await challengeState(tx, db, toTeamId, fromTeamId);
+    if (pairState.upcoming) throw new HttpsError('already-exists', 'Ya tienen un partido acordado.');
+    await acceptedRivals(tx, db, [{id: toTeamId, data: toTeam}, {id: fromTeamId, data: fromTeam}]);
+    tx.set(pairState.pairRef, {matchId: matchRef.id, invitationPath: invitationRef.path, updatedAt: new Date().toISOString()});
     tx.create(matchRef, {
       title: `${toTeam.name} vs ${fromTeam.name}`,
       type: 'intergroup_friendly',

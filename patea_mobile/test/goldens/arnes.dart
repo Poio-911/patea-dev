@@ -19,6 +19,10 @@
 /// Ver `docs/technical/AUDITORIA_DE_ESTILOS_Y_MODO_CLARO.md`.
 library;
 
+import 'package:patea_mobile/core/models/team_rival_model.dart';
+import 'package:patea_mobile/core/services/team_challenge_service.dart';
+
+
 import 'package:patea_mobile/core/models/player_activity_models.dart';
 import 'package:patea_mobile/core/services/player_profile_service.dart';
 
@@ -1018,6 +1022,9 @@ List<Override> overridesDelArnes() {
         },
       ]),
     ),
+
+    teamRivalsProvider.overrideWith((ref, key) async => TeamRivalsPage.fromMap({'rivals': [], 'canManage': true})),
+    teamRivalSeriesProvider.overrideWith((ref, matchId) async => {'series': null}),
 
     // El fondo elige una foto al azar: fijarla es lo que hace comparable la
     // imagen entre corridas.

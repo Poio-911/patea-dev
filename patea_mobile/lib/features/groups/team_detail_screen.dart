@@ -1,3 +1,4 @@
+import 'team_rivals_screen.dart';
 import '../../core/utils/dates.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
@@ -229,6 +230,10 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                 const SizedBox(height: 18),
               ],
 
+              if (canEdit || role != null) ...[
+                TeamRivalsPanel(team: team, limit: 3, preview: true),
+                const SizedBox(height: 18),
+              ],
               if (agenda.isNotEmpty) ...[
                 _SectionLabel(text: 'Próximos partidos', count: agenda.length),
                 const SizedBox(height: 8),
@@ -402,10 +407,7 @@ class _RivalsCardState extends ConsumerState<_RivalsCard> {
     try {
       await ref
           .read(teamChallengeServiceProvider)
-          .setTeamChallengeOptOut(
-            teamId: widget.team.id,
-            optOut: !receives,
-          );
+          .setTeamChallengeOptOut(teamId: widget.team.id, optOut: !receives);
       // El equipo viene de un stream de Firestore: la pantalla se actualiza sola.
     } catch (e) {
       if (mounted) {

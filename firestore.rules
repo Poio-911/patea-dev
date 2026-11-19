@@ -118,6 +118,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Private saved rivals, result ledger and transactional challenge guards.
+    match /teamRivals/{id} { allow read, write: if false; }
+    match /teamRivalResults/{id} { allow read, write: if false; }
+    match /teamRivalPairs/{id} { allow read, write: if false; }
+    match /teamRivalTeams/{id} { allow read, write: if false; }
+    match /teamChallengeLimits/{id} { allow read, write: if false; }
+
     // ---------- Jugadores ----------
 
     match /players/{playerId} {

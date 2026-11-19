@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/team_challenge_model.dart';
+import '../models/team_rival_model.dart';
 import 'callable_functions.dart';
 
 /// Mínimo de letras para buscar. Con menos no se llama al servidor ni se lista
@@ -31,6 +32,34 @@ final teamChallengeServiceProvider = Provider<TeamChallengeService>(
 /// Desafíos entre equipos de distintos grupos. Todo pasa por Cloud Functions:
 /// `teams` e invitaciones no se escriben desde el cliente.
 class TeamChallengeService {
+  Future<TeamRivalsPage> getTeamRivals(
+    String ownTeamId, {
+    bool includeHidden = false,
+    String? hiddenCursor,
+  }) async => TeamRivalsPage.fromMap(
+    await callFunction('getTeamRivals', {
+      'ownTeamId': ownTeamId,
+      'includeHidden': includeHidden,
+      'hiddenCursor': ?hiddenCursor,
+    }),
+  );
+
+  Future<void> setTeamRival(
+    String ownTeamId,
+    String rivalTeamId, {
+    bool? favorite,
+    bool? hidden,
+    bool save = false,
+  }) async {
+    await callFunction('setTeamRival', {
+      'ownTeamId': ownTeamId,
+      'rivalTeamId': rivalTeamId,
+      'favorite': ?favorite,
+      'hidden': ?hidden,
+      if (save) 'save': true,
+    });
+  }
+
   /// Busca equipos por nombre (coincidencia por prefijo en cualquier palabra).
   /// Con menos de [kTeamSearchMinChars] letras devuelve vacío sin llamar.
   Future<List<TeamSearchResult>> searchTeams({
@@ -110,6 +139,19 @@ class TeamChallengeService {
     });
   }
 }
+
+final teamRivalsProvider = FutureProvider.autoDispose
+    .family<TeamRivalsPage, (String, bool)>(
+      (ref, key) => ref
+          .watch(teamChallengeServiceProvider)
+          .getTeamRivals(key.$1, includeHidden: key.$2),
+    );
+
+final teamRivalSeriesProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, String>(
+      (ref, matchId) =>
+          callFunction('getTeamRivalSeries', {'matchId': matchId}),
+    );
 
 /// Desafíos pendientes de los equipos que administro. Se vuelve a pedir cada
 /// vez que se abre la bandeja (autoDispose) y al invalidarlo después de

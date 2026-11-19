@@ -1,3 +1,6 @@
+import * as admin from 'firebase-admin';
+import { cleanupTeamRivals } from '../lib/team-rivals-store';
+import { syncTeamRosters } from '../lib/live-team-rosters';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { buildTeamSearchTokens, normalizeSearchText } from '../lib/team-search';
 
@@ -16,7 +19,7 @@ export const onTeamWrite = onDocumentWritten(
   { document: 'teams/{teamId}', region: 'us-central1' },
   async (event) => {
     const after = event.data?.after;
-    if (!after?.exists) return;
+    if (!after?.exists) { await cleanupTeamRivals(admin.firestore(), event.params.teamId); return; }
     const data = after.data() ?? {};
 
     const nameLower = normalizeSearchText(data.name);
@@ -28,8 +31,8 @@ export const onTeamWrite = onDocumentWritten(
       Array.isArray(current) &&
       current.length === tokens.length &&
       tokens.every((token) => current.includes(token));
-    if (upToDate) return;
-
-    await after.ref.update({ nameLower, searchTokens: tokens });
+    if (!upToDate) await after.ref.update({ nameLower, searchTokens: tokens });
+    const before = event.data?.before.data();
+    if (before && JSON.stringify(before.members) !== JSON.stringify(data.members)) await syncTeamRosters(admin.firestore(), event.params.teamId);
   },
 );

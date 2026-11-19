@@ -981,7 +981,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             icon: Icons.handshake_outlined,
             label: 'Desafiar a otro equipo',
             description:
-                'Buscá un equipo de otro grupo y mandale el desafío. Si acepta, se crea el partido.',
+                'Buscá un equipo de otro grupo o volvé a desafiar a tus rivales guardados. Si acepta, se crea el partido.',
             selected: false,
             onTap: () => context.push('/challenge'),
           ),

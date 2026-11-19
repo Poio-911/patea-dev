@@ -25,6 +25,21 @@ export const onMatchCreate = onDocumentCreated({
         return;
     }
 
+    // Web-created challenges predate explicit side IDs. Normalize metadata
+    // transactionally from their parallel-array contract, without replacing
+    // a roster or a score that may already have changed since this event.
+    if (matchData.type === 'intergroup_friendly') {
+        await db.runTransaction(async tx => {
+            const ref = db.doc(`matches/${matchId}`);
+            const current = (await tx.get(ref)).data();
+            if (!current || current.participantTeamIds?.length !== 2 || current.teams?.length !== 2 || current.teams.some((t: any) => t.teamId)) return;
+            if (current.participantTeamIds[0] === current.participantTeamIds[1]) return;
+            const teams = current.teams.map((team: any, index: number) => ({...team, teamId: current.participantTeamIds[index],
+                ...(['planning', 'upcoming'].includes(current.status) && !current.events?.length && team.score === undefined ? {score: 0} : {})}));
+            tx.update(ref, {teams});
+        });
+    }
+
     const { playerUids, ownerUid, title = 'Partido', groupId, type, matchSize } = matchData;
 
     if (!playerUids || !Array.isArray(playerUids)) {

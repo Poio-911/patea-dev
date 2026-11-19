@@ -1,3 +1,4 @@
+import { prepareLiveRoster } from '../lib/live-team-rosters';
 import { isGeneratingTeams, matchRosterIds, regenerateMatchTeams } from './match-management';
 import { assertCanJoinMatch, isMatchManager } from '../lib/match-access';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
@@ -41,13 +42,15 @@ export const startMatch = onCall({ region: 'us-central1' }, async (request) => {
     if (!Array.isArray(data.teams) || data.teams.length !== 2 || data.teams.some((team: any) => !team.players?.length)) {
       throw new HttpsError('failed-precondition', 'Armá los dos equipos antes de iniciar el partido.');
     }
+    const liveRoster = await prepareLiveRoster(tx, db, data);
+    if (liveRoster) Object.assign(data, liveRoster);
     const roster = matchRosterIds(data);
     const assigned = data.teams.flatMap((team: any) => team.players.map((p: any) => p?.uid));
     if (assigned.length !== roster.length || new Set(assigned).size !== assigned.length ||
         roster.some(id => !assigned.includes(id))) {
       throw new HttpsError('failed-precondition', 'El plantel cambió o hay jugadores repetidos. Tocá Equilibrar equipos antes de iniciar el partido.');
     }
-    tx.update(ref, { status: 'active', liveStatus: 'first_half', currentMinute: 0,
+    tx.update(ref, { ...(liveRoster ?? {}), rosterSyncIssue: admin.firestore.FieldValue.delete(), status: 'active', liveStatus: 'first_half', currentMinute: 0,
       periodStartTs: admin.firestore.FieldValue.serverTimestamp(), timerPaused: false,
       startedAt: admin.firestore.FieldValue.serverTimestamp() });
   });

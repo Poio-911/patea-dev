@@ -16,6 +16,8 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
       const db = context.firestore();
       const fixtures = {
         'manualPlayerContacts/manual': {createdBy:'alice',email:'private@example.com',phone:'+59899123456'},
+        'teamRivals/rival': {ownTeamId:'team',rivalTeamId:'other'},
+        'teamRivalResults/result': {teamIds:['team','other']},
         'leagues/privacy-league': {ownerUid:'organizer',isPublic:true},
         'cups/privacy-cup': {ownerUid:'organizer',isPublic:true},
         'competitionApplications/privacy-application': {competitionId:'privacy-league',competitionType:'league',submittedBy:'alice',teamId:'team',status:'pending'},
@@ -42,6 +44,17 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
     });
   });
   after(async () => { await env?.cleanup(); });
+
+  it('listas de rivales y registros de resultado son privados incluso para el creador', async () => {
+    for (const uid of ['alice', 'organizer', 'stranger']) {
+      const db = env.authenticatedContext(uid).firestore();
+      for (const name of ['teamRivals', 'teamRivalResults', 'teamRivalTeams', 'teamRivalPairs', 'teamChallengeLimits']) {
+        await assertFails(getDocs(collection(db, name)));
+        await assertFails(setDoc(doc(db, `${name}/attempt`), {ownTeamId:'team'}));
+      }
+      await assertFails(getDoc(doc(db, 'teamRivals/rival')));
+    }
+  });
 
   it('el contacto manual no se puede leer, listar ni escribir desde ningún cliente', async () => {
     for (const uid of ['alice', 'bob', 'organizer']) {

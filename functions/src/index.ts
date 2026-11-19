@@ -43,3 +43,6 @@ export { analyzeTextPerformance } from './callable/analyze-text-performance';
 export { startLeagueTournament } from './callable/league-management';
 
 export { manageCompetition, syncCompetitionResult } from './callable/competition-management';
+
+export { getTeamRivals, setTeamRival, getTeamRivalSeries } from './callable/team-rivals';
+export { onTeamMatchResult } from './triggers/on-team-match-result';
