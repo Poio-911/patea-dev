@@ -96,7 +96,14 @@ class DeliveryTests(unittest.TestCase):
         with patch('builtins.print'):
             report = self.verify(api)
         self.assertEqual(report['status'], 'delivered')
-        self.assertEqual(api.posts, [('POST', '/betaGroups/internal/relationships/builds')])
+        self.assertEqual(api.posts, [('POST', '/builds/build-id/relationships/betaGroups')])
+
+    def test_automatic_group_delivery_does_not_require_explicit_membership(self):
+        api = FakeApple(groups=[group(automatic=True)], assigned=False)
+        with patch('builtins.print'):
+            report = self.verify(api)
+        self.assertEqual(report['status'], 'delivered')
+        self.assertEqual(api.posts, [])
 
     def test_already_assigned_build_does_not_repeat_assignment(self):
         api = FakeApple(assigned=True)

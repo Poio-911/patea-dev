@@ -130,12 +130,19 @@ def verify(api, app_id, number, version, targets, output, timeout=1200):
                     raise RuntimeError('La versión de Apple no corresponde a esta entrega')
                 for group in targets['groups']:
                     if group['id'] not in attached:
+                        # Automatic internal groups already receive every build.
+                        # Their implicit access need not appear as an explicit
+                        # relationship and cannot be assigned manually.
+                        if current[group['id']]['attributes'].get('hasAccessToAllBuilds'):
+                            attached.add(group['id'])
+                            continue
                         members = api.all('/betaGroups/'+group['id']+'/relationships/builds', limit=200)
                         if not any(item['id'] == build['id'] for item in members):
-                            api.request('POST', '/betaGroups/'+group['id']+'/relationships/builds',
-                                json={'data': [{'type': 'builds', 'id': build['id']}]})
+                            api.request('POST', '/builds/'+build['id']+'/relationships/betaGroups',
+                                json={'data': [{'type': 'betaGroups', 'id': group['id']}]})
                         attached.add(group['id'])
                 membership = all(
+                    current[g['id']]['attributes'].get('hasAccessToAllBuilds') or
                     any(item['id'] == build['id'] for item in api.all(
                         '/betaGroups/'+g['id']+'/relationships/builds', limit=200))
                     for g in targets['groups'])
