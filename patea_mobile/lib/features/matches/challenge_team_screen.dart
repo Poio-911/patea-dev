@@ -49,12 +49,17 @@ class ChallengeTeamScreen extends ConsumerStatefulWidget {
   /// elige acá.
   final String? teamId;
 
+  /// Si viene un [matchId], reutiliza ese partido existente (por ejemplo al
+  /// elegir otro rival tras un rechazo) sin volver a pedir fecha ni cancha.
+  final String? matchId;
+
   /// Pausa antes de buscar. Se puede achicar en los tests.
   final Duration debounce;
 
   const ChallengeTeamScreen({
     super.key,
     this.teamId,
+    this.matchId,
     this.debounce = const Duration(milliseconds: 350),
   });
 
@@ -150,6 +155,7 @@ class _ChallengeTeamScreenState extends ConsumerState<ChallengeTeamScreen> {
       builder: (_) => ChallengeSheet(
         from: mine,
         to: rival,
+        matchId: widget.matchId,
         isRematch:
             ref
                 .read(teamRivalsProvider((mine.id, false)))
@@ -163,6 +169,9 @@ class _ChallengeTeamScreenState extends ConsumerState<ChallengeTeamScreen> {
     if (sent == true && mounted) {
       setState(() => _sentTo.add(rival.id));
       PateaSnack.ok(context, 'Desafío enviado a ${rival.name}.');
+      if (widget.matchId != null && widget.matchId!.isNotEmpty) {
+        Navigator.pop(context, true);
+      }
     }
   }
 
@@ -526,12 +535,14 @@ class _TeamResultTile extends StatelessWidget {
 class ChallengeSheet extends ConsumerStatefulWidget {
   final GroupTeamModel from;
   final TeamSearchResult to;
+  final String? matchId;
   final bool isRematch;
 
   const ChallengeSheet({
     super.key,
     required this.from,
     required this.to,
+    this.matchId,
     this.isRematch = false,
   });
 
@@ -585,7 +596,9 @@ class _ChallengeSheetState extends ConsumerState<ChallengeSheet> {
   }
 
   Future<void> _send() async {
-    if (_sending || _incompleteProposal) return;
+    final hasExistingMatch =
+        widget.matchId != null && widget.matchId!.isNotEmpty;
+    if (_sending || (!hasExistingMatch && _incompleteProposal)) return;
     setState(() {
       _sending = true;
       _error = null;
@@ -597,13 +610,14 @@ class _ChallengeSheetState extends ConsumerState<ChallengeSheet> {
             fromTeamId: widget.from.id,
             toTeamId: widget.to.id,
             message: _message.text,
-            date: _date == null
+            matchId: widget.matchId,
+            date: hasExistingMatch || _date == null
                 ? null
                 : '${_date!.year}-${_two(_date!.month)}-${_two(_date!.day)}',
-            time: _time == null
+            time: hasExistingMatch || _time == null
                 ? null
                 : '${_two(_time!.hour)}:${_two(_time!.minute)}',
-            locationName: _venue.text,
+            locationName: hasExistingMatch ? null : _venue.text,
           );
       ref.invalidate(teamRivalsProvider);
       if (mounted) Navigator.pop(context, true);
@@ -691,55 +705,64 @@ class _ChallengeSheetState extends ConsumerState<ChallengeSheet> {
                 ),
               ),
               const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _sending ? null : _pickDate,
-                      icon: const Icon(Icons.calendar_today_outlined, size: 16),
-                      label: Text(
-                        _date == null
-                            ? 'Fecha'
-                            : '${_two(_date!.day)}/${_two(_date!.month)}/${_date!.year}',
+              if (widget.matchId == null || widget.matchId!.isEmpty) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _sending ? null : _pickDate,
+                        icon: const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 16,
+                        ),
+                        label: Text(
+                          _date == null
+                              ? 'Fecha'
+                              : '${_two(_date!.day)}/${_two(_date!.month)}/${_date!.year}',
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _sending ? null : _pickTime,
-                      icon: const Icon(Icons.schedule, size: 16),
-                      label: Text(
-                        _time == null
-                            ? 'Hora'
-                            : '${_two(_time!.hour)}:${_two(_time!.minute)}',
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _sending ? null : _pickTime,
+                        icon: const Icon(Icons.schedule, size: 16),
+                        label: Text(
+                          _time == null
+                              ? 'Hora'
+                              : '${_two(_time!.hour)}:${_two(_time!.minute)}',
+                        ),
                       ),
                     ),
+                  ],
+                ),
+                if (_incompleteProposal)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Elegí fecha y hora, o dejá las dos sin definir.',
+                      style: AppTypography.body(size: 12, color: c.destructive),
+                    ),
                   ),
-                ],
-              ),
-              if (_incompleteProposal)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Elegí fecha y hora, o dejá las dos sin definir.',
-                    style: AppTypography.body(size: 12, color: c.destructive),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _venue,
+                  maxLength: 80,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Cancha (opcional)',
+                    counterText: '',
                   ),
                 ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _venue,
-                maxLength: 80,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Cancha (opcional)',
-                  counterText: '',
+                Text(
+                  'Sin fecha ni cancha, los capitanes la definen votando cuando acepten.',
+                  style: AppTypography.body(size: 12, color: c.textSecondary),
                 ),
-              ),
-              Text(
-                'Sin fecha ni cancha, los capitanes la definen votando cuando acepten.',
-                style: AppTypography.body(size: 12, color: c.textSecondary),
-              ),
+              ] else
+                Text(
+                  'Se mantienen la fecha, hora y cancha ya cargadas en tu partido.',
+                  style: AppTypography.body(size: 12, color: c.textSecondary),
+                ),
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(

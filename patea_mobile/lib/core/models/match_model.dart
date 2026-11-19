@@ -490,6 +490,16 @@ class MatchModel {
   /// Si la votación sigue abierta. Se apaga al confirmar fecha o cancha.
   final bool isVotingOpen;
 
+  /// Estado del desafío inter-grupo ('pending' | 'accepted' | 'declined' | null).
+  final String? challengeStatus;
+  final String? challengeInvitationId;
+  final String? challengeFromTeamId;
+  final String? challengeToTeamId;
+  final String? challengeFromTeamName;
+  final String? challengeToTeamName;
+  final String? challengeMessage;
+  final String? challengeCreatedBy;
+
   /// Relato del partido. Existe recién cuando alguien lo pidió.
   final MatchChronicle? chronicle;
 
@@ -534,6 +544,14 @@ class MatchModel {
     this.dateProposals = const [],
     this.locationProposals = const [],
     this.isVotingOpen = false,
+    this.challengeStatus,
+    this.challengeInvitationId,
+    this.challengeFromTeamId,
+    this.challengeToTeamId,
+    this.challengeFromTeamName,
+    this.challengeToTeamName,
+    this.challengeMessage,
+    this.challengeCreatedBy,
   });
 
   static String? _str(dynamic v) => v is String ? v : null;
@@ -622,6 +640,14 @@ class MatchModel {
           .whereType<MatchLocationProposal>()
           .toList(),
       isVotingOpen: data['isVotingOpen'] == true,
+      challengeStatus: _str(data['challengeStatus']),
+      challengeInvitationId: _str(data['challengeInvitationId']),
+      challengeFromTeamId: _str(data['challengeFromTeamId']),
+      challengeToTeamId: _str(data['challengeToTeamId']),
+      challengeFromTeamName: _str(data['challengeFromTeamName']),
+      challengeToTeamName: _str(data['challengeToTeamName']),
+      challengeMessage: _str(data['challengeMessage']),
+      challengeCreatedBy: _str(data['challengeCreatedBy']),
       weather: rawWeather is Map ? MatchWeatherModel.fromMap(rawWeather.cast<String, dynamic>()) : null,
     );
   }

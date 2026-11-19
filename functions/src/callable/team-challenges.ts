@@ -253,16 +253,52 @@ export function parseProposal(date: unknown, time: unknown): { date: string; tim
   return { date: d, time: t };
 }
 
+function parseLocationPayload(data: Record<string, unknown>): {
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  placeId: string;
+} {
+  const rawLoc = data.location && typeof data.location === 'object' ? (data.location as Record<string, unknown>) : null;
+  const name = optionalText(rawLoc?.name ?? data.locationName, 120);
+  const address = optionalText(rawLoc?.address, 240);
+  const lat = Number(rawLoc?.lat ?? 0) || 0;
+  const lng = Number(rawLoc?.lng ?? 0) || 0;
+  const placeId = optionalText(rawLoc?.placeId, 160);
+  return { name, address, lat, lng, placeId };
+}
+
+function parseWeatherPayload(rawWeather: unknown): Record<string, unknown> | null {
+  if (!rawWeather || typeof rawWeather !== 'object') return null;
+  const w = rawWeather as Record<string, unknown>;
+  return {
+    description: String(w.description ?? ''),
+    icon: String(w.icon ?? ''),
+    temperature: Number(w.temperature ?? 0),
+    feelsLike: Number(w.feelsLike ?? 0),
+    humidity: Number(w.humidity ?? 0),
+    windSpeed: Number(w.windSpeed ?? 0),
+    precipitation: Number(w.precipitation ?? 0),
+    uvIndex: Number(w.uvIndex ?? 0),
+  };
+}
+
 export const challengeTeam = onCall(REGION, async (request) => {
   const uid = requireAuth(request);
-  const fromTeamId = cleanId(request.data?.fromTeamId);
-  const toTeamId = cleanId(request.data?.toTeamId);
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const fromTeamId = cleanId(data.fromTeamId);
+  const toTeamId = cleanId(data.toTeamId);
+  const existingMatchId = cleanId(data.matchId);
   if (!fromTeamId || !toTeamId) throw new HttpsError('invalid-argument', 'Faltan los equipos.');
   if (fromTeamId === toTeamId) throw new HttpsError('invalid-argument', 'No podés desafiar a tu propio equipo.');
 
-  const message = optionalText(request.data?.message, MAX_MESSAGE);
-  const proposal = parseProposal(request.data?.date, request.data?.time);
-  const proposedLocationName = optionalText(request.data?.locationName, 80);
+  const message = optionalText(data.message, MAX_MESSAGE);
+  const proposal = parseProposal(data.date, data.time);
+  const location = parseLocationPayload(data);
+  const weather = parseWeatherPayload(data.weather);
+  const customTitle = optionalText(data.title, 80);
+  const isPublic = data.isPublic === true;
 
   const db = admin.firestore();
   // Sólo quien administra el equipo que desafía (su creador o un admin del grupo).
@@ -288,11 +324,45 @@ export const challengeTeam = onCall(REGION, async (request) => {
   const [fromGroup, toGroup] = await Promise.all([groupOf(db, fromTeam), groupOf(db, toTeam)]);
 
   const invitationRef = invitations.doc();
+  const targetMatchRef = existingMatchId
+    ? db.collection('matches').doc(existingMatchId)
+    : db.collection('matches').doc(`challenge_${invitationRef.id}`);
+
   const isRematch = await db.runTransaction(async tx => {
     const freshFrom = await teamAccess(db, uid, fromTeamId, true, tx);
     const freshTo = await tx.get(db.doc(`teams/${toTeamId}`));
     const opponent = freshTo.data();
-    if (!opponent || opponent.challengeOptOut || opponent.groupId === freshFrom.data.groupId || !memberCount(opponent) || !memberCount(freshFrom.data)) throw new HttpsError('failed-precondition', 'Revisá los equipos y si reciben desafíos.');
+    if (!opponent || opponent.challengeOptOut || opponent.groupId === freshFrom.data.groupId || !memberCount(opponent) || !memberCount(freshFrom.data)) {
+      throw new HttpsError('failed-precondition', 'Revisá los equipos y si reciben desafíos.');
+    }
+
+    let existingMatch: Doc | undefined;
+    if (existingMatchId) {
+      const existingSnap = await tx.get(targetMatchRef);
+      if (!existingSnap.exists) throw new HttpsError('not-found', 'El partido ya no existe.');
+      existingMatch = existingSnap.data() as Doc;
+      if (existingMatch.ownerUid !== uid && !(Array.isArray(existingMatch.captains) && existingMatch.captains.includes(uid))) {
+        throw new HttpsError('permission-denied', 'Solo el organizador puede elegir otro rival.');
+      }
+      if (existingMatch.challengeStatus === 'accepted') {
+        throw new HttpsError('failed-precondition', 'Este partido ya tiene rival confirmado.');
+      }
+    }
+
+    const fromMemberIds = [
+      ...new Set(
+        (Array.isArray(freshFrom.data.members) ? freshFrom.data.members : [])
+          .map((m: Doc) => String(m?.playerId ?? ''))
+          .filter(Boolean),
+      ),
+    ];
+    const playerSnaps = fromMemberIds.length
+      ? await tx.getAll(...fromMemberIds.map((id) => db.doc(`players/${id}`)))
+      : [];
+    const playersById = new Map<string, Doc>();
+    for (const snap of playerSnaps) if (snap.exists) playersById.set(snap.id, snap.data() as Doc);
+    const [builtFromTeam] = buildChallengeTeams([{ id: fromTeamId, data: freshFrom.data }], playersById);
+
     const limitRef = db.doc(`teamChallengeLimits/${fromTeamId}`);
     const limit = (await tx.get(limitRef)).data();
     const state = await challengeState(tx, db, fromTeamId, toTeamId);
@@ -307,29 +377,100 @@ export const challengeTeam = onCall(REGION, async (request) => {
     if (sent.docs.some(d => d.data().toTeamId === toTeamId && d.data().status === 'pending') || incoming.docs.some(d => d.data().status === 'pending')) throw new HttpsError('already-exists', 'Ya hay un desafío pendiente entre estos equipos.');
     if (sent.size >= 10) throw new HttpsError('resource-exhausted', 'Tu equipo ya tiene demasiados desafíos pendientes.');
     if (daily.size >= 20) throw new HttpsError('resource-exhausted', 'Tu equipo alcanzó los 20 desafíos en 24 horas.');
+
     const rivalRef = db.doc(`teamRivals/${rivalDocId(fromTeamId, toTeamId)}`);
     const rival = (await tx.get(rivalRef)).data();
-    tx.set(limitRef, {revision: Number(limit?.revision ?? 0) + 1, lastSentAt: new Date().toISOString()});
-    tx.set(state.pairRef, {invitationPath: invitationRef.path, updatedAt: new Date().toISOString()});
-    if (rival) tx.update(rivalRef, {lastChallengeAt: new Date().toISOString()});
+
+    const fromGroupId = cleanId(freshFrom.data.groupId);
+    const toGroupId = cleanId(opponent.groupId);
+    const participantGroupIds = [...new Set([fromGroupId, toGroupId].filter(Boolean))];
+    const pendingToTeamStub = {
+      id: toTeamId,
+      name: String(opponent.name ?? 'Rival por confirmar'),
+      jersey: opponent.jersey ?? null,
+      players: [],
+      totalOVR: 0,
+      averageOVR: 0,
+      pending: true,
+    };
+    const matchTitle = customTitle || `${freshFrom.data.name} vs ${opponent.name}`;
+
+    tx.set(limitRef, { revision: Number(limit?.revision ?? 0) + 1, lastSentAt: new Date().toISOString() });
+    tx.set(state.pairRef, { invitationPath: invitationRef.path, updatedAt: new Date().toISOString() });
+    if (rival) tx.update(rivalRef, { lastChallengeAt: new Date().toISOString() });
+
     tx.set(invitationRef, {
-    type: 'team_challenge',
-    status: 'pending',
-    fromTeamId,
-    fromTeamName: String(fromTeam.name ?? ''),
-    fromTeamJersey: fromTeam.jersey ?? null,
-    fromGroupId: String(fromTeam.groupId ?? ''),
-    fromGroupName: String(fromGroup?.name ?? ''),
-    toTeamId,
-    toTeamName: String(toTeam.name ?? ''),
-    toTeamJersey: toTeam.jersey ?? null,
-    createdBy: uid,
-    createdAt: new Date().toISOString(),
-    ...(message ? { message } : {}),
-    ...(proposal ? { proposedDate: proposal.date, proposedTime: proposal.time } : {}),
-    ...(proposedLocationName ? { proposedLocationName } : {}),
-    isRematch: Number(rival?.played ?? 0) > 0,
-  });
+      type: 'team_challenge',
+      status: 'pending',
+      matchId: targetMatchRef.id,
+      fromTeamId,
+      fromTeamName: String(freshFrom.data.name ?? ''),
+      fromTeamJersey: freshFrom.data.jersey ?? null,
+      fromGroupId,
+      fromGroupName: String(fromGroup?.name ?? ''),
+      toTeamId,
+      toTeamName: String(opponent.name ?? ''),
+      toTeamJersey: opponent.jersey ?? null,
+      createdBy: uid,
+      createdAt: new Date().toISOString(),
+      ...(message ? { message } : {}),
+      ...(proposal ? { proposedDate: proposal.date, proposedTime: proposal.time } : {}),
+      ...(location.name ? { proposedLocationName: location.name, proposedLocation: location } : {}),
+      isRematch: Number(rival?.played ?? 0) > 0,
+    });
+
+    const fromPlayers = builtFromTeam.players as Array<Doc>;
+    if (existingMatch) {
+      tx.update(targetMatchRef, {
+        title: customTitle || existingMatch.title || matchTitle,
+        participantGroupIds,
+        participantTeamIds: [fromTeamId, toTeamId],
+        teams: [builtFromTeam, pendingToTeamStub],
+        players: fromPlayers,
+        playerUids: fromPlayers.map((p) => String(p.uid)),
+        challengeStatus: 'pending',
+        challengeInvitationId: invitationRef.id,
+        challengeFromTeamId: fromTeamId,
+        challengeToTeamId: toTeamId,
+        challengeFromTeamName: String(freshFrom.data.name ?? ''),
+        challengeToTeamName: String(opponent.name ?? ''),
+        challengeMessage: message || '',
+        challengeCreatedBy: uid,
+      });
+    } else {
+      tx.set(targetMatchRef, {
+        title: matchTitle,
+        type: 'intergroup_friendly',
+        date: proposal?.date ?? '',
+        time: proposal?.time ?? '',
+        status: 'planning',
+        matchSize: Math.max(2, fromPlayers.length + memberCount(opponent)),
+        isPublic,
+        ownerUid: uid,
+        captains: [uid],
+        groupId: fromGroupId || null,
+        participantGroupIds,
+        participantTeamIds: [fromTeamId, toTeamId],
+        location,
+        ...(weather ? { weather } : {}),
+        players: fromPlayers,
+        playerUids: fromPlayers.map((p) => String(p.uid)),
+        teams: [builtFromTeam, pendingToTeamStub],
+        teamsGenerated: true,
+        events: [],
+        challengeInvitationId: invitationRef.id,
+        challengeStatus: 'pending',
+        challengeFromTeamId: fromTeamId,
+        challengeToTeamId: toTeamId,
+        challengeFromTeamName: String(freshFrom.data.name ?? ''),
+        challengeToTeamName: String(opponent.name ?? ''),
+        challengeMessage: message || '',
+        challengeCreatedBy: uid,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...(proposal ? {} : { isVotingOpen: true, dateProposals: [] }),
+      });
+    }
+
     return Number(rival?.played ?? 0) > 0;
   });
 
@@ -340,13 +481,13 @@ export const challengeTeam = onCall(REGION, async (request) => {
       type: isRematch ? 'team_rematch' : 'team_challenge',
       title: isRematch ? '¡Te proponen una revancha!' : '¡Desafío recibido!',
       message: `"${fromTeam.name}"${fromGroup?.name ? ` (${fromGroup.name})` : ''} quiere jugar contra "${toTeam.name}".`,
-      link: '/challenges',
-      metadata: { invitationId: invitationRef.id, toTeamId, fromTeamId },
+      link: `/matches/${targetMatchRef.id}`,
+      metadata: { invitationId: invitationRef.id, matchId: targetMatchRef.id, toTeamId, fromTeamId },
     },
     'ChallengeTeam',
   );
 
-  return { ok: true, invitationId: invitationRef.id };
+  return { ok: true, invitationId: invitationRef.id, matchId: targetMatchRef.id };
 });
 
 // ---------------------------------------------------------------------------
@@ -367,7 +508,6 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
   const { team: toTeam } = await getTeamPermissionOrThrow(db, toTeamId, uid, 'teams.edit');
 
   const invitationRef = db.doc(`teams/${toTeamId}/invitations/${invitationId}`);
-  const matchRef = db.collection('matches').doc(`challenge_${invitationId}`);
 
   const result = await db.runTransaction(async (tx) => {
     const freshTo = await teamAccess(db, uid, toTeamId, true, tx);
@@ -382,12 +522,33 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
     }
 
     const fromTeamId = cleanId(invitation.fromTeamId);
-    const fromSnap = fromTeamId ? await tx.get(db.doc(`teams/${fromTeamId}`)) : null;
+    const targetMatchId = cleanId(invitation.matchId) || `challenge_${invitationId}`;
+    const matchRef = db.collection('matches').doc(targetMatchId);
+    const [fromSnap, existingMatchSnap] = await Promise.all([
+      fromTeamId ? tx.get(db.doc(`teams/${fromTeamId}`)) : Promise.resolve(null),
+      tx.get(matchRef),
+    ]);
     const fromTeam = fromSnap?.data() as Doc | undefined;
+    const existingMatch = existingMatchSnap.exists ? (existingMatchSnap.data() as Doc) : undefined;
 
     if (!accepted) {
       tx.update(invitationRef, { status: 'declined', respondedBy: uid, respondedAt: new Date().toISOString() });
-      return { accepted: false as const, invitation, fromTeam };
+      if (existingMatch && existingMatch.challengeInvitationId === invitationId) {
+        const fromGroupId = cleanId(existingMatch.groupId ?? invitation.fromGroupId ?? fromTeam?.groupId);
+        const keptTeams = Array.isArray(existingMatch.teams) && existingMatch.teams.length > 0
+          ? [existingMatch.teams[0]]
+          : [];
+        tx.update(matchRef, {
+          status: 'planning',
+          challengeStatus: 'declined',
+          challengeToTeamId: '',
+          challengeToTeamName: '',
+          participantGroupIds: fromGroupId ? [fromGroupId] : [],
+          participantTeamIds: fromTeamId ? [fromTeamId] : [],
+          teams: keptTeams,
+        });
+      }
+      return { accepted: false as const, invitation, fromTeam, matchId: existingMatch ? matchRef.id : null };
     }
 
     if (!fromTeam) throw new HttpsError('failed-precondition', 'El equipo que desafió ya no existe.');
@@ -408,65 +569,114 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
 
     const teams = buildChallengeTeams(
       [
-        { id: toTeamId, data: toTeam },
         { id: fromTeamId, data: fromTeam },
+        { id: toTeamId, data: toTeam },
       ],
       playersById,
     );
     const players = teams.flatMap((team) => team.players as Array<Doc>);
     const playerUids = players.map((p) => p.uid as string);
 
-    // Fecha y cancha: si quien desafió propuso, se usan; si no, el partido
-    // arranca en "a definir" y los capitanes la votan con el flujo de siempre.
+    const existingDate = typeof existingMatch?.date === 'string' ? existingMatch.date : '';
+    const existingTime = typeof existingMatch?.time === 'string' ? existingMatch.time : '';
+    const rawDate = existingDate || (typeof invitation.proposedDate === 'string' ? invitation.proposedDate : '');
+    const rawTime = existingTime || (typeof invitation.proposedTime === 'string' ? invitation.proposedTime : '');
     const proposal =
-      typeof invitation.proposedDate === 'string' && typeof invitation.proposedTime === 'string'
+      rawDate && rawTime
         ? (() => {
             try {
-              return parseProposal(invitation.proposedDate, invitation.proposedTime);
+              return parseProposal(rawDate, rawTime);
             } catch {
               return null; // la propuesta venció mientras esperaba respuesta
             }
           })()
         : null;
-    const locationName = optionalText(invitation.proposedLocationName, 80);
 
-    const captains = [...new Set([String(invitation.createdBy ?? ''), uid].filter(Boolean))];
-    const groupIds = [...new Set([toTeam.groupId, fromTeam.groupId].map((g) => cleanId(g)).filter(Boolean))];
+    const existingLoc = existingMatch?.location && typeof existingMatch.location === 'object'
+      ? (existingMatch.location as Doc)
+      : null;
+    const invLoc = invitation.proposedLocation && typeof invitation.proposedLocation === 'object'
+      ? (invitation.proposedLocation as Doc)
+      : null;
+    const location = {
+      name: optionalText(existingLoc?.name ?? invLoc?.name ?? invitation.proposedLocationName, 120),
+      address: optionalText(existingLoc?.address ?? invLoc?.address, 240),
+      lat: Number(existingLoc?.lat ?? invLoc?.lat ?? 0) || 0,
+      lng: Number(existingLoc?.lng ?? invLoc?.lng ?? 0) || 0,
+      placeId: optionalText(existingLoc?.placeId ?? invLoc?.placeId, 160),
+    };
+
+    const captains = [
+      ...new Set([
+        ...(Array.isArray(existingMatch?.captains) ? existingMatch!.captains.map(String) : []),
+        String(invitation.createdBy ?? ''),
+        uid,
+      ].filter(Boolean)),
+    ];
+    const groupIds = [...new Set([fromTeam.groupId, toTeam.groupId].map((g) => cleanId(g)).filter(Boolean))];
 
     const pairState = await challengeState(tx, db, toTeamId, fromTeamId);
-    if (pairState.upcoming) throw new HttpsError('already-exists', 'Ya tienen un partido acordado.');
+    if (pairState.upcoming && pairState.upcoming.id !== matchRef.id) {
+      throw new HttpsError('already-exists', 'Ya tienen un partido acordado.');
+    }
     await acceptedRivals(tx, db, [{id: toTeamId, data: toTeam}, {id: fromTeamId, data: fromTeam}]);
     tx.set(pairState.pairRef, {matchId: matchRef.id, invitationPath: invitationRef.path, updatedAt: new Date().toISOString()});
-    tx.create(matchRef, {
-      title: `${toTeam.name} vs ${fromTeam.name}`,
-      type: 'intergroup_friendly',
-      date: proposal?.date ?? '',
-      time: proposal?.time ?? '',
-      status: proposal ? 'upcoming' : 'planning',
-      matchSize: Math.max(2, players.length),
-      isPublic: false,
-      ownerUid: uid,
-      captains,
-      groupId: cleanId(toTeam.groupId) || null,
-      participantGroupIds: groupIds,
-      participantTeamIds: [toTeamId, fromTeamId],
-      location: { name: locationName, address: '', lat: 0, lng: 0, placeId: '' },
-      players,
-      playerUids,
-      teams,
-      teamsGenerated: true,
-      events: [],
-      challengeInvitationId: invitationId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      ...(proposal ? {} : { isVotingOpen: true, dateProposals: [] }),
-    });
+
+    if (existingMatch) {
+      tx.update(matchRef, {
+        date: proposal?.date ?? '',
+        time: proposal?.time ?? '',
+        status: proposal ? 'upcoming' : 'planning',
+        challengeStatus: 'accepted',
+        matchSize: Math.max(2, players.length),
+        captains,
+        participantGroupIds: groupIds,
+        participantTeamIds: [fromTeamId, toTeamId],
+        location,
+        players,
+        playerUids,
+        teams,
+        teamsGenerated: true,
+        ...(proposal ? { isVotingOpen: false } : { isVotingOpen: true, dateProposals: existingMatch.dateProposals ?? [] }),
+      });
+    } else {
+      tx.create(matchRef, {
+        title: `${fromTeam.name} vs ${toTeam.name}`,
+        type: 'intergroup_friendly',
+        date: proposal?.date ?? '',
+        time: proposal?.time ?? '',
+        status: proposal ? 'upcoming' : 'planning',
+        challengeStatus: 'accepted',
+        challengeFromTeamId: fromTeamId,
+        challengeToTeamId: toTeamId,
+        challengeFromTeamName: String(fromTeam.name ?? ''),
+        challengeToTeamName: String(toTeam.name ?? ''),
+        matchSize: Math.max(2, players.length),
+        isPublic: false,
+        ownerUid: uid,
+        captains,
+        groupId: cleanId(fromTeam.groupId) || cleanId(toTeam.groupId) || null,
+        participantGroupIds: groupIds,
+        participantTeamIds: [fromTeamId, toTeamId],
+        location,
+        players,
+        playerUids,
+        teams,
+        teamsGenerated: true,
+        events: [],
+        challengeInvitationId: invitationId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...(proposal ? {} : { isVotingOpen: true, dateProposals: [] }),
+      });
+    }
+
     tx.update(invitationRef, {
       status: 'accepted',
       matchId: matchRef.id,
       respondedBy: uid,
       respondedAt: new Date().toISOString(),
     });
-    return { accepted: true as const, invitation, fromTeam };
+    return { accepted: true as const, invitation, fromTeam, matchId: matchRef.id };
   });
 
   const fromGroup = result.fromTeam ? await groupOf(db, result.fromTeam) : null;
@@ -482,13 +692,13 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
       {
         type: 'challenge_accepted',
         title: '¡Desafío aceptado!',
-        message: `"${toTeam.name}" aceptó jugar contra "${result.fromTeam?.name ?? 'tu equipo'}". El partido ya está creado.`,
-        link: `/matches/${matchRef.id}`,
-        metadata: { matchId: matchRef.id },
+        message: `"${toTeam.name}" aceptó jugar contra "${result.fromTeam?.name ?? 'tu equipo'}".`,
+        link: `/matches/${result.matchId}`,
+        metadata: { matchId: result.matchId },
       },
       'RespondTeamChallenge',
     );
-    return { ok: true, accepted: true, matchId: matchRef.id };
+    return { ok: true, accepted: true, matchId: result.matchId };
   }
 
   await notifyUsers(
@@ -497,12 +707,15 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
     {
       type: 'match_update',
       title: 'Desafío rechazado',
-      message: `"${toTeam.name}" no puede jugar por ahora.`,
-      link: '/challenges',
+      message: result.matchId
+        ? `"${toTeam.name}" no puede jugar. Elegí otro rival desde el partido.`
+        : `"${toTeam.name}" no puede jugar por ahora.`,
+      link: result.matchId ? `/matches/${result.matchId}` : '/challenges',
+      ...(result.matchId ? { metadata: { matchId: result.matchId } } : {}),
     },
     'RespondTeamChallenge',
   );
-  return { ok: true, accepted: false };
+  return { ok: true, accepted: false, ...(result.matchId ? { matchId: result.matchId } : {}) };
 });
 
 // ---------------------------------------------------------------------------
@@ -558,6 +771,7 @@ export const getMyTeamChallenges = onCall(REGION, async (request) => {
       proposedDate: String(invitation.proposedDate ?? ''),
       proposedTime: String(invitation.proposedTime ?? ''),
       proposedLocationName: String(invitation.proposedLocationName ?? ''),
+      matchId: String(invitation.matchId ?? ''),
       createdAt: String(invitation.createdAt ?? ''),
     }));
 

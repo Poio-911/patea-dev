@@ -189,7 +189,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       GoRoute(
         path: '/matches/create',
-        builder: (context, state) => _withBackground(const CreateMatchScreen()),
+        builder: (context, state) => _withBackground(
+          CreateMatchScreen(
+            initialType: state.uri.queryParameters['type'],
+            initialTeamId: state.uri.queryParameters['teamId'],
+          ),
+        ),
       ),
       // Desafíos entre equipos de distintos grupos: buscar rival y bandeja
       // de los que llegaron. `/challenges` es también el destino del aviso
@@ -197,7 +202,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/challenge',
         builder: (context, state) => _withBackground(
-          ChallengeTeamScreen(teamId: state.uri.queryParameters['teamId']),
+          ChallengeTeamScreen(
+            teamId: state.uri.queryParameters['teamId'],
+            matchId: state.uri.queryParameters['matchId'],
+          ),
         ),
       ),
       GoRoute(

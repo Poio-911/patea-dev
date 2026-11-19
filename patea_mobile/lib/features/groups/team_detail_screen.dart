@@ -447,10 +447,11 @@ class _RivalsCardState extends ConsumerState<_RivalsCard> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () =>
-                        context.push('/challenge?teamId=${widget.team.id}'),
+                    onPressed: () => context.push(
+                      '/matches/create?type=intergroup_friendly&teamId=${widget.team.id}',
+                    ),
                     icon: const Icon(Icons.search, size: 18),
-                    label: const Text('Buscar rival'),
+                    label: const Text('Desafiar rival'),
                   ),
                 ),
                 const SizedBox(width: 8),

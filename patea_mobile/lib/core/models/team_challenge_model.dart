@@ -47,6 +47,7 @@ class TeamChallenge {
   final String proposedDate;
   final String proposedTime;
   final String proposedLocationName;
+  final String matchId;
   final String createdAt;
 
   const TeamChallenge({
@@ -61,6 +62,7 @@ class TeamChallenge {
     this.proposedDate = '',
     this.proposedTime = '',
     this.proposedLocationName = '',
+    this.matchId = '',
     this.createdAt = '',
   });
 
@@ -81,6 +83,7 @@ class TeamChallenge {
     proposedDate: (map['proposedDate'] as String?) ?? '',
     proposedTime: (map['proposedTime'] as String?) ?? '',
     proposedLocationName: (map['proposedLocationName'] as String?) ?? '',
+    matchId: (map['matchId'] as String?) ?? '',
     createdAt: (map['createdAt'] as String?) ?? '',
   );
 }

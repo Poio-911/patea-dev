@@ -12,13 +12,18 @@ import '../../core/theme/app_typography.dart';
 import '../../core/services/match_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/services/group_service.dart';
 import '../../core/services/location_service.dart';
+import '../../core/services/team_challenge_service.dart';
 import '../../core/services/weather_service.dart';
+import '../../core/models/group_model.dart';
 import '../../core/models/player_model.dart';
+import '../../core/models/team_challenge_model.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/player_select_card.dart';
 import '../../core/utils/clock.dart';
+import 'challenge_team_screen.dart' show manageableTeams;
 
 /// Port de add-match-dialog.tsx (web): wizard de 3 pasos (2 si es
 /// colaborativo).
@@ -32,7 +37,14 @@ import '../../core/utils/clock.dart';
 ///
 /// Las "Canchas del Grupo" siguen pendientes: falta el dominio Venues.
 class CreateMatchScreen extends ConsumerStatefulWidget {
-  const CreateMatchScreen({super.key});
+  final String? initialType;
+  final String? initialTeamId;
+
+  const CreateMatchScreen({
+    super.key,
+    this.initialType,
+    this.initialTeamId,
+  });
 
   @override
   ConsumerState<CreateMatchScreen> createState() => _CreateMatchScreenState();
@@ -95,18 +107,38 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   /// Para 'by_teams': los dos equipos que se enfrentan, en orden de elección.
   final List<String> _selectedTeamIds = [];
 
+  /// Para 'intergroup_friendly': equipo propio, buscador rival y mensaje.
+  String? _challengeFromTeamId;
+  TeamSearchResult? _selectedRival;
+  final _rivalSearchController = TextEditingController();
+  final _challengeMessageController = TextEditingController();
+  Timer? _rivalDebounce;
+  List<TeamSearchResult> _rivalResults = const [];
+  bool _searchingRivals = false;
+  String? _rivalSearchError;
+  int _rivalSearchSeq = 0;
+
   bool _isSubmitting = false;
   final String _createRequestId = const Uuid().v4();
   String? _aiStatus;
-
-  final _locationService = LocationService();
-  final _weatherService = WeatherService();
 
   @override
   void initState() {
     super.initState();
     _selectedDate = ref.read(clockProvider)().add(const Duration(days: 1));
+    if (widget.initialType == 'intergroup_friendly' ||
+        widget.initialType == 'by_teams' ||
+        widget.initialType == 'collaborative' ||
+        widget.initialType == 'manual') {
+      _selectedType = widget.initialType!;
+    }
+    if (widget.initialTeamId != null && widget.initialTeamId!.isNotEmpty) {
+      _challengeFromTeamId = widget.initialTeamId;
+    }
   }
+
+  final _locationService = LocationService();
+  final _weatherService = WeatherService();
 
   @override
   void dispose() {
@@ -114,6 +146,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     _locationController.dispose();
     _locationDebounce?.cancel();
     _weatherDebounce?.cancel();
+    _rivalDebounce?.cancel();
+    _rivalSearchController.dispose();
+    _challengeMessageController.dispose();
     super.dispose();
   }
 
@@ -285,6 +320,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       PateaSnack.error(context, 'Elegí dos equipos diferentes.');
       return;
     }
+    if (_selectedType == 'intergroup_friendly' &&
+        (_challengeFromTeamId == null || _selectedRival == null)) {
+      PateaSnack.error(context, 'Elegí tu equipo y el equipo rival a desafiar.');
+      return;
+    }
 
     setState(() {
       _isSubmitting = true;
@@ -298,6 +338,57 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       final timeStr = _isPlanning || _selectedTime == null
           ? ''
           : '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
+
+      final weatherMap = _weather == null
+          ? null
+          : {
+              'description': _weather!.description,
+              'icon': _weather!.icon,
+              'temperature': _weather!.temperature,
+              'feelsLike': _weather!.feelsLike,
+              'humidity': _weather!.humidity,
+              'windSpeed': _weather!.windSpeed,
+              'precipitation': _weather!.precipitation,
+              'uvIndex': _weather!.uvIndex,
+            };
+
+      if (_selectedType == 'intergroup_friendly') {
+        final matchId = await ref
+            .read(teamChallengeServiceProvider)
+            .challengeTeam(
+              fromTeamId: _challengeFromTeamId!,
+              toTeamId: _selectedRival!.id,
+              title: _titleController.text.trim(),
+              message: _challengeMessageController.text,
+              date: dateIso.isEmpty
+                  ? null
+                  : '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+              time: timeStr.isEmpty ? null : timeStr,
+              location: {
+                'name':
+                    _selectedLocation?.label ?? _locationController.text.trim(),
+                'address': _selectedLocation?.label ?? '',
+                'lat': _selectedLocation?.lat ?? 0,
+                'lng': _selectedLocation?.lng ?? 0,
+                'placeId': _selectedLocation?.placeId ?? '',
+              },
+              weather: weatherMap,
+              isPublic: _isPublic,
+            );
+        ref.invalidate(teamRivalsProvider);
+        if (mounted) {
+          PateaSnack.ok(
+            context,
+            '¡Partido creado! Enviamos el desafío a ${_selectedRival!.name}.',
+          );
+          if (matchId.isNotEmpty) {
+            context.go('/matches/$matchId');
+          } else {
+            Navigator.pop(context);
+          }
+        }
+        return;
+      }
 
       List<Map<String, dynamic>> players = const [];
       List<String> playerUids = const [];
@@ -451,6 +542,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         return _buildStep2();
       default:
         if (_selectedType == 'by_teams') return _buildTeamPicker();
+        if (_selectedType == 'intergroup_friendly') {
+          return _buildChallengeOpponentStep();
+        }
         return playersAsync.when(
           data: _buildStep3,
           loading: () => const PateaLoading(),
@@ -465,9 +559,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   Widget _buildFooter(List<PlayerModel> allPlayers) {
     final selectedCount = _selectedPlayerIds.length;
-    final canSubmitStep3 = _selectedType == 'by_teams'
-        ? _selectedTeamIds.length == 2
-        : _selectedType != 'manual' || selectedCount >= (_matchSize / 2).ceil();
+    final canSubmitStep3 = switch (_selectedType) {
+      'by_teams' => _selectedTeamIds.length == 2,
+      'intergroup_friendly' =>
+        _challengeFromTeamId != null && _selectedRival != null,
+      'manual' => selectedCount >= (_matchSize / 2).ceil(),
+      _ => true,
+    };
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -515,7 +613,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       _step < 3 &&
                               !(_step == 2 && _selectedType == 'collaborative')
                           ? 'Continuar'
-                          : 'Crear partido',
+                          : (_selectedType == 'intergroup_friendly'
+                                ? 'Crear y desafiar'
+                                : 'Crear partido'),
                     ),
             ),
           ),
@@ -975,15 +1075,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             onTap: () => setState(() => _selectedType = 'by_teams'),
           ),
           const SizedBox(height: 8),
-          // No es un tipo más de este asistente: el partido nace cuando el otro
-          // equipo acepta, así que lleva a su propia pantalla.
           _TypeOption(
             icon: Icons.handshake_outlined,
             label: 'Desafiar a otro equipo',
             description:
-                'Buscá un equipo de otro grupo o volvé a desafiar a tus rivales guardados. Si acepta, se crea el partido.',
-            selected: false,
-            onTap: () => context.push('/challenge'),
+                'Buscá un equipo de otro grupo y mandale el desafío con la fecha y cancha ya elegidas.',
+            selected: _selectedType == 'intergroup_friendly',
+            onTap: () =>
+                setState(() => _selectedType = 'intergroup_friendly'),
           ),
           const SizedBox(height: 24),
 
@@ -1019,6 +1118,383 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   // ---------------------------------------------------------------------
   // Paso 3: participantes
   // ---------------------------------------------------------------------
+  void _onRivalQueryChanged(String value, GroupTeamModel? mine) {
+    _rivalDebounce?.cancel();
+    final q = value.trim();
+    if (q.length < kTeamSearchMinChars) {
+      setState(() {
+        _rivalSearchSeq++;
+        _rivalResults = const [];
+        _searchingRivals = false;
+        _rivalSearchError = null;
+      });
+      return;
+    }
+    _rivalDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => _runRivalSearch(q, mine),
+    );
+  }
+
+  Future<void> _runRivalSearch(String query, GroupTeamModel? mine) async {
+    final seq = ++_rivalSearchSeq;
+    setState(() {
+      _searchingRivals = true;
+      _rivalSearchError = null;
+    });
+    try {
+      final found = await ref
+          .read(teamChallengeServiceProvider)
+          .searchTeams(
+            query: query,
+            excludeTeamId: mine?.id,
+            excludeGroupId: mine?.groupId,
+          );
+      if (!mounted || seq != _rivalSearchSeq) return;
+      setState(() {
+        _rivalResults = found;
+        _searchingRivals = false;
+      });
+    } catch (e) {
+      if (!mounted || seq != _rivalSearchSeq) return;
+      setState(() {
+        _searchingRivals = false;
+        _rivalSearchError = challengeErrorMessage(
+          e,
+          fallback: 'No se pudo buscar.',
+        );
+      });
+    }
+  }
+
+  Widget _buildChallengeOpponentStep() {
+    final groupId = ref.watch(activeGroupIdProvider).value;
+    final uid = ref.watch(currentUidProvider);
+    if (groupId == null) {
+      return const PateaEmpty(
+        icon: Icons.groups_outlined,
+        title: 'Sin grupo activo',
+        hint: 'Necesitás un grupo activo para desafiar a otro equipo.',
+      );
+    }
+
+    final role = ref.watch(myGroupRoleProvider(groupId)).value;
+    final teamsAsync = ref.watch(groupTeamsStreamProvider(groupId));
+
+    return teamsAsync.when(
+      loading: () => const PateaLoading(),
+      error: (e, _) => PateaError(
+        error: e,
+        message: 'No se pudieron cargar los equipos.',
+        onRetry: () => ref.invalidate(groupTeamsStreamProvider(groupId)),
+      ),
+      data: (allTeams) {
+        final myTeams = manageableTeams(
+          teams: allTeams,
+          uid: uid,
+          role: role,
+        ).where((t) => t.members.isNotEmpty).toList();
+
+        if (myTeams.isEmpty) {
+          return const PateaEmpty(
+            icon: Icons.checkroom_outlined,
+            title: 'Necesitás un equipo con plantel',
+            hint:
+                'Creá un equipo con al menos un jugador en tu grupo para poder desafiar.',
+          );
+        }
+
+        final mine = myTeams.firstWhere(
+          (t) => t.id == _challengeFromTeamId,
+          orElse: () => myTeams.first,
+        );
+        if (_challengeFromTeamId != mine.id) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _challengeFromTeamId != mine.id) {
+              setState(() => _challengeFromTeamId = mine.id);
+            }
+          });
+        }
+
+        final c = context.c;
+        final query = _rivalSearchController.text.trim();
+        final savedAsync = ref.watch(teamRivalsProvider((mine.id, false)));
+
+        final scheduleSummary = _isPlanning || _selectedDate == null
+            ? 'Fecha y hora a definir'
+            : '${_selectedDate!.day}/${_selectedDate!.month} · ${_selectedTime?.format(context) ?? ''}';
+        final venueSummary =
+            _selectedLocation?.label ?? _locationController.text.trim();
+
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            PateaCard(
+              radius: AppRadii.cardAll,
+              color: c.cardSurface,
+              borderColor: c.overlayLine,
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Icon(Icons.event_available, size: 18, color: c.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '$scheduleSummary · $venueSummary',
+                      style: AppTypography.body(
+                        size: 12.5,
+                        weight: FontWeight.w600,
+                        color: c.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (myTeams.length > 1) ...[
+              Text(
+                'Desafiás con',
+                style: AppTypography.headline(
+                  size: 13,
+                  color: c.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final t in myTeams)
+                    ChoiceChip(
+                      label: Text(t.name),
+                      selected: mine.id == t.id,
+                      onSelected: (_) => setState(() {
+                        _challengeFromTeamId = t.id;
+                        _rivalResults = const [];
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
+              Row(
+                children: [
+                  JerseyWidget(jersey: mine.jersey, size: 28),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Desafiás con ${mine.name}',
+                      style: AppTypography.body(
+                        size: 13.5,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (_selectedRival != null) ...[
+              PateaCard(
+                radius: AppRadii.cardAll,
+                color: c.card,
+                borderColor: c.primary,
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        JerseyWidget(jersey: _selectedRival!.jersey, size: 42),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedRival!.name,
+                                style: AppTypography.headline(
+                                  size: 16,
+                                  weight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                [
+                                  if (_selectedRival!.groupName.isNotEmpty)
+                                    _selectedRival!.groupName,
+                                  '${_selectedRival!.memberCount} jugadores',
+                                ].join(' · '),
+                                style: AppTypography.body(
+                                  size: 12,
+                                  color: c.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              setState(() => _selectedRival = null),
+                          child: const Text('Cambiar'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _challengeMessageController,
+                      maxLength: 200,
+                      maxLines: 2,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(
+                        labelText: 'Mensaje para el rival (opcional)',
+                        hintText: 'Ej. ¿Se copan a jugar?',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              TextField(
+                controller: _rivalSearchController,
+                onChanged: (v) => _onRivalQueryChanged(v, mine),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Buscá un equipo rival por nombre',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: query.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Limpiar búsqueda',
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            _rivalSearchController.clear();
+                            _onRivalQueryChanged('', mine);
+                          },
+                        ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (query.length < kTeamSearchMinChars) ...[
+                savedAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (page) {
+                    if (page.rivals.isEmpty) {
+                      return PateaEmpty(
+                        icon: Icons.handshake_outlined,
+                        title: 'Escribí al menos $kTeamSearchMinChars letras',
+                        hint: 'Buscá equipos de otros grupos para desafiarlos.',
+                        compact: true,
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Rivales recientes',
+                          style: AppTypography.headline(
+                            size: 13,
+                            color: c.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        for (final r in page.rivals.take(6))
+                          PateaCard(
+                            radius: AppRadii.cardAll,
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(10),
+                            borderColor: c.overlayLine,
+                            child: ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: JerseyWidget(jersey: r.jersey, size: 36),
+                              title: Text(
+                                r.name,
+                                style: AppTypography.headline(
+                                  size: 14.5,
+                                  weight: FontWeight.w700,
+                                ),
+                              ),
+                              subtitle: r.groupName.isNotEmpty
+                                  ? Text(
+                                      r.groupName,
+                                      style: AppTypography.body(
+                                        size: 12,
+                                        color: c.textSecondary,
+                                      ),
+                                    )
+                                  : null,
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => setState(() {
+                                _selectedRival = TeamSearchResult(
+                                  id: r.id,
+                                  name: r.name,
+                                  jersey: r.jersey,
+                                  groupId: r.groupId,
+                                  groupName: r.groupName,
+                                );
+                              }),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ] else if (_searchingRivals) ...[
+                const PateaLoading(height: 100),
+              ] else if (_rivalSearchError != null) ...[
+                PateaError(
+                  error: _rivalSearchError!,
+                  message: _rivalSearchError!,
+                  onRetry: () => _runRivalSearch(query, mine),
+                  compact: true,
+                ),
+              ] else if (_rivalResults.isEmpty) ...[
+                PateaEmpty(
+                  icon: Icons.search_off,
+                  title: 'Sin resultados para «$query»',
+                  hint: 'Probá con otra parte del nombre.',
+                  compact: true,
+                ),
+              ] else ...[
+                for (final rival in _rivalResults)
+                  PateaCard(
+                    radius: AppRadii.cardAll,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    borderColor: c.overlayLine,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: JerseyWidget(jersey: rival.jersey, size: 36),
+                      title: Text(
+                        rival.name,
+                        style: AppTypography.headline(
+                          size: 14.5,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (rival.groupName.isNotEmpty) rival.groupName,
+                          '${rival.memberCount} jugadores',
+                        ].join(' · '),
+                        style: AppTypography.body(
+                          size: 12,
+                          color: c.textSecondary,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => setState(() => _selectedRival = rival),
+                    ),
+                  ),
+              ],
+            ],
+          ],
+        );
+      },
+    );
+  }
+
   /// Elegir los dos equipos que se enfrentan.
   Widget _buildTeamPicker() {
     final groupId = ref.watch(activeGroupIdProvider).value;

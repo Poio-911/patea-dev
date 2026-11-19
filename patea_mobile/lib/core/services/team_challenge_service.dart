@@ -84,25 +84,38 @@ class TeamChallengeService {
         .toList();
   }
 
-  /// Manda el desafío. Devuelve el id de la invitación.
+  /// Manda el desafío y crea (o actualiza si viene [matchId]) el partido en
+  /// paralelo. Devuelve el `matchId` del partido creado/actualizado.
   Future<String> challengeTeam({
     required String fromTeamId,
     required String toTeamId,
     String message = '',
+    String? title,
     String? date,
     String? time,
     String? locationName,
+    Map<String, dynamic>? location,
+    Map<String, dynamic>? weather,
+    bool isPublic = false,
+    String? matchId,
   }) async {
     final result = await callFunction('challengeTeam', {
       'fromTeamId': fromTeamId,
       'toTeamId': toTeamId,
       if (message.trim().isNotEmpty) 'message': message.trim(),
+      if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
       if (date != null && date.isNotEmpty) 'date': date,
       if (time != null && time.isNotEmpty) 'time': time,
+      if (location != null) 'location': location,
       if (locationName != null && locationName.trim().isNotEmpty)
         'locationName': locationName.trim(),
+      if (weather != null) 'weather': weather,
+      if (isPublic) 'isPublic': true,
+      if (matchId != null && matchId.isNotEmpty) 'matchId': matchId,
     });
-    return (result['invitationId'] as String?) ?? '';
+    return (result['matchId'] as String?) ??
+        (result['invitationId'] as String?) ??
+        '';
   }
 
   /// Acepta (crea el partido y devuelve su id) o rechaza (devuelve `null`).

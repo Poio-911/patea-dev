@@ -1,4 +1,6 @@
 import 'widgets/team_rival_series.dart';
+import '../../core/models/group_permissions.dart';
+import '../../core/services/group_service.dart';
 import '../../core/services/team_challenge_service.dart';
 import 'match_chat_screen.dart';
 import '../../core/widgets/patea_button_progress.dart';
@@ -643,13 +645,22 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                   children: [
                     if (match.type == 'intergroup_friendly')
                       TeamRivalSeries(matchId: match.id),
+                    if (match.type == 'intergroup_friendly' &&
+                        (match.challengeStatus == 'pending' ||
+                            match.challengeStatus == 'declined')) ...[
+                      const SizedBox(height: 12),
+                      _IntergroupChallengeBanner(match: match, uid: uid),
+                    ],
                     // En un partido entre equipos no se corrige moviendo
                     // jugadores: los planteles son los de cada equipo.
                     if (isOwner && hasTeams && !match.isTeamMatch) ...[
                       const SizedBox(height: 10),
                       DuplicatePlayersAlert(match: match),
                     ],
-                    if (match.status == 'planning' || match.isVotingOpen) ...[
+                    if ((match.status == 'planning' &&
+                            (match.date.isEmpty ||
+                                match.challengeStatus != 'pending')) ||
+                        match.isVotingOpen) ...[
                       const SizedBox(height: 14),
                       MatchPlanningView(match: match, uid: uid),
                     ],
@@ -2031,4 +2042,201 @@ void _openMatchChat(BuildContext context, MatchModel match) {
   Navigator.of(context).push(
     MaterialPageRoute<void>(builder: (_) => MatchChatScreen(match: match)),
   );
+}
+
+class _IntergroupChallengeBanner extends ConsumerStatefulWidget {
+  final MatchModel match;
+  final String? uid;
+
+  const _IntergroupChallengeBanner({required this.match, required this.uid});
+
+  @override
+  ConsumerState<_IntergroupChallengeBanner> createState() =>
+      _IntergroupChallengeBannerState();
+}
+
+class _IntergroupChallengeBannerState
+    extends ConsumerState<_IntergroupChallengeBanner> {
+  bool _busy = false;
+
+  Future<void> _respond(bool accepted) async {
+    final toTeamId = widget.match.challengeToTeamId ?? '';
+    final invitationId = widget.match.challengeInvitationId ?? '';
+    if (_busy || toTeamId.isEmpty || invitationId.isEmpty) return;
+
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(teamChallengeServiceProvider)
+          .respondTeamChallenge(
+            toTeamId: toTeamId,
+            invitationId: invitationId,
+            accepted: accepted,
+          );
+      ref.invalidate(myTeamChallengesProvider);
+      ref.invalidate(teamRivalsProvider);
+      if (mounted) {
+        PateaSnack.ok(
+          context,
+          accepted
+              ? '¡Desafío aceptado! Partido confirmado.'
+              : 'Desafío rechazado.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        PateaSnack.error(context, challengeErrorMessage(e));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final match = widget.match;
+    final uid = widget.uid;
+    final isDeclined = match.challengeStatus == 'declined';
+
+    if (isDeclined) {
+      final canRetry = match.isManagedBy(uid);
+      final fromTeamId = match.challengeFromTeamId ?? '';
+      return PateaCard(
+        radius: AppRadii.cardAll,
+        color: c.card,
+        borderColor: c.warningText.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.handshake_outlined, size: 20, color: c.warningText),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'El equipo anterior no pudo jugar este partido.',
+                    style: AppTypography.body(
+                      size: 13.5,
+                      weight: FontWeight.w700,
+                      color: c.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (canRetry && fromTeamId.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Tu fecha, hora y cancha siguen guardadas. Elegí otro rival para no perder la reserva.',
+                style: AppTypography.body(size: 12.5, color: c.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () => context.push(
+                  '/challenge?teamId=$fromTeamId&matchId=${match.id}',
+                ),
+                icon: const Icon(Icons.search, size: 18),
+                label: const Text('Elegir otro rival'),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    final toTeamId = match.challengeToTeamId ?? '';
+    final toTeam = toTeamId.isEmpty
+        ? null
+        : ref.watch(singleTeamStreamProvider(toTeamId)).value;
+    final toGroupRole = toTeam == null || toTeam.groupId.isEmpty
+        ? null
+        : ref.watch(myGroupRoleProvider(toTeam.groupId)).value;
+    final canRespond =
+        uid != null &&
+        toTeam != null &&
+        (toTeam.createdBy == uid ||
+            hasPermission(toGroupRole, GroupPermission.teamsEdit));
+
+    final fromName = match.challengeFromTeamName?.isNotEmpty == true
+        ? match.challengeFromTeamName!
+        : 'Un equipo';
+    final toName = match.challengeToTeamName?.isNotEmpty == true
+        ? match.challengeToTeamName!
+        : 'Rival por confirmar';
+    final message = (match.challengeMessage ?? '').trim();
+
+    return PateaCard(
+      radius: AppRadii.cardAll,
+      color: c.card,
+      borderColor: (canRespond ? c.primary : c.overlayLine).withValues(
+        alpha: canRespond ? 0.65 : 1,
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.handshake_outlined,
+                size: 20,
+                color: canRespond ? c.primary : c.textSecondary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  canRespond
+                      ? '$fromName desafió a $toName'
+                      : 'Desafío enviado a $toName · Esperando confirmación',
+                  style: AppTypography.body(
+                    size: 13.5,
+                    weight: FontWeight.w700,
+                    color: c.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (message.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '«$message»',
+              style: AppTypography.body(
+                size: 12.5,
+                color: c.textSecondary,
+              ),
+            ),
+          ],
+          if (canRespond) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _busy ? null : () => _respond(false),
+                    child: const Text('Rechazar'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _busy ? null : () => _respond(true),
+                    child: _busy
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: PateaButtonProgress(),
+                          )
+                        : const Text('Aceptar desafío'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }

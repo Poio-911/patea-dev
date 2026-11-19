@@ -28,6 +28,20 @@ import '../../core/widgets/patea_tabs.dart';
 import '../../core/theme/app_insets.dart';
 
 // Port de matchStatusConfig (src/lib/match-status-config.ts).
+String _matchStatusBadgeLabel(MatchModel match, String? activeGroupId) {
+  if (match.type == 'intergroup_friendly') {
+    if (match.challengeStatus == 'pending') {
+      return activeGroupId != null && match.groupId == activeGroupId
+          ? 'Esperando rival'
+          : 'Desafío recibido';
+    }
+    if (match.challengeStatus == 'declined') {
+      return 'Elegir rival';
+    }
+  }
+  return _statusLabels[match.status] ?? 'Finalizado';
+}
+
 const Map<String, String> _statusLabels = {
   'planning': 'A Confirmar',
   'upcoming': 'Próximo',
@@ -1570,18 +1584,19 @@ class _MatchCard extends StatelessWidget {
 }
 
 /// Port de CompactMatchCard (src/components/compact-match-card.tsx).
-class _CompactMatchCard extends StatelessWidget {
+class _CompactMatchCard extends ConsumerWidget {
   final MatchModel match;
 
   const _CompactMatchCard({super.key, required this.match});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = getMatchTypeTheme(match.type);
+    final activeGroupId = ref.watch(activeGroupIdProvider).value;
     final isLive = match.status == 'active';
     final isPast = match.status == 'completed' || match.status == 'evaluated';
     final isByTeams = _showMatchTeams(match, isLive: isLive, isPast: isPast);
-    final statusLabel = _statusLabels[match.status] ?? 'Finalizado';
+    final statusLabel = _matchStatusBadgeLabel(match, activeGroupId);
     final isPlanning = match.status == 'planning';
 
     return _MatchCardFrame(
@@ -1744,15 +1759,15 @@ class _CompactMatchCard extends StatelessWidget {
             children: [
               _CompactInfoRow(
                 icon: Icons.calendar_today_outlined,
-                text: (isPlanning || match.date.isEmpty)
+                text: match.date.isEmpty
                     ? 'Por confirmar'
                     : fmtDate(match.date),
               ),
               const SizedBox(height: 4),
               _CompactInfoRow(
                 icon: Icons.access_time,
-                text: (isPlanning || match.time == null)
-                    ? 'Por votar'
+                text: (match.time == null || match.time!.isEmpty)
+                    ? (isPlanning ? 'Por votar' : 'Sin hora')
                     : '${match.time} hs',
               ),
               if (match.location != null) ...[

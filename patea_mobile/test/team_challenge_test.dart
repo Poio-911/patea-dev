@@ -57,9 +57,14 @@ class FakeChallengeService extends TeamChallengeService {
     required String fromTeamId,
     required String toTeamId,
     String message = '',
+    String? title,
     String? date,
     String? time,
     String? locationName,
+    Map<String, dynamic>? location,
+    Map<String, dynamic>? weather,
+    bool isPublic = false,
+    String? matchId,
   }) async {
     if (challengeError != null) throw challengeError!;
     challenges.add({
@@ -68,9 +73,10 @@ class FakeChallengeService extends TeamChallengeService {
       'message': message,
       'date': date,
       'time': time,
-      'venue': locationName,
+      'venue': locationName ?? location?['name'],
+      'matchId': matchId,
     });
-    return 'inv-1';
+    return matchId ?? 'challenge_inv-1';
   }
 
   @override
@@ -604,6 +610,56 @@ void main() {
       expect(service.responses.single['accepted'], false);
       expect(find.textContaining('detalle'), findsNothing);
       expect(find.text('Desafío rechazado.'), findsOneWidget);
+    });
+  });
+
+  group('partido creado con desafío pendiente o rechazado', () {
+    test('MatchModel conserva campos de desafío y lugar completo', () {
+      final m = MatchModel.fromFirestore({
+        'title': '19 De Abril vs Huracán',
+        'type': 'intergroup_friendly',
+        'status': 'planning',
+        'date': '2026-11-22',
+        'time': '20:00',
+        'groupId': 'g-1',
+        'participantGroupIds': ['g-1', 'g-2'],
+        'participantTeamIds': ['t-1', 't-2'],
+        'challengeStatus': 'pending',
+        'challengeInvitationId': 'inv-1',
+        'challengeFromTeamId': 't-1',
+        'challengeToTeamId': 't-2',
+        'challengeFromTeamName': '19 De Abril',
+        'challengeToTeamName': 'Huracán',
+        'challengeMessage': '¿Jugamos el domingo?',
+        'location': {
+          'name': 'Complejo Parque',
+          'address': 'Av. Italia 4500',
+          'lat': -34.89,
+          'lng': -56.12,
+          'placeId': 'place-123',
+        },
+      }, 'm-1');
+
+      expect(m.challengeStatus, 'pending');
+      expect(m.challengeInvitationId, 'inv-1');
+      expect(m.challengeFromTeamId, 't-1');
+      expect(m.challengeToTeamId, 't-2');
+      expect(m.challengeMessage, '¿Jugamos el domingo?');
+      expect(m.location, 'Complejo Parque');
+      expect(m.locationDetail?.address, 'Av. Italia 4500');
+      expect(m.locationDetail?.placeId, 'place-123');
+      expect(m.participantGroupIds, ['g-1', 'g-2']);
+    });
+
+    test('TeamChallenge parsea matchId del partido ya creado', () {
+      final c = TeamChallenge.fromMap({
+        'id': 'inv-1',
+        'toTeamId': 't-2',
+        'fromTeamId': 't-1',
+        'fromTeamName': '19 De Abril',
+        'matchId': 'challenge_inv-1',
+      });
+      expect(c.matchId, 'challenge_inv-1');
     });
   });
 }
