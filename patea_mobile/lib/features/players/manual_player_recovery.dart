@@ -7,6 +7,18 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_snack.dart';
 
+/// Recovery belongs to a confirmed contact match, not to every own profile.
+final hasManualPlayerClaimProvider = FutureProvider.autoDispose<bool>((
+  ref,
+) async {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null || (!user.emailVerified && user.phoneNumber == null)) {
+    return false;
+  }
+  final result = await callFunction('findManualPlayerClaims', {});
+  return (result['candidates'] as List? ?? []).isNotEmpty;
+});
+
 Future<void> showManualPlayerRecovery(BuildContext context) =>
     showModalBottomSheet<void>(
       context: context,
@@ -156,6 +168,7 @@ class _ManualPlayerRecoveryState extends State<ManualPlayerRecovery> {
         'confirmed': true,
       }, timeout: const Duration(seconds: 120));
       if (!mounted) return;
+      ProviderScope.containerOf(context).invalidate(hasManualPlayerClaimProvider);
       PateaSnack.ok(context, 'Recuperaste tu lugar y tu historial');
       Navigator.pop(context);
     } catch (e) {

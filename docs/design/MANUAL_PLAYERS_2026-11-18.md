@@ -50,3 +50,7 @@ La pestaña de progresión también aparece para jugadores sin cuenta con partid
 - `functions/src/lib/manual-players.ts`
 - `functions/src/callable/match-lifecycle.ts`
 - `firestore.rules`
+
+### Ajuste 1.0.39+40
+
+El acceso de recuperación deja de aparecer por defecto en todos los perfiles propios. Se consulta la coincidencia real con contacto verificado y sólo entonces aparece «Vincular historial anterior»; una cuenta sin coincidencias no muestra ninguna acción. Al completar una recuperación, se invalida esa consulta para retirar el acceso inmediatamente. La presentación automática al ingresar conserva el mismo filtro de contacto verificado.

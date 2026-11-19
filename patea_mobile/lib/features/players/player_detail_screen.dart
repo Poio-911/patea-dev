@@ -147,13 +147,14 @@ class _PlayerDetailScreenState extends ConsumerState<PlayerDetailScreen> {
                     ],
                   ),
                 ),
-              if (isOwnProfile)
+              if (isOwnProfile &&
+                  ref.watch(hasManualPlayerClaimProvider).value == true)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: TextButton.icon(
                     onPressed: () => showManualPlayerRecovery(context),
                     icon: const Icon(Icons.manage_history, size: 18),
-                    label: const Text('Recuperar historial sin cuenta'),
+                    label: const Text('Vincular historial anterior'),
                   ),
                 ),
               Padding(
