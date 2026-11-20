@@ -8,6 +8,7 @@ import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
+import '../../core/widgets/ovr_accent.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_help_dialog.dart';
@@ -104,7 +105,7 @@ class SocialFeedScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Cuando se cierren evaluaciones o cambie el OVR del plantel, van a aparecer acá.',
+                        'Cuando se arme o termine un partido del grupo, o cambie el OVR de alguien, va a aparecer acá.',
                         textAlign: TextAlign.center,
                         style: AppTypography.body(
                           size: 13,
@@ -159,7 +160,11 @@ class _FeedItemRow extends StatelessWidget {
     final c = context.c;
     final type = (data['type'] as String?) ?? 'ovr_updated';
     final playerId = (data['playerId'] ?? data['userId']) as String?;
-    final playerName = (data['playerName'] as String?) ?? 'Jugador';
+    final matchId = data['matchId'] as String?;
+    final isMatchEvent = type == 'match_finished' || type == 'match_scheduled';
+    final playerName = isMatchEvent
+        ? ((data['title'] as String?) ?? 'Partido')
+        : (data['playerName'] as String?) ?? 'Jugador';
     final photoUrl = (data['playerPhotoUrl'] ?? data['photoUrl']) as String?;
     final change = (data['change'] as num?)?.round() ?? 0;
     final newOvr = (data['newOvr'] as num?)?.round();
@@ -172,23 +177,43 @@ class _FeedItemRow extends StatelessWidget {
         ? 'Actualizó su nivel a OVR $newOvr tras la última evaluación.'
         : 'Registró actividad deportiva en el grupo.';
 
+    final target = isMatchEvent
+        ? (matchId != null && matchId.isNotEmpty ? '/matches/$matchId' : null)
+        : (playerId != null && playerId.isNotEmpty ? '/players/$playerId' : null);
+    final tier = newOvr != null ? ovrAccentColor(c, newOvr) : c.ratingAccent;
+
     return InkWell(
-      onTap: playerId != null && playerId.isNotEmpty
-          ? () => context.push('/players/$playerId')
-          : null,
+      onTap: target != null ? () => context.push(target) : null,
       borderRadius: AppRadii.chipAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            PateaAvatar(
-              photoUrl: photoUrl,
-              seed: playerId != null && playerId.isNotEmpty
-                  ? playerId
-                  : playerName,
-              size: 42,
-            ),
+            if (isMatchEvent)
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: c.cardSurface,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  type == 'match_finished'
+                      ? Icons.sports_score_rounded
+                      : Icons.event_available_rounded,
+                  size: 20,
+                  color: c.textSecondary,
+                ),
+              )
+            else
+              PateaAvatar(
+                photoUrl: photoUrl,
+                seed: playerId != null && playerId.isNotEmpty
+                    ? playerId
+                    : playerName,
+                size: 42,
+              ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -236,7 +261,7 @@ class _FeedItemRow extends StatelessWidget {
                               style: AppTypography.code(
                                 size: 12,
                                 weight: FontWeight.w700,
-                                color: c.ratingAccent,
+                                color: tier,
                               ),
                               children: [
                                 TextSpan(text: '$oldOvr '),
@@ -245,7 +270,7 @@ class _FeedItemRow extends StatelessWidget {
                                   child: Icon(
                                     Icons.arrow_forward_rounded,
                                     size: 13,
-                                    color: c.ratingAccent,
+                                    color: tier,
                                   ),
                                 ),
                                 TextSpan(text: ' $newOvr OVR'),
@@ -258,7 +283,7 @@ class _FeedItemRow extends StatelessWidget {
                             style: AppTypography.code(
                               size: 12,
                               weight: FontWeight.w700,
-                              color: c.ratingAccent,
+                              color: tier,
                             ),
                           ),
                         if (change != 0)

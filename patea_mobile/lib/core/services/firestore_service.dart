@@ -208,7 +208,12 @@ final userProfileProvider =
 /// El feed de Comunidad.
 final feedActivitiesStreamProvider =
     StreamProvider<List<Map<String, dynamic>>>((ref) {
-  return ref.watch(firestoreServiceProvider).getFeedActivitiesStream();
+  // Las novedades son del grupo activo: sin grupo no hay nada que mostrar.
+  final group = ref.watch(activeGroupIdProvider);
+  if (group.isLoading) return const Stream<List<Map<String, dynamic>>>.empty();
+  return ref
+      .watch(firestoreServiceProvider)
+      .getFeedActivitiesStream(groupId: group.asData?.value);
 });
 
 final leaguesStreamProvider = StreamProvider<List<CompetitionModel>>((ref) {
@@ -565,9 +570,13 @@ class FirestoreService {
 
   /// El feed de Comunidad. Los documentos van crudos porque todavía no hay un
   /// modelo: la pantalla lee `type`, `playerName`, `change` y `newOvr`.
-  Stream<List<Map<String, dynamic>>> getFeedActivitiesStream() {
+  Stream<List<Map<String, dynamic>>> getFeedActivitiesStream({
+    String? groupId,
+  }) {
+    if (groupId == null || groupId.isEmpty) return Stream.value(const []);
     return _firestore
         .collection('feedActivities')
+        .where('groupId', isEqualTo: groupId)
         .orderBy('createdAt', descending: true)
         .limit(25)
         .snapshots()

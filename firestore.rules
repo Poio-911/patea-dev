@@ -192,9 +192,15 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // El registro de entrenamiento es privado: sólo lo lee su dueño.
+      match /trainingLog/{logId} {
+        allow read: if isAuthenticated() && request.auth.uid == playerId;
+        allow write: if false;
+      }
+
       // Cualquier otra subcolección de jugador: lectura, escritura server-side.
       match /{subcollection}/{docId} {
-        allow read: if isAuthenticated();
+        allow read: if isAuthenticated() && subcollection != 'trainingLog';
         allow write: if false;
       }
     }
@@ -530,8 +536,15 @@ service cloud.firestore {
       }
     }
 
+    // Novedades de Comunidad: cada una pertenece a UN grupo y sólo la ven sus
+    // miembros (antes la lectura era para cualquier usuario y nada escribía).
     match /feedActivities/{activityId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && (
+          resource.data.get('groupId', '-') in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', [])
+          || resource.data.get('groupId', '-') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeGroupId', '--')
+        );
       allow write: if false;
     }
 

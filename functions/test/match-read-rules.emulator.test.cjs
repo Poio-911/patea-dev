@@ -32,6 +32,9 @@ describe('lectura del partido y escritura de competiciones', { skip: !process.en
         },
         'matches/pub': { ownerUid: 'org', playerUids: [], groupId: 'g1', isPublic: true, status: 'upcoming', date: '2099-02-01', type: 'manual' },
         'matches/liga': { ownerUid: 'org', groupId: 'g1', status: 'upcoming', date: '2099-03-01', type: 'league', leagueInfo: { leagueId: 'L1' } },
+        'feedActivities/f1': { groupId: 'g1', type: 'ovr_updated', createdAt: '2026-11-19T10:00:00Z' },
+        'feedActivities/f2': { groupId: 'g2', type: 'match_finished', createdAt: '2026-11-19T11:00:00Z' },
+        'players/pl/trainingLog/t1': { focusId: 'sho', createdAt: '2026-11-19T10:00:00Z' },
         'leagues/L1': { ownerUid: 'org', name: 'Liga' },
         'leagues/L1/fixtures/f1': { round: 1 },
         'cups/C1': { ownerUid: 'org', name: 'Copa' },
@@ -67,6 +70,21 @@ describe('lectura del partido y escritura de competiciones', { skip: !process.en
   it('un tercero no lista partidos de un grupo ajeno ni los de otro jugador', async () => {
     await assertFails(getDocs(query(matches('outsider'), where('groupId', '==', 'g1'), orderBy('date', 'desc'), limit(50))));
     await assertFails(getDocs(query(matches('outsider'), where('playerUids', 'array-contains', 'pl'), limit(50))));
+  });
+
+  it('Comunidad: cada grupo ve sólo sus novedades, y nadie escribe', async () => {
+    await assertSucceeds(getDocs(query(collection(as('member'), 'feedActivities'), where('groupId', '==', 'g1'), orderBy('createdAt', 'desc'), limit(25))));
+    await assertSucceeds(getDocs(query(collection(as('old'), 'feedActivities'), where('groupId', '==', 'g1'), orderBy('createdAt', 'desc'), limit(25))));
+    await assertFails(getDocs(query(collection(as('member'), 'feedActivities'), where('groupId', '==', 'g2'), orderBy('createdAt', 'desc'), limit(25))));
+    await assertFails(getDocs(query(collection(as('outsider'), 'feedActivities'), where('groupId', '==', 'g1'), orderBy('createdAt', 'desc'), limit(25))));
+    await assertFails(getDocs(collection(as('member'), 'feedActivities')));
+    await assertFails(setDoc(doc(as('member'), 'feedActivities/x'), { groupId: 'g1' }));
+  });
+
+  it('el registro de entrenamiento lo lee sólo su dueño', async () => {
+    await assertSucceeds(getDoc(doc(as('pl'), 'players/pl/trainingLog/t1')));
+    await assertFails(getDoc(doc(as('outsider'), 'players/pl/trainingLog/t1')));
+    await assertFails(setDoc(doc(as('pl'), 'players/pl/trainingLog/t2'), { focusId: 'sho' }));
   });
 
   it('las ligas y copas no se escriben desde el cliente, ni siquiera su dueño', async () => {

@@ -27,6 +27,8 @@ export { cancelMatch, deleteMatch, updateMatchDate, updateMatchLocation, shuffle
 export { createGroup, joinGroupByInviteCode, setActiveGroup, createTeam, updateTeam, updateTeamMembers, deleteTeam, setTeamChallengeOptOut } from './callable/group-management';
 export { searchTeams, challengeTeam, respondTeamChallenge, getMyTeamChallenges } from './callable/team-challenges';
 export { onTeamWrite } from './triggers/on-team-write';
+export { onOvrHistoryFeed, onMatchFeed } from './triggers/on-feed-events';
+export { logTrainingSession } from './callable/training';
 export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteManualPlayer, findManualPlayerClaims, claimManualPlayer } from './callable/manual-player-management';
 export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
 export { submitEvaluationSubmission, requestIdentityReveal, respondToIdentityReveal, getEvaluationAudio, finalizeMatchEvaluation } from './callable/evaluations';
