@@ -13,13 +13,14 @@ const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
   const db = admin.firestore();
   const entries = [];
 
-  const history = await db.collectionGroup('ovrHistory').where('date', '>=', since).get();
-  const playerCache = new Map();
-  for (const doc of history.docs) {
-    const playerId = doc.ref.parent.parent.id;
-    if (!playerCache.has(playerId)) playerCache.set(playerId, (await db.doc(`players/${playerId}`).get()).data());
-    const entry = feed.ovrFeedEntry(playerId, doc.id, playerCache.get(playerId), doc.data());
-    if (entry) entries.push({ ...entry, data: { ...entry.data, createdAt: doc.data().date } });
+  // Jugador por jugador: una consulta de grupo por `date` pediría un índice nuevo.
+  const players = await db.collection('players').get();
+  for (const player of players.docs) {
+    const history = await player.ref.collection('ovrHistory').where('date', '>=', since).get();
+    for (const doc of history.docs) {
+      const entry = feed.ovrFeedEntry(player.id, doc.id, player.data(), doc.data());
+      if (entry) entries.push({ ...entry, data: { ...entry.data, createdAt: doc.data().date } });
+    }
   }
 
   const matches = await db.collection('matches').where('status', 'in', ['completed', 'evaluated']).get();
