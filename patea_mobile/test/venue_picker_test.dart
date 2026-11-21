@@ -140,7 +140,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Canchas del grupo'), findsOneWidget);
+      expect(find.text('Elegir de canchas guardadas (1)'), findsOneWidget);
+      await tester.tap(find.text('Elegir de canchas guardadas (1)'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Plaza Fútbol 5'), findsOneWidget);
       expect(find.text('3x'), findsOneWidget);
 

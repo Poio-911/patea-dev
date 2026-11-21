@@ -38,24 +38,13 @@ class MatchCover extends StatelessWidget {
     final photoInk = c.activityPhotoTitle;
     final photoMuted = c.onPhotoMuted;
     final scrimBase = c.photoFallback;
-    final venuePhoto = match.locationDetail?.photoUrl?.trim();
-    final hasVenuePhoto = venuePhoto != null && venuePhoto.isNotEmpty;
     return Stack(
       children: [
         Positioned.fill(
-          child: hasVenuePhoto
-              ? Image.network(
-                  venuePhoto,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Image.asset(
-                    MatchPhotography.forMatch(match.id),
-                    fit: BoxFit.cover,
-                  ),
-                )
-              : Image.asset(
-                  MatchPhotography.forMatch(match.id),
-                  fit: BoxFit.cover,
-                ),
+          child: Image.asset(
+            MatchPhotography.forMatch(match.id),
+            fit: BoxFit.cover,
+          ),
         ),
         Positioned.fill(
           child: DecoratedBox(

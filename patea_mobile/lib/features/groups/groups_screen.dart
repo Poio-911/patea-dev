@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../core/widgets/patea_activity_cover.dart';
 import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_section_scene.dart';
@@ -11,6 +13,7 @@ import '../../core/widgets/patea_states.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/patea_colors.dart';
@@ -23,6 +26,7 @@ import '../../core/services/location_service.dart';
 import '../../core/models/group_model.dart';
 import '../../core/models/match_model.dart';
 import '../../core/models/player_model.dart';
+import '../../core/models/venue_model.dart';
 import '../../core/models/group_permissions.dart';
 import '../../core/widgets/jersey_painter.dart';
 
@@ -346,6 +350,7 @@ class _ActiveGroupView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final groupAsync = ref.watch(singleGroupStreamProvider(groupId));
     final teamsAsync = ref.watch(groupTeamsStreamProvider(groupId));
+    final venuesAsync = ref.watch(groupVenuesStreamProvider(groupId));
     final matchesAsync = ref.watch(matchesStreamProvider(groupId));
     final playersAsync = ref.watch(playersStreamProvider(groupId));
     final myGroups =
@@ -524,6 +529,40 @@ class _ActiveGroupView extends ConsumerWidget {
                   );
                 },
                 loading: () => const PateaLoading(height: 96),
+                error: (e, _) => PateaError(error: e, compact: true),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _Section(
+              icon: Icons.stadium_outlined,
+              title: 'Canchas guardadas',
+              child: venuesAsync.when(
+                data: (venues) {
+                  if (venues.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        'Todavía no hay canchas guardadas. Cuando creen un partido, la cancha se guarda acá automáticamente.',
+                        style: AppTypography.body(
+                          size: 12,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: venues
+                        .map(
+                          (venue) => _GroupSavedVenueRow(
+                            venue: venue,
+                            groupId: groupId,
+                          ),
+                        )
+                        .toList(),
+                  );
+                },
+                loading: () => const PateaLoading(height: 80),
                 error: (e, _) => PateaError(error: e, compact: true),
               ),
             ),
@@ -1096,5 +1135,148 @@ class _GroupHeroCard extends ConsumerWidget {
       ),
     ],
   );
+  }
+}
+
+class _GroupSavedVenueRow extends ConsumerStatefulWidget {
+  final VenueModel venue;
+  final String groupId;
+
+  const _GroupSavedVenueRow({required this.venue, required this.groupId});
+
+  @override
+  ConsumerState<_GroupSavedVenueRow> createState() =>
+      _GroupSavedVenueRowState();
+}
+
+class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
+  bool _uploading = false;
+
+  Future<void> _uploadPhoto() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1280,
+      imageQuality: 85,
+    );
+    if (xfile == null || !mounted) return;
+
+    setState(() => _uploading = true);
+    try {
+      final photoUrl = await LocationService().uploadCustomVenuePhoto(
+        groupId: widget.groupId,
+        venueId: widget.venue.id,
+        file: File(xfile.path),
+      );
+      await ref.read(groupServiceProvider).updateGroupVenue(
+            groupId: widget.groupId,
+            venueId: widget.venue.id,
+            photoUrl: photoUrl,
+          );
+      if (mounted) {
+        PateaSnack.ok(context, 'Foto de ${widget.venue.name} actualizada');
+      }
+    } catch (e) {
+      if (mounted) {
+        PateaSnack.error(context, 'No se pudo subir la foto: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = widget.venue;
+    final hasPhoto = v.photoUrl != null && v.photoUrl!.isNotEmpty;
+
+    return PateaCard(
+      color: context.c.cardSurface.withValues(alpha: 0.5),
+      radius: AppRadii.cardAll,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: AppRadii.chipAll,
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: hasPhoto
+                  ? Image.network(
+                      v.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        color: context.c.card,
+                        child: Icon(
+                          Icons.stadium_outlined,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: context.c.card,
+                      child: Icon(
+                        Icons.stadium_outlined,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  v.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body(
+                    size: 14,
+                    weight: FontWeight.w700,
+                    color: context.c.textPrimary,
+                  ),
+                ),
+                if (v.address.isNotEmpty)
+                  Text(
+                    v.address,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      size: 11,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                const SizedBox(height: 2),
+                Text(
+                  '${v.usageCount} ${v.usageCount == 1 ? 'partido' : 'partidos'}',
+                  style: AppTypography.body(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: context.c.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _uploading ? null : _uploadPhoto,
+            tooltip: hasPhoto ? 'Cambiar foto' : 'Subir foto',
+            icon: _uploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    Icons.add_a_photo_outlined,
+                    size: 20,
+                    color: context.c.textSecondary,
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -53,6 +53,7 @@ class _VenuePickerFieldState extends ConsumerState<VenuePickerField> {
   bool _searching = false;
   bool _resolving = false;
   bool _uploadingPhoto = false;
+  bool _useSavedVenue = false;
   List<LocationSuggestion> _suggestions = const [];
 
   @override
@@ -311,35 +312,62 @@ class _VenuePickerFieldState extends ConsumerState<VenuePickerField> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (venues.isNotEmpty) ...[
-          Row(
-            children: [
-              Icon(Icons.stadium_outlined, size: 15, color: context.c.primary),
-              const SizedBox(width: 6),
-              Text(
-                'Canchas del grupo',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: context.c.textSecondary,
-                ),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _useSavedVenue = !_useSavedVenue;
+                if (_useSavedVenue) {
+                  _suggestions = const [];
+                  _searching = false;
+                }
+              });
+            },
+            borderRadius: AppRadii.chipAll,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _useSavedVenue,
+                      onChanged: (v) {
+                        setState(() {
+                          _useSavedVenue = v ?? false;
+                          if (_useSavedVenue) {
+                            _suggestions = const [];
+                            _searching = false;
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Elegir de canchas guardadas (${venues.length})',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.c.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
-              Text(
-                'Toca para reutilizar',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: context.c.textSecondary,
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
+        ],
+
+        if (_useSavedVenue && venues.isNotEmpty) ...[
           SizedBox(
             height: 118,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: venues.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final v = venues[index];
                 final isSelected = widget.selected != null &&
@@ -357,123 +385,122 @@ class _VenuePickerFieldState extends ConsumerState<VenuePickerField> {
               },
             ),
           ),
-          const SizedBox(height: 12),
-        ],
-
-        // Campo de búsqueda + selector rápido de país
-        TextField(
-          controller: _controller,
-          onChanged: _onQueryChanged,
-          decoration: InputDecoration(
-            labelText: widget.labelText,
-            hintText: widget.hintText,
-            prefixIcon: const Icon(Icons.location_on_outlined),
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_searching || _resolving)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 6),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+        ] else ...[
+          // Campo de búsqueda + selector rápido de país
+          TextField(
+            controller: _controller,
+            onChanged: _onQueryChanged,
+            decoration: InputDecoration(
+              labelText: widget.labelText,
+              hintText: widget.hintText,
+              prefixIcon: const Icon(Icons.location_on_outlined),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_searching || _resolving)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 6),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  if (_controller.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: 'Limpiar',
+                      onPressed: _clearSelection,
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: _pickCountry,
+                      borderRadius: AppRadii.pillAll,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.c.cardSurface,
+                          borderRadius: AppRadii.pillAll,
+                          border: Border.all(color: context.c.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(country.flag, style: const TextStyle(fontSize: 13)),
+                            const SizedBox(width: 4),
+                            Text(
+                              country.code ?? 'ALL',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: context.c.textPrimary,
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              size: 16,
+                              color: context.c.textSecondary,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                if (_controller.text.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 18),
-                    tooltip: 'Limpiar',
-                    onPressed: _clearSelection,
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: InkWell(
-                    onTap: _pickCountry,
-                    borderRadius: AppRadii.pillAll,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                ],
+              ),
+            ),
+          ),
+
+          if (_suggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              decoration: BoxDecoration(
+                color: context.c.cardSurface,
+                borderRadius: AppRadii.cardAll,
+                border: Border.all(color: context.c.border),
+              ),
+              child: Column(
+                children: _suggestions.map((s) {
+                  return ListTile(
+                    dense: true,
+                    leading: Icon(
+                      s.placeId.startsWith('osm:')
+                          ? Icons.place_outlined
+                          : Icons.stadium_outlined,
+                      size: 18,
+                      color: context.c.primary,
+                    ),
+                    title: Text(
+                      s.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.c.textPrimary,
                       ),
-                      decoration: BoxDecoration(
-                        color: context.c.cardSurface,
-                        borderRadius: AppRadii.pillAll,
-                        border: Border.all(color: context.c.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(country.flag, style: const TextStyle(fontSize: 13)),
-                          const SizedBox(width: 4),
-                          Text(
-                            country.code ?? 'ALL',
+                    ),
+                    subtitle: s.address.isNotEmpty && s.address != s.name
+                        ? Text(
+                            s.address,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: context.c.textPrimary,
+                              color: context.c.textSecondary,
                             ),
-                          ),
-                          Icon(
-                            Icons.arrow_drop_down,
-                            size: 16,
-                            color: context.c.textSecondary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                          )
+                        : null,
+                    onTap: () => _selectSuggestion(s),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-        ),
-
-        if (_suggestions.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            decoration: BoxDecoration(
-              color: context.c.cardSurface,
-              borderRadius: AppRadii.cardAll,
-              border: Border.all(color: context.c.border),
-            ),
-            child: Column(
-              children: _suggestions.map((s) {
-                return ListTile(
-                  dense: true,
-                  leading: Icon(
-                    s.placeId.startsWith('osm:')
-                        ? Icons.place_outlined
-                        : Icons.stadium_outlined,
-                    size: 18,
-                    color: context.c.primary,
-                  ),
-                  title: Text(
-                    s.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: context.c.textPrimary,
-                    ),
-                  ),
-                  subtitle: s.address.isNotEmpty && s.address != s.name
-                      ? Text(
-                          s.address,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: context.c.textSecondary,
-                          ),
-                        )
-                      : null,
-                  onTap: () => _selectSuggestion(s),
-                );
-              }).toList(),
-            ),
-          ),
+        ],
 
         if (widget.selected != null) ...[
           const SizedBox(height: 10),
