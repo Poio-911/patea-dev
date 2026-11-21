@@ -1,7 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { geohashForLocation, geohashQueryBounds, distanceBetween } from 'geofire-common';
-import { assertNotTeamMatch } from '../lib/match-access';
+import { assertNotTeamMatch, userCanManageMatch } from '../lib/match-access';
+import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
  * Callables de Explorar — port de src/lib/actions/{recruitment-actions,
@@ -304,13 +305,15 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
   const playerIds: string[] = Array.isArray(request.data?.playerIds) ? request.data.playerIds : [];
+  const rawMessage = typeof request.data?.message === 'string' ? request.data.message.trim() : '';
+  const messageText = rawMessage.slice(0, 500);
 
   const db = admin.firestore();
   const matchRef = db.collection('matches').doc(matchId);
   const matchSnap = await matchRef.get();
   if (!matchSnap.exists) throw new HttpsError('not-found', 'Partido no encontrado.');
   const match = matchSnap.data()!;
-  if (match.ownerUid !== uid) {
+  if (!(await userCanManageMatch(db, match, uid))) {
     throw new HttpsError('permission-denied', 'No tienes permiso para invitar jugadores a este partido.');
   }
   assertNotTeamMatch(match);
@@ -318,8 +321,16 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
   const uniqueIds = [...new Set(playerIds)].filter(Boolean);
   if (uniqueIds.length === 0) throw new HttpsError('invalid-argument', 'No se seleccionaron jugadores.');
 
+  const senderSnap = await db.collection('players').doc(uid).get();
+  const senderData = senderSnap.data() ?? {};
+  const fromName = String(senderData.name ?? senderData.displayName ?? 'Un jugador');
+  const fromPhotoUrl = String(senderData.photoURL ?? senderData.photoUrl ?? '');
+
   const batch = db.batch();
+  const now = new Date().toISOString();
+  const notifiedIds: string[] = [];
   let sent = 0;
+
   for (const playerId of uniqueIds) {
     if ((match.playerUids as string[] | undefined)?.includes(playerId)) continue;
     const invitationRef = db.collection(`matches/${matchId}/invitations`).doc();
@@ -328,13 +339,125 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
       matchTitle: match.title,
       matchDate: match.date,
       playerId,
+      ...(messageText ? { message: messageText } : {}),
+      invitedBy: uid,
       status: 'pending',
-      createdAt: new Date().toISOString(),
+      createdAt: now,
     });
+
+    const msgRef = db.collection(`users/${playerId}/messages`).doc();
+    const locName = typeof match.location === 'object' && match.location
+      ? String(match.location.name ?? match.location.address ?? '')
+      : String(match.location ?? '');
+    batch.set(msgRef, {
+      type: 'match_invite',
+      fromUid: uid,
+      fromName,
+      fromPhotoUrl,
+      text: messageText || `Te invitaron al partido "${match.title ?? 'Partido'}". ¡Sumate acá!`,
+      matchId,
+      matchTitle: String(match.title ?? ''),
+      matchDate: String(match.date ?? ''),
+      matchTime: String(match.time ?? ''),
+      matchLocation: locName,
+      isRead: false,
+      createdAt: now,
+    });
+
+    notifiedIds.push(playerId);
     sent += 1;
   }
   if (sent === 0) throw new HttpsError('failed-precondition', 'No había jugadores válidos para invitar.');
 
   await batch.commit();
+
+  await sendPushToUsers(
+    notifiedIds,
+    {
+      title: `${fromName} te invitó a jugar`,
+      body: messageText || `${match.title ?? 'Partido'} · Tocá para ver y anotarte`,
+      type: 'match_invite',
+      link: `/matches/${matchId}`,
+      extraData: { matchId },
+    },
+    'MatchInviteMessage',
+  ).catch(() => {});
+
   return { ok: true, sent };
+});
+
+/**
+ * Envía un mensaje directo a otro jugador (de tu grupo o de otro grupo),
+ * opcionalmente adjuntando un partido para que se anote directo.
+ */
+export const sendPlayerMessage = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const toUid = String(request.data?.toUid ?? '').trim();
+  const text = String(request.data?.text ?? '').trim();
+  const matchId = typeof request.data?.matchId === 'string' ? request.data.matchId.trim() : '';
+
+  if (!toUid || toUid.includes('/') || toUid === uid) {
+    throw new HttpsError('invalid-argument', 'Destinatario inválido.');
+  }
+  if (!text || text.length > 500) {
+    throw new HttpsError('invalid-argument', 'El mensaje debe tener entre 1 y 500 caracteres.');
+  }
+
+  const db = admin.firestore();
+  const [senderPlayerSnap, senderUserSnap, matchSnap] = await Promise.all([
+    db.collection('players').doc(uid).get(),
+    db.collection('users').doc(uid).get(),
+    matchId && !matchId.includes('/') ? db.collection('matches').doc(matchId).get() : Promise.resolve(null),
+  ]);
+
+  const senderPlayer = senderPlayerSnap.data() ?? {};
+  const senderUser = senderUserSnap.data() ?? {};
+  const fromName = String(
+    senderPlayer.name ?? senderPlayer.displayName ?? senderUser.displayName ?? 'Un jugador',
+  );
+  const fromPhotoUrl = String(
+    senderPlayer.photoURL ?? senderPlayer.photoUrl ?? senderUser.photoURL ?? '',
+  );
+
+  let matchPayload: Record<string, string> = {};
+  if (matchSnap && matchSnap.exists) {
+    const m = matchSnap.data()!;
+    const locName = typeof m.location === 'object' && m.location
+      ? String(m.location.name ?? m.location.address ?? '')
+      : String(m.location ?? '');
+    matchPayload = {
+      matchId: matchSnap.id,
+      matchTitle: String(m.title ?? ''),
+      matchDate: String(m.date ?? ''),
+      matchTime: String(m.time ?? ''),
+      matchLocation: locName,
+    };
+  }
+
+  const now = new Date().toISOString();
+  const msgRef = db.collection(`users/${toUid}/messages`).doc();
+  await msgRef.set({
+    type: matchPayload.matchId ? 'match_invite' : 'direct_message',
+    fromUid: uid,
+    fromName,
+    fromPhotoUrl,
+    text,
+    ...matchPayload,
+    isRead: false,
+    createdAt: now,
+  });
+
+  await sendPushToUsers(
+    [toUid],
+    {
+      title: `Mensaje de ${fromName}`,
+      body: text,
+      type: 'player_message',
+      link: matchPayload.matchId ? `/matches/${matchPayload.matchId}` : '/messages',
+      extraData: matchPayload.matchId ? { matchId: matchPayload.matchId } : {},
+    },
+    'PlayerMessage',
+  ).catch(() => {});
+
+  return { ok: true, messageId: msgRef.id };
 });

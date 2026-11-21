@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/messages_service.dart';
 import '../services/push_permission.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
@@ -143,6 +144,20 @@ class PateaUserMenuSheet extends ConsumerWidget {
               onTap: () {
                 Navigator.pop(context);
                 context.push('/profile');
+              },
+            ),
+            Consumer(
+              builder: (context, ref, _) {
+                final unread = ref.watch(unreadMessagesCountProvider);
+                return _MenuItem(
+                  icon: Icons.mark_chat_unread_outlined,
+                  label: unread > 0 ? 'Mensajes ($unread)' : 'Mensajes',
+                  color: unread > 0 ? context.c.primary : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/messages');
+                  },
+                );
               },
             ),
             _MenuItem(

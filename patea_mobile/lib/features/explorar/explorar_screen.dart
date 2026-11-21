@@ -8,6 +8,7 @@ import '../../core/widgets/patea_card.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
+import '../messages/messages_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -252,121 +253,199 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
         children: [
-          Text(
-            'Buscar jugadores para',
-            style: AppTypography.body(size: 12, color: context.c.textSecondary),
-          ),
-          Row(
-            children: [
-              Icon(
-                selected == null ? Icons.travel_explore : Icons.sports_soccer,
-                size: 19,
-                color: context.c.textSecondary,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selected?.id ?? '',
-                    isExpanded: true,
-                    style: AppTypography.body(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: context.c.textPrimary,
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: '',
-                        child: Text('En mi zona'),
+          PateaCard(
+            color: context.c.card,
+            radius: AppRadii.cardAll,
+            borderColor: context.c.border.withValues(alpha: 0.45),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Buscar jugadores para',
+                  style: AppTypography.body(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: context.c.cardSurface,
+                    borderRadius: AppRadii.chipAll,
+                    border: Border.all(color: context.c.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        selected == null
+                            ? Icons.travel_explore
+                            : Icons.sports_soccer,
+                        size: 18,
+                        color: context.c.primary,
                       ),
-                      ...matches.map(
-                        (m) => DropdownMenuItem(
-                          value: m.id,
-                          child: Text(
-                            m.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selected?.id ?? '',
+                            isExpanded: true,
+                            style: AppTypography.body(
+                              size: 14,
+                              weight: FontWeight.w600,
+                              color: context.c.textPrimary,
+                            ),
+                            items: [
+                              const DropdownMenuItem(
+                                value: '',
+                                child: Text('En mi zona'),
+                              ),
+                              ...matches.map(
+                                (m) => DropdownMenuItem(
+                                  value: m.id,
+                                  child: Text(
+                                    m.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) => setState(() {
+                              _selectedMatchId = v == '' ? null : v;
+                              _zone = null;
+                            }),
                           ),
                         ),
                       ),
                     ],
-                    onChanged: (v) => setState(() {
-                      _selectedMatchId = v == '' ? null : v;
-                      _zone = null;
-                    }),
+                  ),
+                ),
+                if (selected != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0 ? 'Cupo abierto' : '${selected.matchSize - selected.playerUids.length} lugares'}',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                ],
+                if (owned.hasError) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'No pudimos cargar tus partidos. Podés buscar en tu zona.',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                _ZoneControl(
+                  zone: zone,
+                  radius: _radius,
+                  suggested: _zone == null && saved == null && loc == null,
+                  onZone: (z) => setState(() => _zone = z),
+                  onRadius: (v) => setState(() => _radius = v),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          PateaCard(
+            color: context.c.card,
+            radius: AppRadii.cardAll,
+            borderColor: context.c.border.withValues(alpha: 0.45),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: ListTile(
+              key: const ValueKey('my-explore-availability'),
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.person_search_outlined,
+                size: 22,
+                color: available.value != null
+                    ? context.c.success
+                    : context.c.textSecondary,
+              ),
+              title: Row(
+                children: [
+                  Text(
+                    'Tu disponibilidad',
+                    style: AppTypography.body(size: 14, weight: FontWeight.w700),
+                  ),
+                  const SizedBox(width: 8),
+                  if (!available.isLoading && !available.hasError)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: available.value != null
+                            ? context.c.success.withValues(alpha: 0.16)
+                            : context.c.cardSurface,
+                        borderRadius: AppRadii.pillAll,
+                        border: Border.all(
+                          color: available.value != null
+                              ? context.c.success.withValues(alpha: 0.5)
+                              : context.c.border,
+                        ),
+                      ),
+                      child: Text(
+                        available.value != null ? 'Visible' : 'Oculto',
+                        style: AppTypography.body(
+                          size: 10,
+                          weight: FontWeight.w700,
+                          color: available.value != null
+                              ? context.c.success
+                              : context.c.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              subtitle: Text(
+                available.isLoading
+                    ? 'Consultando tu estado…'
+                    : available.hasError
+                    ? 'No pudimos consultar tu estado'
+                    : available.value != null
+                    ? 'Otros jugadores pueden invitarte'
+                    : 'Tocá para elegir días y horarios',
+                style: AppTypography.body(
+                  size: 12,
+                  color: context.c.textSecondary,
+                ),
+              ),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: context.c.cardSurface,
+                  borderRadius: AppRadii.pillAll,
+                  border: Border.all(color: context.c.border),
+                ),
+                child: Text(
+                  'Editar',
+                  style: AppTypography.body(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: context.c.textPrimary,
                   ),
                 ),
               ),
-            ],
-          ),
-          if (selected != null)
-            Text(
-              '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0
-                      ? 'Cupo abierto'
-                      : '${selected.matchSize - selected.playerUids.length} lugares'}',
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
+              onTap: () => showModalBottomSheet<void>(
+                context: context,
+                useRootNavigator: true,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _AvailabilitySheet(uid: widget.uid),
               ),
             ),
-          if (owned.hasError)
-            Text(
-              'No pudimos cargar tus partidos. Podés buscar en tu zona.',
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
-              ),
-            ),
-          const SizedBox(height: 8),
-          _ZoneControl(
-            zone: zone,
-            radius: _radius,
-            suggested: _zone == null && saved == null && loc == null,
-            onZone: (z) => setState(() => _zone = z),
-            onRadius: (v) => setState(() => _radius = v),
           ),
-          const SizedBox(height: 14),
-          Divider(height: 1, color: context.c.overlayLine),
-          ListTile(
-            key: const ValueKey('my-explore-availability'),
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              Icons.person_search_outlined,
-              size: 23,
-              color: context.c.textSecondary,
-            ),
-            title: Text(
-              'Tu disponibilidad',
-              style: AppTypography.body(size: 14, weight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              available.isLoading
-                  ? 'Consultando tu estado…'
-                  : available.hasError
-                  ? 'No pudimos consultar tu estado'
-                  : available.value != null
-                  ? 'Disponible · Editar horarios'
-                  : 'Sin publicar · Elegir horarios',
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
-              ),
-            ),
-            trailing: Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: context.c.textSecondary,
-            ),
-            onTap: () => showModalBottomSheet<void>(
-              context: context,
-              useRootNavigator: true,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => _AvailabilitySheet(uid: widget.uid),
-            ),
-          ),
-          Divider(height: 1, color: context.c.overlayLine),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           Text(
             _loading
                 ? 'Buscando jugadores…'
@@ -376,38 +455,19 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                           : ' jugadores cerca'),
             style: AppTypography.headline(size: 17),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 for (final pos in ['Todos', 'POR', 'DEF', 'MED', 'DEL'])
-                  Semantics(
-                    selected: _position == (pos == 'Todos' ? null : pos),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            width: 2,
-                            color: _position == (pos == 'Todos' ? null : pos)
-                                ? context.c.primary
-                                : Colors.transparent,
-                          ),
-                        ),
-                      ),
-                      child: TextButton(
-                        onPressed: () => setState(
-                          () => _position = pos == 'Todos' ? null : pos,
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor:
-                              _position == (pos == 'Todos' ? null : pos)
-                              ? context.c.textPrimary
-                              : context.c.textSecondary,
-                          minimumSize: const Size(55, 44),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        child: Text(pos, style: AppTypography.action(size: 12)),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(pos),
+                      selected: _position == (pos == 'Todos' ? null : pos),
+                      onSelected: (_) => setState(
+                        () => _position = pos == 'Todos' ? null : pos,
                       ),
                     ),
                   ),
@@ -554,11 +614,32 @@ class _DiscoveryPlayerRow extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                size: 17,
-                color: context.c.textSecondary,
-              ),
+              if (!player.isCurrentUser)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.c.cardSurface,
+                    borderRadius: AppRadii.pillAll,
+                    border: Border.all(color: context.c.border),
+                  ),
+                  child: Text(
+                    'Invitar',
+                    style: AppTypography.body(
+                      size: 11,
+                      weight: FontWeight.w700,
+                      color: context.c.primary,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_right,
+                  size: 17,
+                  color: context.c.textSecondary,
+                ),
             ],
           ),
           const SizedBox(height: 15),
@@ -584,18 +665,12 @@ class _ZoneControl extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Expanded(
         flex: 3,
-        child: TextButton(
-          style: TextButton.styleFrom(
-            foregroundColor: context.c.textPrimary,
-            alignment: Alignment.centerLeft,
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(48, 48),
-          ),
-          onPressed: () async {
+        child: InkWell(
+          borderRadius: AppRadii.pillAll,
+          onTap: () async {
             final value = await showModalBottomSheet<LocationSuggestion>(
               context: context,
               isScrollControlled: true,
@@ -604,43 +679,47 @@ class _ZoneControl extends StatelessWidget {
             );
             if (value != null) onZone(value);
           },
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 19,
-                color: context.c.textSecondary,
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      zone.label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.body(
-                        size: 13,
-                        weight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      suggested ? 'Zona sugerida · Cambiar' : 'Cambiar zona',
-                      style: AppTypography.body(
-                        size: 12,
-                        color: context.c.textSecondary,
-                      ),
-                    ),
-                  ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: context.c.cardSurface,
+              borderRadius: AppRadii.pillAll,
+              border: Border.all(color: context.c.border),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 16,
+                  color: context.c.primary,
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    zone.name.isNotEmpty ? zone.name : zone.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      size: 12,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Cambiar',
+                  style: AppTypography.body(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: context.c.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      const SizedBox(width: 10),
+      const SizedBox(width: 8),
       Flexible(
         flex: 2,
         child: PopupMenuButton<double>(
@@ -656,8 +735,13 @@ class _ZoneControl extends StatelessWidget {
                 child: Text('${km.toInt()} km'),
               ),
           ],
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            decoration: BoxDecoration(
+              color: context.c.cardSurface,
+              borderRadius: AppRadii.pillAll,
+              border: Border.all(color: context.c.border),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -666,16 +750,18 @@ class _ZoneControl extends StatelessWidget {
                     radius == 0
                         ? 'Todas las zonas'
                         : 'Hasta ${radius.toInt()} km',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.body(
                       size: 12,
                       weight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(width: 3),
+                const SizedBox(width: 2),
                 Icon(
-                  Icons.expand_more,
-                  size: 18,
+                  Icons.arrow_drop_down,
+                  size: 16,
                   color: context.c.textSecondary,
                 ),
               ],
@@ -882,12 +968,33 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
         return;
       }
       final selected = choices.firstWhere((m) => m.id == matchId);
+      final msgController = TextEditingController();
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Invitar a ${widget.player.displayName}'),
-          content: Text(
-            '${selected.title}\n${fmtDate(selected.date)} · ${selected.time ?? "Horario a definir"}\n${selected.location ?? "Cancha a definir"}',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${selected.title}\n${fmtDate(selected.date)} · ${selected.time ?? "Horario a definir"}\n${selected.location ?? "Cancha a definir"}',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: msgController,
+                  maxLines: 2,
+                  maxLength: 300,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Mensaje opcional',
+                    hintText: 'Ej: Nos falta 1 hoy, ¿te sumás?',
+                    counterText: '',
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -901,12 +1008,15 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
           ],
         ),
       );
+      final inviteMessage = msgController.text;
+      msgController.dispose();
       if (confirmed != true || !mounted) return;
       await ref
           .read(exploreServiceProvider)
           .sendMatchInvitations(
             matchId: matchId,
             playerIds: [widget.player.uid],
+            message: inviteMessage,
           );
       if (mounted) {
         Navigator.pop(context);
@@ -1072,7 +1182,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                     color: context.c.textSecondary,
                   ),
                 )
-              else
+              else ...[
                 FilledButton.icon(
                   onPressed: _isInviting ? null : _invite,
                   style: FilledButton.styleFrom(
@@ -1096,6 +1206,28 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                     style: AppTypography.action(size: 14),
                   ),
                 ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final ok = await showSendPlayerMessageDialog(
+                      context: context,
+                      ref: ref,
+                      toUid: player.uid,
+                      toName: player.displayName,
+                      initialMatchId: selected?.id,
+                    );
+                    if (ok && context.mounted) {
+                      Navigator.pop(context);
+                      PateaSnack.ok(
+                        context,
+                        'Mensaje enviado a ${player.displayName}',
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                  label: const Text('Enviar mensaje'),
+                ),
+              ],
             ],
           ),
         ),

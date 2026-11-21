@@ -28,7 +28,7 @@ export { createGroup, joinGroupByInviteCode, setActiveGroup, setGroupMemberRole,
 export { searchTeams, challengeTeam, respondTeamChallenge, getMyTeamChallenges } from './callable/team-challenges';
 export { onTeamWrite } from './triggers/on-team-write';
 export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteManualPlayer, findManualPlayerClaims, claimManualPlayer } from './callable/manual-player-management';
-export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
+export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations, sendPlayerMessage } from './callable/explore';
 export { submitEvaluationSubmission, requestIdentityReveal, respondToIdentityReveal, getEvaluationAudio, finalizeMatchEvaluation } from './callable/evaluations';
 export { generateMatchChronicle } from './callable/match-chronicle';
 export { requestJoinMatch, respondJoinRequest } from './callable/match-join-requests';

@@ -45,6 +45,7 @@ class RecruitPlayersSheet extends ConsumerStatefulWidget {
 class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
   int _tab = 0;
   final Set<String> _selected = {};
+  final TextEditingController _messageController = TextEditingController();
   bool _sending = false;
 
   /// Radio de búsqueda de agentes libres. La web arranca en 10 km.
@@ -100,7 +101,11 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
     try {
       final sent = await ref
           .read(exploreServiceProvider)
-          .sendMatchInvitations(matchId: widget.match.id, playerIds: _selected.toList());
+          .sendMatchInvitations(
+            matchId: widget.match.id,
+            playerIds: _selected.toList(),
+            message: _messageController.text,
+          );
       if (!mounted) return;
       Navigator.pop(context);
       PateaSnack.info(context, sent == 1 ? 'Invitación enviada.' : '$sent invitaciones enviadas.');
@@ -164,7 +169,22 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                child: FilledButton(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _messageController,
+                      maxLength: 300,
+                      decoration: const InputDecoration(
+                        labelText: 'Mensaje opcional',
+                        hintText: 'Ej: Nos falta 1 hoy a las 21, ¿te sumás?',
+                        counterText: '',
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton(
                   onPressed: _selected.isEmpty || _sending ? null : _invite,
                   style: FilledButton.styleFrom(
                     backgroundColor: context.c.primary,
@@ -190,6 +210,8 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                               color: _selected.isEmpty || _sending
                                   ? context.c.textSecondary
                                   : context.c.onPrimary)),
+                    ),
+                  ],
                 ),
               ),
             ),
