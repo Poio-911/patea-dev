@@ -4,6 +4,7 @@ import '../../core/services/group_service.dart';
 import '../../core/services/team_challenge_service.dart';
 import 'match_chat_screen.dart';
 import '../../core/widgets/patea_button_progress.dart';
+import '../../core/widgets/venue_picker_field.dart';
 import 'dart:async';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
@@ -290,12 +291,14 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 
   Future<void> _showChangeVenueDialog(MatchModel match) async {
-    final controller = TextEditingController(text: match.location ?? '');
-    List<LocationSuggestion> suggestions = [];
     LocationSuggestion? selected;
-    Timer? debounce;
     bool submitting = false;
-    final locationService = LocationService();
+    final groupCountry = match.groupId != null && match.groupId!.isNotEmpty
+        ? ref
+              .read(singleGroupStreamProvider(match.groupId!))
+              .value
+              ?.countryCode
+        : null;
 
     final route = DialogRoute<void>(
       context: context,
@@ -308,59 +311,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           ),
           content: SizedBox(
             width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(
-                    hintText: 'Buscá la nueva cancha...',
-                  ),
-                  onChanged: (v) {
-                    selected = null;
-                    debounce?.cancel();
-                    debounce = Timer(
-                      const Duration(milliseconds: 300),
-                      () async {
-                        if (v.trim().length < 3) {
-                          setDialogState(() => suggestions = []);
-                          return;
-                        }
-                        final results = await locationService.suggest(v);
-                        setDialogState(() => suggestions = results);
-                      },
-                    );
-                  },
-                ),
-                if (suggestions.isNotEmpty)
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 200),
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: suggestions
-                          .map(
-                            (s) => ListTile(
-                              dense: true,
-                              title: Text(
-                                s.label,
-                                style: AppTypography.body(
-                                  color: context.c.textSecondary,
-                                  size: 12,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              onTap: () => setDialogState(() {
-                                selected = s;
-                                controller.text = s.label;
-                                suggestions = [];
-                              }),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-              ],
+            child: SingleChildScrollView(
+              child: VenuePickerField(
+                groupId: match.groupId,
+                defaultCountryCode: groupCountry,
+                selected: selected,
+                onChanged: (loc) => setDialogState(() => selected = loc),
+                labelText: 'Nueva cancha',
+                hintText: 'Buscá por nombre o elegí del grupo...',
+              ),
             ),
           ),
           actions: [
@@ -378,11 +337,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             .read(matchServiceProvider)
                             .updateMatchLocation(
                               matchId: match.id,
-                              locationName: selected!.label,
-                              locationAddress: selected!.label,
+                              locationName: selected!.name.isNotEmpty
+                                  ? selected!.name
+                                  : selected!.label,
+                              locationAddress: selected!.address.isNotEmpty
+                                  ? selected!.address
+                                  : selected!.label,
                               locationLat: selected!.lat,
                               locationLng: selected!.lng,
                               locationPlaceId: selected!.placeId,
+                              locationPhotoUrl: selected!.photoUrl,
                             );
                         if (context.mounted) Navigator.pop(context);
                       } catch (e) {
@@ -408,8 +372,6 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     );
     await Navigator.of(context, rootNavigator: true).push(route);
     await route.completed;
-    debounce?.cancel();
-    controller.dispose();
   }
 
   void _showSnack(String text) {

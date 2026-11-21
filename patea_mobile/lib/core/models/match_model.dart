@@ -11,6 +11,7 @@ class MatchLocationModel {
   final double lat;
   final double lng;
   final String placeId;
+  final String? photoUrl;
 
   MatchLocationModel({
     required this.name,
@@ -18,20 +19,30 @@ class MatchLocationModel {
     this.lat = 0,
     this.lng = 0,
     this.placeId = '',
+    this.photoUrl,
   });
 
   factory MatchLocationModel.fromMap(Map<String, dynamic> map) {
+    final rawPhoto = map['photoUrl'] as String?;
     return MatchLocationModel(
       name: map['name'] as String? ?? '',
       address: map['address'] as String? ?? '',
       lat: (map['lat'] as num?)?.toDouble() ?? 0,
       lng: (map['lng'] as num?)?.toDouble() ?? 0,
       placeId: map['placeId'] as String? ?? '',
+      photoUrl: (rawPhoto != null && rawPhoto.isNotEmpty) ? rawPhoto : null,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {'name': name, 'address': address, 'lat': lat, 'lng': lng, 'placeId': placeId};
+    return {
+      'name': name,
+      'address': address,
+      'lat': lat,
+      'lng': lng,
+      'placeId': placeId,
+      if (photoUrl != null && photoUrl!.isNotEmpty) 'photoUrl': photoUrl,
+    };
   }
 }
 

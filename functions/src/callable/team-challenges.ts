@@ -259,6 +259,7 @@ function parseLocationPayload(data: Record<string, unknown>): {
   lat: number;
   lng: number;
   placeId: string;
+  photoUrl?: string;
 } {
   const rawLoc = data.location && typeof data.location === 'object' ? (data.location as Record<string, unknown>) : null;
   const name = optionalText(rawLoc?.name ?? data.locationName, 120);
@@ -266,7 +267,8 @@ function parseLocationPayload(data: Record<string, unknown>): {
   const lat = Number(rawLoc?.lat ?? 0) || 0;
   const lng = Number(rawLoc?.lng ?? 0) || 0;
   const placeId = optionalText(rawLoc?.placeId, 160);
-  return { name, address, lat, lng, placeId };
+  const photoUrl = optionalText(rawLoc?.photoUrl, 600);
+  return { name, address, lat, lng, placeId, ...(photoUrl ? { photoUrl } : {}) };
 }
 
 function parseWeatherPayload(rawWeather: unknown): Record<string, unknown> | null {
@@ -598,12 +600,14 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
     const invLoc = invitation.proposedLocation && typeof invitation.proposedLocation === 'object'
       ? (invitation.proposedLocation as Doc)
       : null;
+    const photoUrl = optionalText(existingLoc?.photoUrl ?? invLoc?.photoUrl, 600);
     const location = {
       name: optionalText(existingLoc?.name ?? invLoc?.name ?? invitation.proposedLocationName, 120),
       address: optionalText(existingLoc?.address ?? invLoc?.address, 240),
       lat: Number(existingLoc?.lat ?? invLoc?.lat ?? 0) || 0,
       lng: Number(existingLoc?.lng ?? invLoc?.lng ?? 0) || 0,
       placeId: optionalText(existingLoc?.placeId ?? invLoc?.placeId, 160),
+      ...(photoUrl ? { photoUrl } : {}),
     };
 
     const captains = [

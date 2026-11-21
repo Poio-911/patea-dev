@@ -27,6 +27,7 @@ class MatchService {
     double locationLat = 0,
     double locationLng = 0,
     String locationPlaceId = '',
+    String? locationPhotoUrl,
     bool isPublic = false,
     List<Map<String, dynamic>> players = const [],
     List<String> playerUids = const [],
@@ -46,6 +47,8 @@ class MatchService {
       'locationLat': locationLat,
       'locationLng': locationLng,
       'locationPlaceId': locationPlaceId,
+      if (locationPhotoUrl != null && locationPhotoUrl.isNotEmpty)
+        'locationPhotoUrl': locationPhotoUrl,
       // Sin esto el partido nace privado aunque el usuario haya prendido el
       // switch: el parámetro existía y no se mandaba.
       'isPublic': isPublic,
@@ -285,6 +288,7 @@ class MatchService {
     double locationLat = 0,
     double locationLng = 0,
     String locationPlaceId = '',
+    String? locationPhotoUrl,
   }) async {
     await callFunction('updateMatchLocation', {
       'matchId': matchId,
@@ -293,6 +297,8 @@ class MatchService {
       'locationLat': locationLat,
       'locationLng': locationLng,
       'locationPlaceId': locationPlaceId,
+      if (locationPhotoUrl != null && locationPhotoUrl.isNotEmpty)
+        'locationPhotoUrl': locationPhotoUrl,
     });
   }
 

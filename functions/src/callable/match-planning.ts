@@ -192,12 +192,14 @@ export const proposeMatchLocation = onCall({ region: 'us-central1' }, async (req
     throw new HttpsError('invalid-argument', 'Falta el partido o la cancha.');
   }
 
+  const photoUrl = typeof raw.photoUrl === 'string' ? raw.photoUrl.trim() : '';
   const location = {
     name: String(raw.name ?? ''),
     address: String(raw.address ?? ''),
     lat: Number(raw.lat ?? 0),
     lng: Number(raw.lng ?? 0),
     placeId: String(raw.placeId ?? ''),
+    ...(photoUrl ? { photoUrl } : {}),
   };
   if (!location.name) throw new HttpsError('invalid-argument', 'La cancha necesita un nombre.');
 
@@ -284,6 +286,21 @@ export const confirmMatchLocation = onCall({ region: 'us-central1' }, async (req
     location: winner.location,
     isVotingOpen: false,
   });
+  const groupId = typeof match.groupId === 'string' ? match.groupId : '';
+  const loc = winner.location as Record<string, unknown> | undefined;
+  if (groupId && loc && typeof loc.name === 'string' && loc.name) {
+    const { upsertGroupVenue } = await import('../lib/places-search');
+    await upsertGroupVenue(admin.firestore(), {
+      groupId,
+      uid,
+      name: String(loc.name ?? ''),
+      address: String(loc.address ?? ''),
+      lat: Number(loc.lat ?? 0) || 0,
+      lng: Number(loc.lng ?? 0) || 0,
+      placeId: String(loc.placeId ?? ''),
+      photoUrl: typeof loc.photoUrl === 'string' ? loc.photoUrl : '',
+    }).catch(() => {});
+  }
 
   return { ok: true };
 });

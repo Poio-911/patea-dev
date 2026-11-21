@@ -2,11 +2,13 @@ import 'dart:async';
 import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_button_progress.dart';
 import '../../../core/widgets/patea_card.dart';
+import '../../../core/widgets/venue_picker_field.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
+import '../../../core/services/firestore_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/services/match_service.dart';
 import '../../../core/theme/patea_colors.dart';
@@ -190,23 +192,35 @@ class _LocationVotingState extends ConsumerState<_LocationVoting> {
   }
 
   Future<void> _propose() async {
+    final groupCountry = widget.match.groupId != null &&
+            widget.match.groupId!.isNotEmpty
+        ? ref
+              .read(singleGroupStreamProvider(widget.match.groupId!))
+              .value
+              ?.countryCode
+        : null;
     final picked = await showModalBottomSheet<LocationSuggestion>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
-      builder: (_) => const _LocationSearchSheet(),
+      builder: (_) => _LocationSearchSheet(
+        groupId: widget.match.groupId,
+        defaultCountryCode: groupCountry,
+      ),
     );
     if (picked == null) return;
 
     await _run('propose', () async {
       await ref.read(matchServiceProvider).proposeMatchLocation(widget.match.id, {
-        // El nombre corto es la primera parte de lo que devuelve Nominatim;
-        // el resto es la dirección.
-        'name': picked.label.split(',').first.trim(),
-        'address': picked.label,
+        'name': picked.name.isNotEmpty
+            ? picked.name
+            : picked.label.split(',').first.trim(),
+        'address': picked.address.isNotEmpty ? picked.address : picked.label,
         'lat': picked.lat,
         'lng': picked.lng,
         'placeId': picked.placeId,
+        if (picked.photoUrl != null && picked.photoUrl!.isNotEmpty)
+          'photoUrl': picked.photoUrl,
       });
     });
   }
@@ -258,45 +272,17 @@ class _LocationVotingState extends ConsumerState<_LocationVoting> {
 
 /// Buscador de canchas. Mismo Nominatim que el wizard de armar partido.
 class _LocationSearchSheet extends StatefulWidget {
-  const _LocationSearchSheet();
+  final String? groupId;
+  final String? defaultCountryCode;
+
+  const _LocationSearchSheet({this.groupId, this.defaultCountryCode});
 
   @override
   State<_LocationSearchSheet> createState() => _LocationSearchSheetState();
 }
 
 class _LocationSearchSheetState extends State<_LocationSearchSheet> {
-  final _service = LocationService();
-  final _controller = TextEditingController();
-  Timer? _debounce;
-  List<LocationSuggestion> _results = const [];
-  bool _searching = false;
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onChanged(String value) {
-    _debounce?.cancel();
-    // Nominatim es un servicio gratuito: no se le pega en cada tecla.
-    _debounce = Timer(const Duration(milliseconds: 450), () async {
-      if (value.trim().length < 3) {
-        setState(() => _results = const []);
-        return;
-      }
-      setState(() => _searching = true);
-      try {
-        final results = await _service.suggest(value);
-        if (mounted) setState(() => _results = results);
-      } catch (_) {
-        if (mounted) setState(() => _results = const []);
-      } finally {
-        if (mounted) setState(() => _searching = false);
-      }
-    });
-  }
+  LocationSuggestion? _selected;
 
   @override
   Widget build(BuildContext context) {
@@ -307,58 +293,41 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
         top: 20,
         bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Proponer cancha',
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Proponer cancha',
               style: AppTypography.headline(
-                  size: 14,
-                  weight: FontWeight.w800,
-                  color: context.c.textPrimary)),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            onChanged: _onChanged,
-            style: AppTypography.body(color: context.c.textSecondary, size: 14),
-            decoration: InputDecoration(
-              hintText: 'Nombre de la cancha o dirección',
-              prefixIcon: const Icon(Icons.search_rounded, size: 20),
-              suffixIcon: _searching
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: PateaButtonProgress(),
-                      ),
-                    )
-                  : null,
+                size: 16,
+                weight: FontWeight.w800,
+                color: context.c.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 280),
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                for (final r in _results)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.place_outlined, size: 20, color: context.c.textSecondary),
-                    title: Text(r.label.split(',').first.trim(),
-                        style: AppTypography.headline(size: 14, weight: FontWeight.w700)),
-                    subtitle: Text(r.label,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.body(size: 12, color: context.c.textSecondary)),
-                    onTap: () => Navigator.pop(context, r),
-                  ),
-              ],
+            const SizedBox(height: 14),
+            VenuePickerField(
+              groupId: widget.groupId,
+              defaultCountryCode: widget.defaultCountryCode,
+              selected: _selected,
+              onChanged: (loc) => setState(() => _selected = loc),
+              labelText: 'Cancha o dirección',
+              hintText: 'Buscá por nombre o elegí del grupo...',
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _selected == null
+                  ? null
+                  : () => Navigator.pop(context, _selected),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.c.primary,
+                foregroundColor: context.c.onPrimary,
+              ),
+              child: const Text('Proponer esta cancha'),
+            ),
+          ],
+        ),
       ),
     );
   }

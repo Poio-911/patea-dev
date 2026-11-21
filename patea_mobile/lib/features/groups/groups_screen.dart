@@ -19,6 +19,7 @@ import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/group_service.dart';
+import '../../core/services/location_service.dart';
 import '../../core/models/group_model.dart';
 import '../../core/models/match_model.dart';
 import '../../core/models/player_model.dart';
@@ -874,7 +875,7 @@ class _PlayedMatchRow extends StatelessWidget {
   }
 }
 
-class _GroupHeroCard extends StatelessWidget {
+class _GroupHeroCard extends ConsumerWidget {
   final GroupModel group;
   final GroupRole? role;
   final int? playersCount, teamsCount, playedCount;
@@ -894,8 +895,100 @@ class _GroupHeroCard extends StatelessWidget {
     }
   }
 
+  Future<void> _pickGroupCountry(BuildContext context, WidgetRef ref) async {
+    final options = kSupportedCountries.where((c) => c.code != null).toList();
+    final current = LocationService.defaultCountryCode(
+      groupCountryCode: group.countryCode,
+    );
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: context.c.card,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: ctx.c.border,
+                borderRadius: AppRadii.hairAll,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+              child: Row(
+                children: [
+                  Icon(Icons.public, size: 20, color: ctx.c.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'País por defecto del grupo',
+                    style: AppTypography.headline(size: 16),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (ctx, i) {
+                  final option = options[i];
+                  final selected = option.code == current;
+                  return ListTile(
+                    leading: Text(
+                      option.flag,
+                      style: const TextStyle(fontSize: 22),
+                    ),
+                    title: Text(
+                      option.name,
+                      style: AppTypography.body(
+                        color: ctx.c.textPrimary,
+                        weight: selected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                    trailing: selected
+                        ? Icon(Icons.check_circle, color: ctx.c.primary)
+                        : null,
+                    onTap: () => Navigator.of(ctx).pop(option.code),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !context.mounted) return;
+    try {
+      await ref.read(groupServiceProvider).setGroupCountry(
+            groupId: group.id,
+            countryCode: picked,
+          );
+      if (context.mounted) {
+        final chosen = findCountryOption(picked);
+        PateaSnack.ok(
+          context,
+          'País del grupo actualizado a ${chosen.flag} ${chosen.name}',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        PateaSnack.error(context, 'No se pudo cambiar el país: $e');
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final country = findCountryOption(
+      LocationService.defaultCountryCode(groupCountryCode: group.countryCode),
+    );
+    final canEditCountry =
+        role == GroupRole.admin || role == GroupRole.moderator;
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       PateaActivityCover(
@@ -963,6 +1056,36 @@ class _GroupHeroCard extends StatelessWidget {
         ],
       ),
       const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'País de búsqueda de canchas',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${country.flag} ${country.name}',
+                  style: AppTypography.body(size: 15, weight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          if (canEditCountry)
+            TextButton.icon(
+              onPressed: () => _pickGroupCountry(context, ref),
+              icon: const Icon(Icons.edit_outlined, size: 17),
+              label: const Text('Cambiar'),
+            ),
+        ],
+      ),
+      const SizedBox(height: 12),
       FilledButton.icon(
         onPressed: () => _shareInvite(context),
         icon: const Icon(Icons.share_outlined, size: 19),
@@ -973,4 +1096,5 @@ class _GroupHeroCard extends StatelessWidget {
       ),
     ],
   );
+  }
 }

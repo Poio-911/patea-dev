@@ -329,6 +329,7 @@ class GroupModel {
   final String inviteCode;
   final List<String> members;
   final String? logoUrl;
+  final String? countryCode;
   GroupModel({
     required this.id,
     required this.name,
@@ -336,6 +337,7 @@ class GroupModel {
     required this.inviteCode,
     this.members = const [],
     this.logoUrl,
+    this.countryCode,
   });
 
   factory GroupModel.fromFirestore(Map<String, dynamic> data, String id) {
@@ -346,6 +348,7 @@ class GroupModel {
       inviteCode: data['inviteCode'] ?? '',
       members: List<String>.from(data['members'] ?? []),
       logoUrl: data['logoUrl'],
+      countryCode: data['countryCode'] as String?,
     );
   }
 }

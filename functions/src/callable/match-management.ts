@@ -3,6 +3,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
 import { isMatchManager, isTeamMatch } from '../lib/match-access';
+import { upsertGroupVenue } from '../lib/places-search';
 
 /**
  * Callables de gestión de partido usadas por MatchManagementActions en la
@@ -253,15 +254,30 @@ export const updateMatchDate = onCall({ region: 'us-central1' }, async (request)
 export const updateMatchLocation = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
+  const photoUrl = String(request.data?.locationPhotoUrl ?? '').trim();
   const location = {
     name: String(request.data?.locationName ?? ''),
     address: String(request.data?.locationAddress ?? ''),
     lat: Number(request.data?.locationLat ?? 0) || 0,
     lng: Number(request.data?.locationLng ?? 0) || 0,
     placeId: String(request.data?.locationPlaceId ?? ''),
+    ...(photoUrl ? { photoUrl } : {}),
   };
-  const { ref } = await getManagedMatchOrThrow(matchId, uid);
+  const { ref, data: match } = await getManagedMatchOrThrow(matchId, uid);
   await ref.update({ location });
+  const groupId = typeof match.groupId === 'string' ? match.groupId : '';
+  if (groupId && location.name) {
+    await upsertGroupVenue(admin.firestore(), {
+      groupId,
+      uid,
+      name: location.name,
+      address: location.address,
+      lat: location.lat,
+      lng: location.lng,
+      placeId: location.placeId,
+      photoUrl,
+    }).catch(() => {});
+  }
   return { ok: true };
 });
 

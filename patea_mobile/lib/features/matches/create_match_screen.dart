@@ -22,6 +22,7 @@ import '../../core/models/team_challenge_model.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/player_select_card.dart';
+import '../../core/widgets/venue_picker_field.dart';
 import '../../core/utils/clock.dart';
 import 'challenge_team_screen.dart' show manageableTeams;
 
@@ -77,16 +78,11 @@ IconData _weatherIcon(String icon) {
 class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   int _step = 1;
   final _titleController = TextEditingController(text: 'Partido Amistoso');
-  final _locationController = TextEditingController();
-
   // Paso 1
   bool _isPlanning = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime = const TimeOfDay(hour: 21, minute: 0);
   LocationSuggestion? _selectedLocation;
-  List<LocationSuggestion> _locationSuggestions = [];
-  bool _searchingLocation = false;
-  Timer? _locationDebounce;
   WeatherForecast? _weather;
   bool _loadingWeather = false;
   Timer? _weatherDebounce;
@@ -137,14 +133,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     }
   }
 
-  final _locationService = LocationService();
   final _weatherService = WeatherService();
 
   @override
   void dispose() {
     _titleController.dispose();
-    _locationController.dispose();
-    _locationDebounce?.cancel();
     _weatherDebounce?.cancel();
     _rivalDebounce?.cancel();
     _rivalSearchController.dispose();
@@ -152,28 +145,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     super.dispose();
   }
 
-  void _onLocationChanged(String query) {
-    _locationDebounce?.cancel();
-    _locationDebounce = Timer(const Duration(milliseconds: 300), () async {
-      if (query.trim().length < 3) {
-        setState(() => _locationSuggestions = []);
-        return;
-      }
-      setState(() => _searchingLocation = true);
-      final results = await _locationService.suggest(query);
-      if (!mounted) return;
-      setState(() {
-        _locationSuggestions = results;
-        _searchingLocation = false;
-      });
-    });
-  }
-
-  void _selectLocation(LocationSuggestion loc) {
+  void _selectLocation(LocationSuggestion? loc) {
     setState(() {
       _selectedLocation = loc;
-      _locationController.text = loc.label;
-      _locationSuggestions = [];
     });
     _scheduleWeatherFetch();
   }
@@ -365,12 +339,18 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   : '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
               time: timeStr.isEmpty ? null : timeStr,
               location: {
-                'name':
-                    _selectedLocation?.label ?? _locationController.text.trim(),
-                'address': _selectedLocation?.label ?? '',
+                'name': _selectedLocation?.name ??
+                    _selectedLocation?.label ??
+                    '',
+                'address': _selectedLocation?.address ??
+                    _selectedLocation?.label ??
+                    '',
                 'lat': _selectedLocation?.lat ?? 0,
                 'lng': _selectedLocation?.lng ?? 0,
                 'placeId': _selectedLocation?.placeId ?? '',
+                if (_selectedLocation?.photoUrl != null &&
+                    _selectedLocation!.photoUrl!.isNotEmpty)
+                  'photoUrl': _selectedLocation!.photoUrl,
               },
               weather: weatherMap,
               isPublic: _isPublic,
@@ -433,11 +413,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             date: dateIso,
             time: timeStr,
             locationName:
-                _selectedLocation?.label ?? _locationController.text.trim(),
-            locationAddress: _selectedLocation?.label ?? '',
+                _selectedLocation?.name ?? _selectedLocation?.label ?? '',
+            locationAddress:
+                _selectedLocation?.address ?? _selectedLocation?.label ?? '',
             locationLat: _selectedLocation?.lat ?? 0,
             locationLng: _selectedLocation?.lng ?? 0,
             locationPlaceId: _selectedLocation?.placeId ?? '',
+            locationPhotoUrl: _selectedLocation?.photoUrl,
             isPublic: _isPublic,
             players: players,
             playerUids: playerUids,
@@ -662,83 +644,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
-            controller: _locationController,
-            onChanged: (v) {
-              if (_selectedLocation != null && v != _selectedLocation!.label) {
-                _selectedLocation = null;
-              }
-              setState(() {});
-              _onLocationChanged(v);
-              _scheduleWeatherFetch();
+          Builder(
+            builder: (context) {
+              final activeGroupId = ref.watch(activeGroupIdProvider).value;
+              final groupCountry = activeGroupId != null &&
+                      activeGroupId.isNotEmpty
+                  ? ref
+                        .watch(singleGroupStreamProvider(activeGroupId))
+                        .value
+                        ?.countryCode
+                  : null;
+              return VenuePickerField(
+                groupId: activeGroupId,
+                defaultCountryCode: groupCountry,
+                selected: _selectedLocation,
+                onChanged: _selectLocation,
+                labelText: 'Dirección o nombre de la cancha',
+                hintText: 'Ej: Plaza Fútbol 5, Carrasco...',
+              );
             },
-            style: AppTypography.body(color: context.c.textPrimary),
-            decoration: InputDecoration(
-              labelText: 'Dirección de la cancha',
-              hintText: 'Buscá y elegí una dirección',
-              filled: true,
-              fillColor: context.c.card,
-              prefixIcon: Icon(
-                Icons.location_on,
-                color: context.c.textSecondary,
-              ),
-              suffixIcon: _searchingLocation
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: PateaButtonProgress(),
-                      ),
-                    )
-                  : (_selectedLocation != null
-                        ? Icon(Icons.check_circle, color: context.c.success)
-                        : null),
-            ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              _selectedLocation == null
-                  ? 'Elegí una dirección de la lista para confirmar la cancha.'
-                  : 'Cancha confirmada',
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
-              ),
-            ),
-          ),
-          if (_locationSuggestions.isNotEmpty)
-            PateaCard(
-              color: context.c.cardSurface,
-              radius: AppRadii.cardAll,
-              borderColor: context.c.border,
-              margin: const EdgeInsets.only(top: 4),
-              child: Column(
-                children: _locationSuggestions
-                    .map(
-                      (s) => ListTile(
-                        dense: true,
-                        leading: Icon(
-                          Icons.place_outlined,
-                          size: 18,
-                          color: context.c.textSecondary,
-                        ),
-                        title: Text(
-                          s.label,
-                          style: AppTypography.body(
-                            color: context.c.textSecondary,
-                            size: 13,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onTap: () => _selectLocation(s),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
 
           const SizedBox(height: 20),
           Text(
@@ -1224,7 +1149,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             ? 'Fecha y hora a definir'
             : '${_selectedDate!.day}/${_selectedDate!.month} · ${_selectedTime?.format(context) ?? ''}';
         final venueSummary =
-            _selectedLocation?.label ?? _locationController.text.trim();
+            _selectedLocation?.name ?? _selectedLocation?.label ?? '';
 
         return ListView(
           padding: const EdgeInsets.all(20),

@@ -711,7 +711,10 @@ class _DiscoveryZoneSheetState extends State<_DiscoveryZoneSheet> {
     if (!_busy) return;
     _timer = Timer(const Duration(milliseconds: 450), () async {
       try {
-        final results = await LocationService().suggest(query);
+        final results = await LocationService().suggest(
+          query,
+          countryCode: LocationService.defaultCountryCode(),
+        );
         if (mounted && request == _request) {
           setState(() {
             _results = results;
@@ -1541,7 +1544,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                     setState(() => _suggestions = []);
                     return;
                   }
-                  final results = await _locationService.suggest(v);
+                  final results = await _locationService.suggest(
+                    v,
+                    countryCode: LocationService.defaultCountryCode(),
+                  );
                   if (mounted) setState(() => _suggestions = results);
                 });
               },
@@ -1570,11 +1576,15 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          onTap: () {
+                          onTap: () async {
                             HapticFeedback.selectionClick();
+                            final resolved = await _locationService.resolvePlace(s);
+                            if (!mounted) return;
                             setState(() {
-                              _selectedLocation = s;
-                              _locationController.text = s.label;
+                              _selectedLocation = resolved;
+                              _locationController.text = resolved.name.isNotEmpty
+                                  ? resolved.name
+                                  : resolved.label;
                               _suggestions = [];
                             });
                           },
