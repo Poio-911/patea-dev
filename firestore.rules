@@ -186,6 +186,21 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Conversaciones 1 a 1 estilo WhatsApp/Telegram entre jugadores.
+    match /directChats/{chatId} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow update: if isAuthenticated()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCounts']);
+      allow create, delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated()
+          && request.auth.uid in get(/databases/$(database)/documents/directChats/$(chatId)).data.participants;
+        allow write: if false;
+      }
+    }
+
     match /venues/{venueId} {
       allow read: if isAuthenticated();
       allow write: if false;

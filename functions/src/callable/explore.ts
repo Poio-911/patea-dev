@@ -301,6 +301,74 @@ export const getAvailableLocalPlayers = onCall({ region: 'us-central1' }, async 
  * Functions de partidos ya desplegadas) — la web también permite un rol de
  * grupo con permiso `matches.edit`, no portado acá.
  */
+export function directChatId(uidA: string, uidB: string): string {
+  return [uidA, uidB].sort().join('_');
+}
+
+async function appendDirectChatMessage(
+  db: admin.firestore.Firestore,
+  params: {
+    fromUid: string;
+    fromName: string;
+    fromPhotoUrl: string;
+    toUid: string;
+    text: string;
+    type: 'text' | 'match_invite';
+    matchPayload?: Record<string, string>;
+  },
+) {
+  const { fromUid, fromName, fromPhotoUrl, toUid, text, type, matchPayload } = params;
+  const chatId = directChatId(fromUid, toUid);
+  const chatRef = db.collection('directChats').doc(chatId);
+  const msgRef = chatRef.collection('messages').doc();
+  const now = new Date().toISOString();
+
+  const [toPlayerSnap, toUserSnap] = await Promise.all([
+    db.collection('players').doc(toUid).get(),
+    db.collection('users').doc(toUid).get(),
+  ]);
+  const toPlayer = toPlayerSnap.data() ?? {};
+  const toUser = toUserSnap.data() ?? {};
+  const toName = String(
+    toPlayer.name ?? toPlayer.displayName ?? toUser.displayName ?? 'Jugador',
+  );
+  const toPhotoUrl = String(
+    toPlayer.photoURL ?? toPlayer.photoUrl ?? toUser.photoURL ?? '',
+  );
+
+  const batch = db.batch();
+  batch.set(msgRef, {
+    senderUid: fromUid,
+    senderName: fromName,
+    senderPhotoUrl: fromPhotoUrl,
+    text,
+    type,
+    ...(matchPayload ?? {}),
+    createdAt: now,
+  });
+
+  batch.set(
+    chatRef,
+    {
+      participants: [fromUid, toUid].sort(),
+      participantInfo: {
+        [fromUid]: { name: fromName, photoUrl: fromPhotoUrl },
+        [toUid]: { name: toName, photoUrl: toPhotoUrl },
+      },
+      lastMessageText: text,
+      lastMessageAt: now,
+      lastSenderUid: fromUid,
+      unreadCounts: {
+        [toUid]: admin.firestore.FieldValue.increment(1),
+      },
+    },
+    { merge: true },
+  );
+
+  await batch.commit();
+  return { chatId, messageId: msgRef.id };
+}
+
 export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
@@ -326,6 +394,18 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
   const fromName = String(senderData.name ?? senderData.displayName ?? 'Un jugador');
   const fromPhotoUrl = String(senderData.photoURL ?? senderData.photoUrl ?? '');
 
+  const locName = typeof match.location === 'object' && match.location
+    ? String(match.location.name ?? match.location.address ?? '')
+    : String(match.location ?? '');
+  const matchPayload = {
+    matchId,
+    matchTitle: String(match.title ?? ''),
+    matchDate: String(match.date ?? ''),
+    matchTime: String(match.time ?? ''),
+    matchLocation: locName,
+  };
+  const finalText = messageText || `Te invitaron al partido "${match.title ?? 'Partido'}". ¡Sumate acá!`;
+
   const batch = db.batch();
   const now = new Date().toISOString();
   const notifiedIds: string[] = [];
@@ -344,26 +424,6 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
       status: 'pending',
       createdAt: now,
     });
-
-    const msgRef = db.collection(`users/${playerId}/messages`).doc();
-    const locName = typeof match.location === 'object' && match.location
-      ? String(match.location.name ?? match.location.address ?? '')
-      : String(match.location ?? '');
-    batch.set(msgRef, {
-      type: 'match_invite',
-      fromUid: uid,
-      fromName,
-      fromPhotoUrl,
-      text: messageText || `Te invitaron al partido "${match.title ?? 'Partido'}". ¡Sumate acá!`,
-      matchId,
-      matchTitle: String(match.title ?? ''),
-      matchDate: String(match.date ?? ''),
-      matchTime: String(match.time ?? ''),
-      matchLocation: locName,
-      isRead: false,
-      createdAt: now,
-    });
-
     notifiedIds.push(playerId);
     sent += 1;
   }
@@ -371,14 +431,28 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
 
   await batch.commit();
 
+  await Promise.all(
+    notifiedIds.map((playerId) =>
+      appendDirectChatMessage(db, {
+        fromUid: uid,
+        fromName,
+        fromPhotoUrl,
+        toUid: playerId,
+        text: finalText,
+        type: 'match_invite',
+        matchPayload,
+      }),
+    ),
+  );
+
   await sendPushToUsers(
     notifiedIds,
     {
       title: `${fromName} te invitó a jugar`,
-      body: messageText || `${match.title ?? 'Partido'} · Tocá para ver y anotarte`,
+      body: finalText,
       type: 'match_invite',
-      link: `/matches/${matchId}`,
-      extraData: { matchId },
+      link: `/messages/chat/${uid}`,
+      extraData: { matchId, fromUid: uid },
     },
     'MatchInviteMessage',
   ).catch(() => {});
@@ -387,8 +461,8 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
 });
 
 /**
- * Envía un mensaje directo a otro jugador (de tu grupo o de otro grupo),
- * opcionalmente adjuntando un partido para que se anote directo.
+ * Envía un mensaje directo en la conversación 1 a 1 entre dos jugadores
+ * (de tu grupo o de otro grupo), opcionalmente adjuntando un partido.
  */
 export const sendPlayerMessage = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
@@ -419,7 +493,7 @@ export const sendPlayerMessage = onCall({ region: 'us-central1' }, async (reques
     senderPlayer.photoURL ?? senderPlayer.photoUrl ?? senderUser.photoURL ?? '',
   );
 
-  let matchPayload: Record<string, string> = {};
+  let matchPayload: Record<string, string> | undefined;
   if (matchSnap && matchSnap.exists) {
     const m = matchSnap.data()!;
     const locName = typeof m.location === 'object' && m.location
@@ -434,17 +508,14 @@ export const sendPlayerMessage = onCall({ region: 'us-central1' }, async (reques
     };
   }
 
-  const now = new Date().toISOString();
-  const msgRef = db.collection(`users/${toUid}/messages`).doc();
-  await msgRef.set({
-    type: matchPayload.matchId ? 'match_invite' : 'direct_message',
+  const { chatId, messageId } = await appendDirectChatMessage(db, {
     fromUid: uid,
     fromName,
     fromPhotoUrl,
+    toUid,
     text,
-    ...matchPayload,
-    isRead: false,
-    createdAt: now,
+    type: matchPayload ? 'match_invite' : 'text',
+    matchPayload,
   });
 
   await sendPushToUsers(
@@ -453,11 +524,11 @@ export const sendPlayerMessage = onCall({ region: 'us-central1' }, async (reques
       title: `Mensaje de ${fromName}`,
       body: text,
       type: 'player_message',
-      link: matchPayload.matchId ? `/matches/${matchPayload.matchId}` : '/messages',
-      extraData: matchPayload.matchId ? { matchId: matchPayload.matchId } : {},
+      link: `/messages/chat/${uid}`,
+      extraData: { fromUid: uid, ...(matchPayload ?? {}) },
     },
     'PlayerMessage',
   ).catch(() => {});
 
-  return { ok: true, messageId: msgRef.id };
+  return { ok: true, chatId, messageId };
 });

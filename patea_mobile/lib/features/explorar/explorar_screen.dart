@@ -8,7 +8,6 @@ import '../../core/widgets/patea_card.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
-import '../messages/messages_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1208,21 +1207,14 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
-                  onPressed: () async {
-                    final ok = await showSendPlayerMessageDialog(
-                      context: context,
-                      ref: ref,
-                      toUid: player.uid,
-                      toName: player.displayName,
-                      initialMatchId: selected?.id,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    final photoParam = player.photoUrl != null && player.photoUrl!.isNotEmpty
+                        ? '&photo=${Uri.encodeComponent(player.photoUrl!)}'
+                        : '';
+                    context.push(
+                      '/messages/chat/${player.uid}?name=${Uri.encodeComponent(player.displayName)}$photoParam',
                     );
-                    if (ok && context.mounted) {
-                      Navigator.pop(context);
-                      PateaSnack.ok(
-                        context,
-                        'Mensaje enviado a ${player.displayName}',
-                      );
-                    }
                   },
                   icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
                   label: const Text('Enviar mensaje'),

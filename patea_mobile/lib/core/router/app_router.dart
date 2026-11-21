@@ -223,6 +223,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => _withBackground(const MessagesScreen()),
       ),
       GoRoute(
+        path: '/messages/chat/:otherUid',
+        builder: (context, state) {
+          final otherUid = state.pathParameters['otherUid'] ?? '';
+          final name = state.uri.queryParameters['name'] ?? 'Jugador';
+          final photo = state.uri.queryParameters['photo'];
+          return _withBackground(
+            DirectChatScreen(
+              otherUid: otherUid,
+              otherName: name,
+              otherPhotoUrl: photo,
+            ),
+          );
+        },
+      ),
+      GoRoute(
         path: '/groups/teams/new',
         builder: (context, state) {
           final groupId = state.uri.queryParameters['groupId'] ?? '';
