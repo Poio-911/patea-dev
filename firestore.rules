@@ -188,7 +188,9 @@ service cloud.firestore {
 
     // Conversaciones 1 a 1 estilo WhatsApp/Telegram entre jugadores.
     match /directChats/{chatId} {
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow read: if isAuthenticated()
+        && (request.auth.uid in chatId.split('_')
+            || (resource != null && request.auth.uid in resource.data.participants));
       allow update: if isAuthenticated()
         && request.auth.uid in resource.data.participants
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCounts']);
@@ -196,7 +198,9 @@ service cloud.firestore {
 
       match /messages/{messageId} {
         allow read: if isAuthenticated()
-          && request.auth.uid in get(/databases/$(database)/documents/directChats/$(chatId)).data.participants;
+          && (request.auth.uid in chatId.split('_')
+              || (exists(/databases/$(database)/documents/directChats/$(chatId))
+                  && request.auth.uid in get(/databases/$(database)/documents/directChats/$(chatId)).data.participants));
         allow write: if false;
       }
     }
