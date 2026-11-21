@@ -23,6 +23,7 @@ class SearchFake extends Fake implements ExploreService {
   Future<int> sendMatchInvitations({
     required String matchId,
     required List<String> playerIds,
+    String? message,
   }) async {
     invitations++;
     return playerIds.length;
@@ -263,7 +264,10 @@ void main() {
       await mount(tester, search);
       expect(search.requests.length, 1);
       await tapVisible(tester, find.byTooltip('Distancia de búsqueda').first);
-      await tapVisible(tester, find.text('30 km').first);
+      await tapVisible(
+        tester,
+        find.widgetWithText(CheckedPopupMenuItem<double>, 'Hasta 30 km'),
+      );
       await tester.pump();
       expect(search.radii, [15, 30]);
       search.requests.last.complete([
@@ -335,6 +339,27 @@ void main() {
       );
     },
   );
+  testWidgets('Partidos permite filtrar por ingreso y restablecer', (
+    tester,
+  ) async {
+    final search = SearchFake();
+    await mount(tester, search, games: [fixture()]);
+    search.requests.single.complete([]);
+    await tester.pump();
+    await tapVisible(tester, find.text('Partidos').first);
+    expect(find.text('1 partido para jugar'), findsOneWidget);
+
+    await tapVisible(tester, find.byTooltip('Ingreso'));
+    await tapVisible(
+      tester,
+      find.widgetWithText(CheckedPopupMenuItem<String>, 'Ingreso directo'),
+    );
+    expect(find.text('0 partidos para jugar'), findsOneWidget);
+
+    await tapVisible(tester, find.text('Restablecer filtros'));
+    expect(find.text('1 partido para jugar'), findsOneWidget);
+  });
+
   testWidgets(
     'Request requires review, cancellation sends nothing, and confirmed request is retained',
     (tester) async {

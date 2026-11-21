@@ -99,10 +99,8 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
               description: spec(Section.explorar).description,
               showCountRow: false,
               helpTooltip: 'Cómo funciona Explorar',
-              onHelpTap: () => showContextualHelpSheet(
-                context,
-                topic: HelpTopic.explore,
-              ),
+              onHelpTap: () =>
+                  showContextualHelpSheet(context, topic: HelpTopic.explore),
             ),
           ),
           Padding(
@@ -252,113 +250,88 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
         children: [
-          PateaCard(
-            color: context.c.card,
-            radius: AppRadii.cardAll,
-            borderColor: context.c.border.withValues(alpha: 0.45),
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    selected == null
+                        ? Icons.travel_explore
+                        : Icons.sports_soccer,
+                    size: 18,
+                    color: context.c.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selected?.id ?? '',
+                        isExpanded: true,
+                        style: AppTypography.body(
+                          size: 14,
+                          weight: FontWeight.w600,
+                          color: context.c.textPrimary,
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('En mi zona'),
+                          ),
+                          ...matches.map(
+                            (m) => DropdownMenuItem(
+                              value: m.id,
+                              child: Text(
+                                m.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) => setState(() {
+                          _selectedMatchId = v == '' ? null : v;
+                          _zone = null;
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (selected != null) ...[
+                const SizedBox(height: 6),
                 Text(
-                  'Buscar jugadores para',
+                  '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0 ? 'Cupo abierto' : '${selected.matchSize - selected.playerUids.length} lugares'}',
                   style: AppTypography.body(
-                    size: 11,
-                    weight: FontWeight.w600,
+                    size: 12,
                     color: context.c.textSecondary,
                   ),
                 ),
+              ],
+              if (owned.hasError) ...[
                 const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: context.c.cardSurface,
-                    borderRadius: AppRadii.chipAll,
-                    border: Border.all(color: context.c.border),
+                Text(
+                  'No pudimos cargar tus partidos. Podés buscar en tu zona.',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        selected == null
-                            ? Icons.travel_explore
-                            : Icons.sports_soccer,
-                        size: 18,
-                        color: context.c.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selected?.id ?? '',
-                            isExpanded: true,
-                            style: AppTypography.body(
-                              size: 14,
-                              weight: FontWeight.w600,
-                              color: context.c.textPrimary,
-                            ),
-                            items: [
-                              const DropdownMenuItem(
-                                value: '',
-                                child: Text('En mi zona'),
-                              ),
-                              ...matches.map(
-                                (m) => DropdownMenuItem(
-                                  value: m.id,
-                                  child: Text(
-                                    m.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            onChanged: (v) => setState(() {
-                              _selectedMatchId = v == '' ? null : v;
-                              _zone = null;
-                            }),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (selected != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0 ? 'Cupo abierto' : '${selected.matchSize - selected.playerUids.length} lugares'}',
-                    style: AppTypography.body(
-                      size: 12,
-                      color: context.c.textSecondary,
-                    ),
-                  ),
-                ],
-                if (owned.hasError) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'No pudimos cargar tus partidos. Podés buscar en tu zona.',
-                    style: AppTypography.body(
-                      size: 12,
-                      color: context.c.textSecondary,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                _ZoneControl(
-                  zone: zone,
-                  radius: _radius,
-                  suggested: _zone == null && saved == null && loc == null,
-                  onZone: (z) => setState(() => _zone = z),
-                  onRadius: (v) => setState(() => _radius = v),
                 ),
               ],
-            ),
+              const SizedBox(height: 10),
+              _ZoneControl(
+                zone: zone,
+                radius: _radius,
+                suggested: _zone == null && saved == null && loc == null,
+                onZone: (z) => setState(() => _zone = z),
+                onRadius: (v) => setState(() => _radius = v),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          PateaCard(
-            color: context.c.card,
-            radius: AppRadii.cardAll,
-            borderColor: context.c.border.withValues(alpha: 0.45),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: context.c.border),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: ListTile(
               key: const ValueKey('my-explore-availability'),
               contentPadding: EdgeInsets.zero,
@@ -369,13 +342,18 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                     ? context.c.success
                     : context.c.textSecondary,
               ),
-              title: Row(
+              title: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     'Tu disponibilidad',
-                    style: AppTypography.body(size: 14, weight: FontWeight.w700),
+                    style: AppTypography.body(
+                      size: 14,
+                      weight: FontWeight.w700,
+                    ),
                   ),
-                  const SizedBox(width: 8),
                   if (!available.isLoading && !available.hasError)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -420,7 +398,10 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                 ),
               ),
               trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: context.c.cardSurface,
                   borderRadius: AppRadii.pillAll,
@@ -455,23 +436,17 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
             style: AppTypography.headline(size: 17),
           ),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final pos in ['Todos', 'POR', 'DEF', 'MED', 'DEL'])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(pos),
-                      selected: _position == (pos == 'Todos' ? null : pos),
-                      onSelected: (_) => setState(
-                        () => _position = pos == 'Todos' ? null : pos,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          Wrap(
+            spacing: 4,
+            children: [
+              for (final pos in ['Todos', 'POR', 'DEF', 'MED', 'DEL'])
+                _PositionFilter(
+                  label: pos,
+                  selected: _position == (pos == 'Todos' ? null : pos),
+                  onTap: () =>
+                      setState(() => _position = pos == 'Todos' ? null : pos),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           if (_loading)
@@ -649,125 +624,142 @@ class _DiscoveryPlayerRow extends StatelessWidget {
   );
 }
 
+class _PositionFilter extends StatelessWidget {
+  const _PositionFilter({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    selected: selected,
+    child: TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: selected ? context.c.primary : context.c.textSecondary,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(44, 44),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: selected ? context.c.primary : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(label),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ExploreFilterMenu<T> extends StatelessWidget {
+  const _ExploreFilterMenu({
+    required this.tooltip,
+    required this.value,
+    required this.options,
+    required this.onSelected,
+  });
+
+  final String tooltip;
+  final T value;
+  final Map<T, String> options;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<T>(
+    tooltip: tooltip,
+    initialValue: value,
+    onSelected: onSelected,
+    itemBuilder: (_) => [
+      for (final entry in options.entries)
+        CheckedPopupMenuItem<T>(
+          value: entry.key,
+          checked: entry.key == value,
+          child: Text(entry.value),
+        ),
+    ],
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              options[value] ?? '',
+              style: AppTypography.body(size: 13, weight: FontWeight.w600),
+            ),
+          ),
+          const Icon(Icons.expand_more, size: 16),
+        ],
+      ),
+    ),
+  );
+}
+
 class _ZoneControl extends StatelessWidget {
-  final LocationSuggestion zone;
-  final double radius;
-  final bool suggested;
-  final ValueChanged<LocationSuggestion> onZone;
-  final ValueChanged<double> onRadius;
   const _ZoneControl({
     required this.zone,
     required this.radius,
     required this.onZone,
     required this.onRadius,
     this.suggested = false,
+    this.allowAllZones = false,
   });
+
+  final LocationSuggestion zone;
+  final double radius;
+  final bool suggested;
+  final bool allowAllZones;
+  final ValueChanged<LocationSuggestion> onZone;
+  final ValueChanged<double> onRadius;
+
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      Expanded(
-        flex: 3,
-        child: InkWell(
-          borderRadius: AppRadii.pillAll,
-          onTap: () async {
-            final value = await showModalBottomSheet<LocationSuggestion>(
-              context: context,
-              isScrollControlled: true,
-              useRootNavigator: true,
-              builder: (_) => const _DiscoveryZoneSheet(),
-            );
-            if (value != null) onZone(value);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: context.c.cardSurface,
-              borderRadius: AppRadii.pillAll,
-              border: Border.all(color: context.c.border),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.location_on_outlined,
-                  size: 16,
-                  color: context.c.primary,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    zone.name.isNotEmpty ? zone.name : zone.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(
-                      size: 12,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Cambiar',
-                  style: AppTypography.body(
-                    size: 11,
-                    weight: FontWeight.w700,
-                    color: context.c.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      TextButton.icon(
+        icon: const Icon(Icons.location_on_outlined, size: 17),
+        label: Text(
+          zone.name.isNotEmpty ? zone.name : zone.label,
+          overflow: TextOverflow.ellipsis,
         ),
+        onPressed: () async {
+          final value = await showModalBottomSheet<LocationSuggestion>(
+            context: context,
+            isScrollControlled: true,
+            useRootNavigator: true,
+            builder: (_) => const _DiscoveryZoneSheet(),
+          );
+          if (value != null && context.mounted) onZone(value);
+        },
       ),
-      const SizedBox(width: 8),
-      Flexible(
-        flex: 2,
-        child: PopupMenuButton<double>(
-          tooltip: 'Distancia de búsqueda',
-          initialValue: radius,
-          onSelected: onRadius,
-          itemBuilder: (_) => [
-            if (radius == 0)
-              const PopupMenuItem(value: 0, child: Text('Todas las zonas')),
-            for (final km in [5.0, 15.0, 30.0, 50.0])
-              PopupMenuItem(
-                value: km,
-                child: Text('${km.toInt()} km'),
-              ),
-          ],
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-            decoration: BoxDecoration(
-              color: context.c.cardSurface,
-              borderRadius: AppRadii.pillAll,
-              border: Border.all(color: context.c.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    radius == 0
-                        ? 'Todas las zonas'
-                        : 'Hasta ${radius.toInt()} km',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(
-                      size: 12,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 2),
-                Icon(
-                  Icons.arrow_drop_down,
-                  size: 16,
-                  color: context.c.textSecondary,
-                ),
-              ],
-            ),
-          ),
+      _ExploreFilterMenu<double>(
+        tooltip: 'Distancia de búsqueda',
+        value: radius,
+        options: {
+          for (final km in [5.0, 15.0, 30.0, 50.0])
+            km: 'Hasta ${km.toInt()} km',
+          if (allowAllZones) 0: 'Todas las zonas',
+        },
+        onSelected: onRadius,
+      ),
+      if (suggested)
+        Text(
+          'Zona sugerida',
+          style: AppTypography.body(size: 12, color: context.c.textSecondary),
         ),
-      ),
     ],
   );
 }
@@ -1100,9 +1092,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                               ),
                             ),
                             Text(
-                              'OVR ${player.ovr > 0
-                                      ? player.ovr.toString()
-                                      : '—'}',
+                              'OVR ${player.ovr > 0 ? player.ovr.toString() : '—'}',
                               style: AppTypography.body(
                                 size: 13,
                                 weight: FontWeight.w600,
@@ -1209,7 +1199,8 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
-                    final photoParam = player.photoUrl != null && player.photoUrl!.isNotEmpty
+                    final photoParam =
+                        player.photoUrl != null && player.photoUrl!.isNotEmpty
                         ? '&photo=${Uri.encodeComponent(player.photoUrl!)}'
                         : '';
                     context.push(
@@ -1702,11 +1693,13 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                           ),
                           onTap: () async {
                             HapticFeedback.selectionClick();
-                            final resolved = await _locationService.resolvePlace(s);
+                            final resolved = await _locationService
+                                .resolvePlace(s);
                             if (!mounted) return;
                             setState(() {
                               _selectedLocation = resolved;
-                              _locationController.text = resolved.name.isNotEmpty
+                              _locationController.text =
+                                  resolved.name.isNotEmpty
                                   ? resolved.name
                                   : resolved.label;
                               _suggestions = [];
@@ -2140,72 +2133,54 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
         return ListView(
           padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
           children: [
-            PateaCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ZoneControl(
-                    zone: zone,
-                    radius: _radius,
-                    onZone: (v) => setState(() => _zone = v),
-                    onRadius: (v) => setState(() => _radius = v),
-                  ),
-                  FilterChip(
-                    label: const Text('Todas las zonas'),
-                    selected: _radius == 0,
-                    onSelected: (_) =>
-                        setState(() => _radius = _radius == 0 ? 15 : 0),
-                  ),
-                  const SizedBox(height: 8),
-                  ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Fecha e ingreso'),
-                    subtitle: Text(
-                      '${_date == 'Todos' ? 'Cualquier fecha' : _date} · ${_admission == 'Todos' ? 'Cualquier ingreso' : _admission}',
-                    ),
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final value in ['Todos', 'Hoy', '7 días'])
-                            ChoiceChip(
-                              label: Text(
-                                value == 'Todos' ? 'Cualquier fecha' : value,
-                              ),
-                              selected: _date == value,
-                              onSelected: (_) => setState(() => _date = value),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final value in [
-                            'Todos',
-                            'Directa',
-                            'Con aprobación',
-                          ])
-                            ChoiceChip(
-                              label: Text(
-                                value == 'Todos' ? 'Cualquier ingreso' : value,
-                              ),
-                              selected: _admission == value,
-                              onSelected: (_) =>
-                                  setState(() => _admission = value),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            _ZoneControl(
+              zone: zone,
+              radius: _radius,
+              onZone: (v) => setState(() => _zone = v),
+              onRadius: (v) => setState(() => _radius = v),
+              allowAllZones: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              children: [
+                _ExploreFilterMenu<String>(
+                  tooltip: 'Fecha',
+                  value: _date,
+                  options: const {
+                    'Todos': 'Cualquier fecha',
+                    'Hoy': 'Hoy',
+                    '7 días': 'Próximos 7 días',
+                  },
+                  onSelected: (v) => setState(() => _date = v),
+                ),
+                _ExploreFilterMenu<String>(
+                  tooltip: 'Ingreso',
+                  value: _admission,
+                  options: const {
+                    'Todos': 'Cualquier ingreso',
+                    'Directa': 'Ingreso directo',
+                    'Con aprobación': 'Con aprobación',
+                  },
+                  onSelected: (v) => setState(() => _admission = v),
+                ),
+                if (_date != 'Todos' || _admission != 'Todos' || _radius != 15)
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _date = 'Todos';
+                      _admission = 'Todos';
+                      _radius = 15;
+                    }),
+                    child: const Text('Restablecer filtros'),
+                  ),
+              ],
+            ),
+            Divider(height: 16, color: context.c.border),
             Text(
-              '${filtered.length} partidos para jugar',
-              style: AppTypography.body(size: 14, weight: FontWeight.w700),
+              filtered.length == 1
+                  ? '1 partido para jugar'
+                  : '${filtered.length} partidos para jugar',
+              style: AppTypography.headline(size: 17),
             ),
             const SizedBox(height: 12),
             if (filtered.isEmpty) ...[
@@ -2333,7 +2308,7 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
     return PateaCard(
       color: context.c.card,
       radius: AppRadii.cardAll,
-      borderColor: theme.brandColor.withValues(alpha: 0.35),
+      borderColor: context.c.border.withValues(alpha: 0.55),
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
