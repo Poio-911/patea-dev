@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { sendPushToUsers } from '../lib/fcm-push';
-import { assertCanJoinMatch } from '../lib/match-access';
+import { assertCanJoinMatch, userCanManageMatch } from '../lib/match-access';
 
 /**
  * Solicitudes de unión a un partido, con aprobación del organizador.
@@ -123,8 +123,8 @@ export const respondJoinRequest = onCall({ region: 'us-central1' }, async (reque
   if (!matchSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
   const match = matchSnap.data()!;
 
-  if (match.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Sólo el organizador decide quién entra.');
+  if (!(await userCanManageMatch(db, match, uid))) {
+    throw new HttpsError('permission-denied', 'Sólo los organizadores deciden quién entra.');
   }
 
   const requestRef = db.collection(`matches/${matchId}/joinRequests`).doc(requesterId);

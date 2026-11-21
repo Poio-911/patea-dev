@@ -390,3 +390,71 @@ export const deleteTeam = onCall({ region: 'us-central1' }, async (request) => {
   await cleanupTeamRivals(db, teamId);
   return { ok: true };
 });
+
+/**
+ * Permite a un admin del grupo cambiar el rol de otro miembro
+ * ('admin' | 'moderator' | 'member'). El creador del grupo (ownerUid)
+ * siempre conserva el rol 'admin'.
+ */
+export const setGroupMemberRole = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const groupId = String(request.data?.groupId ?? '').trim();
+  const targetUid = String(request.data?.userId ?? '').trim();
+  const nextRole = String(request.data?.role ?? '').trim() as GroupRole;
+
+  if (!groupId || groupId.includes('/')) {
+    throw new HttpsError('invalid-argument', 'groupId inválido.');
+  }
+  if (!targetUid || targetUid.includes('/')) {
+    throw new HttpsError('invalid-argument', 'userId inválido.');
+  }
+  if (!(['admin', 'moderator', 'member'] as const).includes(nextRole)) {
+    throw new HttpsError('invalid-argument', 'Rol inválido.');
+  }
+
+  const db = admin.firestore();
+  const groupRef = db.collection('groups').doc(groupId);
+  const groupSnap = await groupRef.get();
+  if (!groupSnap.exists) {
+    throw new HttpsError('not-found', 'El grupo no existe.');
+  }
+  const group = groupSnap.data()!;
+  const callerRole = resolveGroupRole(group, uid);
+  if (callerRole !== 'admin') {
+    throw new HttpsError('permission-denied', 'Solo un admin del grupo puede cambiar roles.');
+  }
+  if (group.ownerUid === targetUid) {
+    throw new HttpsError('failed-precondition', 'No se puede cambiar el rol del creador del grupo.');
+  }
+  const members: string[] = Array.isArray(group.members) ? group.members : [];
+  if (!members.includes(targetUid)) {
+    throw new HttpsError('failed-precondition', 'El usuario no pertenece a este grupo.');
+  }
+
+  const now = new Date().toISOString();
+  const existingRoles: Array<Record<string, any>> = Array.isArray(group.memberRoles)
+    ? [...group.memberRoles]
+    : [];
+  const idx = existingRoles.findIndex((m) => m?.userId === targetUid);
+  if (idx >= 0) {
+    existingRoles[idx] = {
+      ...existingRoles[idx],
+      userId: targetUid,
+      role: nextRole,
+      updatedAt: now,
+      updatedBy: uid,
+    };
+  } else {
+    existingRoles.push({
+      userId: targetUid,
+      role: nextRole,
+      joinedAt: now,
+      addedBy: uid,
+      updatedAt: now,
+      updatedBy: uid,
+    });
+  }
+
+  await groupRef.update({ memberRoles: existingRoles });
+  return { ok: true, userId: targetUid, role: nextRole };
+});

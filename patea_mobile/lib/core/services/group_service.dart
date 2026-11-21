@@ -37,6 +37,18 @@ class GroupService {
     await callFunction('setActiveGroup', {'groupId': groupId});
   }
 
+  Future<void> setGroupMemberRole({
+    required String groupId,
+    required String userId,
+    required GroupRole role,
+  }) async {
+    await callFunction('setGroupMemberRole', {
+      'groupId': groupId,
+      'userId': userId,
+      'role': role.name,
+    });
+  }
+
   Future<String> setGroupCountry({
     required String groupId,
     required String countryCode,

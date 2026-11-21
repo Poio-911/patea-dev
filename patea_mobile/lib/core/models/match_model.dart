@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'group_permissions.dart';
 import 'group_model.dart' show JerseyModel;
 
 /// Port de MatchLocation (src/lib/types.ts) — el string plano en
@@ -55,6 +56,7 @@ class MatchPlayerEntry {
   final int ovr;
   final String position;
   final String? photoURL;
+  final bool isGuest;
 
   MatchPlayerEntry({
     required this.uid,
@@ -62,15 +64,18 @@ class MatchPlayerEntry {
     this.ovr = 0,
     this.position = '',
     this.photoURL,
+    this.isGuest = false,
   });
 
   factory MatchPlayerEntry.fromMap(Map<String, dynamic> map) {
+    final uid = (map['uid'] ?? map['id'] ?? '').toString();
     return MatchPlayerEntry(
-      uid: (map['uid'] ?? map['id'] ?? '').toString(),
+      uid: uid,
       displayName: map['displayName'] as String? ?? map['name'] as String? ?? 'Jugador',
       ovr: (map['ovr'] as num?)?.toInt() ?? 0,
       position: map['position'] as String? ?? '',
       photoURL: map['photoURL'] as String? ?? map['photoUrl'] as String?,
+      isGuest: map['isGuest'] == true || uid.startsWith('guest_'),
     );
   }
 }
@@ -444,6 +449,7 @@ class MatchModel {
   /// Un capitán por equipo en los partidos entre grupos. Fijan fecha y cancha,
   /// inician y cierran el partido igual que el organizador.
   final List<String> captains;
+  final List<String> coOrganizerUids;
   final int matchSize;
   final MatchTeam? teamA;
   final MatchTeam? teamB;
@@ -483,11 +489,17 @@ class MatchModel {
   /// No admite jugadores sueltos: cada uno juega por su equipo.
   bool get isTeamMatch => type == 'by_teams' || type == 'intergroup_friendly';
 
-  /// Organizador o capitán: quienes pueden fijar fecha y cancha, iniciar,
-  /// dirigir en vivo y cerrar el partido. Borrarlo y repartir los equipos
-  /// sigue siendo sólo del organizador.
-  bool isManagedBy(String? uid) =>
-      uid != null && (ownerUid == uid || captains.contains(uid));
+  /// Organizador, co-organizador, capitán o admin/moderador del grupo:
+  /// quienes pueden gestionar el partido (fijar fecha/cancha, sumar jugadores,
+  /// equilibrar equipos, iniciar, dirigir en vivo y finalizar). Borrarlo sigue
+  /// siendo del organizador creador.
+  bool isManagedBy(String? uid, {GroupRole? groupRole}) =>
+      uid != null &&
+      (ownerUid == uid ||
+          captains.contains(uid) ||
+          coOrganizerUids.contains(uid) ||
+          groupRole == GroupRole.admin ||
+          groupRole == GroupRole.moderator);
 
   static List<String> _strList(dynamic raw) => ((raw as List<dynamic>?) ?? const [])
       .whereType<String>()
@@ -537,6 +549,7 @@ class MatchModel {
     this.participantGroupIds = const [],
     this.participantTeamIds = const [],
     this.captains = const [],
+    this.coOrganizerUids = const [],
     this.matchSize = 0,
     this.teamA,
     this.teamB,
@@ -626,6 +639,7 @@ class MatchModel {
       participantGroupIds: _strList(data['participantGroupIds']),
       participantTeamIds: _strList(data['participantTeamIds']),
       captains: _strList(data['captains']),
+      coOrganizerUids: _strList(data['coOrganizerUids']),
       matchSize: (data['matchSize'] as num?)?.toInt() ?? 0,
       teamA: tA,
       teamB: tB,

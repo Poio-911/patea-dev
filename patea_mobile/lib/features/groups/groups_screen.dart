@@ -569,6 +569,17 @@ class _ActiveGroupView extends ConsumerWidget {
             const SizedBox(height: 20),
 
             _Section(
+              icon: Icons.manage_accounts_outlined,
+              title: 'Miembros y roles (${group.members.length})',
+              child: _GroupMembersSection(
+                group: group,
+                myRole: role,
+                playersById: playersById,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _Section(
               icon: Icons.newspaper_outlined,
               title: 'En agenda',
               child: upcoming.isEmpty
@@ -1277,6 +1288,174 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GroupMembersSection extends ConsumerStatefulWidget {
+  final GroupModel group;
+  final GroupRole? myRole;
+  final Map<String, PlayerModel> playersById;
+
+  const _GroupMembersSection({
+    required this.group,
+    required this.myRole,
+    required this.playersById,
+  });
+
+  @override
+  ConsumerState<_GroupMembersSection> createState() =>
+      _GroupMembersSectionState();
+}
+
+class _GroupMembersSectionState extends ConsumerState<_GroupMembersSection> {
+  String? _busyUid;
+
+  GroupRole _parseRole(String raw) => switch (raw) {
+    'admin' => GroupRole.admin,
+    'moderator' => GroupRole.moderator,
+    _ => GroupRole.member,
+  };
+
+  Future<void> _changeRole(String memberUid, GroupRole nextRole) async {
+    setState(() => _busyUid = memberUid);
+    try {
+      await ref.read(groupServiceProvider).setGroupMemberRole(
+            groupId: widget.group.id,
+            userId: memberUid,
+            role: nextRole,
+          );
+      if (mounted) {
+        PateaSnack.ok(context, 'Rol actualizado a ${roleLabel(nextRole)}');
+      }
+    } catch (e) {
+      if (mounted) {
+        PateaSnack.error(context, 'No se pudo cambiar el rol: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _busyUid = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canManageRoles = widget.myRole == GroupRole.admin;
+    final members = widget.group.members;
+    if (members.isEmpty) {
+      return Text(
+        'No hay miembros en el grupo.',
+        style: AppTypography.body(size: 12, color: context.c.textSecondary),
+      );
+    }
+
+    return Column(
+      children: members.map((memberUid) {
+        final player = widget.playersById[memberUid];
+        final isOwner = memberUid == widget.group.ownerUid;
+        final memberRole = _parseRole(widget.group.roleFor(memberUid));
+        final displayName =
+            player?.name ?? (isOwner ? 'Creador del grupo' : 'Jugador');
+
+        return PateaCard(
+          color: context.c.cardSurface.withValues(alpha: 0.5),
+          radius: AppRadii.cardAll,
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            children: [
+              PateaAvatar(
+                photoUrl: player?.photoUrl,
+                seed: displayName,
+                size: 36,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(
+                        size: 13,
+                        weight: FontWeight.w700,
+                        color: context.c.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      isOwner ? 'Creador · Admin' : roleLabel(memberRole),
+                      style: AppTypography.body(
+                        size: 11,
+                        color: memberRole == GroupRole.member
+                            ? context.c.textSecondary
+                            : context.c.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (canManageRoles && !isOwner)
+                _busyUid == memberUid
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : PopupMenuButton<GroupRole>(
+                        initialValue: memberRole,
+                        onSelected: (next) {
+                          if (next != memberRole) _changeRole(memberUid, next);
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: GroupRole.admin,
+                            child: Text('Admin (grupo y partidos)'),
+                          ),
+                          const PopupMenuItem(
+                            value: GroupRole.moderator,
+                            child: Text('Moderador (equipos y partidos)'),
+                          ),
+                          const PopupMenuItem(
+                            value: GroupRole.member,
+                            child: Text('Miembro'),
+                          ),
+                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.c.card,
+                            borderRadius: AppRadii.pillAll,
+                            border: Border.all(color: context.c.border),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                roleLabel(memberRole),
+                                style: AppTypography.body(
+                                  size: 11,
+                                  weight: FontWeight.w700,
+                                  color: context.c.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                size: 16,
+                                color: context.c.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

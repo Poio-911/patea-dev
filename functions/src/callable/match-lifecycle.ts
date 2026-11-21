@@ -1,6 +1,6 @@
 import { prepareLiveRoster } from '../lib/live-team-rosters';
 import { isGeneratingTeams, matchRosterIds, regenerateMatchTeams } from './match-management';
-import { assertCanJoinMatch, isMatchManager } from '../lib/match-access';
+import { assertCanJoinMatch, userCanManageMatch } from '../lib/match-access';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
@@ -32,10 +32,14 @@ export const startMatch = onCall({ region: 'us-central1' }, async (request) => {
   const matchId = String(request.data?.matchId ?? '');
   const db = admin.firestore();
   const ref = db.collection('matches').doc(matchId);
+  const preSnap = await ref.get();
+  if (!preSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+  if (!(await userCanManageMatch(db, preSnap.data()!, uid))) {
+    throw new HttpsError('permission-denied', 'Sólo los organizadores o capitanes pueden iniciar el partido.');
+  }
   await db.runTransaction(async tx => {
     const data = (await tx.get(ref)).data();
     if (!data) throw new HttpsError('not-found', 'El partido no existe.');
-    if (!isMatchManager(data, uid)) throw new HttpsError('permission-denied', 'Sólo el organizador o los capitanes pueden iniciar el partido.');
     if (data.status === 'active') return;
     if (data.status !== 'upcoming') throw new HttpsError('failed-precondition', 'Confirmá fecha y equipos antes de iniciar.');
     if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
@@ -71,8 +75,8 @@ export const updateLiveMinute = onCall({ region: 'us-central1' }, async (request
   const minute = Number(request.data?.minute ?? 0);
   const liveStatus = String(request.data?.liveStatus ?? '');
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (data.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Solo el organizador puede actualizar el minuto en vivo.');
+  if (!(await userCanManageMatch(admin.firestore(), data, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores pueden actualizar el minuto en vivo.');
   }
   // Se congela el reloj en el minuto que mandó el cliente: es lo único
   // coherente, porque esas versiones no saben de `periodStartTs`.
@@ -119,8 +123,8 @@ export const updateLiveState = onCall({ region: 'us-central1' }, async (request)
   }
 
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (!isMatchManager(data, uid)) {
-    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden controlar el partido en vivo.');
+  if (!(await userCanManageMatch(admin.firestore(), data, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores o capitanes pueden controlar el partido en vivo.');
   }
 
   const updates: Record<string, unknown> = {
@@ -293,10 +297,12 @@ export const recordLiveEvent = onCall({ region: 'us-central1' }, async (request)
 });
 export async function recordLiveEventCore(db: admin.firestore.Firestore,uid: string,matchId: string,event: Record<string,any>) {
   const ref=db.collection('matches').doc(matchId);
+  const preSnap = await ref.get();
+  if(!preSnap.exists) throw new HttpsError('not-found','El partido no existe.');
+  if(!(await userCanManageMatch(db,preSnap.data()!,uid))) throw new HttpsError('permission-denied','Sólo los organizadores o capitanes registran eventos.');
   return db.runTransaction(async tx=>{
     const match=(await tx.get(ref)).data();
     if(!match) throw new HttpsError('not-found','El partido no existe.');
-    if(!isMatchManager(match,uid)) throw new HttpsError('permission-denied','Sólo el organizador o los capitanes registran eventos.');
     if(match.status!=='active') throw new HttpsError('failed-precondition','El partido debe estar en vivo y sin cerrar.');
     const events=Array.isArray(match.events)?match.events:[];
     if(events.some((e:any)=>event.id ? e.id===event.id : JSON.stringify(e)===JSON.stringify(event))) return {ok:true};
@@ -344,7 +350,11 @@ export function generateEvaluationAssignments(
   allPlayers: LifecyclePlayer[]
 ): { matchId: string; evaluatorId: string; subjectId: string; status: 'pending' }[] {
   const assignments: { matchId: string; evaluatorId: string; subjectId: string; status: 'pending' }[] = [];
-  const matchPlayers = allPlayers.filter((player) => match.playerUids.includes(player.id));
+  const matchPlayers = allPlayers.filter(
+    (player) =>
+      match.playerUids.includes(player.id) &&
+      !player.id.startsWith('guest_'),
+  );
   const realPlayerUids = matchPlayers.filter(isRealUser).map((player) => player.id);
   const incomingCounts: Record<string, number> = {};
 
@@ -426,40 +436,53 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
 
   const db = admin.firestore();
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (!isMatchManager(data, uid)) {
-    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden finalizar el partido.');
+  if (!(await userCanManageMatch(db, data, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores o capitanes pueden finalizar el partido.');
   }
   if (data.status === 'completed' || data.status === 'evaluated') return { ok: true, assignmentsCount: 0 };
   if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
 
   const playerUids: string[] = Array.isArray(data.playerUids) ? data.playerUids : [];
-  const playerRefs = playerUids.map((playerId) => db.collection('players').doc(playerId));
+  const realPlayerUids = playerUids.filter((id) => !id.startsWith('guest_'));
+  const playerRefs = realPlayerUids.map((playerId) => db.collection('players').doc(playerId));
   const playerDocs = playerRefs.length > 0 ? await db.getAll(...playerRefs) : [];
   const allPlayers: LifecyclePlayer[] = playerDocs
     .filter((doc) => doc.exists)
     .map((doc) => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) }));
 
-  if (allPlayers.length !== new Set(playerUids).size) throw new HttpsError('failed-precondition', 'Falta un perfil del plantel. Revisá la convocatoria antes de finalizar.');
+  if (allPlayers.length !== new Set(realPlayerUids).size) throw new HttpsError('failed-precondition', 'Falta un perfil del plantel. Revisá la convocatoria antes de finalizar.');
   const matchSize = Number(data.matchSize ?? 0);
   let finalTeams = Array.isArray(data.teams) ? (data.teams as LifecycleTeam[]) : undefined;
   const matchUpdateData: Record<string, unknown> = { status: 'completed' };
 
   if ((!finalTeams || finalTeams.length === 0) && playerUids.length >= matchSize && matchSize > 0) {
-    const playersToBalance = allPlayers
-      .filter((player) => playerUids.includes(player.id))
-      .map((player) => ({
-        uid: player.id,
-        displayName: player.displayName || player.name || '',
-        position: player.position || '',
-        ovr: player.ovr || 0,
-        photoURL: String(player.photoURL ?? player.photoUrl ?? ''),
+    const guestPlayers = (Array.isArray(data.players) ? data.players : [])
+      .filter((p: any) => p?.isGuest === true || String(p?.uid ?? '').startsWith('guest_'))
+      .map((p: any) => ({
+        uid: String(p.uid),
+        displayName: String(p.displayName ?? 'Invitado'),
+        position: String(p.position ?? 'MED'),
+        ovr: Number(p.ovr ?? 70),
+        photoURL: '',
       }));
+    const playersToBalance = [
+      ...allPlayers
+        .filter((player) => realPlayerUids.includes(player.id))
+        .map((player) => ({
+          uid: player.id,
+          displayName: player.displayName || player.name || '',
+          position: player.position || '',
+          ovr: player.ovr || 0,
+          photoURL: String(player.photoURL ?? player.photoUrl ?? ''),
+        })),
+      ...guestPlayers,
+    ];
     const teamGenerationResult = await generateBalancedTeamsCore(playersToBalance, 2);
     finalTeams = teamGenerationResult.teams as unknown as LifecycleTeam[];
     matchUpdateData.teams = finalTeams;
   }
 
-  const matchForAssignments = { id: matchId, playerUids, teams: finalTeams };
+  const matchForAssignments = { id: matchId, playerUids: realPlayerUids, teams: finalTeams };
   const assignments = generateEvaluationAssignments(matchForAssignments, allPlayers);
 
   let evaluatorsToPush: string[] = [];
@@ -467,7 +490,6 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
   await db.runTransaction(async batch => {
     const fresh = (await batch.get(ref)).data();
     if (!fresh) throw new HttpsError('not-found', 'El partido no existe.');
-    if (!isMatchManager(fresh, uid)) throw new HttpsError('permission-denied', 'Sólo el organizador o los capitanes pueden finalizar.');
     if (fresh.status === 'completed' || fresh.status === 'evaluated') return;
     if (isGeneratingTeams(fresh) || JSON.stringify(fresh.playerUids ?? []) !== JSON.stringify(playerUids) || JSON.stringify(fresh.teams ?? []) !== JSON.stringify(data.teams ?? [])) {
       throw new HttpsError('aborted', 'El plantel cambió. Actualizá el partido antes de finalizar.');

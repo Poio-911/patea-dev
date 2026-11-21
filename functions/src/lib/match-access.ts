@@ -40,7 +40,28 @@ export function matchGroupIds(match: Doc): string[] {
 export function isMatchManager(match: Doc, uid: string): boolean {
   if (!uid) return false;
   if (match.ownerUid === uid) return true;
-  return Array.isArray(match.captains) && match.captains.includes(uid);
+  if (Array.isArray(match.captains) && match.captains.includes(uid)) return true;
+  return Array.isArray(match.coOrganizerUids) && match.coOrganizerUids.includes(uid);
+}
+
+export function isGroupAdminOrModerator(group: Doc | undefined | null, uid: string): boolean {
+  if (!group || !uid) return false;
+  if (group.ownerUid === uid) return true;
+  const roles = Array.isArray(group.memberRoles) ? group.memberRoles : [];
+  const entry = roles.find((m: any) => m?.userId === uid);
+  return entry?.role === 'admin' || entry?.role === 'moderator';
+}
+
+export async function userCanManageMatch(
+  db: admin.firestore.Firestore,
+  match: Doc,
+  uid: string,
+): Promise<boolean> {
+  if (isMatchManager(match, uid)) return true;
+  const ids = matchGroupIds(match);
+  if (!ids.length) return false;
+  const snaps = await db.getAll(...ids.map((id) => db.doc(`groups/${id}`)));
+  return snaps.some((s) => s.exists && isGroupAdminOrModerator(s.data(), uid));
 }
 
 export function isGroupMember(group: Doc | undefined | null, uid: string): boolean {
