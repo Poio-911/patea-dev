@@ -1,3 +1,9 @@
+// Estos tests dependen del bucket del proyecto real. En CI los emuladores corren con
+// otro proyecto (`demo-patea-privacy`), que cambiaría el bucket esperado: se fija acá.
+process.env.GCLOUD_PROJECT = 'mil-disculpis';
+delete process.env.GOOGLE_CLOUD_PROJECT;
+delete process.env.FIREBASE_CONFIG;
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { sanitizeJerseyPayload } = require('../lib/callable/group-management');

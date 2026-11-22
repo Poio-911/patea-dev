@@ -51,3 +51,6 @@ android/key.properties
 
 # Salida de un golden que fallo: son imagenes de diagnostico, no fuente.
 test/goldens/failures/
+
+# Diferencias que genera flutter test cuando falla un golden
+test/failures/

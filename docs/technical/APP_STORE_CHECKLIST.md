@@ -78,12 +78,13 @@ Responder sin contenido sexual, violencia gráfica ni apuestas. **Hay contenido 
 - La app compra con StoreKit y manda la transacción a `redeemIapPurchase`, que la valida con la App Store Server API (producción y sandbox), es idempotente por transacción y recién ahí suma los créditos. Si el servidor falla, la compra queda abierta y se reintenta sola.
 - Productos (consumibles): `com.patea.app.credits_5`, `credits_15` y `credits_40`. El catálogo está en `functions/src/lib/iap.ts` y `lib/core/services/credits_store_service.dart`.
 
-Lo que falta fuera del código, y solo lo puede hacer el titular de la cuenta:
+Estado en App Store Connect (22/11/2026):
 
-1. Aceptar el **Acuerdo de apps de pago** en App Store Connect y cargar datos bancarios y fiscales.
-2. Crear en App Store Connect los tres productos consumibles con esos identificadores, con nombre y precio.
-3. Crear una **clave de compras integradas** (App Store Connect → Usuarios y acceso → Integraciones → Compras integradas) y cargar sus datos en Firestore, documento `internalConfig/iap`, con los campos `issuerId`, `keyId` y `privateKey` (el contenido del `.p8`). Ese documento no tiene reglas: los clientes no lo pueden leer. Sin él, `redeemIapPurchase` responde «Las compras todavía no están configuradas» y no entrega nada.
-4. Probar con un usuario de sandbox desde el build de la tienda antes de enviar a revisión. Apple prueba las compras en sandbox con el mismo binario, y el servidor lo acepta.
+- **Hecho:** los tres productos consumibles están creados (`credits_5` a US$0,99, `credits_15` a US$2,99 y `credits_40` a US$6,99), disponibles en todos los países, con nombre y descripción en español (México), captura de revisión y notas. Los precios se pueden cambiar mientras no estén a la venta.
+- **Hecho:** clave de compras integradas «Patea compras» (`M8JJ4286GP`) cargada en `internalConfig/iap` de Firestore. El sandbox de Apple la acepta; producción da 401 hasta que la app se publique, y el servidor ya lo tolera.
+- **Pendiente, solo el titular:** en [Negocio](https://appstoreconnect.apple.com/business), el **Acuerdo de apps de pago** está en «información del usuario pendiente»: faltan la cuenta bancaria y el formulario fiscal.
+- **Pendiente:** probar con un usuario de sandbox desde el build de la tienda y, al enviar la primera versión, **añadir las tres compras a la revisión** junto con el binario (Apple exige que la primera compra viaje con una versión de la app).
+- La captura se regenera con `flutter test --no-pub --update-goldens tool/store_review_export_test.dart` (sale en `build/store_review/`).
 
 ## 7. Cómo publicar
 
