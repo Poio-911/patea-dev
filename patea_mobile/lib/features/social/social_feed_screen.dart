@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +15,11 @@ import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
+import '../../core/theme/match_theme.dart';
 import '../../core/utils/dates.dart';
+import '../../core/utils/match_photography.dart';
+import '../../core/widgets/jersey_painter.dart';
+import '../../core/widgets/parallax_background.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
@@ -157,6 +162,44 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                   .toList()
             : allPosts;
 
+        // Novedades del grupo (cambios de OVR, partidos armados y terminados):
+        // las escribe el servidor y se mezclan con las publicaciones por fecha.
+        final news = isGroupTab
+            ? (ref.watch(feedActivitiesStreamProvider).value ??
+                  const <Map<String, dynamic>>[])
+            : const <Map<String, dynamic>>[];
+        final items = <({DateTime at, Widget widget})>[
+          for (final post in posts)
+            (
+              at: post.createdAt,
+              widget: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                // Cada publicación va en su propia tarjeta: se ve dónde empieza
+                // y dónde termina, en claro y en oscuro.
+                child: PateaCard(
+                  color: context.c.card,
+                  radius: AppRadii.cardAll,
+                  borderColor: context.c.border.withValues(alpha: 0.55),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: _SocialPostCard(
+                    key: ValueKey(post.id),
+                    post: post,
+                    currentUid: uid,
+                    isFollowingAuthor: followingSet.contains(post.userId),
+                  ),
+                ),
+              ),
+            ),
+          for (final data in news)
+            (
+              at: _feedActivityDate(data),
+              widget: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _buildFeedTile(data),
+              ),
+            ),
+        ]..sort((a, b) => b.at.compareTo(a.at));
+
         return RefreshIndicator(
           onRefresh: onRefresh,
           child: ListView(
@@ -293,7 +336,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
-              if (posts.isEmpty)
+              if (items.isEmpty)
                 PateaCard(
                   color: context.c.card,
                   radius: AppRadii.cardAll,
@@ -332,19 +375,347 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                   ),
                 )
               else
-                for (final post in posts) ...[
-                  _SocialPostCard(
-                    key: ValueKey(post.id),
-                    post: post,
-                    currentUid: uid,
-                    isFollowingAuthor: followingSet.contains(post.userId),
-                  ),
-                  Divider(height: 24, color: context.c.overlayLine),
-                ],
+                for (final item in items) item.widget,
             ],
           ),
         );
       },
+    );
+  }
+}
+
+DateTime _feedActivityDate(Map<String, dynamic> data) {
+  final raw = data['createdAt'];
+  if (raw is Timestamp) return raw.toDate();
+  if (raw is String) {
+    return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+Widget _buildFeedTile(Map<String, dynamic> data) {
+  final type = data['type'] as String? ?? '';
+  final matchId = data['matchId'] as String?;
+  if ((type == 'match_finished' || type == 'match_scheduled') &&
+      matchId != null &&
+      matchId.isNotEmpty) {
+    return _FeedMatchTile(matchId: matchId, data: data);
+  }
+  return _FeedActivityTile(data: data);
+}
+
+/// Partido del historial: la tarjeta del partido adaptada al feed (tipo y
+/// estado, título, equipos con camiseta y resultado, fecha y lugar).
+class _FeedMatchTile extends ConsumerWidget {
+  final String matchId;
+  final Map<String, dynamic> data;
+
+  const _FeedMatchTile({required this.matchId, required this.data});
+
+  static const _statusLabels = {
+    'planning': 'A confirmar',
+    'upcoming': 'Próximo',
+    'active': 'En vivo',
+    'completed': 'Finalizado',
+    'evaluated': 'Evaluado',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final match = ref.watch(singleMatchStreamProvider(matchId)).value;
+    // Sin acceso al partido (o todavía cargando) queda la línea de texto.
+    if (match == null) return _FeedActivityTile(data: data);
+
+    final colors = context.c;
+    final theme = getMatchTypeTheme(match.type);
+    final isLive = match.status == 'active';
+    final isPast = match.status == 'completed' || match.status == 'evaluated';
+    final teamA = match.teamA;
+    final teamB = match.teamB;
+    final hasTeams = teamA != null && teamB != null;
+    final when = match.date.isEmpty
+        ? ''
+        : (match.time == null || match.time!.isEmpty
+              ? fmtDateTime(match.date)
+              : '${fmtDate(match.date)} · ${match.time} hs');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: colors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadii.cardAll,
+            side: BorderSide(color: colors.border.withValues(alpha: 0.55)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => context.push('/matches/$matchId'),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ParallaxBackground(
+                    asset: MatchPhotography.forMatch(match.id),
+                    opacity: colors.isDarkSurface
+                        ? (isPast ? 0.18 : 0.32)
+                        : (isPast ? 0.42 : 0.6),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          colors.card.withValues(
+                            alpha: colors.isDarkSurface ? 0.92 : 0.82,
+                          ),
+                          colors.card.withValues(
+                            alpha: colors.isDarkSurface ? 0.55 : 0.62,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.brandColor,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              theme.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.code(
+                                size: 12,
+                                weight: FontWeight.w700,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _statusLabels[match.status] ?? 'Finalizado',
+                            style: AppTypography.body(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: isLive
+                                  ? colors.destructive
+                                  : (isPast
+                                        ? colors.textSecondary
+                                        : colors.primary),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        match.title,
+                        style: AppTypography.headline(
+                          size: 17,
+                          weight: FontWeight.w800,
+                        ),
+                      ),
+                      if (hasTeams) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _FeedTeam(team: teamA),
+                            Column(
+                              children: [
+                                Text(
+                                  'VS',
+                                  style: AppTypography.code(
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                                if (isPast || isLive)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      '${teamA.score} - ${teamB.score}',
+                                      style: AppTypography.sportNumber(
+                                        size: 22,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            _FeedTeam(team: teamB),
+                          ],
+                        ),
+                      ],
+                      if (when.isNotEmpty ||
+                          (match.location ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          height: 1,
+                          color: colors.border.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(height: 10),
+                        if (when.isNotEmpty)
+                          _FeedMatchInfo(
+                            icon: Icons.calendar_today_outlined,
+                            text: when,
+                          ),
+                        if ((match.location ?? '').isNotEmpty) ...[
+                          if (when.isNotEmpty) const SizedBox(height: 6),
+                          _FeedMatchInfo(
+                            icon: Icons.location_on_outlined,
+                            text: match.location!,
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _relativeTime(_feedActivityDate(data)),
+          style: AppTypography.body(size: 12, color: colors.textSecondary),
+        ),
+      ],
+    );
+  }
+}
+
+class _FeedTeam extends StatelessWidget {
+  final MatchTeam team;
+
+  const _FeedTeam({required this.team});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (team.jersey != null)
+          JerseyWidget(jersey: team.jersey!, size: 40)
+        else
+          Icon(Icons.checkroom, size: 36, color: context.c.textSecondary),
+        const SizedBox(height: 6),
+        SizedBox(
+          width: 96,
+          child: Text(
+            team.name,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.body(size: 12, weight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FeedMatchInfo extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _FeedMatchInfo({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 15, color: context.c.textSecondary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.body(size: 13, color: context.c.textSecondary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Novedad generada por el servidor (`feedActivities`): sin reacciones ni
+/// comentarios, sólo lo que pasó en el grupo.
+class _FeedActivityTile extends StatelessWidget {
+  final Map<String, dynamic> data;
+
+  const _FeedActivityTile({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.c;
+    final type = data['type'] as String? ?? '';
+    final message = (data['message'] as String?)?.trim() ?? '';
+    final name = data['playerName'] as String? ?? '';
+    final photo = data['playerPhotoUrl'] as String?;
+    final isPlayerEvent = type == 'ovr_updated';
+    final icon = type == 'match_finished'
+        ? Icons.sports_score_outlined
+        : Icons.event_available_outlined;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (isPlayerEvent)
+          PateaAvatar(
+            photoUrl: (photo != null && photo.isNotEmpty) ? photo : null,
+            seed: (data['playerId'] as String?) ?? name,
+            size: 38,
+          )
+        else
+          SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(icon, size: 24, color: colors.primary),
+          ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isPlayerEvent && name.isNotEmpty)
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.headline(
+                    size: 15,
+                    weight: FontWeight.w700,
+                  ),
+                ),
+              if (message.isNotEmpty)
+                Text(message, style: AppTypography.body(size: 14)),
+              const SizedBox(height: 2),
+              Text(
+                _relativeTime(_feedActivityDate(data)),
+                style: AppTypography.body(
+                  size: 12,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
