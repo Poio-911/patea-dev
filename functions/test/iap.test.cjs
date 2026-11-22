@@ -39,7 +39,7 @@ test('prueba producción y cae al sandbox cuando Apple dice 404', async () => {
   assert.ok(calls[0].includes('/inApps/v1/transactions/123456'));
 });
 
-test('un 401 de Apple es un error de configuración, no "compra inexistente"', async () => {
+test('un 401 en todos los entornos es un error de configuración, no "compra inexistente"', async () => {
   await assert.rejects(iap.fetchAppleTransaction('123456', config, async () => ({ status: 401, json: async () => ({}) })), /401/);
   const none = await iap.fetchAppleTransaction('123456', config, async () => ({ status: 404, json: async () => ({}) }));
   assert.equal(none, null);
@@ -67,4 +67,12 @@ test('los créditos gratuitos se gastan antes que los comprados', () => {
 
 test('un perfil sin tope de créditos gratuitos mantiene el comportamiento anterior', () => {
   assert.deepEqual(iap.planCreditSpend(undefined, 5), { ok: true, useFree: false, usePurchased: false, remaining: null });
+});
+
+test('si producción da 401 (app sin publicar) igual se consulta el sandbox', async () => {
+  const fetcher = async (url) => url.startsWith(iap.APPLE_PRODUCTION_URL)
+    ? { status: 401, json: async () => ({}) }
+    : { status: 200, json: async () => ({ signedTransactionInfo: jws({ transactionId: '999999', bundleId: 'com.patea.app', productId: 'com.patea.app.credits_5', type: 'Consumable', environment: 'Sandbox' }) }) };
+  const tx = await iap.fetchAppleTransaction('999999', config, fetcher);
+  assert.equal(tx.environment, 'Sandbox');
 });

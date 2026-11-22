@@ -87,17 +87,25 @@ export async function fetchAppleTransaction(
   fetcher: Fetcher = fetch as unknown as Fetcher,
 ): Promise<AppleTransaction | null> {
   const jwt = buildAppleJwt(config);
+  let unauthorized = 0;
   for (const base of [APPLE_PRODUCTION_URL, APPLE_SANDBOX_URL]) {
     const response = await fetcher(`${base}/inApps/v1/transactions/${encodeURIComponent(transactionId)}`, {
       headers: { Authorization: `Bearer ${jwt}` },
     });
     if (response.status === 404) continue;
-    if (response.status === 401) throw new Error('Apple rechazó las credenciales de compras (401).');
+    // Mientras la app no esté publicada, producción contesta 401 aunque la clave
+    // sea buena; el sandbox (App Review y testers) sí responde. Solo es un error
+    // de credenciales si TODOS los entornos las rechazan.
+    if (response.status === 401) {
+      unauthorized++;
+      continue;
+    }
     if (response.status !== 200) throw new Error(`Apple respondió ${response.status}.`);
     const body = await response.json();
     if (typeof body?.signedTransactionInfo !== 'string') throw new Error('Respuesta de Apple inesperada.');
     return decodeJwsPayload<AppleTransaction>(body.signedTransactionInfo);
   }
+  if (unauthorized === 2) throw new Error('Apple rechazó las credenciales de compras (401).');
   return null;
 }
 
