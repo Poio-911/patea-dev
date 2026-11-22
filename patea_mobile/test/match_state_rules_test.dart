@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:patea_mobile/core/models/match_model.dart';
 import 'package:patea_mobile/core/services/firestore_service.dart';
+import 'package:patea_mobile/core/services/group_service.dart';
 import 'package:patea_mobile/core/services/match_clips_service.dart';
 import 'package:patea_mobile/core/services/match_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
@@ -90,6 +91,8 @@ void main() {
         ).overrideWith((ref) => Stream.value(match)),
         matchClipsProvider('ms1').overrideWith((ref) => Stream.value(const [])),
         myMatchInvitationProvider('ms1').overrideWith((ref) => Stream.value(invited)),
+        if (match.groupId != null)
+          myGroupRoleProvider(match.groupId!).overrideWith((ref) => Stream.value(null)),
         if (service != null) matchServiceProvider.overrideWithValue(service),
       ],
     );
