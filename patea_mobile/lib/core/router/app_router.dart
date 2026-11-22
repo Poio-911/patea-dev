@@ -164,14 +164,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/social',
-                builder: (context, state) => const SocialFeedScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
                 path: '/explorar',
                 builder: (context, state) => const ExplorarScreen(),
               ),
@@ -217,6 +209,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/groups',
         builder: (context, state) => _withBackground(const GroupsScreen()),
+      ),
+      GoRoute(
+        path: '/social',
+        builder: (context, state) => _withBackground(const SocialFeedScreen()),
       ),
       GoRoute(
         path: '/messages',

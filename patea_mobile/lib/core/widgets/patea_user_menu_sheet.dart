@@ -4,6 +4,7 @@ import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -177,11 +178,12 @@ class PateaUserMenuSheet extends ConsumerWidget {
               },
             ),
             _MenuItem(
-              icon: Icons.forum_outlined,
+              icon: Icons.photo_camera_outlined,
+              svgAsset: 'assets/icons/nav-social-community.svg',
               label: 'Comunidad Pateá',
               onTap: () {
                 Navigator.pop(context);
-                context.go('/social');
+                context.push('/social');
               },
             ),
             _MenuItem(
@@ -356,12 +358,14 @@ class _OvrPill extends StatelessWidget {
 
 class _MenuItem extends StatelessWidget {
   final IconData icon;
+  final String? svgAsset;
   final String label;
   final Color? color;
   final VoidCallback onTap;
 
   const _MenuItem({
     required this.icon,
+    this.svgAsset,
     required this.label,
     this.color,
     required this.onTap,
@@ -372,6 +376,7 @@ class _MenuItem extends StatelessWidget {
     // El ícono va suelto, del color del texto, como en la web. El cuadradito
     // teñido de 38x38 que tenía antes convertía cada fila en otra caja.
     final tint = color ?? context.c.textPrimary;
+    final iconColor = color ?? context.c.textSecondary;
 
     return InkWell(
       onTap: onTap,
@@ -380,7 +385,15 @@ class _MenuItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: color ?? context.c.textSecondary),
+            if (svgAsset != null)
+              SvgPicture.asset(
+                svgAsset!,
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              )
+            else
+              Icon(icon, size: 20, color: iconColor),
             const SizedBox(width: 14),
             Text(
               label,

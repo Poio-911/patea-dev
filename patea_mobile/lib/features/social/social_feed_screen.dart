@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -43,60 +44,78 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              MediaQuery.paddingOf(context).top + 12,
-              16,
-              10,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Volver',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
+        ),
+        title: Row(
+          children: [
+            SvgPicture.asset(
+              'assets/icons/nav-social-community.svg',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                context.c.primary,
+                BlendMode.srcIn,
+              ),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.forum_outlined,
-                  size: 26,
-                  color: context.c.primary,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Comunidad Pateá',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.headline(
+                  size: 20,
+                  weight: FontWeight.w800,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Comunidad Pateá',
-                    style: AppTypography.headline(
-                      size: 24,
-                      weight: FontWeight.w800,
-                    ),
-                  ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Buscar jugadores para seguir',
+            onPressed: () => _DiscoverPlayersSheet.show(context),
+            icon: const Icon(Icons.person_add_alt_1_outlined, size: 21),
+          ),
+          IconButton(
+            tooltip: 'Sobre la comunidad',
+            onPressed: () => showContextualHelpSheet(
+              context,
+              topic: HelpTopic.community,
+            ),
+            icon: const Icon(Icons.help_outline_rounded, size: 21),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12, left: 2),
+            child: FilledButton(
+              onPressed: () => CreateSocialPostSheet.show(context),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-                IconButton(
-                  tooltip: 'Buscar jugadores para seguir',
-                  onPressed: () => _DiscoverPlayersSheet.show(context),
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                ),
-                IconButton(
-                  tooltip: 'Sobre la comunidad',
-                  onPressed: () => showContextualHelpSheet(
-                    context,
-                    topic: HelpTopic.community,
-                  ),
-                  icon: const Icon(Icons.help_outline_rounded, size: 21),
-                ),
-                const SizedBox(width: 4),
-                FilledButton.icon(
-                  onPressed: () => CreateSocialPostSheet.show(context),
-                  icon: const Icon(Icons.add_photo_alternate_outlined, size: 17),
-                  label: const Text('Publicar'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-              ],
+                minimumSize: Size.zero,
+              ),
+              child: const Text('+ Publicar'),
             ),
           ),
+        ],
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 6),
 
           // Tabs: Mi Grupo vs Siguiendo / Comunidad
           Padding(
@@ -1139,22 +1158,10 @@ class _CreateSocialPostSheetState extends ConsumerState<CreateSocialPostSheet> {
                       ),
                     ),
                   ),
-                  FilledButton.icon(
-                    onPressed: _submitting ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                    ),
-                    icon: _submitting
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: PateaButtonProgress(),
-                          )
-                        : const Icon(Icons.send_rounded, size: 15),
-                    label: const Text('Publicar'),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    tooltip: 'Cerrar',
+                    onPressed: _submitting ? null : () => Navigator.pop(context),
                   ),
                 ],
               ),
@@ -1314,16 +1321,18 @@ class _CreateSocialPostSheetState extends ConsumerState<CreateSocialPostSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              FilledButton.icon(
+              FilledButton(
                 onPressed: _submitting ? null : _submit,
-                icon: _submitting
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: _submitting
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: 18,
+                        height: 18,
                         child: PateaButtonProgress(),
                       )
-                    : const Icon(Icons.send_rounded, size: 17),
-                label: const Text('Publicar en Comunidad'),
+                    : const Text('Publicar'),
               ),
             ],
           ),
@@ -1499,15 +1508,22 @@ class _SocialCommentsSheetState extends ConsumerState<_SocialCommentsSheet> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    IconButton(
+                    FilledButton(
                       onPressed: _sending ? null : _send,
-                      icon: _sending
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        minimumSize: Size.zero,
+                      ),
+                      child: _sending
                           ? const SizedBox(
                               width: 16,
                               height: 16,
                               child: PateaButtonProgress(),
                             )
-                          : Icon(Icons.send_rounded, color: context.c.primary),
+                          : const Text('Enviar'),
                     ),
                   ],
                 ),
