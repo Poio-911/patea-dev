@@ -7,8 +7,8 @@ import '../widgets/patea_snack.dart';
 /// política de privacidad sea accesible desde la app y desde la ficha de la
 /// tienda.
 abstract final class LegalLinks {
-  static final privacy = Uri.parse('https://mil-disculpis.web.app/privacidad');
-  static final terms = Uri.parse('https://mil-disculpis.web.app/terminos');
+  static final privacy = Uri.parse('https://patea-app.web.app/privacidad/');
+  static final terms = Uri.parse('https://patea-app.web.app/terminos/');
 
   static Future<void> open(BuildContext context, Uri url) async {
     final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
