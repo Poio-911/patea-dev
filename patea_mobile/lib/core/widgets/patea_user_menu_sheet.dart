@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'patea_snack.dart';
 import 'delete_account_flow.dart';
+import 'credits_store_sheet.dart';
+import '../services/credits_store_service.dart';
 import '../utils/legal_links.dart';
 import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
@@ -197,6 +199,22 @@ class PateaUserMenuSheet extends ConsumerWidget {
                   }
                 },
               ),
+
+              // Créditos de IA: solo en la versión de la App Store. En TestFlight
+              // y desarrollo este ítem no existe.
+              if (ref.watch(creditsStoreEnabledProvider).value ?? false)
+                _MenuItem(
+                  icon: Icons.auto_awesome_outlined,
+                  label: 'Comprar créditos de IA',
+                  onTap: () async {
+                    final navigator = Navigator.of(context, rootNavigator: true);
+                    Navigator.pop(context);
+                    final overlayContext = navigator.overlay?.context;
+                    if (overlayContext != null && overlayContext.mounted) {
+                      await showCreditsStoreSheet(overlayContext);
+                    }
+                  },
+                ),
 
               const SizedBox(height: 8),
               Divider(color: context.c.overlayLine, height: 1),

@@ -27,7 +27,8 @@ function harness() {
   const code=fs.readFileSync(require.resolve('../lib/callable/generate-player-photo'),'utf8');
   vm.runInNewContext(code,{exports,Buffer,URL,console,process,Date,
     require:name=>name==='firebase-admin'?admin:name==='firebase-functions/v2/https'?{HttpsError,onCall:(_,fn)=>fn}:
-      name==='@google/genai'?{GoogleGenAI,Modality:{TEXT:'TEXT',IMAGE:'IMAGE'}}:require(name)});
+      name==='@google/genai'?{GoogleGenAI,Modality:{TEXT:'TEXT',IMAGE:'IMAGE'}}:
+      name.startsWith('.')?require(require('node:path').resolve(__dirname,'../lib/callable',name)):require(name)});
   return {api:exports,docs,writes,authUpdates,prompts,storedImages};
 }
 test('preview charges once but does not replace photo; apply is owned and idempotent',async()=>{
@@ -56,4 +57,16 @@ test('rejects foreign source, invalid jersey and empty credits before Vertex',as
   h.docs.get('players/me').cardGenerationCredits=0;
   await assert.rejects(h.api.generatePlayerPhoto({auth:{uid:'me',token:{}},data:{previewOnly:true}}));
   assert.equal(h.prompts.length,0);
+});
+test('con los gratuitos agotados se gasta un crédito comprado y no se pisa el contador del mes',async()=>{
+  const h=harness();
+  h.docs.get('players/me').cardGenerationCredits=0;
+  h.docs.get('players/me').purchasedCredits=2;
+  const result=await h.api.generatePlayerPhoto({auth:{uid:'me',token:{}},data:{previewOnly:true}});
+  assert.equal(h.docs.get('players/me').purchasedCredits,1);
+  assert.equal(h.docs.get('players/me').cardGenerationCredits,0);
+  assert.equal(result.creditsRemaining,1);
+  await h.api.generatePlayerPhoto({auth:{uid:'me',token:{}},data:{previewOnly:true}});
+  assert.equal(h.docs.get('players/me').purchasedCredits,0);
+  await assert.rejects(h.api.generatePlayerPhoto({auth:{uid:'me',token:{}},data:{previewOnly:true}}));
 });

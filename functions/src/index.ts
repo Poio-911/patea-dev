@@ -52,3 +52,4 @@ export { onTeamMatchResult } from './triggers/on-team-match-result';
 export { suggestLocations, resolvePlaceLocation, updateGroupVenue, setGroupCountry } from './callable/venues';
 export { createSocialPost, toggleSocialReaction, voteSocialPoll, addSocialComment, deleteSocialPost, toggleFollowUser, searchSocialPlayers, reportContent, toggleBlockUser } from './callable/social';
 export { deleteMyAccount } from './callable/account-deletion';
+export { redeemIapPurchase } from './callable/iap';

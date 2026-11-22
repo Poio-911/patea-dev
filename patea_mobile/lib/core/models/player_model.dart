@@ -116,6 +116,16 @@ class PlayerModel {
   final double cropZoom;
   final int? cardGenerationCredits;
 
+  /// Créditos comprados con compras integradas. No vencen ni los pisa el
+  /// reinicio mensual de los gratuitos.
+  final int? purchasedCredits;
+
+  /// Créditos de IA disponibles (gratuitos del mes + comprados). `null` si el
+  /// perfil no tiene tope.
+  int? get totalCredits => cardGenerationCredits == null
+      ? null
+      : cardGenerationCredits! + (purchasedCredits ?? 0);
+
   PlayerModel({
     required this.id,
     required this.name,
@@ -140,6 +150,7 @@ class PlayerModel {
     this.cropY = 50,
     this.cropZoom = 1,
     this.cardGenerationCredits,
+    this.purchasedCredits,
     PlayerStats? stats,
   }) : stats = stats ?? PlayerStats();
 
@@ -183,6 +194,7 @@ class PlayerModel {
       cropY: (data['cropPosition']?['y'] as num?)?.toDouble() ?? 50,
       cropZoom: (data['cropZoom'] as num?)?.toDouble() ?? 1,
       cardGenerationCredits: (data['cardGenerationCredits'] as num?)?.toInt(),
+      purchasedCredits: (data['purchasedCredits'] as num?)?.toInt(),
       stats: PlayerStats.fromMap(data['stats'] as Map<String, dynamic>?),
     );
   }
@@ -243,6 +255,7 @@ class PlayerModel {
     cropY: cropY ?? this.cropY,
     cropZoom: cropZoom ?? this.cropZoom,
     cardGenerationCredits: cardGenerationCredits,
+    purchasedCredits: purchasedCredits,
     stats: stats,
   );
 

@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/models/player_model.dart';
+import '../../core/services/credits_store_service.dart';
 import '../../core/services/profile_service.dart';
+import '../../core/widgets/credits_store_sheet.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/player_card_widget.dart';
@@ -46,7 +48,7 @@ class _PortraitStudioState extends ConsumerState<PortraitStudioScreen> {
   void initState() {
     super.initState();
     _source = widget.initialPhoto;
-    _credits = widget.player.cardGenerationCredits;
+    _credits = widget.player.totalCredits;
   }
 
   Future<void> _pick(ImageSource source) async {
@@ -385,6 +387,25 @@ class _PortraitStudioState extends ConsumerState<PortraitStudioScreen> {
               creditText,
               style: AppTypography.body(size: 13, color: c.textSecondary),
             ),
+            // Comprar créditos: solo en la versión de la tienda (en TestFlight
+            // y desarrollo `creditsStoreEnabledProvider` es siempre falso).
+            if (_credits != null &&
+                (ref.watch(creditsStoreEnabledProvider).value ?? false))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final added = await showCreditsStoreSheet(context);
+                          if (added > 0 && mounted) {
+                            setState(() => _credits = (_credits ?? 0) + added);
+                          }
+                        },
+                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                  label: const Text('Comprar créditos'),
+                ),
+              ),
             if (_draft != null)
               Text(
                 'Aplicar esta foto no usa otro crédito.',

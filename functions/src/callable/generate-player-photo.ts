@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { planCreditSpend } from '../lib/iap';
 import * as admin from 'firebase-admin';
 import { randomUUID } from 'crypto';
 import { GoogleGenAI, Modality, type GenerateContentResponse } from '@google/genai';
@@ -325,11 +326,10 @@ export const generatePlayerPhoto = onCall(
 
     // Chequeo temprano de créditos: no tiene sentido gastar la llamada a la IA
     // si igual va a fallar después. El descuento real va en la transacción.
-    const credits = player.cardGenerationCredits;
-    if (typeof credits === 'number' && credits <= 0) {
+    if (!planCreditSpend(player.cardGenerationCredits, player.purchasedCredits).ok) {
       throw new HttpsError(
         'resource-exhausted',
-        'No te quedan créditos para generar imágenes este mes.',
+        'No te quedan créditos para generar imágenes.',
       );
     }
 
@@ -456,20 +456,22 @@ export const generatePlayerPhoto = onCall(
       const fresh = await tx.get(playerRef);
       if (!fresh.exists) throw new HttpsError('not-found', 'No se encontró tu perfil.');
 
-      const freshCredits = fresh.data()!.cardGenerationCredits;
-      if (typeof freshCredits === 'number') {
-        if (freshCredits <= 0) {
-          throw new HttpsError('resource-exhausted', 'No te quedan créditos este mes.');
-        }
-        remaining = freshCredits - 1;
+      // Primero se gastan los créditos gratuitos del mes y después los comprados.
+      const spend = planCreditSpend(fresh.data()!.cardGenerationCredits, fresh.data()!.purchasedCredits);
+      if (!spend.ok) {
+        throw new HttpsError('resource-exhausted', 'No te quedan créditos.');
       }
+      remaining = spend.remaining;
+      const creditUpdate: Record<string, unknown> = spend.useFree
+        ? { cardGenerationCredits: admin.firestore.FieldValue.increment(-1) }
+        : spend.usePurchased
+          ? { purchasedCredits: admin.firestore.FieldValue.increment(-1) }
+          : {};
 
       if (previewOnly) {
         tx.set(draftRef, { photoUrl, sourcePhotoUrl: currentPhoto, createdAt: Date.now(),
           expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, applied: false });
-        if (typeof freshCredits === 'number') tx.update(playerRef, {
-          cardGenerationCredits: admin.firestore.FieldValue.increment(-1),
-        });
+        if (Object.keys(creditUpdate).length > 0) tx.update(playerRef, creditUpdate);
         return;
       }
 
@@ -490,9 +492,7 @@ export const generatePlayerPhoto = onCall(
           ...(!isAiGeneratedPhotoUrl(currentPhoto)
             ? { aiSourcePhotoUrl: currentPhoto }
             : {}),
-          ...(typeof freshCredits === 'number'
-            ? { cardGenerationCredits: admin.firestore.FieldValue.increment(-1) }
-            : {}),
+          ...creditUpdate,
         },
         { merge: true },
       );

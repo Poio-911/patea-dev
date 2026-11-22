@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/notifications_service.dart';
+import 'core/services/credits_store_service.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 
@@ -110,6 +111,11 @@ class PateaApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     final auth = ref.read(authRouterStateProvider);
     NotificationsService.attachNavigation(router: router, auth: auth);
+
+    // Escucha las compras de StoreKit desde el arranque (así se reintentan las
+    // que quedaron sin confirmar). Solo existe en la versión de la App Store:
+    // en TestFlight y desarrollo es `null` y no se toca StoreKit.
+    ref.watch(creditsStoreServiceProvider);
 
     return MaterialApp.router(
       scaffoldMessengerKey: NotificationsService.messengerKey,
