@@ -75,7 +75,7 @@ workflows:
   #   · Team settings > Code signing identities:
   #       - certificado `patea_distribution` (generado por Codemagic, que se
   #         queda con la clave privada)
-  #       - perfil `patea_appstore` (App Store, com.patea.app)
+  #       - perfil `patea_appstore_siwa` (App Store, com.patea.app, con Sign in with Apple)
   # ──────────────────────────────────────────────────────────────────────────
   ios-testflight:
     name: iOS · TestFlight
@@ -115,7 +115,7 @@ workflows:
         certificates:
           - patea_distribution
         provisioning_profiles:
-          - patea_appstore
+          - patea_appstore_siwa
 
     scripts:
       - name: Confirmar grupos internos de TestFlight
