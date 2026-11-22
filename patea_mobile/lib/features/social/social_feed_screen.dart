@@ -991,6 +991,7 @@ class CreateSocialPostSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, {MatchModel? initialMatch}) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: context.c.card,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
@@ -1099,172 +1100,233 @@ class _CreateSocialPostSheetState extends ConsumerState<CreateSocialPostSheet> {
     final matches =
         ref.watch(activeGroupMatchesProvider).value ?? const <MatchModel>[];
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.c.border,
-                  borderRadius: AppRadii.hairAll,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 14,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 14,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.84,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.c.border,
+                    borderRadius: AppRadii.hairAll,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Nueva publicación',
-              style: AppTypography.headline(size: 17, weight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _textController,
-              maxLines: 3,
-              maxLength: 1000,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: '¿Qué pasó en la cancha?',
-                hintText: 'Comentá el partido, el tercer tiempo o etiquetá un momento...',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _submitting
-                      ? null
-                      : () => _pickImage(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_library_outlined, size: 17),
-                  label: const Text('Galería'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _submitting
-                      ? null
-                      : () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.photo_camera_outlined, size: 17),
-                  label: const Text('Cámara'),
-                ),
-                const Spacer(),
-                FilterChip(
-                  label: const Text('Encuesta'),
-                  avatar: const Icon(Icons.poll_outlined, size: 16),
-                  selected: _withPoll,
-                  onSelected: _submitting
-                      ? null
-                      : (v) => setState(() => _withPoll = v),
-                ),
-              ],
-            ),
-            if (_imageFile != null) ...[
-              const SizedBox(height: 10),
-              Stack(
+              const SizedBox(height: 12),
+              Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: AppRadii.cardAll,
-                    child: Image.file(
-                      _imageFile!,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: IconButton(
-                      onPressed: () => setState(() => _imageFile = null),
-                      icon: const Icon(Icons.close),
-                      style: IconButton.styleFrom(
-                        backgroundColor: context.c.card.withValues(alpha: 0.8),
+                  Expanded(
+                    child: Text(
+                      'Nueva publicación',
+                      style: AppTypography.headline(
+                        size: 17,
+                        weight: FontWeight.w800,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ],
-            if (matches.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String?>(
-                initialValue: matches.any((m) => m.id == _selectedMatchId)
-                    ? _selectedMatchId
-                    : null,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Etiquetar partido (opcional)',
-                  prefixIcon: Icon(Icons.sports_soccer_outlined, size: 18),
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Sin partido etiquetado'),
-                  ),
-                  ...matches.take(15).map(
-                    (m) => DropdownMenuItem<String?>(
-                      value: m.id,
-                      child: Text(
-                        '${m.title} · ${fmtDate(m.date)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  FilledButton.icon(
+                    onPressed: _submitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
                       ),
                     ),
+                    icon: _submitting
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: PateaButtonProgress(),
+                          )
+                        : const Icon(Icons.send_rounded, size: 15),
+                    label: const Text('Publicar'),
                   ),
                 ],
-                onChanged: _submitting
-                    ? null
-                    : (v) => setState(() => _selectedMatchId = v),
               ),
-            ],
-            if (_withPoll) ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: _pollQuestionController,
-                decoration: const InputDecoration(
-                  labelText: 'Pregunta de la encuesta',
-                  hintText: 'Ej: ¿Quién fue la figura hoy?',
+              const SizedBox(height: 10),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _textController,
+                        maxLines: 3,
+                        maxLength: 1000,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: '¿Qué pasó en la cancha?',
+                          hintText:
+                              'Comentá el partido, el tercer tiempo o etiquetá un momento...',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _submitting
+                                ? null
+                                : () => _pickImage(ImageSource.gallery),
+                            icon: const Icon(
+                              Icons.photo_library_outlined,
+                              size: 17,
+                            ),
+                            label: const Text('Galería'),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: _submitting
+                                ? null
+                                : () => _pickImage(ImageSource.camera),
+                            icon: const Icon(
+                              Icons.photo_camera_outlined,
+                              size: 17,
+                            ),
+                            label: const Text('Cámara'),
+                          ),
+                          const Spacer(),
+                          FilterChip(
+                            label: const Text('Encuesta'),
+                            avatar: const Icon(Icons.poll_outlined, size: 16),
+                            selected: _withPoll,
+                            onSelected: _submitting
+                                ? null
+                                : (v) => setState(() => _withPoll = v),
+                          ),
+                        ],
+                      ),
+                      if (_imageFile != null) ...[
+                        const SizedBox(height: 10),
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: AppRadii.cardAll,
+                              child: Image.file(
+                                _imageFile!,
+                                height: 150,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: IconButton(
+                                onPressed: () =>
+                                    setState(() => _imageFile = null),
+                                icon: const Icon(Icons.close),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: context.c.card.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (matches.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String?>(
+                          initialValue:
+                              matches.any((m) => m.id == _selectedMatchId)
+                              ? _selectedMatchId
+                              : null,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Etiquetar partido (opcional)',
+                            prefixIcon: Icon(
+                              Icons.sports_soccer_outlined,
+                              size: 18,
+                            ),
+                          ),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('Sin partido etiquetado'),
+                            ),
+                            ...matches.take(15).map(
+                              (m) => DropdownMenuItem<String?>(
+                                value: m.id,
+                                child: Text(
+                                  '${m.title} · ${fmtDate(m.date)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: _submitting
+                              ? null
+                              : (v) => setState(() => _selectedMatchId = v),
+                        ),
+                      ],
+                      if (_withPoll) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _pollQuestionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Pregunta de la encuesta',
+                            hintText: 'Ej: ¿Quién fue la figura hoy?',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _pollOpt1Controller,
+                          decoration: const InputDecoration(
+                            labelText: 'Opción 1',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _pollOpt2Controller,
+                          decoration: const InputDecoration(
+                            labelText: 'Opción 2',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _pollOpt3Controller,
+                          decoration: const InputDecoration(
+                            labelText: 'Opción 3 (opcional)',
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: _pollOpt1Controller,
-                decoration: const InputDecoration(labelText: 'Opción 1'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _pollOpt2Controller,
-                decoration: const InputDecoration(labelText: 'Opción 2'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _pollOpt3Controller,
-                decoration: const InputDecoration(
-                  labelText: 'Opción 3 (opcional)',
-                ),
+              FilledButton.icon(
+                onPressed: _submitting ? null : _submit,
+                icon: _submitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: PateaButtonProgress(),
+                      )
+                    : const Icon(Icons.send_rounded, size: 17),
+                label: const Text('Publicar en Comunidad'),
               ),
             ],
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _submitting ? null : _submit,
-              icon: _submitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: PateaButtonProgress(),
-                    )
-                  : const Icon(Icons.send_rounded, size: 17),
-              label: const Text('Publicar en Comunidad'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1280,6 +1342,7 @@ class _SocialCommentsSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, SocialPostModel post) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: context.c.card,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
@@ -1464,6 +1527,7 @@ class _DiscoverPlayersSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: context.c.card,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
@@ -1674,6 +1738,7 @@ class _PlayerSocialProfileSheet extends ConsumerWidget {
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: context.c.card,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
       builder: (_) => _PlayerSocialProfileSheet(
