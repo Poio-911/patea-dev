@@ -1,11 +1,12 @@
 import { prepareLiveRoster } from '../lib/live-team-rosters';
 import { isGeneratingTeams, matchRosterIds, regenerateMatchTeams } from './match-management';
-import { assertCanJoinMatch, assertOpenRoster, hasFixedRoster, isMatchManager, isTeamMatch } from '../lib/match-access';
+import { assertCanJoinMatch, assertOpenRoster, hasFixedRoster, isTeamMatch, userCanManageMatch } from '../lib/match-access';
 import { assertFinishable, assertLive, staleTeamsPatch } from '../lib/match-state';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
 import { sendPushToUsers } from '../lib/fcm-push';
+import { publishSocialActivity } from './social';
 
 /**
  * Callables para el ciclo de vida de un partido (iniciar, sumarse/bajarse,
@@ -33,10 +34,14 @@ export const startMatch = onCall({ region: 'us-central1' }, async (request) => {
   const matchId = String(request.data?.matchId ?? '');
   const db = admin.firestore();
   const ref = db.collection('matches').doc(matchId);
+  const preSnap = await ref.get();
+  if (!preSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+  if (!(await userCanManageMatch(db, preSnap.data()!, uid))) {
+    throw new HttpsError('permission-denied', 'Sólo los organizadores o capitanes pueden iniciar el partido.');
+  }
   await db.runTransaction(async tx => {
     const data = (await tx.get(ref)).data();
     if (!data) throw new HttpsError('not-found', 'El partido no existe.');
-    if (!isMatchManager(data, uid)) throw new HttpsError('permission-denied', 'Sólo el organizador o los capitanes pueden iniciar el partido.');
     if (data.status === 'active') return;
     if (data.status !== 'upcoming') throw new HttpsError('failed-precondition', 'Confirmá fecha y equipos antes de iniciar.');
     if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
@@ -74,8 +79,8 @@ export const updateLiveMinute = onCall({ region: 'us-central1' }, async (request
   const minute = Number(request.data?.minute ?? 0);
   const liveStatus = String(request.data?.liveStatus ?? '');
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (data.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Solo el organizador puede actualizar el minuto en vivo.');
+  if (!(await userCanManageMatch(admin.firestore(), data, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores pueden actualizar el minuto en vivo.');
   }
   assertLive(data);
   // Se congela el reloj en el minuto que mandó el cliente: es lo único
@@ -123,8 +128,8 @@ export const updateLiveState = onCall({ region: 'us-central1' }, async (request)
   }
 
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (!isMatchManager(data, uid)) {
-    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden controlar el partido en vivo.');
+  if (!(await userCanManageMatch(admin.firestore(), data, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores o capitanes pueden controlar el partido en vivo.');
   }
   // Sólo se controla un partido que YA está en vivo. Antes esta función ponía
   // `status: 'active'` desde cualquier estado: saltaba las validaciones de
@@ -315,10 +320,12 @@ export const recordLiveEvent = onCall({ region: 'us-central1' }, async (request)
 });
 export async function recordLiveEventCore(db: admin.firestore.Firestore,uid: string,matchId: string,event: Record<string,any>) {
   const ref=db.collection('matches').doc(matchId);
+  const preSnap = await ref.get();
+  if(!preSnap.exists) throw new HttpsError('not-found','El partido no existe.');
+  if(!(await userCanManageMatch(db,preSnap.data()!,uid))) throw new HttpsError('permission-denied','Sólo los organizadores o capitanes registran eventos.');
   return db.runTransaction(async tx=>{
     const match=(await tx.get(ref)).data();
     if(!match) throw new HttpsError('not-found','El partido no existe.');
-    if(!isMatchManager(match,uid)) throw new HttpsError('permission-denied','Sólo el organizador o los capitanes registran eventos.');
     if(match.status!=='active') throw new HttpsError('failed-precondition','El partido debe estar en vivo y sin cerrar.');
     const events=Array.isArray(match.events)?match.events:[];
     if(events.some((e:any)=>event.id ? e.id===event.id : JSON.stringify(e)===JSON.stringify(event))) return {ok:true};
@@ -366,7 +373,11 @@ export function generateEvaluationAssignments(
   allPlayers: LifecyclePlayer[]
 ): { matchId: string; evaluatorId: string; subjectId: string; status: 'pending' }[] {
   const assignments: { matchId: string; evaluatorId: string; subjectId: string; status: 'pending' }[] = [];
-  const matchPlayers = allPlayers.filter((player) => match.playerUids.includes(player.id));
+  const matchPlayers = allPlayers.filter(
+    (player) =>
+      match.playerUids.includes(player.id) &&
+      !player.id.startsWith('guest_'),
+  );
   const realPlayerUids = matchPlayers.filter(isRealUser).map((player) => player.id);
   const incomingCounts: Record<string, number> = {};
 
@@ -448,8 +459,8 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
 
   const db = admin.firestore();
   const { ref, data } = await getMatchOrThrow(matchId);
-  if (!isMatchManager(data, uid)) {
-    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden finalizar el partido.');
+  if (!(await userCanManageMatch(db, data, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores o capitanes pueden finalizar el partido.');
   }
   if (data.status === 'completed' || data.status === 'evaluated') return { ok: true, assignmentsCount: 0 };
   // Sólo se finaliza un partido que estuvo en vivo (ver lib/match-state.ts).
@@ -457,34 +468,47 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
   if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
 
   const playerUids: string[] = Array.isArray(data.playerUids) ? data.playerUids : [];
-  const playerRefs = playerUids.map((playerId) => db.collection('players').doc(playerId));
+  const realPlayerUids = playerUids.filter((id) => !id.startsWith('guest_'));
+  const playerRefs = realPlayerUids.map((playerId) => db.collection('players').doc(playerId));
   const playerDocs = playerRefs.length > 0 ? await db.getAll(...playerRefs) : [];
   const allPlayers: LifecyclePlayer[] = playerDocs
     .filter((doc) => doc.exists)
     .map((doc) => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) }));
 
-  if (allPlayers.length !== new Set(playerUids).size) throw new HttpsError('failed-precondition', 'Falta un perfil del plantel. Revisá la convocatoria antes de finalizar.');
+  if (allPlayers.length !== new Set(realPlayerUids).size) throw new HttpsError('failed-precondition', 'Falta un perfil del plantel. Revisá la convocatoria antes de finalizar.');
   const matchSize = Number(data.matchSize ?? 0);
   let finalTeams = Array.isArray(data.teams) ? (data.teams as LifecycleTeam[]) : undefined;
   // Quién cerró el partido y cuándo, para poder responder por un resultado.
   const matchUpdateData: Record<string, unknown> = { status: 'completed', finishedBy: uid, finishedAt: new Date().toISOString() };
 
   if ((!finalTeams || finalTeams.length === 0) && playerUids.length >= matchSize && matchSize > 0) {
-    const playersToBalance = allPlayers
-      .filter((player) => playerUids.includes(player.id))
-      .map((player) => ({
-        uid: player.id,
-        displayName: player.displayName || player.name || '',
-        position: player.position || '',
-        ovr: player.ovr || 0,
-        photoURL: String(player.photoURL ?? player.photoUrl ?? ''),
+    const guestPlayers = (Array.isArray(data.players) ? data.players : [])
+      .filter((p: any) => p?.isGuest === true || String(p?.uid ?? '').startsWith('guest_'))
+      .map((p: any) => ({
+        uid: String(p.uid),
+        displayName: String(p.displayName ?? 'Invitado'),
+        position: String(p.position ?? 'MED'),
+        ovr: Number(p.ovr ?? 70),
+        photoURL: '',
       }));
+    const playersToBalance = [
+      ...allPlayers
+        .filter((player) => realPlayerUids.includes(player.id))
+        .map((player) => ({
+          uid: player.id,
+          displayName: player.displayName || player.name || '',
+          position: player.position || '',
+          ovr: player.ovr || 0,
+          photoURL: String(player.photoURL ?? player.photoUrl ?? ''),
+        })),
+      ...guestPlayers,
+    ];
     const teamGenerationResult = await generateBalancedTeamsCore(playersToBalance, 2);
     finalTeams = teamGenerationResult.teams as unknown as LifecycleTeam[];
     matchUpdateData.teams = finalTeams;
   }
 
-  const matchForAssignments = { id: matchId, playerUids, teams: finalTeams };
+  const matchForAssignments = { id: matchId, playerUids: realPlayerUids, teams: finalTeams };
   const assignments = generateEvaluationAssignments(matchForAssignments, allPlayers);
 
   let evaluatorsToPush: string[] = [];
@@ -492,7 +516,6 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
   await db.runTransaction(async batch => {
     const fresh = (await batch.get(ref)).data();
     if (!fresh) throw new HttpsError('not-found', 'El partido no existe.');
-    if (!isMatchManager(fresh, uid)) throw new HttpsError('permission-denied', 'Sólo el organizador o los capitanes pueden finalizar.');
     if (fresh.status === 'completed' || fresh.status === 'evaluated') return;
     assertFinishable(fresh);
     if (isGeneratingTeams(fresh) || JSON.stringify(fresh.playerUids ?? []) !== JSON.stringify(playerUids) || JSON.stringify(fresh.teams ?? []) !== JSON.stringify(data.teams ?? [])) {
@@ -534,6 +557,42 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
       'FinishMatch',
     );
   }
+
+  const organizerPlayer = allPlayers.find((p) => p.id === (data.ownerUid ?? uid)) ?? allPlayers[0];
+  const tA = finalTeams?.[0] as any;
+  const tB = finalTeams?.[1] as any;
+  const locName = typeof data.location === 'object' && data.location
+    ? String((data.location as any).name ?? (data.location as any).address ?? '')
+    : String(data.location ?? '');
+  await publishSocialActivity(
+    db,
+    {
+      type: 'match_played',
+      userId: String(data.ownerUid ?? uid),
+      playerId: String(data.ownerUid ?? uid),
+      playerName: String(organizerPlayer?.name ?? organizerPlayer?.displayName ?? 'Partido'),
+      playerPhotoUrl: String(organizerPlayer?.photoURL ?? organizerPlayer?.photoUrl ?? ''),
+      groupId: String(data.groupId ?? ''),
+      text: tA && tB
+        ? `Terminó "${data.title ?? 'Partido'}": ${tA.name ?? 'Equipo 1'} ${Number(tA.score ?? 0)} - ${Number(tB.score ?? 0)} ${tB.name ?? 'Equipo 2'}.`
+        : `Terminó el partido "${data.title ?? 'Partido'}". ¡Ya están abiertas las evaluaciones!`,
+      metadata: {
+        matchId,
+        matchTitle: String(data.title ?? 'Partido'),
+        matchDate: String(data.date ?? ''),
+        matchLocation: locName,
+        ...(tA && tB
+          ? {
+              teamAName: String(tA.name ?? 'Equipo 1'),
+              teamAScore: Number(tA.score ?? 0),
+              teamBName: String(tB.name ?? 'Equipo 2'),
+              teamBScore: Number(tB.score ?? 0),
+            }
+          : {}),
+      },
+    },
+    `match_played_${matchId}`,
+  ).catch(() => {});
 
   return { ok: true, assignmentsCount: assignments.length };
 });

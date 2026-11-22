@@ -149,6 +149,12 @@ service cloud.firestore {
         allow create: if false;
       }
 
+      // Mensajes directos e invitaciones con mensaje de otros jugadores.
+      match /messages/{messageId} {
+        allow read, update, delete: if isOwner(userId);
+        allow create: if false;
+      }
+
       // Espejo privado de las evaluaciones que ESTE usuario emitió.
       // Permite al evaluador consultar sus propias evaluaciones sin que
       // `evaluatorId` tenga que ser legible en el documento público.
@@ -240,6 +246,25 @@ service cloud.firestore {
     match /groupTeams/{groupTeamId} {
       allow read: if isAuthenticated();
       allow write: if false;
+    }
+
+    // Conversaciones 1 a 1 estilo WhatsApp/Telegram entre jugadores.
+    match /directChats/{chatId} {
+      allow read: if isAuthenticated()
+        && (request.auth.uid in chatId.split('_')
+            || (resource != null && request.auth.uid in resource.data.participants));
+      allow update: if isAuthenticated()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCounts']);
+      allow create, delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated()
+          && (request.auth.uid in chatId.split('_')
+              || (exists(/databases/$(database)/documents/directChats/$(chatId))
+                  && request.auth.uid in get(/databases/$(database)/documents/directChats/$(chatId)).data.participants));
+        allow write: if false;
+      }
     }
 
     match /venues/{venueId} {

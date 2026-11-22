@@ -1,4 +1,5 @@
 import '../../features/groups/team_rivals_screen.dart';
+import '../../features/messages/messages_screen.dart';
 import '../widgets/section_icon.dart';
 import '../../features/competitions/league_detail_screen.dart';
 import 'dart:async';
@@ -163,14 +164,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/social',
-                builder: (context, state) => const SocialFeedScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
                 path: '/explorar',
                 builder: (context, state) => const ExplorarScreen(),
               ),
@@ -216,6 +209,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/groups',
         builder: (context, state) => _withBackground(const GroupsScreen()),
+      ),
+      GoRoute(
+        path: '/social',
+        builder: (context, state) => _withBackground(const SocialFeedScreen()),
+      ),
+      GoRoute(
+        path: '/messages',
+        builder: (context, state) => _withBackground(const MessagesScreen()),
+      ),
+      GoRoute(
+        path: '/messages/chat/:otherUid',
+        builder: (context, state) {
+          final otherUid = state.pathParameters['otherUid'] ?? '';
+          final name = state.uri.queryParameters['name'] ?? 'Jugador';
+          final photo = state.uri.queryParameters['photo'];
+          return _withBackground(
+            DirectChatScreen(
+              otherUid: otherUid,
+              otherName: name,
+              otherPhotoUrl: photo,
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/groups/teams/new',

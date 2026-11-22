@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../core/widgets/patea_activity_cover.dart';
 import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_section_scene.dart';
@@ -11,6 +13,7 @@ import '../../core/widgets/patea_states.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/patea_colors.dart';
@@ -19,9 +22,11 @@ import '../../core/utils/dates.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/services/group_service.dart';
+import '../../core/services/location_service.dart';
 import '../../core/models/group_model.dart';
 import '../../core/models/match_model.dart';
 import '../../core/models/player_model.dart';
+import '../../core/models/venue_model.dart';
 import '../../core/models/group_permissions.dart';
 import '../../core/widgets/jersey_painter.dart';
 
@@ -345,6 +350,7 @@ class _ActiveGroupView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final groupAsync = ref.watch(singleGroupStreamProvider(groupId));
     final teamsAsync = ref.watch(groupTeamsStreamProvider(groupId));
+    final venuesAsync = ref.watch(groupVenuesStreamProvider(groupId));
     final matchesAsync = ref.watch(matchesStreamProvider(groupId));
     final playersAsync = ref.watch(playersStreamProvider(groupId));
     final myGroups =
@@ -524,6 +530,51 @@ class _ActiveGroupView extends ConsumerWidget {
                 },
                 loading: () => const PateaLoading(height: 96),
                 error: (e, _) => PateaError(error: e, compact: true),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _Section(
+              icon: Icons.stadium_outlined,
+              title: 'Canchas guardadas',
+              child: venuesAsync.when(
+                data: (venues) {
+                  if (venues.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        'Todavía no hay canchas guardadas. Cuando creen un partido, la cancha se guarda acá automáticamente.',
+                        style: AppTypography.body(
+                          size: 12,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: venues
+                        .map(
+                          (venue) => _GroupSavedVenueRow(
+                            venue: venue,
+                            groupId: groupId,
+                          ),
+                        )
+                        .toList(),
+                  );
+                },
+                loading: () => const PateaLoading(height: 80),
+                error: (e, _) => PateaError(error: e, compact: true),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _Section(
+              icon: Icons.manage_accounts_outlined,
+              title: 'Miembros y roles (${group.members.length})',
+              child: _GroupMembersSection(
+                group: group,
+                myRole: role,
+                playersById: playersById,
               ),
             ),
             const SizedBox(height: 20),
@@ -874,7 +925,7 @@ class _PlayedMatchRow extends StatelessWidget {
   }
 }
 
-class _GroupHeroCard extends StatelessWidget {
+class _GroupHeroCard extends ConsumerWidget {
   final GroupModel group;
   final GroupRole? role;
   final int? playersCount, teamsCount, playedCount;
@@ -894,8 +945,100 @@ class _GroupHeroCard extends StatelessWidget {
     }
   }
 
+  Future<void> _pickGroupCountry(BuildContext context, WidgetRef ref) async {
+    final options = kSupportedCountries.where((c) => c.code != null).toList();
+    final current = LocationService.defaultCountryCode(
+      groupCountryCode: group.countryCode,
+    );
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: context.c.card,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: ctx.c.border,
+                borderRadius: AppRadii.hairAll,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+              child: Row(
+                children: [
+                  Icon(Icons.public, size: 20, color: ctx.c.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'País por defecto del grupo',
+                    style: AppTypography.headline(size: 16),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (ctx, i) {
+                  final option = options[i];
+                  final selected = option.code == current;
+                  return ListTile(
+                    leading: Text(
+                      option.flag,
+                      style: const TextStyle(fontSize: 22),
+                    ),
+                    title: Text(
+                      option.name,
+                      style: AppTypography.body(
+                        color: ctx.c.textPrimary,
+                        weight: selected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                    trailing: selected
+                        ? Icon(Icons.check_circle, color: ctx.c.primary)
+                        : null,
+                    onTap: () => Navigator.of(ctx).pop(option.code),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !context.mounted) return;
+    try {
+      await ref.read(groupServiceProvider).setGroupCountry(
+            groupId: group.id,
+            countryCode: picked,
+          );
+      if (context.mounted) {
+        final chosen = findCountryOption(picked);
+        PateaSnack.ok(
+          context,
+          'País del grupo actualizado a ${chosen.flag} ${chosen.name}',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        PateaSnack.error(context, 'No se pudo cambiar el país: $e');
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final country = findCountryOption(
+      LocationService.defaultCountryCode(groupCountryCode: group.countryCode),
+    );
+    final canEditCountry =
+        role == GroupRole.admin || role == GroupRole.moderator;
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       PateaActivityCover(
@@ -963,6 +1106,36 @@ class _GroupHeroCard extends StatelessWidget {
         ],
       ),
       const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'País de búsqueda de canchas',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${country.flag} ${country.name}',
+                  style: AppTypography.body(size: 15, weight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          if (canEditCountry)
+            TextButton.icon(
+              onPressed: () => _pickGroupCountry(context, ref),
+              icon: const Icon(Icons.edit_outlined, size: 17),
+              label: const Text('Cambiar'),
+            ),
+        ],
+      ),
+      const SizedBox(height: 12),
       FilledButton.icon(
         onPressed: () => _shareInvite(context),
         icon: const Icon(Icons.share_outlined, size: 19),
@@ -973,4 +1146,316 @@ class _GroupHeroCard extends StatelessWidget {
       ),
     ],
   );
+  }
+}
+
+class _GroupSavedVenueRow extends ConsumerStatefulWidget {
+  final VenueModel venue;
+  final String groupId;
+
+  const _GroupSavedVenueRow({required this.venue, required this.groupId});
+
+  @override
+  ConsumerState<_GroupSavedVenueRow> createState() =>
+      _GroupSavedVenueRowState();
+}
+
+class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
+  bool _uploading = false;
+
+  Future<void> _uploadPhoto() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1280,
+      imageQuality: 85,
+    );
+    if (xfile == null || !mounted) return;
+
+    setState(() => _uploading = true);
+    try {
+      final photoUrl = await LocationService().uploadCustomVenuePhoto(
+        groupId: widget.groupId,
+        venueId: widget.venue.id,
+        file: File(xfile.path),
+      );
+      await ref.read(groupServiceProvider).updateGroupVenue(
+            groupId: widget.groupId,
+            venueId: widget.venue.id,
+            photoUrl: photoUrl,
+          );
+      if (mounted) {
+        PateaSnack.ok(context, 'Foto de ${widget.venue.name} actualizada');
+      }
+    } catch (e) {
+      if (mounted) {
+        PateaSnack.error(context, 'No se pudo subir la foto: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = widget.venue;
+    final hasPhoto = v.photoUrl != null && v.photoUrl!.isNotEmpty;
+
+    return PateaCard(
+      color: context.c.cardSurface.withValues(alpha: 0.5),
+      radius: AppRadii.cardAll,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: AppRadii.chipAll,
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: hasPhoto
+                  ? Image.network(
+                      v.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        color: context.c.card,
+                        child: Icon(
+                          Icons.stadium_outlined,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: context.c.card,
+                      child: Icon(
+                        Icons.stadium_outlined,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  v.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body(
+                    size: 14,
+                    weight: FontWeight.w700,
+                    color: context.c.textPrimary,
+                  ),
+                ),
+                if (v.address.isNotEmpty)
+                  Text(
+                    v.address,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      size: 11,
+                      color: context.c.textSecondary,
+                    ),
+                  ),
+                const SizedBox(height: 2),
+                Text(
+                  '${v.usageCount} ${v.usageCount == 1 ? 'partido' : 'partidos'}',
+                  style: AppTypography.body(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: context.c.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _uploading ? null : _uploadPhoto,
+            tooltip: hasPhoto ? 'Cambiar foto' : 'Subir foto',
+            icon: _uploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    Icons.add_a_photo_outlined,
+                    size: 20,
+                    color: context.c.textSecondary,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GroupMembersSection extends ConsumerStatefulWidget {
+  final GroupModel group;
+  final GroupRole? myRole;
+  final Map<String, PlayerModel> playersById;
+
+  const _GroupMembersSection({
+    required this.group,
+    required this.myRole,
+    required this.playersById,
+  });
+
+  @override
+  ConsumerState<_GroupMembersSection> createState() =>
+      _GroupMembersSectionState();
+}
+
+class _GroupMembersSectionState extends ConsumerState<_GroupMembersSection> {
+  String? _busyUid;
+
+  GroupRole _parseRole(String raw) => switch (raw) {
+    'admin' => GroupRole.admin,
+    'moderator' => GroupRole.moderator,
+    _ => GroupRole.member,
+  };
+
+  Future<void> _changeRole(String memberUid, GroupRole nextRole) async {
+    setState(() => _busyUid = memberUid);
+    try {
+      await ref.read(groupServiceProvider).setGroupMemberRole(
+            groupId: widget.group.id,
+            userId: memberUid,
+            role: nextRole,
+          );
+      if (mounted) {
+        PateaSnack.ok(context, 'Rol actualizado a ${roleLabel(nextRole)}');
+      }
+    } catch (e) {
+      if (mounted) {
+        PateaSnack.error(context, 'No se pudo cambiar el rol: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _busyUid = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canManageRoles = widget.myRole == GroupRole.admin;
+    final members = widget.group.members;
+    if (members.isEmpty) {
+      return Text(
+        'No hay miembros en el grupo.',
+        style: AppTypography.body(size: 12, color: context.c.textSecondary),
+      );
+    }
+
+    return Column(
+      children: members.map((memberUid) {
+        final player = widget.playersById[memberUid];
+        final isOwner = memberUid == widget.group.ownerUid;
+        final memberRole = _parseRole(widget.group.roleFor(memberUid));
+        final displayName =
+            player?.name ?? (isOwner ? 'Creador del grupo' : 'Jugador');
+
+        return PateaCard(
+          color: context.c.cardSurface.withValues(alpha: 0.5),
+          radius: AppRadii.cardAll,
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            children: [
+              PateaAvatar(
+                photoUrl: player?.photoUrl,
+                seed: displayName,
+                size: 36,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(
+                        size: 13,
+                        weight: FontWeight.w700,
+                        color: context.c.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      isOwner ? 'Creador · Admin' : roleLabel(memberRole),
+                      style: AppTypography.body(
+                        size: 11,
+                        color: memberRole == GroupRole.member
+                            ? context.c.textSecondary
+                            : context.c.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (canManageRoles && !isOwner)
+                _busyUid == memberUid
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : PopupMenuButton<GroupRole>(
+                        initialValue: memberRole,
+                        onSelected: (next) {
+                          if (next != memberRole) _changeRole(memberUid, next);
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: GroupRole.admin,
+                            child: Text('Admin (grupo y partidos)'),
+                          ),
+                          const PopupMenuItem(
+                            value: GroupRole.moderator,
+                            child: Text('Moderador (equipos y partidos)'),
+                          ),
+                          const PopupMenuItem(
+                            value: GroupRole.member,
+                            child: Text('Miembro'),
+                          ),
+                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.c.card,
+                            borderRadius: AppRadii.pillAll,
+                            border: Border.all(color: context.c.border),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                roleLabel(memberRole),
+                                style: AppTypography.body(
+                                  size: 11,
+                                  weight: FontWeight.w700,
+                                  color: context.c.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                size: 16,
+                                color: context.c.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
 }

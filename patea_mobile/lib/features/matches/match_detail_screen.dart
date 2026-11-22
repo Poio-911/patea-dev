@@ -3,7 +3,9 @@ import '../../core/models/group_permissions.dart';
 import '../../core/services/group_service.dart';
 import '../../core/services/team_challenge_service.dart';
 import 'match_chat_screen.dart';
+import '../social/social_feed_screen.dart';
 import '../../core/widgets/patea_button_progress.dart';
+import '../../core/widgets/venue_picker_field.dart';
 import 'dart:async';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_card.dart';
@@ -366,12 +368,14 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
   }
 
   Future<void> _showChangeVenueDialog(MatchModel match) async {
-    final controller = TextEditingController(text: match.location ?? '');
-    List<LocationSuggestion> suggestions = [];
     LocationSuggestion? selected;
-    Timer? debounce;
     bool submitting = false;
-    final locationService = LocationService();
+    final groupCountry = match.groupId != null && match.groupId!.isNotEmpty
+        ? ref
+              .read(singleGroupStreamProvider(match.groupId!))
+              .value
+              ?.countryCode
+        : null;
 
     final route = DialogRoute<void>(
       context: context,
@@ -384,59 +388,15 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           ),
           content: SizedBox(
             width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(
-                    hintText: 'Buscá la nueva cancha...',
-                  ),
-                  onChanged: (v) {
-                    selected = null;
-                    debounce?.cancel();
-                    debounce = Timer(
-                      const Duration(milliseconds: 300),
-                      () async {
-                        if (v.trim().length < 3) {
-                          setDialogState(() => suggestions = []);
-                          return;
-                        }
-                        final results = await locationService.suggest(v);
-                        setDialogState(() => suggestions = results);
-                      },
-                    );
-                  },
-                ),
-                if (suggestions.isNotEmpty)
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 200),
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: suggestions
-                          .map(
-                            (s) => ListTile(
-                              dense: true,
-                              title: Text(
-                                s.label,
-                                style: AppTypography.body(
-                                  color: context.c.textSecondary,
-                                  size: 12,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              onTap: () => setDialogState(() {
-                                selected = s;
-                                controller.text = s.label;
-                                suggestions = [];
-                              }),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-              ],
+            child: SingleChildScrollView(
+              child: VenuePickerField(
+                groupId: match.groupId,
+                defaultCountryCode: groupCountry,
+                selected: selected,
+                onChanged: (loc) => setDialogState(() => selected = loc),
+                labelText: 'Nueva cancha',
+                hintText: 'Buscá por nombre o elegí del grupo...',
+              ),
             ),
           ),
           actions: [
@@ -454,11 +414,16 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             .read(matchServiceProvider)
                             .updateMatchLocation(
                               matchId: match.id,
-                              locationName: selected!.label,
-                              locationAddress: selected!.label,
+                              locationName: selected!.name.isNotEmpty
+                                  ? selected!.name
+                                  : selected!.label,
+                              locationAddress: selected!.address.isNotEmpty
+                                  ? selected!.address
+                                  : selected!.label,
                               locationLat: selected!.lat,
                               locationLng: selected!.lng,
                               locationPlaceId: selected!.placeId,
+                              locationPhotoUrl: selected!.photoUrl,
                             );
                         if (context.mounted) Navigator.pop(context);
                       } catch (e) {
@@ -484,8 +449,6 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     );
     await Navigator.of(context, rootNavigator: true).push(route);
     await route.completed;
-    debounce?.cancel();
-    controller.dispose();
   }
 
   void _showSnack(String text) {
@@ -530,9 +493,13 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         }
 
         final isOwner = uid != null && match.ownerUid == uid;
-        // Organizador o capitán (partidos entre grupos). Borrar y repartir
-        // equipos sigue siendo sólo del organizador.
-        final isManager = match.isManagedBy(uid);
+        final groupRole = match.groupId != null && match.groupId!.isNotEmpty
+            ? ref.watch(myGroupRoleProvider(match.groupId!)).value
+            : null;
+        // Organizador, co-organizador, capitán o admin/moderador del grupo.
+        final isManager = match.isManagedBy(uid, groupRole: groupRole);
+        final canManageOrganizers =
+            isOwner || groupRole == GroupRole.admin;
         // Miembro de uno de los grupos que participan (aunque no juegue): puede
         // subir clips, igual que lo dejan las reglas de Firestore y Storage.
         final activeGroupId = ref.watch(activeGroupIdProvider).asData?.value;
@@ -838,11 +805,28 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       canChat: isManager || isUserInMatch,
                       onOpenChat: () => _openMatchChat(context, match),
                     ),
+                    if (isUserInMatch || isManager) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () => CreateSocialPostSheet.show(
+                          context,
+                          initialMatch: match,
+                        ),
+                        icon: const Icon(
+                          Icons.add_photo_alternate_outlined,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Compartir foto o momento en Comunidad Pateá',
+                        ),
+                      ),
+                    ],
                     if (isManager) ...[
                       const SizedBox(height: 16),
                       _OrganizerPanel(
                         match: match,
                         isOwner: isOwner,
+                        canManageOrganizers: canManageOrganizers,
                         hasTeams: hasTeams,
                         isCompetition: isCompetition,
                         isShuffling: _isShuffling,
@@ -1323,6 +1307,14 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final uid = ref.watch(authStateProvider).valueOrNull?.uid;
+    final groupRole = match.groupId != null && match.groupId!.isNotEmpty
+        ? ref.watch(myGroupRoleProvider(match.groupId!)).value
+        : null;
+    final canRemove =
+        match.isManagedBy(uid, groupRole: groupRole) &&
+        ['planning', 'upcoming'].contains(match.status) &&
+        !match.isTeamMatch;
     return PateaCard(
       color: context.c.card,
       radius: AppRadii.cardAll,
@@ -1390,23 +1382,74 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                   return Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => _showPlayerCardModal(
-                        context,
-                        ref,
-                        p,
-                        photo: p.photoURL,
-                      ),
+                      onTap: () {
+                        if (p.isGuest) {
+                          PateaSnack.info(
+                            context,
+                            '${p.displayName} es un invitado puntual de este partido.',
+                          );
+                          return;
+                        }
+                        _showPlayerCardModal(
+                          context,
+                          ref,
+                          p,
+                          photo: p.photoURL,
+                        );
+                      },
                       borderRadius: AppRadii.cardAll,
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: SizedBox(
-                          width: 76,
+                          width: 78,
                           child: Column(
                             children: [
-                              PateaAvatar(
-                                photoUrl: p.photoURL,
-                                seed: p.displayName,
-                                size: 48,
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  PateaAvatar(
+                                    photoUrl: p.photoURL,
+                                    seed: p.displayName,
+                                    size: 48,
+                                  ),
+                                  if (canRemove)
+                                    Positioned(
+                                      top: -4,
+                                      right: -6,
+                                      child: InkWell(
+                                        onTap: () async {
+                                          try {
+                                            await ref
+                                                .read(matchServiceProvider)
+                                                .removeMatchPlayer(
+                                                  match.id,
+                                                  p.uid,
+                                                );
+                                          } catch (e) {
+                                            if (context.mounted) {
+                                              PateaSnack.error(context, '$e');
+                                            }
+                                          }
+                                        },
+                                        borderRadius: AppRadii.pillAll,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                            color: context.c.card,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: context.c.border,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 12,
+                                            color: context.c.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                               const SizedBox(height: 5),
                               Text(
@@ -1420,13 +1463,17 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                '${p.position} ${p.ovr > 0 ? p.ovr : ""}'
-                                    .trim(),
+                                p.isGuest
+                                    ? 'Invitado'
+                                    : '${p.position} ${p.ovr > 0 ? p.ovr : ""}'
+                                        .trim(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTypography.code(
-                                  size: 12,
-                                  color: context.c.positionColor(p.position),
+                                  size: 11,
+                                  color: p.isGuest
+                                      ? context.c.primary
+                                      : context.c.positionColor(p.position),
                                 ),
                               ),
                             ],
@@ -1448,8 +1495,10 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
 class _OrganizerPanel extends StatelessWidget {
   final MatchModel match;
 
-  /// Sólo el organizador borra el partido; un capitán gestiona lo demás.
+  /// Sólo el organizador creador borra el partido; co-organizadores y
+  /// admins/moderadores del grupo gestionan lo operativo.
   final bool isOwner;
+  final bool canManageOrganizers;
   final bool hasTeams;
   final bool isCompetition;
   final bool isShuffling;
@@ -1465,6 +1514,7 @@ class _OrganizerPanel extends StatelessWidget {
   const _OrganizerPanel({
     required this.match,
     required this.isOwner,
+    required this.canManageOrganizers,
     required this.hasTeams,
     required this.isCompetition,
     required this.isShuffling,
@@ -1484,6 +1534,10 @@ class _OrganizerPanel extends StatelessWidget {
     // En un partido entre equipos los planteles son los de cada equipo: no se
     // reparten, no se re-equilibran y no se completan con jugadores sueltos.
     final isTeamMatch = match.isTeamMatch;
+    final canEditRoster =
+        ['planning', 'upcoming'].contains(match.status) &&
+        !isTeamMatch &&
+        !isCompetition;
 
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
@@ -1510,6 +1564,54 @@ class _OrganizerPanel extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  if (canEditRoster &&
+                      (match.matchSize <= 0 ||
+                          match.players.length < match.matchSize)) ...[
+                    if (match.groupId != null && match.groupId!.isNotEmpty)
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            _AddGroupPlayersSheet.show(context, match),
+                        icon: const Icon(Icons.group_add_outlined, size: 15),
+                        label: const Text('Agregar del grupo'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: context.c.cardSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                          foregroundColor: context.c.textPrimary,
+                          side: BorderSide(
+                            color: context.c.border.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: () => _showAddGuestDialog(context, match),
+                      icon: const Icon(Icons.person_add_alt_1_outlined, size: 15),
+                      label: const Text('Invitado puntual'),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: context.c.cardSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                        foregroundColor: context.c.textPrimary,
+                        side: BorderSide(
+                          color: context.c.border.withValues(alpha: 0.5),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.cardAll,
+                        ),
+                      ),
+                    ),
+                  ],
                   if (match.status == 'upcoming' && !isCompetition) ...[
                     if (match.players.length < match.matchSize && !isTeamMatch)
                       OutlinedButton.icon(
@@ -1537,7 +1639,7 @@ class _OrganizerPanel extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (hasTeams && !isTeamMatch && isOwner)
+                    if (hasTeams && !isTeamMatch)
                       OutlinedButton.icon(
                         onPressed: isShuffling
                             ? null
@@ -1561,7 +1663,7 @@ class _OrganizerPanel extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (!isTeamMatch && isOwner)
+                    if (!isTeamMatch)
                       OutlinedButton.icon(
                         onPressed: isShuffling ? null : onShuffle,
                         icon: isShuffling
@@ -1635,6 +1737,37 @@ class _OrganizerPanel extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (canManageOrganizers &&
+                        match.groupId != null &&
+                        match.groupId!.isNotEmpty)
+                      OutlinedButton.icon(
+                        onPressed: () => _CoOrganizersSheet.show(context, match),
+                        icon: const Icon(
+                          Icons.manage_accounts_outlined,
+                          size: 15,
+                        ),
+                        label: Text(
+                          match.coOrganizerUids.isEmpty
+                              ? 'Co-organizadores'
+                              : 'Co-organizadores (${match.coOrganizerUids.length})',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: context.c.cardSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                          foregroundColor: context.c.textPrimary,
+                          side: BorderSide(
+                            color: context.c.border.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.cardAll,
+                          ),
+                        ),
+                      ),
                     if (canFinalize)
                       ElevatedButton.icon(
                         onPressed: isFinishing ? null : onFinish,
@@ -2410,6 +2543,502 @@ class _IntergroupChallengeBannerState
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _AddGroupPlayersSheet extends ConsumerStatefulWidget {
+  final MatchModel match;
+
+  const _AddGroupPlayersSheet({required this.match});
+
+  static Future<void> show(BuildContext context, MatchModel match) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.c.card,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
+      builder: (_) => _AddGroupPlayersSheet(match: match),
+    );
+  }
+
+  @override
+  ConsumerState<_AddGroupPlayersSheet> createState() =>
+      _AddGroupPlayersSheetState();
+}
+
+class _AddGroupPlayersSheetState extends ConsumerState<_AddGroupPlayersSheet> {
+  final Set<String> _selectedIds = {};
+  bool _submitting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final groupId = widget.match.groupId ?? '';
+    final playersAsync = ref.watch(playersStreamProvider(groupId));
+    final currentIds = widget.match.playerUids.toSet();
+    final remaining = widget.match.matchSize > 0
+        ? (widget.match.matchSize - widget.match.players.length)
+        : 99;
+
+    return SafeArea(
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.c.border,
+                    borderRadius: AppRadii.hairAll,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Agregar jugadores del grupo',
+                style: AppTypography.headline(size: 16),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.match.matchSize > 0
+                    ? 'Cupos libres: $remaining'
+                    : 'Elegí los jugadores que querés anotar en el partido.',
+                style: AppTypography.body(
+                  size: 12,
+                  color: context.c.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: playersAsync.when(
+                  data: (players) {
+                    final available = players
+                        .where((p) => !currentIds.contains(p.id))
+                        .toList();
+                    if (available.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'Todos los jugadores del grupo ya están anotados.',
+                          style: AppTypography.body(
+                            size: 13,
+                            color: context.c.textSecondary,
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      controller: scrollController,
+                      itemCount: available.length,
+                      itemBuilder: (context, i) {
+                        final p = available[i];
+                        final checked = _selectedIds.contains(p.id);
+                        return CheckboxListTile(
+                          value: checked,
+                          onChanged: _submitting
+                              ? null
+                              : (v) {
+                                  setState(() {
+                                    if (v == true) {
+                                      if (_selectedIds.length < remaining) {
+                                        _selectedIds.add(p.id);
+                                      } else {
+                                        PateaSnack.info(
+                                          context,
+                                          'Ya alcanzaste el cupo máximo.',
+                                        );
+                                      }
+                                    } else {
+                                      _selectedIds.remove(p.id);
+                                    }
+                                  });
+                                },
+                          secondary: PateaAvatar(
+                            photoUrl: p.photoUrl,
+                            seed: p.name,
+                            size: 36,
+                          ),
+                          title: Text(
+                            p.name,
+                            style: AppTypography.body(
+                              size: 14,
+                              weight: FontWeight.w600,
+                              color: context.c.textPrimary,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${p.position} · OVR ${p.ovr}',
+                            style: AppTypography.body(
+                              size: 12,
+                              color: context.c.textSecondary,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const PateaLoading(),
+                  error: (e, _) => PateaError(error: e, compact: true),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _submitting || _selectedIds.isEmpty
+                    ? null
+                    : () async {
+                        setState(() => _submitting = true);
+                        try {
+                          await ref.read(matchServiceProvider).addMatchPlayers(
+                                matchId: widget.match.id,
+                                playerUids: _selectedIds.toList(),
+                              );
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            PateaSnack.ok(
+                              context,
+                              'Jugadores agregados al partido',
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            PateaSnack.error(context, '$e');
+                            setState(() => _submitting = false);
+                          }
+                        }
+                      },
+                child: _submitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: PateaButtonProgress(),
+                      )
+                    : Text(
+                        _selectedIds.isEmpty
+                            ? 'Seleccioná jugadores'
+                            : 'Agregar (${_selectedIds.length})',
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showAddGuestDialog(BuildContext context, MatchModel match) async {
+  final nameController = TextEditingController();
+  String position = 'MED';
+  int ovr = 70;
+  bool submitting = false;
+  final container = ProviderScope.containerOf(context);
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        backgroundColor: ctx.c.card,
+        title: Text(
+          'Agregar invitado puntual',
+          style: AppTypography.headline(size: 16),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Solo juega este partido: ocupa cupo y entra en equipos, sin crear jugador en el grupo ni entrar a evaluaciones.',
+                style: AppTypography.body(
+                  size: 12,
+                  color: ctx.c.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre del invitado',
+                  hintText: 'Ej: Lucas (amigo)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Posición',
+                style: AppTypography.body(
+                  size: 12,
+                  color: ctx.c.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                children: ['POR', 'DEF', 'MED', 'DEL'].map((pos) {
+                  return ChoiceChip(
+                    label: Text(pos),
+                    selected: position == pos,
+                    onSelected: (_) => setDialogState(() => position = pos),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Nivel aproximado',
+                    style: AppTypography.body(
+                      size: 12,
+                      color: ctx.c.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    '$ovr',
+                    style: AppTypography.code(
+                      size: 14,
+                      weight: FontWeight.w700,
+                      color: ctx.c.primary,
+                    ),
+                  ),
+                ],
+              ),
+              Slider(
+                value: ovr.toDouble(),
+                min: 45,
+                max: 95,
+                divisions: 50,
+                onChanged: (v) => setDialogState(() => ovr = v.round()),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: submitting ? null : () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: submitting
+                ? null
+                : () async {
+                    final name = nameController.text.trim();
+                    if (name.length < 2) {
+                      PateaSnack.error(ctx, 'Ingresá un nombre válido.');
+                      return;
+                    }
+                    setDialogState(() => submitting = true);
+                    try {
+                      await container.read(matchServiceProvider).addMatchGuest(
+                            matchId: match.id,
+                            name: name,
+                            position: position,
+                            ovr: ovr,
+                          );
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        PateaSnack.ok(context, '$name sumado al partido');
+                      }
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        PateaSnack.error(ctx, '$e');
+                        setDialogState(() => submitting = false);
+                      }
+                    }
+                  },
+            child: submitting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: PateaButtonProgress(),
+                  )
+                : const Text('Agregar'),
+          ),
+        ],
+      ),
+    ),
+  );
+  nameController.dispose();
+}
+
+class _CoOrganizersSheet extends ConsumerStatefulWidget {
+  final MatchModel match;
+
+  const _CoOrganizersSheet({required this.match});
+
+  static Future<void> show(BuildContext context, MatchModel match) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.c.card,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
+      builder: (_) => _CoOrganizersSheet(match: match),
+    );
+  }
+
+  @override
+  ConsumerState<_CoOrganizersSheet> createState() => _CoOrganizersSheetState();
+}
+
+class _CoOrganizersSheetState extends ConsumerState<_CoOrganizersSheet> {
+  late Set<String> _selectedUids;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedUids = widget.match.coOrganizerUids.toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final groupId = widget.match.groupId ?? '';
+    final groupAsync = ref.watch(singleGroupStreamProvider(groupId));
+    final playersAsync = ref.watch(playersStreamProvider(groupId));
+
+    return SafeArea(
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.85,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.c.border,
+                    borderRadius: AppRadii.hairAll,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Co-organizadores del partido',
+                style: AppTypography.headline(size: 16),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Pueden sumar jugadores, equilibrar equipos, iniciar, dirigir en vivo y finalizar este partido.',
+                style: AppTypography.body(
+                  size: 12,
+                  color: context.c.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: groupAsync.when(
+                  data: (group) {
+                    if (group == null) return const SizedBox();
+                    final players = playersAsync.value ?? const [];
+                    final playersById = {for (final p in players) p.id: p};
+                    final candidates = group.members
+                        .where((uid) => uid != widget.match.ownerUid)
+                        .toList();
+                    if (candidates.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No hay otros miembros en el grupo.',
+                          style: AppTypography.body(
+                            size: 13,
+                            color: context.c.textSecondary,
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      controller: scrollController,
+                      itemCount: candidates.length,
+                      itemBuilder: (context, i) {
+                        final memberUid = candidates[i];
+                        final p = playersById[memberUid];
+                        final checked = _selectedUids.contains(memberUid);
+                        final name = p?.name ?? 'Miembro del grupo';
+                        return CheckboxListTile(
+                          value: checked,
+                          onChanged: _saving
+                              ? null
+                              : (v) {
+                                  setState(() {
+                                    if (v == true) {
+                                      _selectedUids.add(memberUid);
+                                    } else {
+                                      _selectedUids.remove(memberUid);
+                                    }
+                                  });
+                                },
+                          secondary: PateaAvatar(
+                            photoUrl: p?.photoUrl,
+                            seed: name,
+                            size: 36,
+                          ),
+                          title: Text(
+                            name,
+                            style: AppTypography.body(
+                              size: 14,
+                              weight: FontWeight.w600,
+                              color: context.c.textPrimary,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const PateaLoading(),
+                  error: (e, _) => PateaError(error: e, compact: true),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _saving
+                    ? null
+                    : () async {
+                        setState(() => _saving = true);
+                        try {
+                          await ref
+                              .read(matchServiceProvider)
+                              .updateMatchOrganizers(
+                                matchId: widget.match.id,
+                                coOrganizerUids: _selectedUids.toList(),
+                              );
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            PateaSnack.ok(
+                              context,
+                              'Co-organizadores actualizados',
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            PateaSnack.error(context, '$e');
+                            setState(() => _saving = false);
+                          }
+                        }
+                      },
+                child: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: PateaButtonProgress(),
+                      )
+                    : const Text('Guardar co-organizadores'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

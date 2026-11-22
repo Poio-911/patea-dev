@@ -1,5 +1,6 @@
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
 import { buildMatchDateTime } from '../lib/match-date';
+import { upsertGroupVenue } from '../lib/places-search';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 
@@ -71,6 +72,7 @@ export const createMatch = onCall(
     const locationLat = Number(data.locationLat ?? 0) || 0;
     const locationLng = Number(data.locationLng ?? 0) || 0;
     const locationPlaceId = typeof data.locationPlaceId === 'string' ? data.locationPlaceId : '';
+    const locationPhotoUrl = typeof data.locationPhotoUrl === 'string' ? data.locationPhotoUrl.trim() : '';
     const isPlanning = !date && !time;
     if (!isPlanning && (!date || !time || !buildMatchDateTime(date, time))) {
       throw new HttpsError('invalid-argument', 'Elegí una fecha y hora válidas, o dejá ambas por definir.');
@@ -210,6 +212,7 @@ export const createMatch = onCall(
         lat: locationLat,
         lng: locationLng,
         placeId: locationPlaceId,
+        ...(locationPhotoUrl ? { photoUrl: locationPhotoUrl } : {}),
       },
       players,
       playerUids,
@@ -237,6 +240,18 @@ export const createMatch = onCall(
       }
       tx.create(ref, matchData);
     });
+    if (groupId && locationName) {
+      await upsertGroupVenue(db, {
+        groupId,
+        uid,
+        name: locationName,
+        address: locationAddress,
+        lat: locationLat,
+        lng: locationLng,
+        placeId: locationPlaceId,
+        photoUrl: locationPhotoUrl,
+      }).catch(() => {});
+    }
     return { matchId: ref.id };
   }
 );

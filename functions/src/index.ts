@@ -23,14 +23,14 @@ export { cleanupAiCache } from './cleanup-ai-cache';
 export { generateBalancedTeams } from './callable/generate-balanced-teams';
 export { createMatch } from './callable/create-match';
 export { startMatch, updateLiveState, updateLiveMinute, joinMatch, leaveMatch, recordLiveEvent, finishMatch, finalizePendingMatches } from './callable/match-lifecycle';
-export { cancelMatch, deleteMatch, updateMatchDate, updateMatchLocation, shuffleTeams, updateMatchTeams } from './callable/match-management';
-export { createGroup, joinGroupByInviteCode, setActiveGroup, createTeam, updateTeam, updateTeamMembers, deleteTeam, setTeamChallengeOptOut } from './callable/group-management';
+export { cancelMatch, deleteMatch, updateMatchDate, updateMatchLocation, shuffleTeams, updateMatchTeams, updateMatchOrganizers, addMatchPlayers, addMatchGuest } from './callable/match-management';
+export { createGroup, joinGroupByInviteCode, setActiveGroup, setGroupMemberRole, createTeam, updateTeam, updateTeamMembers, deleteTeam, setTeamChallengeOptOut } from './callable/group-management';
 export { searchTeams, challengeTeam, respondTeamChallenge, getMyTeamChallenges } from './callable/team-challenges';
 export { onTeamWrite } from './triggers/on-team-write';
 export { onOvrHistoryFeed, onMatchFeed } from './triggers/on-feed-events';
 export { logTrainingSession } from './callable/training';
 export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteManualPlayer, findManualPlayerClaims, claimManualPlayer } from './callable/manual-player-management';
-export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations } from './callable/explore';
+export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations, sendPlayerMessage } from './callable/explore';
 export { submitEvaluationSubmission, requestIdentityReveal, respondToIdentityReveal, getEvaluationAudio, finalizeMatchEvaluation } from './callable/evaluations';
 export { generateMatchChronicle } from './callable/match-chronicle';
 export { requestJoinMatch, respondJoinRequest, respondMatchInvitation } from './callable/match-join-requests';
@@ -49,3 +49,5 @@ export { manageCompetition, syncCompetitionResult } from './callable/competition
 
 export { getTeamRivals, setTeamRival, getTeamRivalSeries } from './callable/team-rivals';
 export { onTeamMatchResult } from './triggers/on-team-match-result';
+export { suggestLocations, resolvePlaceLocation, updateGroupVenue, setGroupCountry } from './callable/venues';
+export { createSocialPost, toggleSocialReaction, voteSocialPoll, addSocialComment, deleteSocialPost, toggleFollowUser, searchSocialPlayers } from './callable/social';

@@ -73,8 +73,17 @@ class ExploreService {
     return players.map((p) => AvailablePlayerModel.fromMap((p as Map).cast<String, dynamic>())).toList();
   }
 
-  Future<int> sendMatchInvitations({required String matchId, required List<String> playerIds}) async {
-    final result = await callFunction('sendMatchInvitations', {'matchId': matchId, 'playerIds': playerIds});
+  Future<int> sendMatchInvitations({
+    required String matchId,
+    required List<String> playerIds,
+    String? message,
+  }) async {
+    final trimmed = message?.trim();
+    final result = await callFunction('sendMatchInvitations', {
+      'matchId': matchId,
+      'playerIds': playerIds,
+      if (trimmed != null && trimmed.isNotEmpty) 'message': trimmed,
+    });
     return (result['sent'] as num?)?.toInt() ?? 0;
   }
 }

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models/match_model.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/services/group_service.dart';
 import '../../core/services/match_service.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/app_radii.dart';
@@ -189,9 +190,11 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
             );
           }
 
-          // Organizador o capitán: en un partido entre grupos cada equipo
-          // tiene el suyo y los dos pueden dirigir.
-          final isOrganizer = match.isManagedBy(uid);
+          // Organizador, co-organizador, capitán o admin/moderador del grupo.
+          final groupRole = match.groupId != null && match.groupId!.isNotEmpty
+              ? ref.watch(myGroupRoleProvider(match.groupId!)).value
+              : null;
+          final isOrganizer = match.isManagedBy(uid, groupRole: groupRole);
           // Un partido terminado no se dirige: sin esto, un partido
           // finalizado que nunca pasó por el panel en vivo (liveStatus vacío)
           // mostraba "Iniciar partido" debajo del cartel de FINALIZADO.

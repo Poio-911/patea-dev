@@ -27,6 +27,7 @@ class MatchService {
     double locationLat = 0,
     double locationLng = 0,
     String locationPlaceId = '',
+    String? locationPhotoUrl,
     bool isPublic = false,
     List<Map<String, dynamic>> players = const [],
     List<String> playerUids = const [],
@@ -46,6 +47,8 @@ class MatchService {
       'locationLat': locationLat,
       'locationLng': locationLng,
       'locationPlaceId': locationPlaceId,
+      if (locationPhotoUrl != null && locationPhotoUrl.isNotEmpty)
+        'locationPhotoUrl': locationPhotoUrl,
       // Sin esto el partido nace privado aunque el usuario haya prendido el
       // switch: el parámetro existía y no se mandaba.
       'isPublic': isPublic,
@@ -326,6 +329,7 @@ class MatchService {
     double locationLat = 0,
     double locationLng = 0,
     String locationPlaceId = '',
+    String? locationPhotoUrl,
   }) async {
     await callFunction('updateMatchLocation', {
       'matchId': matchId,
@@ -334,6 +338,8 @@ class MatchService {
       'locationLat': locationLat,
       'locationLng': locationLng,
       'locationPlaceId': locationPlaceId,
+      if (locationPhotoUrl != null && locationPhotoUrl.isNotEmpty)
+        'locationPhotoUrl': locationPhotoUrl,
     });
   }
 
@@ -341,5 +347,43 @@ class MatchService {
   Future<bool> shuffleTeams(String matchId) async {
     final result = await callFunction('shuffleTeams', {'matchId': matchId});
     return result['changed'] as bool? ?? true;
+  }
+
+  /// Asigna o quita co-organizadores del partido.
+  Future<void> updateMatchOrganizers({
+    required String matchId,
+    required List<String> coOrganizerUids,
+  }) async {
+    await callFunction('updateMatchOrganizers', {
+      'matchId': matchId,
+      'coOrganizerUids': coOrganizerUids,
+    });
+  }
+
+  /// Agrega jugadores del grupo directamente al partido (manual o colaborativo).
+  Future<void> addMatchPlayers({
+    required String matchId,
+    required List<String> playerUids,
+  }) async {
+    await callFunction('addMatchPlayers', {
+      'matchId': matchId,
+      'playerUids': playerUids,
+    });
+  }
+
+  /// Agrega un invitado puntual ("de afuera", sin perfil en el grupo).
+  Future<String> addMatchGuest({
+    required String matchId,
+    required String name,
+    String position = 'MED',
+    int ovr = 70,
+  }) async {
+    final result = await callFunction('addMatchGuest', {
+      'matchId': matchId,
+      'name': name,
+      'position': position,
+      'ovr': ovr,
+    });
+    return result['guestUid'] as String? ?? '';
   }
 }

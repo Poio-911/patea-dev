@@ -322,30 +322,66 @@ class GroupTeamModel {
   }
 }
 
+class GroupMemberRole {
+  final String userId;
+  final String role;
+
+  const GroupMemberRole({required this.userId, required this.role});
+
+  factory GroupMemberRole.fromMap(Map<String, dynamic> map) {
+    return GroupMemberRole(
+      userId: map['userId'] as String? ?? '',
+      role: map['role'] as String? ?? 'member',
+    );
+  }
+}
+
 class GroupModel {
   final String id;
   final String name;
   final String ownerUid;
   final String inviteCode;
   final List<String> members;
+  final List<GroupMemberRole> memberRoles;
   final String? logoUrl;
+  final String? countryCode;
   GroupModel({
     required this.id,
     required this.name,
     required this.ownerUid,
     required this.inviteCode,
     this.members = const [],
+    this.memberRoles = const [],
     this.logoUrl,
+    this.countryCode,
   });
 
+  String roleFor(String uid) {
+    if (uid == ownerUid) return 'admin';
+    for (final entry in memberRoles) {
+      if (entry.userId == uid) return entry.role;
+    }
+    return 'member';
+  }
+
   factory GroupModel.fromFirestore(Map<String, dynamic> data, String id) {
+    final rawRoles = data['memberRoles'];
+    final roles = rawRoles is List
+        ? rawRoles
+              .whereType<Map>()
+              .map((m) => GroupMemberRole.fromMap(Map<String, dynamic>.from(m)))
+              .where((r) => r.userId.isNotEmpty)
+              .toList()
+        : const <GroupMemberRole>[];
     return GroupModel(
       id: id,
       name: data['name'] ?? 'Mi Grupo',
       ownerUid: data['ownerUid'] ?? '',
       inviteCode: data['inviteCode'] ?? '',
       members: List<String>.from(data['members'] ?? []),
+      memberRoles: roles,
       logoUrl: data['logoUrl'],
+      countryCode: data['countryCode'] as String?,
     );
   }
 }

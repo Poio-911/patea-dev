@@ -6,6 +6,7 @@ import '../models/player_model.dart';
 import '../models/match_model.dart';
 import '../models/competition_model.dart';
 import '../models/group_model.dart';
+import '../models/venue_model.dart';
 import '../models/evaluation_models.dart';
 import '../utils/photo_url.dart';
 import 'auth_service.dart';
@@ -145,6 +146,10 @@ final userGroupsStreamProvider = StreamProvider.family<List<GroupModel>, String>
 
 final groupTeamsStreamProvider = StreamProvider.family<List<GroupTeamModel>, String>((ref, groupId) {
   return ref.watch(firestoreServiceProvider).getGroupTeamsStream(groupId);
+});
+
+final groupVenuesStreamProvider = StreamProvider.family<List<VenueModel>, String>((ref, groupId) {
+  return ref.watch(firestoreServiceProvider).getGroupVenuesStream(groupId);
 });
 
 final singleTeamStreamProvider = StreamProvider.family<GroupTeamModel?, String>((ref, teamId) {
@@ -448,6 +453,28 @@ class FirestoreService {
         .where('groupId', isEqualTo: groupId)
         .snapshots()
         .map((snap) => snap.docs.map((d) => GroupTeamModel.fromMap(d.data(), d.id)).toList());
+  }
+
+  /// Canchas guardadas del grupo en `venues/`. Se ordenan en cliente por
+  /// `usageCount` desc y `lastUsedAt` desc para no requerir índice compuesto.
+  Stream<List<VenueModel>> getGroupVenuesStream(String groupId) {
+    if (groupId.isEmpty) return Stream.value(const []);
+    return _firestore
+        .collection('venues')
+        .where('groupId', isEqualTo: groupId)
+        .snapshots()
+        .map((snap) {
+          final list = snap.docs
+              .map((d) => VenueModel.fromFirestore(d.data(), d.id))
+              .where((v) => v.name.isNotEmpty)
+              .toList();
+          list.sort((a, b) {
+            final cmp = b.usageCount.compareTo(a.usageCount);
+            if (cmp != 0) return cmp;
+            return (b.lastUsedAt ?? '').compareTo(a.lastUsedAt ?? '');
+          });
+          return list;
+        });
   }
 
   Stream<GroupTeamModel?> getTeamStream(String teamId) {

@@ -2,9 +2,10 @@ import { randomUUID } from 'crypto';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
-import { hasFixedRoster, isMatchManager } from '../lib/match-access';
-import { assertCancellable, assertDeletable, assertFutureSchedule, assertScheduleOpen } from '../lib/match-state';
+import { hasFixedRoster, matchGroupIds, userCanManageMatch } from '../lib/match-access';
+import { assertCancellable, assertDeletable, assertFutureSchedule, assertScheduleOpen, staleTeamsPatch } from '../lib/match-state';
 import { sendPushToUsers } from '../lib/fcm-push';
+import { upsertGroupVenue } from '../lib/places-search';
 
 /**
  * Callables de gestión de partido usadas por MatchManagementActions en la
@@ -54,8 +55,8 @@ export async function getManagedMatchOrThrow(matchId: string, uid: string) {
   const snap = await ref.get();
   if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
   const data = snap.data()!;
-  if (!isMatchManager(data, uid)) {
-    throw new HttpsError('permission-denied', 'Solo el organizador o los capitanes pueden realizar esta acción.');
+  if (!(await userCanManageMatch(db, data, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores o administradores del grupo pueden realizar esta acción.');
   }
   return { db, ref, data };
 }
@@ -133,21 +134,37 @@ export const updateMatchTeams = onCall({ region: 'us-central1' }, async request 
   }
   const db = admin.firestore();
   const ref = db.collection('matches').doc(matchId);
+  const preSnap = await ref.get();
+  if (!preSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+  if (!(await userCanManageMatch(db, preSnap.data()!, uid))) {
+    throw new HttpsError('permission-denied', 'Sólo los organizadores pueden cambiar los equipos.');
+  }
   await db.runTransaction(async tx => {
     const snap = await tx.get(ref);
     const match = snap.data();
     if (!match) throw new HttpsError('not-found', 'El partido no existe.');
-    if (match.ownerUid !== uid) throw new HttpsError('permission-denied', 'Sólo el organizador puede cambiar los equipos.');
     if (hasFixedRoster(match)) throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
     requireEditable(match);
     if (isGeneratingTeams(match)) throw new HttpsError('aborted', 'Se están armando los equipos. Esperá unos segundos.');
     const ids = matchRosterIds(match);
-    const docs = ids.length ? await tx.getAll(...ids.map(id => db.doc(`players/${id}`))) : [];
-    const players = docs.filter(d => d.exists).map(d => {
+    const realIds = ids.filter((id) => !id.startsWith('guest_'));
+    const docs = realIds.length ? await tx.getAll(...realIds.map(id => db.doc(`players/${id}`))) : [];
+    const realPlayers = docs.filter(d => d.exists).map(d => {
       const p = d.data()!;
       return { uid: d.id, displayName: p.name ?? p.displayName ?? 'Jugador', position: p.position ?? 'MED',
         ovr: Number(p.ovr ?? 50), photoURL: p.photoURL ?? p.photoUrl ?? '' };
     });
+    const guestPlayers = (Array.isArray(match.players) ? match.players : [])
+      .filter((p: any) => p?.isGuest === true || String(p?.uid ?? '').startsWith('guest_'))
+      .map((p: any) => ({
+        uid: String(p.uid),
+        displayName: String(p.displayName ?? 'Invitado'),
+        position: String(p.position ?? 'MED'),
+        ovr: Number(p.ovr ?? 70),
+        photoURL: '',
+        isGuest: true,
+      }));
+    const players = [...realPlayers, ...guestPlayers];
     const teams = assignMatchRoster(match, assignments, players);
     const maximum = Math.max(...teams.map(team => team.averageOVR));
     const minimum = Math.min(...teams.map(team => team.averageOVR));
@@ -161,7 +178,7 @@ export const updateMatchTeams = onCall({ region: 'us-central1' }, async request 
 
 /** Una generación en curso nunca sobrescribe un plantel o partido que cambió. */
 export async function regenerateMatchTeams(
-  db: admin.firestore.Firestore, matchId: string, ownerUid?: string, onlyWhenFull = false,
+  db: admin.firestore.Firestore, matchId: string, actorUid?: string, onlyWhenFull = false,
 ) {
   const ref = db.collection('matches').doc(matchId);
   const token = randomUUID();
@@ -169,7 +186,9 @@ export async function regenerateMatchTeams(
     const snap = await tx.get(ref);
     const match = snap.data();
     if (!match) throw new HttpsError('not-found', 'El partido no existe.');
-    if (ownerUid && match.ownerUid !== ownerUid) throw new HttpsError('permission-denied', 'Sólo el organizador puede armar equipos.');
+    if (actorUid && !(await userCanManageMatch(db, match, actorUid))) {
+      throw new HttpsError('permission-denied', 'Sólo los organizadores pueden armar equipos.');
+    }
     if (hasFixedRoster(match)) {
       // Un partido entre equipos o de competición nunca se re-equilibra solo; si lo pide una
       // persona, se le explica por qué no.
@@ -186,17 +205,34 @@ export async function regenerateMatchTeams(
       throw new HttpsError('aborted', 'Ya se están armando los equipos. Esperá unos segundos.');
     }
     tx.update(ref, { teamGenerationToken: token, teamGenerationUntil: Date.now() + 120000 });
-    return { ids, ownerUid: match.ownerUid, status: match.status, teams: match.teams };
+    return {
+      ids,
+      ownerUid: match.ownerUid,
+      status: match.status,
+      teams: match.teams,
+      rawPlayers: Array.isArray(match.players) ? match.players : [],
+    };
   });
   if (!claimed) return null;
   try {
-    const docs = await db.getAll(...claimed.ids.map(id => db.doc(`players/${id}`)));
+    const realIds = claimed.ids.filter((id) => !id.startsWith('guest_'));
+    const docs = realIds.length ? await db.getAll(...realIds.map(id => db.doc(`players/${id}`))) : [];
     if (docs.some(doc => !doc.exists)) throw new HttpsError('failed-precondition', 'Un jugador del plantel ya no tiene perfil. Revisá la convocatoria.');
-    const players = docs.map(doc => {
+    const realPlayers = docs.map(doc => {
       const p = doc.data()!;
       return { uid: doc.id, displayName: String(p.name ?? p.displayName ?? 'Jugador'),
         ovr: Number(p.ovr ?? 50), position: String(p.position ?? 'MED'), photoURL: String(p.photoURL ?? p.photoUrl ?? '') };
     });
+    const guestPlayers = claimed.rawPlayers
+      .filter((p: any) => p?.isGuest === true || String(p?.uid ?? '').startsWith('guest_'))
+      .map((p: any) => ({
+        uid: String(p.uid),
+        displayName: String(p.displayName ?? 'Invitado'),
+        ovr: Number(p.ovr ?? 70),
+        position: String(p.position ?? 'MED'),
+        photoURL: '',
+      }));
+    const players = [...realPlayers, ...guestPlayers];
     const generated = await generateBalancedTeamsCore(players, 2);
     const before = Array.isArray(claimed.teams) ? claimed.teams : [];
     const membership = (teams: any[]) => teams.map(team =>
@@ -391,16 +427,31 @@ export const updateMatchDate = onCall({ region: 'us-central1' }, async (request)
 export const updateMatchLocation = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = String(request.data?.matchId ?? '');
+  const photoUrl = String(request.data?.locationPhotoUrl ?? '').trim();
   const location = {
     name: String(request.data?.locationName ?? ''),
     address: String(request.data?.locationAddress ?? ''),
     lat: Number(request.data?.locationLat ?? 0) || 0,
     lng: Number(request.data?.locationLng ?? 0) || 0,
     placeId: String(request.data?.locationPlaceId ?? ''),
+    ...(photoUrl ? { photoUrl } : {}),
   };
-  const { ref, data } = await getManagedMatchOrThrow(matchId, uid);
-  assertScheduleOpen(data, 'cambiar la cancha');
+  const { ref, data: match } = await getManagedMatchOrThrow(matchId, uid);
+  assertScheduleOpen(match, 'cambiar la cancha');
   await ref.update({ location });
+  const groupId = typeof match.groupId === 'string' ? match.groupId : '';
+  if (groupId && location.name) {
+    await upsertGroupVenue(admin.firestore(), {
+      groupId,
+      uid,
+      name: location.name,
+      address: location.address,
+      lat: location.lat,
+      lng: location.lng,
+      placeId: location.placeId,
+      photoUrl,
+    }).catch(() => {});
+  }
   return { ok: true };
 });
 
@@ -410,4 +461,177 @@ export const shuffleTeams = onCall({ region: 'us-central1', timeoutSeconds: 120 
   const matchId = String(request.data?.matchId ?? '');
   const result = await regenerateMatchTeams(admin.firestore(), matchId, uid);
   return { ok: true, ...result };
+});
+
+/**
+ * Permite al creador del partido (o admin del grupo) asignar o quitar
+ * co-organizadores que pueden gestionar el partido.
+ */
+export const updateMatchOrganizers = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const matchId = String(request.data?.matchId ?? '').trim();
+  const rawUids = Array.isArray(request.data?.coOrganizerUids) ? request.data.coOrganizerUids : [];
+  if (!matchId || matchId.includes('/')) {
+    throw new HttpsError('invalid-argument', 'matchId inválido.');
+  }
+
+  const { ref, data: match } = await getManagedMatchOrThrow(matchId, uid);
+  const nextCoOrganizers = [...new Set<string>(
+    rawUids
+      .filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0 && !id.includes('/'))
+      .map((id: string) => id.trim())
+      .filter((id: string) => id !== match.ownerUid && !id.startsWith('guest_')),
+  )];
+
+  await ref.update({ coOrganizerUids: nextCoOrganizers });
+  return { ok: true, coOrganizerUids: nextCoOrganizers };
+});
+
+/**
+ * Agrega jugadores del grupo directamente al partido (sirve en `manual` y
+ * `collaborative`, tanto en `planning` como en `upcoming`).
+ */
+export const addMatchPlayers = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const matchId = String(request.data?.matchId ?? '').trim();
+  const rawPlayerIds = Array.isArray(request.data?.playerUids) ? request.data.playerUids : [];
+  const requestedIds = [...new Set<string>(
+    rawPlayerIds
+      .filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0 && !id.includes('/'))
+      .map((id: string) => id.trim()),
+  )];
+
+  if (!matchId || matchId.includes('/') || requestedIds.length === 0) {
+    throw new HttpsError('invalid-argument', 'Falta el partido o los jugadores a agregar.');
+  }
+
+  const db = admin.firestore();
+  const ref = db.collection('matches').doc(matchId);
+  const preSnap = await ref.get();
+  if (!preSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+  const preMatch = preSnap.data()!;
+  if (!(await userCanManageMatch(db, preMatch, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores pueden agregar jugadores.');
+  }
+
+  const allowedGroupIds = matchGroupIds(preMatch);
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+    const match = snap.data()!;
+    if (!['planning', 'upcoming'].includes(match.status)) {
+      throw new HttpsError('failed-precondition', 'La convocatoria ya está cerrada.');
+    }
+    if (hasFixedRoster(match)) {
+      throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
+    }
+    if (isGeneratingTeams(match)) {
+      throw new HttpsError('aborted', 'Se están armando los equipos. Reintentá en unos segundos.');
+    }
+
+    const currentPlayers: Array<Record<string, any>> = Array.isArray(match.players) ? [...match.players] : [];
+    const currentUids: string[] = Array.isArray(match.playerUids) ? [...match.playerUids] : [];
+    const toAddIds = requestedIds.filter((id) => !currentUids.includes(id));
+    if (toAddIds.length === 0) return;
+
+    const matchSize = Number(match.matchSize ?? 0);
+    if (matchSize > 0 && currentPlayers.length + toAddIds.length > matchSize) {
+      throw new HttpsError('failed-precondition', 'No hay suficientes cupos disponibles en el partido.');
+    }
+
+    const playerSnaps = await tx.getAll(...toAddIds.map((id) => db.collection('players').doc(id)));
+    for (const pSnap of playerSnaps) {
+      if (!pSnap.exists) {
+        throw new HttpsError('not-found', 'Uno de los jugadores seleccionados ya no existe.');
+      }
+      const p = pSnap.data()!;
+      if (allowedGroupIds.length > 0 && p.groupId && !allowedGroupIds.includes(String(p.groupId))) {
+        throw new HttpsError('permission-denied', 'Solo podés agregar jugadores pertenecientes al grupo del partido.');
+      }
+      currentPlayers.push({
+        uid: pSnap.id,
+        displayName: String(p.name ?? p.displayName ?? 'Jugador'),
+        ovr: Number(p.ovr ?? 50),
+        position: String(p.position ?? 'MED'),
+        photoURL: String(p.photoURL ?? p.photoUrl ?? ''),
+      });
+      currentUids.push(pSnap.id);
+    }
+
+    tx.update(ref, { players: currentPlayers, playerUids: currentUids, ...staleTeamsPatch(match) });
+  });
+
+  await regenerateMatchTeams(db, matchId, undefined, true).catch(() => {});
+  return { ok: true };
+});
+
+/**
+ * Agrega un invitado puntual ("de afuera", sin crear perfil permanente en
+ * `players/`). Ocupa cupo y entra en equipos, pero queda excluido de
+ * evaluaciones y métricas OVR (Opción A).
+ */
+export const addMatchGuest = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const matchId = String(request.data?.matchId ?? '').trim();
+  const name = String(request.data?.name ?? '').trim();
+  const rawPos = String(request.data?.position ?? 'MED').trim().toUpperCase();
+  const position = ['POR', 'DEF', 'MED', 'DEL'].includes(rawPos) ? rawPos : 'MED';
+  const rawOvr = Number(request.data?.ovr ?? 70);
+  const ovr = Number.isFinite(rawOvr) ? Math.min(99, Math.max(40, Math.round(rawOvr))) : 70;
+
+  if (!matchId || matchId.includes('/')) {
+    throw new HttpsError('invalid-argument', 'matchId inválido.');
+  }
+  if (name.length < 2 || name.length > 40) {
+    throw new HttpsError('invalid-argument', 'El nombre del invitado debe tener entre 2 y 40 caracteres.');
+  }
+
+  const db = admin.firestore();
+  const ref = db.collection('matches').doc(matchId);
+  const preSnap = await ref.get();
+  if (!preSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+  if (!(await userCanManageMatch(db, preSnap.data()!, uid))) {
+    throw new HttpsError('permission-denied', 'Solo los organizadores pueden agregar invitados.');
+  }
+
+  const guestUid = `guest_${randomUUID().slice(0, 8)}`;
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
+    const match = snap.data()!;
+    if (!['planning', 'upcoming'].includes(match.status)) {
+      throw new HttpsError('failed-precondition', 'La convocatoria ya está cerrada.');
+    }
+    if (hasFixedRoster(match)) {
+      throw new HttpsError('failed-precondition', TEAM_MATCH_ROSTER_MESSAGE);
+    }
+    if (isGeneratingTeams(match)) {
+      throw new HttpsError('aborted', 'Se están armando los equipos. Reintentá en unos segundos.');
+    }
+
+    const currentPlayers: Array<Record<string, any>> = Array.isArray(match.players) ? [...match.players] : [];
+    const currentUids: string[] = Array.isArray(match.playerUids) ? [...match.playerUids] : [];
+    const matchSize = Number(match.matchSize ?? 0);
+    if (matchSize > 0 && currentPlayers.length >= matchSize) {
+      throw new HttpsError('failed-precondition', 'El partido ya está completo.');
+    }
+
+    currentPlayers.push({
+      uid: guestUid,
+      displayName: name,
+      ovr,
+      position,
+      photoURL: '',
+      isGuest: true,
+      addedBy: uid,
+    });
+    currentUids.push(guestUid);
+
+    tx.update(ref, { players: currentPlayers, playerUids: currentUids, ...staleTeamsPatch(match) });
+  });
+
+  await regenerateMatchTeams(db, matchId, undefined, true).catch(() => {});
+  return { ok: true, guestUid };
 });

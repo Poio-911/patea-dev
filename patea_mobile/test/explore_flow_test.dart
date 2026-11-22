@@ -23,6 +23,7 @@ class SearchFake extends Fake implements ExploreService {
   Future<int> sendMatchInvitations({
     required String matchId,
     required List<String> playerIds,
+    String? message,
   }) async {
     invitations++;
     return playerIds.length;
@@ -262,8 +263,13 @@ void main() {
       final search = SearchFake();
       await mount(tester, search);
       expect(search.requests.length, 1);
+      expect(find.text('En mi zona'), findsOneWidget);
+      expect(find.byTooltip('Elegir zona o partido'), findsNothing);
       await tapVisible(tester, find.byTooltip('Distancia de búsqueda').first);
-      await tapVisible(tester, find.text('30 km').first);
+      await tapVisible(
+        tester,
+        find.widgetWithText(CheckedPopupMenuItem<double>, 'Hasta 30 km'),
+      );
       await tester.pump();
       expect(search.radii, [15, 30]);
       search.requests.last.complete([
@@ -299,8 +305,14 @@ void main() {
       await mount(tester, search, owned: [fixture(owner: uidYo)]);
       search.requests.single.complete([guest]);
       await tester.pump();
-      await tapVisible(tester, find.byType(DropdownButton<String>));
-      await tapVisible(tester, find.text('Partido para probar').last);
+      await tapVisible(tester, find.byTooltip('Elegir zona o partido'));
+      await tapVisible(
+        tester,
+        find.widgetWithText(
+          CheckedPopupMenuItem<String>,
+          'Partido para probar',
+        ),
+      );
       expect(search.requests, hasLength(2));
       search.requests.last.complete([guest]);
       await tester.pump();
@@ -335,6 +347,27 @@ void main() {
       );
     },
   );
+  testWidgets('Partidos permite filtrar por ingreso y restablecer', (
+    tester,
+  ) async {
+    final search = SearchFake();
+    await mount(tester, search, games: [fixture()]);
+    search.requests.single.complete([]);
+    await tester.pump();
+    await tapVisible(tester, find.text('Partidos').first);
+    expect(find.text('1 partido para jugar'), findsOneWidget);
+
+    await tapVisible(tester, find.byTooltip('Ingreso'));
+    await tapVisible(
+      tester,
+      find.widgetWithText(CheckedPopupMenuItem<String>, 'Ingreso directo'),
+    );
+    expect(find.text('0 partidos para jugar'), findsOneWidget);
+
+    await tapVisible(tester, find.text('Restablecer filtros'));
+    expect(find.text('1 partido para jugar'), findsOneWidget);
+  });
+
   testWidgets(
     'Request requires review, cancellation sends nothing, and confirmed request is retained',
     (tester) async {
@@ -357,7 +390,7 @@ void main() {
       expect(join.calls, 1);
       join.request.complete(true);
       await tester.pump();
-      expect(find.text('Pedido enviado'), findsOneWidget);
+      expect(find.text('Solicitud pendiente'), findsOneWidget);
       expect(find.text('Partido para probar'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -419,7 +452,18 @@ void main() {
           ),
         ]);
         await tester.pump();
-        await tapVisible(tester, find.text('Roberto Fernández'));
+        final playerName = find.text('Roberto Fernández');
+        await tester.scrollUntilVisible(
+          playerName,
+          100,
+          scrollable: find
+              .descendant(
+                of: find.byType(RefreshIndicator),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tapVisible(tester, playerName);
         expect(find.text('Miércoles y jueves por la noche.'), findsOneWidget);
         await tester.ensureVisible(find.text('Elegir partido para invitar'));
         expect(tester.takeException(), isNull);
@@ -449,9 +493,9 @@ void main() {
         search.requests.single.complete([]);
         await tester.pump();
         await tapVisible(tester, find.text('Partidos').first);
-        await tester.ensureVisible(find.text('Pedido enviado'));
+        await tester.ensureVisible(find.text('Solicitud pendiente'));
         await tester.pump();
-        expect(find.text('Pedido enviado'), findsOneWidget);
+        expect(find.text('Solicitud pendiente'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

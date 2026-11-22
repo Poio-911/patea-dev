@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { sendPushToUsers } from '../lib/fcm-push';
-import { assertCanJoinMatch, assertOpenRoster } from '../lib/match-access';
+import { assertCanJoinMatch, assertOpenRoster, userCanManageMatch } from '../lib/match-access';
 import { assertConvocationOpen, staleTeamsPatch } from '../lib/match-state';
 import { regenerateMatchTeams } from './match-management';
 
@@ -126,8 +126,8 @@ export const respondJoinRequest = onCall({ region: 'us-central1' }, async (reque
   if (!matchSnap.exists) throw new HttpsError('not-found', 'El partido no existe.');
   const match = matchSnap.data()!;
 
-  if (match.ownerUid !== uid) {
-    throw new HttpsError('permission-denied', 'Sólo el organizador decide quién entra.');
+  if (!(await userCanManageMatch(db, match, uid))) {
+    throw new HttpsError('permission-denied', 'Sólo los organizadores deciden quién entra.');
   }
   // Rechazar siempre se puede (limpia la solicitud); aceptar, sólo con la
   // convocatoria abierta y en un partido que admite jugadores sueltos. Antes se

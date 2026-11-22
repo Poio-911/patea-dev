@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { publishSocialActivity } from './social';
 import { submissionKey, validateEvaluationSubmission } from '../lib/evaluation-submission';
 import { sendPushToUsers } from '../lib/fcm-push';
 import { canFinalizeEvaluation } from '../lib/match-access';
@@ -243,6 +244,44 @@ export const finalizeMatchEvaluation = onCall({ region: 'us-central1' }, async (
       ...(matchMvpId ? { bestPlayerId: matchMvpId } : {}),
     });
   });
+
+  // Publicar resumen en Comunidad Pateá al cerrar la evaluación del partido.
+  await (async () => {
+    const matchSnap = await matchRef.get();
+    const matchData = matchSnap.data();
+    if (!matchData) return;
+    const mvpId = String(matchData.bestPlayerId ?? '');
+    const mvpSnap = mvpId ? await db.collection('players').doc(mvpId).get() : null;
+    const mvpData = mvpSnap?.data() ?? {};
+    const mvpName = String(mvpData.name ?? mvpData.displayName ?? '');
+    const mvpPhoto = String(mvpData.photoURL ?? mvpData.photoUrl ?? '');
+    const topJump = [...playerOvrChanges.entries()]
+      .map(([id, c]) => ({ id, oldOvr: c.oldOvr, newOvr: c.newOvr, delta: c.newOvr - c.oldOvr }))
+      .sort((a, b) => b.delta - a.delta)[0];
+
+    await publishSocialActivity(
+      db,
+      {
+        type: 'match_evaluated',
+        userId: mvpId || String(matchData.ownerUid ?? uid),
+        playerId: mvpId || String(matchData.ownerUid ?? uid),
+        playerName: mvpName || 'Evaluación cerrada',
+        playerPhotoUrl: mvpPhoto,
+        groupId: String(matchData.groupId ?? ''),
+        text: mvpName
+          ? `¡${mvpName} fue elegido MVP de "${matchData.title ?? 'Partido'}"!`
+          : `Se cerraron las evaluaciones de "${matchData.title ?? 'Partido'}" y se actualizaron los OVR.`,
+        metadata: {
+          matchId,
+          matchTitle: String(matchData.title ?? 'Partido'),
+          matchDate: String(matchData.date ?? ''),
+          ...(mvpId ? { mvpId, mvpName } : {}),
+          ...(topJump ? { topPlayerId: topJump.id, oldOvr: topJump.oldOvr, newOvr: topJump.newOvr, ovrChange: topJump.delta } : {}),
+        },
+      },
+      `match_evaluated_${matchId}`,
+    );
+  })().catch(() => {});
 
   return { ok: true, playersUpdated: playerOvrChanges.size };
 });

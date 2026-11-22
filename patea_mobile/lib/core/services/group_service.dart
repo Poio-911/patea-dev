@@ -37,6 +37,44 @@ class GroupService {
     await callFunction('setActiveGroup', {'groupId': groupId});
   }
 
+  Future<void> setGroupMemberRole({
+    required String groupId,
+    required String userId,
+    required GroupRole role,
+  }) async {
+    await callFunction('setGroupMemberRole', {
+      'groupId': groupId,
+      'userId': userId,
+      'role': role.name,
+    });
+  }
+
+  Future<String> setGroupCountry({
+    required String groupId,
+    required String countryCode,
+  }) async {
+    final result = await callFunction('setGroupCountry', {
+      'groupId': groupId,
+      'countryCode': countryCode,
+    });
+    return result['countryCode'] as String? ?? countryCode.toUpperCase();
+  }
+
+  Future<void> updateGroupVenue({
+    required String groupId,
+    required String venueId,
+    String? name,
+    String? photoUrl,
+  }) async {
+    await callFunction('updateGroupVenue', {
+      'groupId': groupId,
+      'venueId': venueId,
+      if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+      if (photoUrl != null && photoUrl.trim().isNotEmpty)
+        'photoUrl': photoUrl.trim(),
+    });
+  }
+
   Future<String> createTeam({
     required String groupId,
     required String name,

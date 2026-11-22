@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
-import { hasFixedRoster, isCompetitionMatch, isMatchManager } from '../lib/match-access';
+import { hasFixedRoster, isCompetitionMatch, isMatchManager, userCanManageMatch } from '../lib/match-access';
 import { assertConvocationOpen, staleTeamsPatch } from '../lib/match-state';
 import { teamAccess } from '../lib/team-rivals-store';
 import { notifyUsers } from '../lib/notify-users';
@@ -40,19 +40,24 @@ function withoutPlayer(teams: any[], playerId: string) {
 export const removeMatchPlayer = onCall({ region: 'us-central1' }, async (request) => {
   const uid = requireAuth(request);
   const matchId = cleanId(request.data?.matchId, 'el partido');
-  const playerId = cleanId(request.data?.playerId, 'el jugador');
+  // La app nueva manda `playerId`; la anterior mandaba `playerUid`.
+  const playerId = cleanId(request.data?.playerId ?? request.data?.playerUid, 'el jugador');
   const restore = request.data?.restore === true;
 
   const db = admin.firestore();
   const ref = db.doc(`matches/${matchId}`);
   let notified: { title: string; message: string } | null = null;
 
+  // Organizador, capitanes y administradores/moderadores de los grupos del partido.
+  const pre = (await ref.get()).data();
+  if (!pre) throw new HttpsError('not-found', 'El partido no existe.');
+  if (!(await userCanManageMatch(db, pre, uid))) {
+    throw new HttpsError('permission-denied', 'Sólo los organizadores pueden sacar jugadores.');
+  }
+
   await db.runTransaction(async (tx) => {
     const match = (await tx.get(ref)).data();
     if (!match) throw new HttpsError('not-found', 'El partido no existe.');
-    if (!isMatchManager(match, uid)) {
-      throw new HttpsError('permission-denied', 'Sólo el organizador o los capitanes pueden sacar jugadores.');
-    }
     if (isCompetitionMatch(match)) {
       throw new HttpsError('failed-precondition', 'El plantel de una competición se cambia desde el equipo.');
     }
@@ -89,7 +94,8 @@ export const removeMatchPlayer = onCall({ region: 'us-central1' }, async (reques
         '',
     );
     if (!teamId) throw new HttpsError('not-found', 'Esa persona no está en el partido.');
-    const isOrganizerOfSameGroupMatch = match.type === 'by_teams' && match.ownerUid === uid;
+    // En by_teams decide quien organiza el partido; entre grupos, quien administra ESE equipo.
+    const isOrganizerOfSameGroupMatch = match.type === 'by_teams' && isMatchManager(match, uid);
     if (!isOrganizerOfSameGroupMatch) await teamAccess(db, uid, teamId, true, tx);
 
     const current = new Set(Array.isArray(excluded[teamId]) ? excluded[teamId] : []);

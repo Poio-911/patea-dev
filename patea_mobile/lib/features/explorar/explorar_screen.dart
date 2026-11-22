@@ -8,6 +8,7 @@ import '../../core/widgets/patea_card.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
+import '../../core/services/social_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -99,10 +100,8 @@ class _ExplorarScreenState extends ConsumerState<ExplorarScreen> {
               description: spec(Section.explorar).description,
               showCountRow: false,
               helpTooltip: 'Cómo funciona Explorar',
-              onHelpTap: () => showContextualHelpSheet(
-                context,
-                topic: HelpTopic.explore,
-              ),
+              onHelpTap: () =>
+                  showContextualHelpSheet(context, topic: HelpTopic.explore),
             ),
           ),
           Padding(
@@ -252,121 +251,181 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
         children: [
-          Text(
-            'Buscar jugadores para',
-            style: AppTypography.body(size: 12, color: context.c.textSecondary),
-          ),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(
-                selected == null ? Icons.travel_explore : Icons.sports_soccer,
-                size: 19,
-                color: context.c.textSecondary,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selected?.id ?? '',
-                    isExpanded: true,
-                    style: AppTypography.body(
-                      size: 14,
-                      weight: FontWeight.w600,
-                      color: context.c.textPrimary,
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: '',
-                        child: Text('En mi zona'),
-                      ),
-                      ...matches.map(
-                        (m) => DropdownMenuItem(
-                          value: m.id,
-                          child: Text(
-                            m.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: matches.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.travel_explore,
+                              size: 18,
+                              color: context.c.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'En mi zona',
+                              style: AppTypography.body(
+                                size: 13,
+                                weight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
+                      )
+                    : _ExploreFilterMenu<String>(
+                        tooltip: 'Elegir zona o partido',
+                        leading: Icon(
+                          selected == null
+                              ? Icons.travel_explore
+                              : Icons.sports_soccer,
+                          size: 18,
+                          color: context.c.primary,
+                        ),
+                        value: selected?.id ?? '',
+                        options: {
+                          '': 'En mi zona',
+                          for (final match in matches) match.id: match.title,
+                        },
+                        onSelected: (value) => setState(() {
+                          _selectedMatchId = value.isEmpty ? null : value;
+                          _zone = null;
+                        }),
                       ),
-                    ],
-                    onChanged: (v) => setState(() {
-                      _selectedMatchId = v == '' ? null : v;
-                      _zone = null;
-                    }),
+              ),
+              if (selected != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0 ? 'Cupo abierto' : '${selected.matchSize - selected.playerUids.length} lugares'}',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
                   ),
                 ),
+              ],
+              if (owned.hasError) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'No pudimos cargar tus partidos. Podés buscar en tu zona.',
+                  style: AppTypography.body(
+                    size: 12,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              _ZoneControl(
+                zone: zone,
+                radius: _radius,
+                suggested: _zone == null && saved == null && loc == null,
+                onZone: (z) => setState(() => _zone = z),
+                onRadius: (v) => setState(() => _radius = v),
               ),
             ],
           ),
-          if (selected != null)
-            Text(
-              '${fmtDate(selected.date)} · ${selected.time ?? 'Horario a definir'} · ${selected.matchSize == 0
-                      ? 'Cupo abierto'
-                      : '${selected.matchSize - selected.playerUids.length} lugares'}',
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
+          const SizedBox(height: 12),
+          Divider(height: 1, color: context.c.border),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: ListTile(
+              key: const ValueKey('my-explore-availability'),
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.person_search_outlined,
+                size: 22,
+                color: available.value != null
+                    ? context.c.success
+                    : context.c.textSecondary,
+              ),
+              title: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    'Tu disponibilidad',
+                    style: AppTypography.body(
+                      size: 14,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                  if (!available.isLoading && !available.hasError)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: available.value != null
+                            ? context.c.success.withValues(alpha: 0.16)
+                            : context.c.cardSurface,
+                        borderRadius: AppRadii.pillAll,
+                        border: Border.all(
+                          color: available.value != null
+                              ? context.c.success.withValues(alpha: 0.5)
+                              : context.c.border,
+                        ),
+                      ),
+                      child: Text(
+                        available.value != null ? 'Visible' : 'Oculto',
+                        style: AppTypography.body(
+                          size: 10,
+                          weight: FontWeight.w700,
+                          color: available.value != null
+                              ? context.c.success
+                              : context.c.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              subtitle: Text(
+                available.isLoading
+                    ? 'Consultando tu estado…'
+                    : available.hasError
+                    ? 'No pudimos consultar tu estado'
+                    : available.value != null
+                    ? 'Otros jugadores pueden invitarte'
+                    : 'Tocá para elegir días y horarios',
+                style: AppTypography.body(
+                  size: 12,
+                  color: context.c.textSecondary,
+                ),
+              ),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: context.c.cardSurface,
+                  borderRadius: AppRadii.pillAll,
+                  border: Border.all(color: context.c.border),
+                ),
+                child: Text(
+                  'Editar',
+                  style: AppTypography.body(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: context.c.textPrimary,
+                  ),
+                ),
+              ),
+              onTap: () => showModalBottomSheet<void>(
+                context: context,
+                useRootNavigator: true,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _AvailabilitySheet(uid: widget.uid),
               ),
             ),
-          if (owned.hasError)
-            Text(
-              'No pudimos cargar tus partidos. Podés buscar en tu zona.',
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
-              ),
-            ),
-          const SizedBox(height: 8),
-          _ZoneControl(
-            zone: zone,
-            radius: _radius,
-            suggested: _zone == null && saved == null && loc == null,
-            onZone: (z) => setState(() => _zone = z),
-            onRadius: (v) => setState(() => _radius = v),
           ),
-          const SizedBox(height: 14),
-          Divider(height: 1, color: context.c.overlayLine),
-          ListTile(
-            key: const ValueKey('my-explore-availability'),
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              Icons.person_search_outlined,
-              size: 23,
-              color: context.c.textSecondary,
-            ),
-            title: Text(
-              'Tu disponibilidad',
-              style: AppTypography.body(size: 14, weight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              available.isLoading
-                  ? 'Consultando tu estado…'
-                  : available.hasError
-                  ? 'No pudimos consultar tu estado'
-                  : available.value != null
-                  ? 'Disponible · Editar horarios'
-                  : 'Sin publicar · Elegir horarios',
-              style: AppTypography.body(
-                size: 12,
-                color: context.c.textSecondary,
-              ),
-            ),
-            trailing: Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: context.c.textSecondary,
-            ),
-            onTap: () => showModalBottomSheet<void>(
-              context: context,
-              useRootNavigator: true,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => _AvailabilitySheet(uid: widget.uid),
-            ),
-          ),
-          Divider(height: 1, color: context.c.overlayLine),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           Text(
             _loading
                 ? 'Buscando jugadores…'
@@ -376,43 +435,18 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
                           : ' jugadores cerca'),
             style: AppTypography.headline(size: 17),
           ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final pos in ['Todos', 'POR', 'DEF', 'MED', 'DEL'])
-                  Semantics(
-                    selected: _position == (pos == 'Todos' ? null : pos),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            width: 2,
-                            color: _position == (pos == 'Todos' ? null : pos)
-                                ? context.c.primary
-                                : Colors.transparent,
-                          ),
-                        ),
-                      ),
-                      child: TextButton(
-                        onPressed: () => setState(
-                          () => _position = pos == 'Todos' ? null : pos,
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor:
-                              _position == (pos == 'Todos' ? null : pos)
-                              ? context.c.textPrimary
-                              : context.c.textSecondary,
-                          minimumSize: const Size(55, 44),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        child: Text(pos, style: AppTypography.action(size: 12)),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 4,
+            children: [
+              for (final pos in ['Todos', 'POR', 'DEF', 'MED', 'DEL'])
+                _PositionFilter(
+                  label: pos,
+                  selected: _position == (pos == 'Todos' ? null : pos),
+                  onTap: () =>
+                      setState(() => _position = pos == 'Todos' ? null : pos),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           if (_loading)
@@ -471,7 +505,7 @@ class _DiscoveryPlayerRow extends StatelessWidget {
       builder: (_) => _FreeAgentDetailSheet(player: player, matchId: matchId),
     ),
     child: Padding(
-      padding: const EdgeInsets.only(top: 15),
+      padding: const EdgeInsets.only(top: 12),
       child: Column(
         children: [
           Row(
@@ -479,9 +513,9 @@ class _DiscoveryPlayerRow extends StatelessWidget {
               PateaAvatar(
                 seed: player.uid,
                 photoUrl: player.photoUrl,
-                size: 64,
+                size: 54,
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,15 +587,15 @@ class _DiscoveryPlayerRow extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Icon(
                 Icons.chevron_right,
-                size: 17,
+                size: 18,
                 color: context.c.textSecondary,
               ),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 12),
           Divider(height: 1, color: context.c.overlayLine),
         ],
       ),
@@ -569,120 +603,147 @@ class _DiscoveryPlayerRow extends StatelessWidget {
   );
 }
 
+class _PositionFilter extends StatelessWidget {
+  const _PositionFilter({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    selected: selected,
+    child: TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: selected ? context.c.primary : context.c.textSecondary,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(44, 44),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: selected ? context.c.primary : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(label),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ExploreFilterMenu<T> extends StatelessWidget {
+  const _ExploreFilterMenu({
+    required this.tooltip,
+    required this.value,
+    required this.options,
+    required this.onSelected,
+    this.leading,
+  });
+
+  final Widget? leading;
+  final String tooltip;
+  final T value;
+  final Map<T, String> options;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<T>(
+    tooltip: tooltip,
+    initialValue: value,
+    onSelected: onSelected,
+    itemBuilder: (_) => [
+      for (final entry in options.entries)
+        CheckedPopupMenuItem<T>(
+          value: entry.key,
+          checked: entry.key == value,
+          child: Text(entry.value),
+        ),
+    ],
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (leading case final icon?) ...[icon, const SizedBox(width: 8)],
+          Flexible(
+            child: Text(
+              options[value] ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.body(size: 13, weight: FontWeight.w600),
+            ),
+          ),
+          const Icon(Icons.expand_more, size: 16),
+        ],
+      ),
+    ),
+  );
+}
+
 class _ZoneControl extends StatelessWidget {
-  final LocationSuggestion zone;
-  final double radius;
-  final bool suggested;
-  final ValueChanged<LocationSuggestion> onZone;
-  final ValueChanged<double> onRadius;
   const _ZoneControl({
     required this.zone,
     required this.radius,
     required this.onZone,
     required this.onRadius,
     this.suggested = false,
+    this.allowAllZones = false,
   });
+
+  final LocationSuggestion zone;
+  final double radius;
+  final bool suggested;
+  final bool allowAllZones;
+  final ValueChanged<LocationSuggestion> onZone;
+  final ValueChanged<double> onRadius;
+
   @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      Expanded(
-        flex: 3,
-        child: TextButton(
-          style: TextButton.styleFrom(
-            foregroundColor: context.c.textPrimary,
-            alignment: Alignment.centerLeft,
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(48, 48),
-          ),
-          onPressed: () async {
-            final value = await showModalBottomSheet<LocationSuggestion>(
-              context: context,
-              isScrollControlled: true,
-              useRootNavigator: true,
-              builder: (_) => const _DiscoveryZoneSheet(),
-            );
-            if (value != null) onZone(value);
-          },
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 19,
-                color: context.c.textSecondary,
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      zone.label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.body(
-                        size: 13,
-                        weight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      suggested ? 'Zona sugerida · Cambiar' : 'Cambiar zona',
-                      style: AppTypography.body(
-                        size: 12,
-                        color: context.c.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+      TextButton.icon(
+        icon: const Icon(Icons.location_on_outlined, size: 17),
+        label: Text(
+          zone.name.isNotEmpty ? zone.name : zone.label,
+          overflow: TextOverflow.ellipsis,
         ),
+        onPressed: () async {
+          final value = await showModalBottomSheet<LocationSuggestion>(
+            context: context,
+            isScrollControlled: true,
+            useRootNavigator: true,
+            builder: (_) => const _DiscoveryZoneSheet(),
+          );
+          if (value != null && context.mounted) onZone(value);
+        },
       ),
-      const SizedBox(width: 10),
-      Flexible(
-        flex: 2,
-        child: PopupMenuButton<double>(
-          tooltip: 'Distancia de búsqueda',
-          initialValue: radius,
-          onSelected: onRadius,
-          itemBuilder: (_) => [
-            if (radius == 0)
-              const PopupMenuItem(value: 0, child: Text('Todas las zonas')),
-            for (final km in [5.0, 15.0, 30.0, 50.0])
-              PopupMenuItem(
-                value: km,
-                child: Text('${km.toInt()} km'),
-              ),
-          ],
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    radius == 0
-                        ? 'Todas las zonas'
-                        : 'Hasta ${radius.toInt()} km',
-                    style: AppTypography.body(
-                      size: 12,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.expand_more,
-                  size: 18,
-                  color: context.c.textSecondary,
-                ),
-              ],
-            ),
-          ),
+      _ExploreFilterMenu<double>(
+        tooltip: 'Distancia de búsqueda',
+        value: radius,
+        options: {
+          for (final km in [5.0, 15.0, 30.0, 50.0])
+            km: 'Hasta ${km.toInt()} km',
+          if (allowAllZones) 0: 'Todas las zonas',
+        },
+        onSelected: onRadius,
+      ),
+      if (suggested)
+        Text(
+          'Zona sugerida',
+          style: AppTypography.body(size: 12, color: context.c.textSecondary),
         ),
-      ),
     ],
   );
 }
@@ -711,7 +772,10 @@ class _DiscoveryZoneSheetState extends State<_DiscoveryZoneSheet> {
     if (!_busy) return;
     _timer = Timer(const Duration(milliseconds: 450), () async {
       try {
-        final results = await LocationService().suggest(query);
+        final results = await LocationService().suggest(
+          query,
+          countryCode: LocationService.defaultCountryCode(),
+        );
         if (mounted && request == _request) {
           setState(() {
             _results = results;
@@ -879,12 +943,33 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
         return;
       }
       final selected = choices.firstWhere((m) => m.id == matchId);
+      final msgController = TextEditingController();
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Invitar a ${widget.player.displayName}'),
-          content: Text(
-            '${selected.title}\n${fmtDate(selected.date)} · ${selected.time ?? "Horario a definir"}\n${selected.location ?? "Cancha a definir"}',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${selected.title}\n${fmtDate(selected.date)} · ${selected.time ?? "Horario a definir"}\n${selected.location ?? "Cancha a definir"}',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: msgController,
+                  maxLines: 2,
+                  maxLength: 300,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Mensaje opcional',
+                    hintText: 'Ej: Nos falta 1 hoy, ¿te sumás?',
+                    counterText: '',
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -898,12 +983,15 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
           ],
         ),
       );
+      final inviteMessage = msgController.text;
+      msgController.dispose();
       if (confirmed != true || !mounted) return;
       await ref
           .read(exploreServiceProvider)
           .sendMatchInvitations(
             matchId: matchId,
             playerIds: [widget.player.uid],
+            message: inviteMessage,
           );
       if (mounted) {
         Navigator.pop(context);
@@ -988,9 +1076,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                               ),
                             ),
                             Text(
-                              'OVR ${player.ovr > 0
-                                      ? player.ovr.toString()
-                                      : '—'}',
+                              'OVR ${player.ovr > 0 ? player.ovr.toString() : '—'}',
                               style: AppTypography.body(
                                 size: 13,
                                 weight: FontWeight.w600,
@@ -1069,7 +1155,7 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                     color: context.c.textSecondary,
                   ),
                 )
-              else
+              else ...[
                 FilledButton.icon(
                   onPressed: _isInviting ? null : _invite,
                   style: FilledButton.styleFrom(
@@ -1093,6 +1179,65 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                     style: AppTypography.action(size: 14),
                   ),
                 ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          final photoParam =
+                              player.photoUrl != null &&
+                                  player.photoUrl!.isNotEmpty
+                              ? '&photo=${Uri.encodeComponent(player.photoUrl!)}'
+                              : '';
+                          context.push(
+                            '/messages/chat/${player.uid}?name=${Uri.encodeComponent(player.displayName)}$photoParam',
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 17,
+                        ),
+                        label: const Text('Mensaje'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final followingSet =
+                              ref.watch(followingUidsStreamProvider).value ??
+                              const <String>{};
+                          final isFollowing = followingSet.contains(player.uid);
+                          return OutlinedButton.icon(
+                            onPressed: () async {
+                              final nowFollowing = await ref
+                                  .read(socialServiceProvider)
+                                  .toggleFollow(player.uid);
+                              if (context.mounted) {
+                                PateaSnack.ok(
+                                  context,
+                                  nowFollowing
+                                      ? 'Ahora seguís a ${player.displayName}'
+                                      : 'Dejaste de seguir a ${player.displayName}',
+                                );
+                              }
+                            },
+                            icon: Icon(
+                              isFollowing
+                                  ? Icons.check
+                                  : Icons.person_add_alt_1_outlined,
+                              size: 17,
+                            ),
+                            label: Text(isFollowing ? 'Siguiendo' : 'Seguir'),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -1541,7 +1686,10 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                     setState(() => _suggestions = []);
                     return;
                   }
-                  final results = await _locationService.suggest(v);
+                  final results = await _locationService.suggest(
+                    v,
+                    countryCode: LocationService.defaultCountryCode(),
+                  );
                   if (mounted) setState(() => _suggestions = results);
                 });
               },
@@ -1570,11 +1718,17 @@ class _AvailabilitySheetState extends ConsumerState<_AvailabilitySheet> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          onTap: () {
+                          onTap: () async {
                             HapticFeedback.selectionClick();
+                            final resolved = await _locationService
+                                .resolvePlace(s);
+                            if (!mounted) return;
                             setState(() {
-                              _selectedLocation = s;
-                              _locationController.text = s.label;
+                              _selectedLocation = resolved;
+                              _locationController.text =
+                                  resolved.name.isNotEmpty
+                                  ? resolved.name
+                                  : resolved.label;
                               _suggestions = [];
                             });
                           },
@@ -2006,72 +2160,54 @@ class _PartidosAbiertosTabState extends ConsumerState<_PartidosAbiertosTab> {
         return ListView(
           padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset(context)),
           children: [
-            PateaCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ZoneControl(
-                    zone: zone,
-                    radius: _radius,
-                    onZone: (v) => setState(() => _zone = v),
-                    onRadius: (v) => setState(() => _radius = v),
-                  ),
-                  FilterChip(
-                    label: const Text('Todas las zonas'),
-                    selected: _radius == 0,
-                    onSelected: (_) =>
-                        setState(() => _radius = _radius == 0 ? 15 : 0),
-                  ),
-                  const SizedBox(height: 8),
-                  ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Fecha e ingreso'),
-                    subtitle: Text(
-                      '${_date == 'Todos' ? 'Cualquier fecha' : _date} · ${_admission == 'Todos' ? 'Cualquier ingreso' : _admission}',
-                    ),
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final value in ['Todos', 'Hoy', '7 días'])
-                            ChoiceChip(
-                              label: Text(
-                                value == 'Todos' ? 'Cualquier fecha' : value,
-                              ),
-                              selected: _date == value,
-                              onSelected: (_) => setState(() => _date = value),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final value in [
-                            'Todos',
-                            'Directa',
-                            'Con aprobación',
-                          ])
-                            ChoiceChip(
-                              label: Text(
-                                value == 'Todos' ? 'Cualquier ingreso' : value,
-                              ),
-                              selected: _admission == value,
-                              onSelected: (_) =>
-                                  setState(() => _admission = value),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            _ZoneControl(
+              zone: zone,
+              radius: _radius,
+              onZone: (v) => setState(() => _zone = v),
+              onRadius: (v) => setState(() => _radius = v),
+              allowAllZones: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              children: [
+                _ExploreFilterMenu<String>(
+                  tooltip: 'Fecha',
+                  value: _date,
+                  options: const {
+                    'Todos': 'Cualquier fecha',
+                    'Hoy': 'Hoy',
+                    '7 días': 'Próximos 7 días',
+                  },
+                  onSelected: (v) => setState(() => _date = v),
+                ),
+                _ExploreFilterMenu<String>(
+                  tooltip: 'Ingreso',
+                  value: _admission,
+                  options: const {
+                    'Todos': 'Cualquier ingreso',
+                    'Directa': 'Ingreso directo',
+                    'Con aprobación': 'Con aprobación',
+                  },
+                  onSelected: (v) => setState(() => _admission = v),
+                ),
+                if (_date != 'Todos' || _admission != 'Todos' || _radius != 15)
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _date = 'Todos';
+                      _admission = 'Todos';
+                      _radius = 15;
+                    }),
+                    child: const Text('Restablecer filtros'),
+                  ),
+              ],
+            ),
+            Divider(height: 16, color: context.c.border),
             Text(
-              '${filtered.length} partidos para jugar',
-              style: AppTypography.body(size: 14, weight: FontWeight.w700),
+              filtered.length == 1
+                  ? '1 partido para jugar'
+                  : '${filtered.length} partidos para jugar',
+              style: AppTypography.headline(size: 17),
             ),
             const SizedBox(height: 12),
             if (filtered.isEmpty) ...[
@@ -2190,174 +2326,164 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
   Widget build(BuildContext context) {
     final match = widget.match;
     final theme = getMatchTypeTheme(match.type);
-    final hasTeams = match.teamA != null && match.teamB != null;
     final pending = _sent || match.pendingPlayerUids.contains(widget.uid);
     final joined = _joined || match.playerUids.contains(widget.uid);
-    final spots = match.matchSize - match.playerUids.length;
+    final playerCount = match.playerUids.length;
+    final capacity = match.matchSize;
+    final spots = capacity - playerCount;
     final needsApproval = match.needsApprovalFrom(widget.uid);
+    final confirmed = joined || pending;
+    final venue = match.location?.trim();
+    final locationLabel = [
+      if (venue != null && venue.isNotEmpty) venue,
+      if (widget.distance case final distance?)
+        '${distance.toStringAsFixed(1)} km de tu zona',
+    ].join(' · ');
+    final colors = context.c;
+    final statusColor = joined ? colors.success : colors.warningText;
 
     return PateaCard(
       color: context.c.card,
       radius: AppRadii.cardAll,
-      borderColor: theme.brandColor.withValues(alpha: 0.35),
+      borderColor: context.c.border.withValues(alpha: 0.55),
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.brandColor,
-                ),
-              ),
-              const SizedBox(width: 7),
+              Icon(Icons.circle, size: 7, color: theme.brandColor),
               Text(
                 theme.label,
-                style: AppTypography.code(
+                style: AppTypography.body(
                   size: 12,
                   weight: FontWeight.w700,
-                  color: context.c.textSecondary,
+                  color: colors.textSecondary,
                 ),
               ),
-              const Spacer(),
-              if (match.matchSize > 0 && spots > 0)
-                Text(
-                  spots == 1 ? 'falta 1' : 'faltan $spots',
-                  style: AppTypography.code(
-                    size: 12,
-                    weight: FontWeight.w800,
-                    color: context.c.primary,
-                  ),
-                ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Row(
             children: [
-              if (hasTeams) ...[
-                if (match.teamA!.jersey != null)
-                  JerseyWidget(jersey: match.teamA!.jersey!, size: 30),
-                const SizedBox(width: 4),
-                if (match.teamB!.jersey != null)
-                  JerseyWidget(jersey: match.teamB!.jersey!, size: 30),
-                const SizedBox(width: 10),
-              ],
               Expanded(
                 child: Text(
                   match.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.headline(
-                    size: 20,
+                    size: 22,
                     weight: FontWeight.w800,
                   ),
                 ),
               ),
+              if (match.teamA?.jersey case final jersey?) ...[
+                const SizedBox(width: 8),
+                JerseyWidget(jersey: jersey, size: 26),
+              ],
+              if (match.teamB?.jersey case final jersey?) ...[
+                const SizedBox(width: 4),
+                JerseyWidget(jersey: jersey, size: 26),
+              ],
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           _row(
             Icons.calendar_today_outlined,
-            '${fmtDate(match.date)}  -  ${match.time ?? ''} hs',
+            [
+              fmtDate(match.date),
+              if (match.time case final time? when time.isNotEmpty) '$time hs',
+            ].join(' · '),
+            emphasized: true,
           ),
-          if (match.location != null) ...[
-            const SizedBox(height: 4),
-            _row(Icons.location_on_outlined, match.location!),
+          if (locationLabel.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _row(Icons.location_on_outlined, locationLabel),
           ],
-          const SizedBox(height: 4),
-          _row(
-            Icons.groups_outlined,
-            match.matchSize > 0
-                ? '${match.playerUids.length}/${match.matchSize} jugadores'
-                : '${match.playerUids.length} jugadores',
-          ),
-          const SizedBox(height: 10),
-          Text(
-            joined
-                ? 'Ya estás en el plantel'
-                : pending
-                ? 'Tu solicitud está pendiente de aprobación'
-                : needsApproval
-                ? 'Ingreso con aprobación del organizador'
-                : 'Ingreso directo · tu lugar se confirma al unirte',
-            style: AppTypography.body(size: 12, color: context.c.textSecondary),
-          ),
-          if (widget.distance != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'A ${widget.distance!.toStringAsFixed(1)} km de tu zona',
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              Text(
+                capacity > 0
+                    ? '$playerCount/$capacity jugadores'
+                    : '$playerCount jugadores',
                 style: AppTypography.body(
                   size: 12,
-                  color: context.c.textSecondary,
+                  color: colors.textSecondary,
                 ),
+              ),
+              if (capacity > 0)
+                Text(
+                  spots <= 0
+                      ? 'Sin cupos'
+                      : spots == 1
+                      ? '1 cupo libre'
+                      : '$spots cupos libres',
+                  style: AppTypography.body(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: spots > 0 ? colors.primary : colors.textSecondary,
+                  ),
+                ),
+            ],
+          ),
+          if (capacity > 0) ...[
+            const SizedBox(height: 6),
+            ExcludeSemantics(
+              child: LinearProgressIndicator(
+                value: (playerCount / capacity).clamp(0.0, 1.0),
+                minHeight: 4,
+                borderRadius: AppRadii.pillAll,
+                backgroundColor: colors.border,
+                color: colors.primary,
               ),
             ),
-          const SizedBox(height: 14),
-          Row(
+          ],
+          const SizedBox(height: 12),
+          Divider(height: 1, color: colors.overlayLine),
+          const SizedBox(height: 8),
+          if (confirmed)
+            _row(
+              joined ? Icons.check_circle_outline : Icons.schedule,
+              joined ? 'Ya participás' : 'Solicitud pendiente',
+              color: statusColor,
+              emphasized: true,
+            )
+          else
+            Text(
+              needsApproval ? 'Ingreso con aprobación' : 'Ingreso directo',
+              style: AppTypography.body(size: 12, color: colors.textSecondary),
+            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => context.push('/matches/${match.id}'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  child: const Text('Detalle'),
+              TextButton(
+                onPressed: () => context.push('/matches/${match.id}'),
+                child: const Text('Ver detalle'),
+              ),
+              if (!confirmed)
+                FilledButton.icon(
+                  onPressed: _busy ? null : _join,
+                  icon: _busy
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: PateaButtonProgress(),
+                        )
+                      : Icon(
+                          needsApproval
+                              ? Icons.how_to_reg_rounded
+                              : Icons.person_add_alt_1,
+                          size: 16,
+                        ),
+                  label: Text(needsApproval ? 'Solicitar' : 'Unirme'),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: joined
-                    ? OutlinedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.check_circle_outline, size: 16),
-                        label: const Text('Ya participás'),
-                      )
-                    : pending
-                    ? OutlinedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.hourglass_top_rounded, size: 16),
-                        label: const Text('Pedido enviado'),
-                      )
-                    : OutlinedButton.icon(
-                        onPressed: _busy ? null : _join,
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.c.cardSurface,
-                          foregroundColor: context.c.primary,
-                          side: BorderSide(
-                            color: context.c.primary.withValues(alpha: 0.4),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                        icon: _busy
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: PateaButtonProgress(),
-                              )
-                            : Icon(
-                                needsApproval
-                                    ? Icons.how_to_reg_rounded
-                                    : Icons.person_add_alt_1,
-                                size: 16,
-                              ),
-                        label: Text(
-                          needsApproval ? 'Solicitar' : 'Unirme',
-                          style: AppTypography.action(
-                            size: 14,
-                            color: context.c.primary,
-                          ),
-                        ),
-                      ),
-              ),
             ],
           ),
         ],
@@ -2365,17 +2491,26 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
     );
   }
 
-  Widget _row(IconData icon, String text) {
+  Widget _row(
+    IconData icon,
+    String text, {
+    Color? color,
+    bool emphasized = false,
+  }) {
+    final foreground =
+        color ?? (emphasized ? context.c.textPrimary : context.c.textSecondary);
     return Row(
       children: [
-        Icon(icon, size: 12, color: context.c.textSecondary),
-        const SizedBox(width: 6),
+        Icon(icon, size: 15, color: color ?? context.c.textSecondary),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: AppTypography.body(size: 13, color: context.c.textSecondary),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            style: AppTypography.body(
+              size: 13,
+              weight: emphasized ? FontWeight.w700 : FontWeight.w400,
+              color: foreground,
+            ),
           ),
         ),
       ],
