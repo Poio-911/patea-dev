@@ -3,6 +3,7 @@ import '../../core/models/group_permissions.dart';
 import '../../core/services/group_service.dart';
 import '../../core/services/team_challenge_service.dart';
 import 'match_chat_screen.dart';
+import '../social/social_feed_screen.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/venue_picker_field.dart';
 import 'dart:async';
@@ -678,6 +679,22 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       canChat: isManager || isUserInMatch,
                       onOpenChat: () => _openMatchChat(context, match),
                     ),
+                    if (isUserInMatch || isManager) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () => CreateSocialPostSheet.show(
+                          context,
+                          initialMatch: match,
+                        ),
+                        icon: const Icon(
+                          Icons.add_photo_alternate_outlined,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Compartir foto o momento en Comunidad Pateá',
+                        ),
+                      ),
+                    ],
                     if (isManager) ...[
                       const SizedBox(height: 16),
                       _OrganizerPanel(

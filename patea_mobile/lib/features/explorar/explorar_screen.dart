@@ -8,6 +8,7 @@ import '../../core/widgets/patea_card.dart';
 import '../../core/constants/sections.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_avatar.dart';
+import '../../core/services/social_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -253,50 +254,49 @@ class _MercadoTabState extends ConsumerState<_MercadoTab> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    selected == null
-                        ? Icons.travel_explore
-                        : Icons.sports_soccer,
-                    size: 18,
-                    color: context.c.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selected?.id ?? '',
-                        isExpanded: true,
-                        style: AppTypography.body(
-                          size: 14,
-                          weight: FontWeight.w600,
-                          color: context.c.textPrimary,
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: '',
-                            child: Text('En mi zona'),
-                          ),
-                          ...matches.map(
-                            (m) => DropdownMenuItem(
-                              value: m.id,
-                              child: Text(
-                                m.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: matches.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.travel_explore,
+                              size: 18,
+                              color: context.c.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'En mi zona',
+                              style: AppTypography.body(
+                                size: 13,
+                                weight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                        ],
-                        onChanged: (v) => setState(() {
-                          _selectedMatchId = v == '' ? null : v;
+                          ],
+                        ),
+                      )
+                    : _ExploreFilterMenu<String>(
+                        tooltip: 'Elegir zona o partido',
+                        leading: Icon(
+                          selected == null
+                              ? Icons.travel_explore
+                              : Icons.sports_soccer,
+                          size: 18,
+                          color: context.c.primary,
+                        ),
+                        value: selected?.id ?? '',
+                        options: {
+                          '': 'En mi zona',
+                          for (final match in matches) match.id: match.title,
+                        },
+                        onSelected: (value) => setState(() {
+                          _selectedMatchId = value.isEmpty ? null : value;
                           _zone = null;
                         }),
                       ),
-                    ),
-                  ),
-                ],
               ),
               if (selected != null) ...[
                 const SizedBox(height: 6),
@@ -505,7 +505,7 @@ class _DiscoveryPlayerRow extends StatelessWidget {
       builder: (_) => _FreeAgentDetailSheet(player: player, matchId: matchId),
     ),
     child: Padding(
-      padding: const EdgeInsets.only(top: 15),
+      padding: const EdgeInsets.only(top: 12),
       child: Column(
         children: [
           Row(
@@ -513,9 +513,9 @@ class _DiscoveryPlayerRow extends StatelessWidget {
               PateaAvatar(
                 seed: player.uid,
                 photoUrl: player.photoUrl,
-                size: 64,
+                size: 54,
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,36 +587,15 @@ class _DiscoveryPlayerRow extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(width: 8),
-              if (!player.isCurrentUser)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.c.cardSurface,
-                    borderRadius: AppRadii.pillAll,
-                    border: Border.all(color: context.c.border),
-                  ),
-                  child: Text(
-                    'Invitar',
-                    style: AppTypography.body(
-                      size: 11,
-                      weight: FontWeight.w700,
-                      color: context.c.primary,
-                    ),
-                  ),
-                )
-              else
-                Icon(
-                  Icons.chevron_right,
-                  size: 17,
-                  color: context.c.textSecondary,
-                ),
+              const SizedBox(width: 10),
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: context.c.textSecondary,
+              ),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 12),
           Divider(height: 1, color: context.c.overlayLine),
         ],
       ),
@@ -669,8 +648,10 @@ class _ExploreFilterMenu<T> extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onSelected,
+    this.leading,
   });
 
+  final Widget? leading;
   final String tooltip;
   final T value;
   final Map<T, String> options;
@@ -694,9 +675,12 @@ class _ExploreFilterMenu<T> extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (leading case final icon?) ...[icon, const SizedBox(width: 8)],
           Flexible(
             child: Text(
               options[value] ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTypography.body(size: 13, weight: FontWeight.w600),
             ),
           ),
@@ -1196,19 +1180,62 @@ class _FreeAgentDetailSheetState extends ConsumerState<_FreeAgentDetailSheet> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    final photoParam =
-                        player.photoUrl != null && player.photoUrl!.isNotEmpty
-                        ? '&photo=${Uri.encodeComponent(player.photoUrl!)}'
-                        : '';
-                    context.push(
-                      '/messages/chat/${player.uid}?name=${Uri.encodeComponent(player.displayName)}$photoParam',
-                    );
-                  },
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                  label: const Text('Enviar mensaje'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          final photoParam =
+                              player.photoUrl != null &&
+                                  player.photoUrl!.isNotEmpty
+                              ? '&photo=${Uri.encodeComponent(player.photoUrl!)}'
+                              : '';
+                          context.push(
+                            '/messages/chat/${player.uid}?name=${Uri.encodeComponent(player.displayName)}$photoParam',
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 17,
+                        ),
+                        label: const Text('Mensaje'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final followingSet =
+                              ref.watch(followingUidsStreamProvider).value ??
+                              const <String>{};
+                          final isFollowing = followingSet.contains(player.uid);
+                          return OutlinedButton.icon(
+                            onPressed: () async {
+                              final nowFollowing = await ref
+                                  .read(socialServiceProvider)
+                                  .toggleFollow(player.uid);
+                              if (context.mounted) {
+                                PateaSnack.ok(
+                                  context,
+                                  nowFollowing
+                                      ? 'Ahora seguís a ${player.displayName}'
+                                      : 'Dejaste de seguir a ${player.displayName}',
+                                );
+                              }
+                            },
+                            icon: Icon(
+                              isFollowing
+                                  ? Icons.check
+                                  : Icons.person_add_alt_1_outlined,
+                              size: 17,
+                            ),
+                            label: Text(isFollowing ? 'Siguiendo' : 'Seguir'),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -2299,11 +2326,21 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
   Widget build(BuildContext context) {
     final match = widget.match;
     final theme = getMatchTypeTheme(match.type);
-    final hasTeams = match.teamA != null && match.teamB != null;
     final pending = _sent || match.pendingPlayerUids.contains(widget.uid);
     final joined = _joined || match.playerUids.contains(widget.uid);
-    final spots = match.matchSize - match.playerUids.length;
+    final playerCount = match.playerUids.length;
+    final capacity = match.matchSize;
+    final spots = capacity - playerCount;
     final needsApproval = match.needsApprovalFrom(widget.uid);
+    final confirmed = joined || pending;
+    final venue = match.location?.trim();
+    final locationLabel = [
+      if (venue != null && venue.isNotEmpty) venue,
+      if (widget.distance case final distance?)
+        '${distance.toStringAsFixed(1)} km de tu zona',
+    ].join(' · ');
+    final colors = context.c;
+    final statusColor = joined ? colors.success : colors.warningText;
 
     return PateaCard(
       color: context.c.card,
@@ -2313,160 +2350,140 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.brandColor,
-                ),
-              ),
-              const SizedBox(width: 7),
+              Icon(Icons.circle, size: 7, color: theme.brandColor),
               Text(
                 theme.label,
-                style: AppTypography.code(
+                style: AppTypography.body(
                   size: 12,
                   weight: FontWeight.w700,
-                  color: context.c.textSecondary,
+                  color: colors.textSecondary,
                 ),
               ),
-              const Spacer(),
-              if (match.matchSize > 0 && spots > 0)
-                Text(
-                  spots == 1 ? 'falta 1' : 'faltan $spots',
-                  style: AppTypography.code(
-                    size: 12,
-                    weight: FontWeight.w800,
-                    color: context.c.primary,
-                  ),
-                ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Row(
             children: [
-              if (hasTeams) ...[
-                if (match.teamA!.jersey != null)
-                  JerseyWidget(jersey: match.teamA!.jersey!, size: 30),
-                const SizedBox(width: 4),
-                if (match.teamB!.jersey != null)
-                  JerseyWidget(jersey: match.teamB!.jersey!, size: 30),
-                const SizedBox(width: 10),
-              ],
               Expanded(
                 child: Text(
                   match.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.headline(
-                    size: 20,
+                    size: 22,
                     weight: FontWeight.w800,
                   ),
                 ),
               ),
+              if (match.teamA?.jersey case final jersey?) ...[
+                const SizedBox(width: 8),
+                JerseyWidget(jersey: jersey, size: 26),
+              ],
+              if (match.teamB?.jersey case final jersey?) ...[
+                const SizedBox(width: 4),
+                JerseyWidget(jersey: jersey, size: 26),
+              ],
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           _row(
             Icons.calendar_today_outlined,
-            '${fmtDate(match.date)}  -  ${match.time ?? ''} hs',
+            [
+              fmtDate(match.date),
+              if (match.time case final time? when time.isNotEmpty) '$time hs',
+            ].join(' · '),
+            emphasized: true,
           ),
-          if (match.location != null) ...[
-            const SizedBox(height: 4),
-            _row(Icons.location_on_outlined, match.location!),
+          if (locationLabel.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _row(Icons.location_on_outlined, locationLabel),
           ],
-          const SizedBox(height: 4),
-          _row(
-            Icons.groups_outlined,
-            match.matchSize > 0
-                ? '${match.playerUids.length}/${match.matchSize} jugadores'
-                : '${match.playerUids.length} jugadores',
-          ),
-          const SizedBox(height: 10),
-          Text(
-            joined
-                ? 'Ya estás en el plantel'
-                : pending
-                ? 'Tu solicitud está pendiente de aprobación'
-                : needsApproval
-                ? 'Ingreso con aprobación del organizador'
-                : 'Ingreso directo · tu lugar se confirma al unirte',
-            style: AppTypography.body(size: 12, color: context.c.textSecondary),
-          ),
-          if (widget.distance != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'A ${widget.distance!.toStringAsFixed(1)} km de tu zona',
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              Text(
+                capacity > 0
+                    ? '$playerCount/$capacity jugadores'
+                    : '$playerCount jugadores',
                 style: AppTypography.body(
                   size: 12,
-                  color: context.c.textSecondary,
+                  color: colors.textSecondary,
                 ),
+              ),
+              if (capacity > 0)
+                Text(
+                  spots <= 0
+                      ? 'Sin cupos'
+                      : spots == 1
+                      ? '1 cupo libre'
+                      : '$spots cupos libres',
+                  style: AppTypography.body(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: spots > 0 ? colors.primary : colors.textSecondary,
+                  ),
+                ),
+            ],
+          ),
+          if (capacity > 0) ...[
+            const SizedBox(height: 6),
+            ExcludeSemantics(
+              child: LinearProgressIndicator(
+                value: (playerCount / capacity).clamp(0.0, 1.0),
+                minHeight: 4,
+                borderRadius: AppRadii.pillAll,
+                backgroundColor: colors.border,
+                color: colors.primary,
               ),
             ),
-          const SizedBox(height: 14),
-          Row(
+          ],
+          const SizedBox(height: 12),
+          Divider(height: 1, color: colors.overlayLine),
+          const SizedBox(height: 8),
+          if (confirmed)
+            _row(
+              joined ? Icons.check_circle_outline : Icons.schedule,
+              joined ? 'Ya participás' : 'Solicitud pendiente',
+              color: statusColor,
+              emphasized: true,
+            )
+          else
+            Text(
+              needsApproval ? 'Ingreso con aprobación' : 'Ingreso directo',
+              style: AppTypography.body(size: 12, color: colors.textSecondary),
+            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => context.push('/matches/${match.id}'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  child: const Text('Detalle'),
+              TextButton(
+                onPressed: () => context.push('/matches/${match.id}'),
+                child: const Text('Ver detalle'),
+              ),
+              if (!confirmed)
+                FilledButton.icon(
+                  onPressed: _busy ? null : _join,
+                  icon: _busy
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: PateaButtonProgress(),
+                        )
+                      : Icon(
+                          needsApproval
+                              ? Icons.how_to_reg_rounded
+                              : Icons.person_add_alt_1,
+                          size: 16,
+                        ),
+                  label: Text(needsApproval ? 'Solicitar' : 'Unirme'),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: joined
-                    ? OutlinedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.check_circle_outline, size: 16),
-                        label: const Text('Ya participás'),
-                      )
-                    : pending
-                    ? OutlinedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.hourglass_top_rounded, size: 16),
-                        label: const Text('Pedido enviado'),
-                      )
-                    : OutlinedButton.icon(
-                        onPressed: _busy ? null : _join,
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.c.cardSurface,
-                          foregroundColor: context.c.primary,
-                          side: BorderSide(
-                            color: context.c.primary.withValues(alpha: 0.4),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                        icon: _busy
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: PateaButtonProgress(),
-                              )
-                            : Icon(
-                                needsApproval
-                                    ? Icons.how_to_reg_rounded
-                                    : Icons.person_add_alt_1,
-                                size: 16,
-                              ),
-                        label: Text(
-                          needsApproval ? 'Solicitar' : 'Unirme',
-                          style: AppTypography.action(
-                            size: 14,
-                            color: context.c.primary,
-                          ),
-                        ),
-                      ),
-              ),
             ],
           ),
         ],
@@ -2474,17 +2491,26 @@ class _PublicMatchCardState extends ConsumerState<_PublicMatchCard> {
     );
   }
 
-  Widget _row(IconData icon, String text) {
+  Widget _row(
+    IconData icon,
+    String text, {
+    Color? color,
+    bool emphasized = false,
+  }) {
+    final foreground =
+        color ?? (emphasized ? context.c.textPrimary : context.c.textSecondary);
     return Row(
       children: [
-        Icon(icon, size: 12, color: context.c.textSecondary),
-        const SizedBox(width: 6),
+        Icon(icon, size: 15, color: color ?? context.c.textSecondary),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: AppTypography.body(size: 13, color: context.c.textSecondary),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            style: AppTypography.body(
+              size: 13,
+              weight: emphasized ? FontWeight.w700 : FontWeight.w400,
+              color: foreground,
+            ),
           ),
         ),
       ],

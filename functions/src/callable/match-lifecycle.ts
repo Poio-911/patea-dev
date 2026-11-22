@@ -5,6 +5,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
 import { sendPushToUsers } from '../lib/fcm-push';
+import { publishSocialActivity } from './social';
 
 /**
  * Callables para el ciclo de vida de un partido (iniciar, sumarse/bajarse,
@@ -530,6 +531,42 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
       'FinishMatch',
     );
   }
+
+  const organizerPlayer = allPlayers.find((p) => p.id === (data.ownerUid ?? uid)) ?? allPlayers[0];
+  const tA = finalTeams?.[0] as any;
+  const tB = finalTeams?.[1] as any;
+  const locName = typeof data.location === 'object' && data.location
+    ? String((data.location as any).name ?? (data.location as any).address ?? '')
+    : String(data.location ?? '');
+  await publishSocialActivity(
+    db,
+    {
+      type: 'match_played',
+      userId: String(data.ownerUid ?? uid),
+      playerId: String(data.ownerUid ?? uid),
+      playerName: String(organizerPlayer?.name ?? organizerPlayer?.displayName ?? 'Partido'),
+      playerPhotoUrl: String(organizerPlayer?.photoURL ?? organizerPlayer?.photoUrl ?? ''),
+      groupId: String(data.groupId ?? ''),
+      text: tA && tB
+        ? `Terminó "${data.title ?? 'Partido'}": ${tA.name ?? 'Equipo 1'} ${Number(tA.score ?? 0)} - ${Number(tB.score ?? 0)} ${tB.name ?? 'Equipo 2'}.`
+        : `Terminó el partido "${data.title ?? 'Partido'}". ¡Ya están abiertas las evaluaciones!`,
+      metadata: {
+        matchId,
+        matchTitle: String(data.title ?? 'Partido'),
+        matchDate: String(data.date ?? ''),
+        matchLocation: locName,
+        ...(tA && tB
+          ? {
+              teamAName: String(tA.name ?? 'Equipo 1'),
+              teamAScore: Number(tA.score ?? 0),
+              teamBName: String(tB.name ?? 'Equipo 2'),
+              teamBScore: Number(tB.score ?? 0),
+            }
+          : {}),
+      },
+    },
+    `match_played_${matchId}`,
+  ).catch(() => {});
 
   return { ok: true, assignmentsCount: assignments.length };
 });
