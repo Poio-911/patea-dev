@@ -93,7 +93,7 @@ class _MatchStoryViewState extends ConsumerState<MatchStoryView> {
   Widget build(BuildContext context) {
     final match = widget.match;
     final stats =
-        ref.watch(matchResultStatsProvider(match.id)).value ??
+        ref.watch(matchResultStatsProvider(match.id)).asData?.value ??
         MatchResultStats.empty;
     final chronicle = match.chronicle;
 

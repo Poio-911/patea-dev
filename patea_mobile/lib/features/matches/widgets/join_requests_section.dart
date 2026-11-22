@@ -53,7 +53,9 @@ class _JoinRequestsSectionState extends ConsumerState<JoinRequestsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final requests = ref.watch(matchJoinRequestsProvider(widget.matchId)).value ?? const <JoinRequest>[];
+    final requests =
+        ref.watch(matchJoinRequestsProvider(widget.matchId)).asData?.value ??
+        const <JoinRequest>[];
     if (requests.isEmpty) return const SizedBox.shrink();
 
     return Column(

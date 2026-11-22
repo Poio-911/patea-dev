@@ -30,7 +30,9 @@ class MatchClipsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clips = ref.watch(matchClipsProvider(match.id)).value ?? const <MatchClip>[];
+    final clips =
+        ref.watch(matchClipsProvider(match.id)).asData?.value ??
+        const <MatchClip>[];
     if (clips.isEmpty && !canUpload) return const SizedBox.shrink();
 
     return Column(

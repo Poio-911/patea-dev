@@ -129,6 +129,10 @@ test('propuesta de fecha: opcional, válida y futura', () => {
   assert.throws(() => challenges.parseProposal('2030-01-01', ''), /fecha y hora válidas/);
   assert.throws(() => challenges.parseProposal('no-es-fecha', '20:00'), /fecha y hora válidas/);
   assert.throws(() => challenges.parseProposal('2020-01-01', '20:00'), /ya pasó/);
+  assert.deepEqual(
+    challenges.parseProposal('2020-01-01', '20:00', { requireFuture: false }),
+    { date: '2020-01-01', time: '20:00' },
+  );
   assert.deepEqual(challenges.parseProposal('2099-01-01', '20:00'), { date: '2099-01-01', time: '20:00' });
 });
 

@@ -75,6 +75,8 @@ service cloud.firestore {
         && (
           matchData(matchId).get('groupId', '') in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', [])
           || matchData(matchId).get('groupId', '') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeGroupId', '-')
+          || matchData(matchId).get('secondaryGroupId', '') == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeGroupId', '-')
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('activeGroupId', '-') in matchData(matchId).get('participantGroupIds', [])
           || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groups', []).hasAny(matchData(matchId).get('participantGroupIds', []))
         );
     }

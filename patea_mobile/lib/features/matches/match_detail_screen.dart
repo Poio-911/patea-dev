@@ -373,7 +373,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     final groupCountry = match.groupId != null && match.groupId!.isNotEmpty
         ? ref
               .read(singleGroupStreamProvider(match.groupId!))
-              .value
+              .asData
+              ?.value
               ?.countryCode
         : null;
 
@@ -494,7 +495,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
 
         final isOwner = uid != null && match.ownerUid == uid;
         final groupRole = match.groupId != null && match.groupId!.isNotEmpty
-            ? ref.watch(myGroupRoleProvider(match.groupId!)).value
+            ? ref.watch(myGroupRoleProvider(match.groupId!)).asData?.value
             : null;
         // Organizador, co-organizador, capitán o admin/moderador del grupo.
         final isManager = match.isManagedBy(uid, groupRole: groupRole);
@@ -522,7 +523,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             backgroundColor: _showCollapsedTitle
-                ? context.c.background.withValues(alpha: 0.96)
+                ? context.c.background
                 : Colors.transparent,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
@@ -789,7 +790,11 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       const SizedBox(height: 20),
                       MatchTimelineView(match: match),
                     ],
-                    if (match.status != 'upcoming') ...[
+                    if ([
+                      'active',
+                      'completed',
+                      'evaluated',
+                    ].contains(match.status)) ...[
                       const SizedBox(height: 20),
                       MatchClipsView(
                         match: match,
@@ -1309,7 +1314,7 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(authStateProvider).valueOrNull?.uid;
     final groupRole = match.groupId != null && match.groupId!.isNotEmpty
-        ? ref.watch(myGroupRoleProvider(match.groupId!)).value
+        ? ref.watch(myGroupRoleProvider(match.groupId!)).asData?.value
         : null;
     final canRemove =
         match.isManagedBy(uid, groupRole: groupRole) &&
@@ -2456,10 +2461,10 @@ class _IntergroupChallengeBannerState
     final toTeamId = match.challengeToTeamId ?? '';
     final toTeam = toTeamId.isEmpty
         ? null
-        : ref.watch(singleTeamStreamProvider(toTeamId)).value;
+        : ref.watch(singleTeamStreamProvider(toTeamId)).asData?.value;
     final toGroupRole = toTeam == null || toTeam.groupId.isEmpty
         ? null
-        : ref.watch(myGroupRoleProvider(toTeam.groupId)).value;
+        : ref.watch(myGroupRoleProvider(toTeam.groupId)).asData?.value;
     final canRespond =
         uid != null &&
         toTeam != null &&
@@ -2943,7 +2948,7 @@ class _CoOrganizersSheetState extends ConsumerState<_CoOrganizersSheet> {
                 child: groupAsync.when(
                   data: (group) {
                     if (group == null) return const SizedBox();
-                    final players = playersAsync.value ?? const [];
+                    final players = playersAsync.asData?.value ?? const [];
                     final playersById = {for (final p in players) p.id: p};
                     final candidates = group.members
                         .where((uid) => uid != widget.match.ownerUid)

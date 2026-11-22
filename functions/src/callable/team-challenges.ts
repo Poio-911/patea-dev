@@ -240,16 +240,24 @@ function optionalText(value: unknown, max: number): string {
 }
 
 /**
- * Valida y normaliza la propuesta opcional de fecha y hora. Devuelve `null` si
- * no mandaron ninguna; lanza si mandaron una inválida o ya pasada.
+ * Valida y normaliza una fecha y hora ya acordadas o propuestas.
+ * Cuando `requireFuture` es true (al enviar un desafío), rechaza horarios pasados;
+ * cuando es false (al aceptar uno ya creado), conserva la fecha pactada aunque
+ * haya pasado el horario de inicio mientras esperaba respuesta.
  */
-export function parseProposal(date: unknown, time: unknown): { date: string; time: string } | null {
+export function parseProposal(
+  date: unknown,
+  time: unknown,
+  { requireFuture = true }: { requireFuture?: boolean } = {},
+): { date: string; time: string } | null {
   const d = typeof date === 'string' ? date.trim() : '';
   const t = typeof time === 'string' ? time.trim() : '';
   if (!d && !t) return null;
   const when = d && t ? buildMatchDateTime(d, t) : null;
   if (!when) throw new HttpsError('invalid-argument', 'Elegí una fecha y hora válidas, o dejá ambas por definir.');
-  if (when.getTime() < Date.now() - 60_000) throw new HttpsError('invalid-argument', 'El horario propuesto ya pasó.');
+  if (requireFuture && when.getTime() < Date.now() - 60_000) {
+    throw new HttpsError('invalid-argument', 'El horario propuesto ya pasó.');
+  }
   return { date: d, time: t };
 }
 
@@ -592,9 +600,11 @@ export const respondTeamChallenge = onCall(REGION, async (request) => {
       rawDate && rawTime
         ? (() => {
             try {
-              return parseProposal(rawDate, rawTime);
+              // Al aceptar, no borramos la fecha pactada aunque el horario haya
+              // pasado mientras el rival respondía: se respeta la fecha del desafío.
+              return parseProposal(rawDate, rawTime, { requireFuture: false });
             } catch {
-              return null; // la propuesta venció mientras esperaba respuesta
+              return null;
             }
           })()
         : null;

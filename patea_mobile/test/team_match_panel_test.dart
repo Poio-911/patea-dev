@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:patea_mobile/core/models/match_model.dart';
@@ -190,6 +189,66 @@ void main() {
       );
       expect(find.text('Subir'), findsNothing);
     });
+
+    testWidgets(
+      'un partido en planificación no muestra clips ni rompe si matchClipsProvider falla',
+      (tester) async {
+        await montarPantalla(
+          tester,
+          const MatchDetailScreen(matchId: 'tm1'),
+          tema: AppTheme.darkTheme,
+          extraOverrides: [
+            singleMatchStreamProvider(
+              'tm1',
+            ).overrideWith(
+              (ref) => Stream.value(
+                partido(
+                  type: 'intergroup_friendly',
+                  status: 'planning',
+                  owner: 'otro',
+                  captains: ['otro'],
+                ),
+              ),
+            ),
+            matchClipsProvider(
+              'tm1',
+            ).overrideWith((ref) => Stream.error(Exception('permission-denied'))),
+          ],
+        );
+        expect(find.byType(ErrorWidget), findsNothing);
+        expect(find.text('Clips'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'un partido finalizado tampoco rompe en un ErrorWidget gris si matchClipsProvider falla',
+      (tester) async {
+        await montarPantalla(
+          tester,
+          const MatchDetailScreen(matchId: 'tm1'),
+          tema: AppTheme.darkTheme,
+          extraOverrides: [
+            singleMatchStreamProvider(
+              'tm1',
+            ).overrideWith(
+              (ref) => Stream.value(
+                jugado(
+                  playerUids: ['uid-2', 'uid-3'],
+                  owner: 'otro',
+                  captains: ['otro'],
+                ),
+              ),
+            ),
+            matchClipsProvider(
+              'tm1',
+            ).overrideWith((ref) => Stream.error(Exception('permission-denied'))),
+          ],
+        );
+        expect(find.byType(ErrorWidget), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   testWidgets('el editor de equipos no se abre en un partido entre equipos', (
