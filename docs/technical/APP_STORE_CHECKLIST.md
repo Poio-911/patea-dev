@@ -15,7 +15,7 @@ Estado al 22/11/2026. App `com.patea.app`, App Store Connect ID `6808798274`, eq
 | Moderación en 24 h | **Pendiente de proceso**: alguien tiene que revisar `reports/` y actuar dentro de las 24 h. |
 | Contacto de soporte público | **Pendiente**: definir correo o URL de soporte para la ficha y las páginas legales. |
 | Perfil de firma en Codemagic (`patea_appstore`) | **Pendiente**: se invalidó al activar Sign in with Apple. Traer el perfil «Patea App Store» desde Apple. |
-| Compras integradas (3.1.1) para créditos de IA | **Pendiente**: ver sección 4. |
+| Compras integradas (3.1.1) para créditos de IA | Código hecho, solo en la versión de la tienda. **Pendiente**: trámites de Apple (sección 6). |
 
 ## 2. Ficha (texto sugerido)
 
@@ -72,13 +72,18 @@ Responder sin contenido sexual, violencia gráfica ni apuestas. **Hay contenido 
 
 ## 6. Créditos de IA con compras integradas
 
-Lo que falta fuera del código:
+**Ya está hecho en el código, y solo se activa en la versión de la App Store.** En TestFlight, en desarrollo y en Android no aparece nada de compras: la app le pregunta al sistema si el recibo es de la tienda (`receipt`) o de pruebas (`sandboxReceipt`) y, ante cualquier duda, no muestra nada.
 
-1. Aceptar el **Acuerdo de apps de pago** en App Store Connect y cargar datos bancarios y fiscales (lo hace el titular de la cuenta).
-2. Crear los productos consumibles, por ejemplo `com.patea.app.credits_5`, `credits_15` y `credits_40`.
-3. Crear una **clave de compras integradas** (App Store Connect → Usuarios y acceso → Claves → Compras integradas) para validar las compras desde el servidor con la App Store Server API.
+- Los créditos comprados se guardan aparte (`purchasedCredits`), no vencen y no los pisa el reinicio mensual. Se gastan después de los gratuitos del mes.
+- La app compra con StoreKit y manda la transacción a `redeemIapPurchase`, que la valida con la App Store Server API (producción y sandbox), es idempotente por transacción y recién ahí suma los créditos. Si el servidor falla, la compra queda abierta y se reintenta sola.
+- Productos (consumibles): `com.patea.app.credits_5`, `credits_15` y `credits_40`. El catálogo está en `functions/src/lib/iap.ts` y `lib/core/services/credits_store_service.dart`.
 
-Con eso, el diseño es: la app compra con StoreKit (`in_app_purchase`), manda el comprobante a una función que lo valida con Apple y suma los créditos a `cardGenerationCredits` de forma idempotente por número de transacción. No se otorgan créditos sin validar en el servidor. Hoy los créditos solo se obtienen gratis cada mes, y Android no vende (se distribuye por Firebase, no por Google Play).
+Lo que falta fuera del código, y solo lo puede hacer el titular de la cuenta:
+
+1. Aceptar el **Acuerdo de apps de pago** en App Store Connect y cargar datos bancarios y fiscales.
+2. Crear en App Store Connect los tres productos consumibles con esos identificadores, con nombre y precio.
+3. Crear una **clave de compras integradas** (App Store Connect → Usuarios y acceso → Integraciones → Compras integradas) y cargar sus datos en Firestore, documento `internalConfig/iap`, con los campos `issuerId`, `keyId` y `privateKey` (el contenido del `.p8`). Ese documento no tiene reglas: los clientes no lo pueden leer. Sin él, `redeemIapPurchase` responde «Las compras todavía no están configuradas» y no entrega nada.
+4. Probar con un usuario de sandbox desde el build de la tienda antes de enviar a revisión. Apple prueba las compras en sandbox con el mismo binario, y el servidor lo acepta.
 
 ## 7. Cómo publicar
 
