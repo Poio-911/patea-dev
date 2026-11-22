@@ -394,52 +394,13 @@ class _ActiveGroupView extends ConsumerWidget {
           children: [
             _GroupHeroCard(
               group: group,
+              groups: myGroups,
               role: role,
               playersCount: playersAsync.value?.length,
               teamsCount: teamsAsync.value?.length,
               playedCount: matchesAsync.value == null ? null : recent.length,
             ),
             const SizedBox(height: 20),
-
-            // Cambiar de grupo. La web solo ofrece esta lista cuando NO hay
-            // grupo activo; acá tiene que estar siempre, porque el grupo activo
-            // es lo que decide qué jugadores y qué partidos ve la app entera.
-            if (myGroups.length > 1) ...[
-              _Section(
-                icon: Icons.swap_horiz,
-                title: 'Cambiar de grupo',
-                child: Column(
-                  children: myGroups
-                      .map(
-                        (g) => _GroupSwitchRow(
-                          group: g,
-                          active: g.id == groupId,
-                          onTap: g.id == groupId
-                              ? null
-                              : () async {
-                                  try {
-                                    await ref
-                                        .read(groupServiceProvider)
-                                        .setActiveGroup(g.id);
-                                    if (context.mounted) {
-                                      PateaSnack.info(
-                                        context,
-                                        'Grupo activo: ${g.name}',
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      PateaSnack.error(context, '$e');
-                                    }
-                                  }
-                                },
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
 
             _Section(
               icon: Icons.shield_outlined,
@@ -484,8 +445,6 @@ class _ActiveGroupView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _GroupCountryRow(group: group, role: role),
-                  const SizedBox(height: 8),
                   venuesAsync.when(
                     data: (venues) {
                       if (venues.isEmpty) {
@@ -514,6 +473,8 @@ class _ActiveGroupView extends ConsumerWidget {
                     loading: () => const PateaLoading(height: 80),
                     error: (e, _) => PateaError(error: e, compact: true),
                   ),
+                  Divider(height: 16, color: context.c.overlayLine),
+                  _GroupCountryRow(group: group, role: role),
                 ],
               ),
             ),
@@ -692,7 +653,8 @@ class _GroupTeamTile extends StatelessWidget {
             constraints: BoxConstraints(
               minHeight:
                   MediaQuery.textScalerOf(context).scale(nameSize) *
-                  nameLineHeight * 2,
+                  nameLineHeight *
+                  2,
             ),
             child: name,
           ),
@@ -801,65 +763,6 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 10),
           child,
         ],
-      ),
-    );
-  }
-}
-
-class _GroupSwitchRow extends StatelessWidget {
-  final GroupModel group;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _GroupSwitchRow({
-    required this.group,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadii.cardAll,
-      child: PateaCard(
-        color: active
-            ? context.c.primary.withValues(alpha: 0.1)
-            : context.c.cardSurface.withValues(alpha: 0.5),
-        radius: AppRadii.cardAll,
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(10),
-        child: Row(
-          children: [
-            Icon(
-              active ? Icons.radio_button_checked : Icons.radio_button_off,
-              size: 18,
-              color: active ? context.c.primary : context.c.textSecondary,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                group.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(
-                  size: 13,
-                  weight: active ? FontWeight.w800 : FontWeight.w600,
-                  color: active ? context.c.primary : context.c.textPrimary,
-                ),
-              ),
-            ),
-            if (active)
-              Text(
-                'Activo',
-                style: AppTypography.body(
-                  size: 12,
-                  weight: FontWeight.w800,
-                  color: context.c.primary,
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }
@@ -1009,10 +912,12 @@ class _PlayedMatchRow extends StatelessWidget {
 
 class _GroupHeroCard extends ConsumerWidget {
   final GroupModel group;
+  final List<GroupModel> groups;
   final GroupRole? role;
   final int? playersCount, teamsCount, playedCount;
   const _GroupHeroCard({
     required this.group,
+    required this.groups,
     this.role,
     this.playersCount,
     this.teamsCount,
@@ -1052,15 +957,67 @@ class _GroupHeroCard extends ConsumerWidget {
               Wrap(
                 spacing: 14,
                 runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(
-                    'Grupo activo',
-                    style: AppTypography.body(
-                      size: 13,
-                      weight: FontWeight.w700,
-                      color: context.c.primary,
+                  if (groups.length > 1)
+                    PopupMenuButton<GroupModel>(
+                      tooltip: 'Cambiar de grupo',
+                      initialValue: group,
+                      onSelected: (selected) async {
+                        if (selected.id == group.id) return;
+                        try {
+                          await ref
+                              .read(groupServiceProvider)
+                              .setActiveGroup(selected.id);
+                          if (context.mounted) {
+                            PateaSnack.info(
+                              context,
+                              'Grupo activo: ${selected.name}',
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) PateaSnack.error(context, '$e');
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        for (final option in groups)
+                          CheckedPopupMenuItem(
+                            value: option,
+                            checked: option.id == group.id,
+                            child: Text(option.name),
+                          ),
+                      ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Grupo activo',
+                              style: AppTypography.body(
+                                size: 13,
+                                weight: FontWeight.w700,
+                                color: context.c.primary,
+                              ),
+                            ),
+                            Icon(
+                              Icons.expand_more,
+                              size: 17,
+                              color: context.c.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      'Grupo activo',
+                      style: AppTypography.body(
+                        size: 13,
+                        weight: FontWeight.w700,
+                        color: context.c.primary,
+                      ),
                     ),
-                  ),
                   if (role != null)
                     Text(
                       roleLabel(role!),
@@ -1287,7 +1244,9 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
         venueId: widget.venue.id,
         file: File(xfile.path),
       );
-      await ref.read(groupServiceProvider).updateGroupVenue(
+      await ref
+          .read(groupServiceProvider)
+          .updateGroupVenue(
             groupId: widget.groupId,
             venueId: widget.venue.id,
             photoUrl: photoUrl,
@@ -1309,18 +1268,15 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
     final v = widget.venue;
     final hasPhoto = v.photoUrl != null && v.photoUrl!.isNotEmpty;
 
-    return PateaCard(
-      color: context.c.cardSurface.withValues(alpha: 0.5),
-      radius: AppRadii.cardAll,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: AppRadii.chipAll,
             child: SizedBox(
-              width: 56,
-              height: 56,
+              width: 48,
+              height: 48,
               child: hasPhoto
                   ? Image.network(
                       v.photoUrl!,
@@ -1349,7 +1305,7 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
               children: [
                 Text(
                   v.name,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.body(
                     size: 14,
@@ -1357,13 +1313,14 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
                     color: context.c.textPrimary,
                   ),
                 ),
-                if (v.address.isNotEmpty)
+                if (v.address.trim().isNotEmpty &&
+                    v.address.trim() != v.name.trim())
                   Text(
                     v.address,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.body(
-                      size: 11,
+                      size: 12,
                       color: context.c.textSecondary,
                     ),
                   ),
@@ -1373,7 +1330,7 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
                   style: AppTypography.body(
                     size: 11,
                     weight: FontWeight.w600,
-                    color: context.c.primary,
+                    color: context.c.textSecondary,
                   ),
                 ),
               ],
@@ -1428,7 +1385,9 @@ class _GroupMembersSectionState extends ConsumerState<_GroupMembersSection> {
   Future<void> _changeRole(String memberUid, GroupRole nextRole) async {
     setState(() => _busyUid = memberUid);
     try {
-      await ref.read(groupServiceProvider).setGroupMemberRole(
+      await ref
+          .read(groupServiceProvider)
+          .setGroupMemberRole(
             groupId: widget.group.id,
             userId: memberUid,
             role: nextRole,

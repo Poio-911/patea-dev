@@ -2,7 +2,6 @@ import 'team_rivals_screen.dart';
 import '../../core/utils/dates.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
-import '../../core/widgets/player_position_badge.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
@@ -206,8 +205,9 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
             if (matchingPlayer.isNotEmpty) {
               creatorName = matchingPlayer.first.name;
             } else {
-              creatorName =
-                  ref.watch(userDisplayNameProvider(team.createdBy)).value;
+              creatorName = ref
+                  .watch(userDisplayNameProvider(team.createdBy))
+                  .value;
             }
           }
 
@@ -215,10 +215,16 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
               ref.watch(matchesStreamProvider(team.groupId)).value ?? const [];
           // La web cruza por nombre de equipo, no por id: los partidos guardan
           // `teams[].name`, no una referencia al equipo del grupo.
-          final agenda = matches.where((m) {
-            if (m.status != 'upcoming' && m.status != 'active') return false;
-            return m.teamA?.name == team.name || m.teamB?.name == team.name;
-          }).toList()..sort((a, b) => a.date.compareTo(b.date));
+          final agenda =
+              matches.where((m) {
+                if (m.status != 'upcoming' && m.status != 'active') {
+                  return false;
+                }
+                return m.teamA?.name == team.name || m.teamB?.name == team.name;
+              }).toList()..sort((a, b) {
+                if (a.status != b.status) return a.status == 'active' ? -1 : 1;
+                return a.date.compareTo(b.date);
+              });
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 28),
@@ -227,32 +233,44 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                 team: team,
                 trophies: trophies,
                 creatorName: creatorName,
+                actions: canEdit || canDelete
+                    ? PopupMenuButton<String>(
+                        tooltip: 'Opciones del equipo',
+                        enabled: !_isDeleting,
+                        icon: _isDeleting
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: PateaButtonProgress(),
+                              )
+                            : const Icon(Icons.more_horiz_rounded),
+                        onSelected: (action) {
+                          if (action == 'edit') {
+                            _showEditDialog(team);
+                          } else {
+                            _handleDelete(team);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          if (canEdit)
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Editar equipo'),
+                            ),
+                          if (canDelete)
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                'Eliminar equipo',
+                                style: TextStyle(color: context.c.destructive),
+                              ),
+                            ),
+                        ],
+                      )
+                    : null,
               ),
-              const SizedBox(height: 14),
-
-              if (canEdit || canDelete) ...[
-                _ActionBar(
-                  canEdit: canEdit,
-                  canDelete: canDelete,
-                  isDeleting: _isDeleting,
-                  onEdit: () => _showEditDialog(team),
-                  onRoster: () => _showEditMembersSheet(team, groupPlayers),
-                  onDelete: () => _handleDelete(team),
-                ),
-                const SizedBox(height: 18),
-              ],
-
-              if (canEdit && team.members.isNotEmpty) ...[
-                _RivalsCard(team: team),
-                const SizedBox(height: 18),
-              ],
-
-              if (canEdit || role != null) ...[
-                TeamRivalsPanel(team: team, limit: 3, preview: true),
-                const SizedBox(height: 18),
-              ],
+              const SizedBox(height: 16),
               if (agenda.isNotEmpty) ...[
-                _SectionLabel(text: 'Próximos partidos', count: agenda.length),
+                _SectionLabel(text: 'Agenda', count: agenda.length),
                 const SizedBox(height: 8),
                 ...agenda
                     .take(4)
@@ -266,6 +284,23 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                 const SizedBox(height: 18),
               ],
 
+              Text(
+                'Plantel',
+                style: AppTypography.headline(
+                  size: 22,
+                  weight: FontWeight.w800,
+                ),
+              ),
+              if (canEdit)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    onPressed: () => _showEditMembersSheet(team, groupPlayers),
+                    icon: const Icon(Icons.groups_outlined, size: 19),
+                    label: const Text('Gestionar plantel'),
+                  ),
+                ),
+              const SizedBox(height: 8),
               _SectionLabel(text: 'Titulares', count: starters.length),
               const SizedBox(height: 8),
               if (starters.isEmpty)
@@ -274,16 +309,15 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                   title: canEdit
                       ? 'Todavía no armaste el once'
                       : 'El once no está armado todavía',
-                  hint: canEdit ? 'Tocá Plantel para sumar titulares.' : null,
+                  hint: canEdit
+                      ? 'Usá Gestionar plantel para sumar titulares.'
+                      : null,
                   compact: true,
                 )
               else
                 ...starters.map(
-                  (m) => _RosterTile(
-                    member: m,
-                    player: playersById[m.playerId],
-                    starter: true,
-                  ),
+                  (m) =>
+                      _RosterTile(member: m, player: playersById[m.playerId]),
                 ),
 
               const SizedBox(height: 18),
@@ -297,12 +331,17 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                 )
               else
                 ...subs.map(
-                  (m) => _RosterTile(
-                    member: m,
-                    player: playersById[m.playerId],
-                    starter: false,
-                  ),
+                  (m) =>
+                      _RosterTile(member: m, player: playersById[m.playerId]),
                 ),
+              if (canEdit && team.members.isNotEmpty) ...[
+                const SizedBox(height: 22),
+                _RivalsCard(team: team),
+              ],
+              if (canEdit || role != null) ...[
+                const SizedBox(height: 16),
+                TeamRivalsPanel(team: team, limit: 3, preview: true),
+              ],
             ],
           );
         },
@@ -316,52 +355,62 @@ class _TeamBanner extends StatelessWidget {
   final GroupTeamModel team;
   final List<TeamTrophy> trophies;
   final String? creatorName;
+  final Widget? actions;
   const _TeamBanner({
     required this.team,
     required this.trophies,
     this.creatorName,
+    this.actions,
   });
   @override
   Widget build(BuildContext context) {
-    final accent = _parseColor(team.jersey.primaryColor, context.c.primary);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
+    final colors = context.c;
+    final accent = parseJerseyHexColor(team.jersey.primaryColor);
+    return PateaCard(
+      borderColor: colors.border,
+      padding: const EdgeInsets.all(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 86,
-            child: JerseyWidget(
-              jersey: team.jersey,
-              teamName: team.name,
-              size: 80,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(
+                accent.withValues(alpha: 0.16),
+                colors.cardSurface,
+              ),
+              borderRadius: AppRadii.chipAll,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  JerseyWidget(
+                    jersey: team.jersey,
+                    teamName: team.name,
+                    size: 60,
+                  ),
+                  if (team.jersey.hasCrest)
+                    TeamCrestWidget(
+                      jersey: team.jersey,
+                      teamName: team.name,
+                      size: 24,
+                    ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    if (team.jersey.hasCrest) ...[
-                      TeamCrestWidget(
-                        jersey: team.jersey,
-                        teamName: team.name,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: Text(
-                        team.name,
-                        style: AppTypography.headline(
-                          size: 25,
-                          weight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  team.name,
+                  style: AppTypography.headline(
+                    size: 22,
+                    weight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -423,11 +472,10 @@ class _TeamBanner extends StatelessWidget {
                       ],
                     ),
                   ),
-                const SizedBox(height: 12),
-                Container(width: 32, height: 3, color: accent),
               ],
             ),
           ),
+          ?actions,
         ],
       ),
     );
@@ -534,124 +582,6 @@ class _RivalsCardState extends ConsumerState<_RivalsCard> {
   }
 }
 
-class _ActionBar extends StatelessWidget {
-  final bool canEdit;
-  final bool canDelete;
-  final bool isDeleting;
-  final VoidCallback onEdit;
-  final VoidCallback onRoster;
-  final VoidCallback onDelete;
-
-  const _ActionBar({
-    required this.canEdit,
-    required this.canDelete,
-    required this.isDeleting,
-    required this.onEdit,
-    required this.onRoster,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        if (canEdit) ...[
-          Expanded(
-            child: _ActionButton(
-              icon: Icons.groups_rounded,
-              label: 'Plantel',
-              primary: true,
-              onTap: onRoster,
-            ),
-          ),
-          const SizedBox(width: 7),
-          Expanded(
-            child: _ActionButton(
-              icon: Icons.edit_rounded,
-              label: 'Editar',
-              onTap: onEdit,
-            ),
-          ),
-        ],
-        if (canDelete) ...[
-          if (canEdit) const SizedBox(width: 7),
-          _ActionButton(
-            icon: Icons.delete_outline_rounded,
-            label: null,
-            danger: true,
-            busy: isDeleting,
-            onTap: isDeleting ? null : onDelete,
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String? label;
-  final bool primary;
-  final bool danger;
-  final bool busy;
-  final VoidCallback? onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    this.primary = false,
-    this.danger = false,
-    this.busy = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final child = busy
-        ? const SizedBox(width: 18, height: 18, child: PateaButtonProgress())
-        : Icon(icon, size: 20);
-    if (label == null) {
-      return IconButton(
-        tooltip: danger ? 'Eliminar equipo' : 'Opciones',
-        onPressed: onTap,
-        style: IconButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          foregroundColor: danger
-              ? context.c.destructive
-              : context.c.textPrimary,
-        ),
-        icon: child,
-      );
-    }
-    final content = Text(
-      label!,
-      style: AppTypography.body(
-        size: 14,
-        weight: FontWeight.w700,
-        color: primary ? context.c.onPrimary : context.c.textPrimary,
-      ),
-    );
-    if (primary) {
-      return FilledButton.icon(
-        onPressed: onTap,
-        icon: child,
-        label: content,
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-        ),
-      );
-    }
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      icon: child,
-      label: content,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-      ),
-    );
-  }
-}
-
 class _SectionLabel extends StatelessWidget {
   final String text;
   final int count;
@@ -675,94 +605,100 @@ class _SectionLabel extends StatelessWidget {
   );
 }
 
-/// Una fila del plantel. Los suplentes se ven, pero más apagados.
+/// Una fila del plantel con el dorsal y el OVR en columnas fijas.
 class _RosterTile extends StatelessWidget {
   final TeamMemberEntry member;
   final PlayerModel? player;
-  final bool starter;
 
-  const _RosterTile({
-    required this.member,
-    required this.player,
-    required this.starter,
-  });
+  const _RosterTile({required this.member, required this.player});
 
   @override
   Widget build(BuildContext context) {
     final p = player;
-    return InkWell(
-      onTap: p == null ? null : () => context.push('/players/${p.id}'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 30,
-              child: Text(
-                member.number == 0 ? '—' : '${member.number}',
-                textAlign: TextAlign.center,
-                style: AppTypography.sportNumber(
-                  size: 21,
-                  color: context.c.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            PateaAvatar(
-              photoUrl: p?.photoUrl,
-              seed: p?.id ?? member.playerId,
-              size: 42,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    p?.name ?? 'Jugador sin datos',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(
-                      size: 15,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                  if (p != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: PlayerPositionBadge(
-                        position: p.position,
-                        dense: true,
-                        fontSize: 12,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (p != null) ...[
-              const SizedBox(width: 10),
-              Column(
-                children: [
-                  Text(
-                    '${p.ovr}',
+    return Column(
+      children: [
+        InkWell(
+          onTap: p == null ? null : () => context.push('/players/${p.id}'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 34,
+                  child: Text(
+                    member.number == 0 ? '—' : '${member.number}',
+                    textAlign: TextAlign.center,
                     style: AppTypography.sportNumber(
-                      size: 24,
-                      color: context.c.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'OVR',
-                    style: AppTypography.body(
-                      size: 12,
+                      size: 21,
                       color: context.c.textSecondary,
                     ),
                   ),
+                ),
+                const SizedBox(width: 10),
+                PateaAvatar(
+                  photoUrl: p?.photoUrl,
+                  seed: p?.id ?? member.playerId,
+                  size: 34,
+                  cropX: p?.cropX ?? 50,
+                  cropY: p?.cropY ?? 50,
+                  cropZoom: p?.cropZoom ?? 1,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p?.name ?? 'Jugador sin datos',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body(
+                          size: 15,
+                          weight: FontWeight.w600,
+                        ),
+                      ),
+                      if (p != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            p.position.toUpperCase(),
+                            style: AppTypography.body(
+                              size: 12,
+                              weight: FontWeight.w700,
+                              color: context.c.positionColor(p.position),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (p != null) ...[
+                  const SizedBox(width: 10),
+                  Column(
+                    children: [
+                      Text(
+                        '${p.ovr}',
+                        style: AppTypography.sportNumber(
+                          size: 24,
+                          color: context.c.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'OVR',
+                        style: AppTypography.body(
+                          size: 12,
+                          color: context.c.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
-              ),
-            ],
-          ],
+              ],
+            ),
+          ),
         ),
-      ),
+        Divider(height: 1, color: context.c.overlayLine),
+      ],
     );
   }
 }
@@ -785,12 +721,20 @@ class _AgendaRow extends StatelessWidget {
         ? match.teamB?.name
         : match.teamA?.name;
     final live = match.status == 'active';
+    final time = match.time?.trim();
+    final location = match.location?.trim();
+    final details = [
+      if (match.date.isNotEmpty) fmtDate(match.date),
+      if (time != null && time.isNotEmpty) '$time hs',
+      if (location != null && location.isNotEmpty) location,
+    ].join(' · ');
 
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadii.cardAll,
       child: PateaCard(
-        color: context.c.background,
+        color: context.c.card,
+        borderColor: context.c.border,
         radius: AppRadii.cardAll,
         margin: const EdgeInsets.only(bottom: 5),
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
@@ -822,19 +766,22 @@ class _AgendaRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    live
-                        ? 'En vivo'
-                        : match.time == null
-                        ? fmtDate(match.date)
-                        : '${fmtDate(match.date)} · ${match.time}',
-                    style: AppTypography.body(
-                      size: 12,
-                      color: live
-                          ? context.c.destructive
-                          : context.c.textSecondary,
+                  if (live)
+                    Text(
+                      'En vivo',
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.destructive,
+                      ),
                     ),
-                  ),
+                  if (details.isNotEmpty)
+                    Text(
+                      details,
+                      style: AppTypography.body(
+                        size: 12,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -848,13 +795,4 @@ class _AgendaRow extends StatelessWidget {
       ),
     );
   }
-}
-
-/// El color de una camiseta guardado como hex. [fallback] es lo que se usa
-/// cuando el dato viene roto: lo pasa quien llama, porque depende del tema.
-Color _parseColor(String hex, Color fallback) {
-  final clean = hex.replaceAll('#', '').trim();
-  if (clean.length != 6) return fallback;
-  final value = int.tryParse(clean, radix: 16);
-  return value == null ? fallback : Color(value).withAlpha(255);
 }

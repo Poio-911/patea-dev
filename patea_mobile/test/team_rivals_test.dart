@@ -73,7 +73,10 @@ Future<void> mount(
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [teamChallengeServiceProvider.overrideWithValue(service)],
+      overrides: [
+        teamChallengeServiceProvider.overrideWithValue(service),
+        clockProvider.overrideWithValue(() => DateTime(2026, 11, 19)),
+      ],
       child: MaterialApp(
         theme: light ? AppTheme.lightTheme : AppTheme.darkTheme,
         builder: (context, child) => MediaQuery(
