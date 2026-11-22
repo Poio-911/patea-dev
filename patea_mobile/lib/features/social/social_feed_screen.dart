@@ -19,7 +19,6 @@ import '../../core/theme/match_theme.dart';
 import '../../core/utils/dates.dart';
 import '../../core/utils/match_photography.dart';
 import '../../core/widgets/jersey_painter.dart';
-import '../../core/widgets/parallax_background.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_button_progress.dart';
 import '../../core/widgets/patea_card.dart';
@@ -404,253 +403,306 @@ Widget _buildFeedTile(Map<String, dynamic> data) {
   return _FeedActivityTile(data: data);
 }
 
-/// Partido del historial: la tarjeta del partido adaptada al feed (tipo y
-/// estado, título, equipos con camiseta y resultado, fecha y lugar).
+/// Novedad de partido del grupo con acceso a su ficha.
 class _FeedMatchTile extends ConsumerWidget {
   final String matchId;
   final Map<String, dynamic> data;
 
   const _FeedMatchTile({required this.matchId, required this.data});
 
-  static const _statusLabels = {
-    'planning': 'A confirmar',
-    'upcoming': 'Próximo',
-    'active': 'En vivo',
-    'completed': 'Finalizado',
-    'evaluated': 'Evaluado',
-  };
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final match = ref.watch(singleMatchStreamProvider(matchId)).value;
-    // Sin acceso al partido (o todavía cargando) queda la línea de texto.
     if (match == null) return _FeedActivityTile(data: data);
 
     final colors = context.c;
     final theme = getMatchTypeTheme(match.type);
-    final isLive = match.status == 'active';
-    final isPast = match.status == 'completed' || match.status == 'evaluated';
     final teamA = match.teamA;
     final teamB = match.teamB;
-    final hasTeams = teamA != null && teamB != null;
-    final when = match.date.isEmpty
-        ? ''
-        : (match.time == null || match.time!.isEmpty
-              ? fmtDateTime(match.date)
-              : '${fmtDate(match.date)} · ${match.time} hs');
+    final showScores = switch (match.status) {
+      'active' || 'completed' || 'evaluated' => true,
+      _ => false,
+    };
+    final status = switch (match.status) {
+      'planning' => 'A confirmar',
+      'upcoming' => 'Próximo partido',
+      'active' => 'En vivo',
+      'completed' => 'Resultado final',
+      'evaluated' => 'Partido evaluado',
+      _ => theme.label,
+    };
+    final day = fmtDayNumber(match.date);
+    final month = fmtMonthShort(match.date);
+    final explicitTime = match.time?.trim();
+    final kickoff = match.date.contains('T')
+        ? DateTime.tryParse(match.date)?.toLocal()
+        : null;
+    final time = explicitTime != null && explicitTime.isNotEmpty
+        ? explicitTime
+        : (kickoff == null ? null : fmtTime(kickoff));
+    final location = match.location?.trim();
+    final showDateTile = !showScores && day.isNotEmpty;
+    final dateLabel = showDateTile
+        ? (time == null ? 'Horario a confirmar' : '$time hs')
+        : [
+            fmtDate(match.date),
+            if (time != null) '$time hs',
+          ].where((part) => part.isNotEmpty).join(' · ');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Material(
-          color: colors.card,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadii.cardAll,
-            side: BorderSide(color: colors.border.withValues(alpha: 0.55)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => context.push('/matches/$matchId'),
-            child: Stack(
+    return Material(
+      color: colors.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadii.cardAll,
+        side: BorderSide(color: colors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/matches/$matchId'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Stack(
               children: [
                 Positioned.fill(
-                  child: ParallaxBackground(
-                    asset: MatchPhotography.forMatch(match.id),
-                    opacity: colors.isDarkSurface
-                        ? (isPast ? 0.18 : 0.32)
-                        : (isPast ? 0.42 : 0.6),
+                  child: Image.asset(
+                    MatchPhotography.forMatch(match.id),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    excludeFromSemantics: true,
                   ),
                 ),
-                Positioned.fill(
+                const Positioned.fill(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          colors.card.withValues(
-                            alpha: colors.isDarkSurface ? 0.92 : 0.82,
-                          ),
-                          colors.card.withValues(
-                            alpha: colors.isDarkSurface ? 0.55 : 0.62,
-                          ),
-                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xB30B1017), Color(0xE60B1017)],
                       ),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: theme.brandColor,
-                            ),
-                          ),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(
-                              theme.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.code(
-                                size: 12,
-                                weight: FontWeight.w700,
-                                color: colors.textSecondary,
-                              ),
-                            ),
+                          Icon(
+                            match.status == 'active'
+                                ? Icons.sensors
+                                : Icons.sports_soccer_outlined,
+                            size: 15,
+                            color: colors.brandVolt,
                           ),
                           Text(
-                            _statusLabels[match.status] ?? 'Finalizado',
+                            status,
                             style: AppTypography.body(
                               size: 12,
-                              weight: FontWeight.w600,
-                              color: isLive
-                                  ? colors.destructive
-                                  : (isPast
-                                        ? colors.textSecondary
-                                        : colors.primary),
+                              weight: FontWeight.w800,
+                              color: colors.brandVolt,
                             ),
                           ),
+                          if (status != theme.label)
+                            Text(
+                              theme.label,
+                              style: AppTypography.body(
+                                size: 12,
+                                color: colors.onPhotoMuted,
+                              ),
+                            ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Text(
                         match.title,
                         style: AppTypography.headline(
-                          size: 17,
+                          size: 22,
                           weight: FontWeight.w800,
+                          color: colors.onPhoto,
                         ),
                       ),
-                      if (hasTeams) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _FeedTeam(team: teamA),
-                            Column(
-                              children: [
-                                Text(
-                                  'VS',
-                                  style: AppTypography.code(
-                                    size: 12,
-                                    weight: FontWeight.w700,
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                                if (isPast || isLive)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      '${teamA.score} - ${teamB.score}',
-                                      style: AppTypography.sportNumber(
-                                        size: 22,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            _FeedTeam(team: teamB),
-                          ],
-                        ),
-                      ],
-                      if (when.isNotEmpty ||
-                          (match.location ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          height: 1,
-                          color: colors.border.withValues(alpha: 0.3),
-                        ),
-                        const SizedBox(height: 10),
-                        if (when.isNotEmpty)
-                          _FeedMatchInfo(
-                            icon: Icons.calendar_today_outlined,
-                            text: when,
-                          ),
-                        if ((match.location ?? '').isNotEmpty) ...[
-                          if (when.isNotEmpty) const SizedBox(height: 6),
-                          _FeedMatchInfo(
-                            icon: Icons.location_on_outlined,
-                            text: match.location!,
-                          ),
-                        ],
-                      ],
                     ],
                   ),
                 ),
               ],
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (showScores && teamA != null && teamB != null) ...[
+                    _FeedScoreLine(team: teamA),
+                    Divider(height: 10, color: colors.overlayLine),
+                    _FeedScoreLine(team: teamB),
+                    const SizedBox(height: 12),
+                  ],
+                  if (dateLabel.isNotEmpty || (location?.isNotEmpty ?? false))
+                    Row(
+                      children: [
+                        if (showDateTile) ...[
+                          Semantics(
+                            label: fmtDayAndMonth(match.date),
+                            excludeSemantics: true,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: colors.cardSurface,
+                                borderRadius: AppRadii.chipAll,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      day,
+                                      style: AppTypography.sportNumber(
+                                        size: 22,
+                                        color: colors.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      month,
+                                      style: AppTypography.body(
+                                        size: 10,
+                                        weight: FontWeight.w700,
+                                        color: colors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (dateLabel.isNotEmpty)
+                                Text(
+                                  dateLabel,
+                                  style: AppTypography.body(
+                                    size: 13,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                              if (location != null && location.isNotEmpty)
+                                Text(
+                                  location,
+                                  style: AppTypography.body(
+                                    size: 12,
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (!showScores && teamA != null && teamB != null) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _FeedTeamName(team: teamA),
+                        Text(
+                          'vs.',
+                          style: AppTypography.body(
+                            size: 12,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        _FeedTeamName(team: teamB),
+                      ],
+                    ),
+                  ],
+                  Divider(height: 18, color: colors.overlayLine),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _relativeTime(_feedActivityDate(data)),
+                          style: AppTypography.body(
+                            size: 12,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Ver partido',
+                        style: AppTypography.body(
+                          size: 12,
+                          weight: FontWeight.w700,
+                          color: colors.primary,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 17,
+                        color: colors.primary,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          _relativeTime(_feedActivityDate(data)),
-          style: AppTypography.body(size: 12, color: colors.textSecondary),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _FeedTeam extends StatelessWidget {
+class _FeedTeamName extends StatelessWidget {
   final MatchTeam team;
 
-  const _FeedTeam({required this.team});
+  const _FeedTeamName({required this.team});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (team.jersey != null)
-          JerseyWidget(jersey: team.jersey!, size: 40)
-        else
-          Icon(Icons.checkroom, size: 36, color: context.c.textSecondary),
-        const SizedBox(height: 6),
-        SizedBox(
-          width: 96,
-          child: Text(
-            team.name,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.body(size: 12, weight: FontWeight.w600),
-          ),
-        ),
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (team.jersey case final jersey?) ...[
+        JerseyWidget(jersey: jersey, size: 22),
+        const SizedBox(width: 6),
       ],
-    );
-  }
+      Flexible(
+        child: Text(
+          team.name,
+          style: AppTypography.body(size: 13, weight: FontWeight.w700),
+        ),
+      ),
+    ],
+  );
 }
 
-class _FeedMatchInfo extends StatelessWidget {
-  final IconData icon;
-  final String text;
+class _FeedScoreLine extends StatelessWidget {
+  final MatchTeam team;
 
-  const _FeedMatchInfo({required this.icon, required this.text});
+  const _FeedScoreLine({required this.team});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 15, color: context.c.textSecondary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.body(size: 13, color: context.c.textSecondary),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(child: _FeedTeamName(team: team)),
+      const SizedBox(width: 12),
+      Text(
+        '${team.score}',
+        style: AppTypography.sportNumber(size: 25, color: context.c.primary),
+      ),
+    ],
+  );
 }
 
 /// Novedad generada por el servidor (`feedActivities`): sin reacciones ni
