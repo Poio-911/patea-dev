@@ -451,7 +451,7 @@ class _ActiveGroupView extends ConsumerWidget {
                       onPressed: () =>
                           context.push('/groups/teams/new?groupId=$groupId'),
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Crear'),
+                      label: const Text('Crear equipo'),
                     )
                   : null,
               child: teamsAsync.when(
@@ -470,63 +470,7 @@ class _ActiveGroupView extends ConsumerWidget {
                       ),
                     );
                   }
-                  return Column(
-                    children: teams
-                        .map(
-                          (team) => InkWell(
-                            onTap: () =>
-                                context.push('/groups/teams/${team.id}'),
-                            borderRadius: AppRadii.cardAll,
-                            child: PateaCard(
-                              color: context.c.cardSurface.withValues(
-                                alpha: 0.5,
-                              ),
-                              radius: AppRadii.cardAll,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
-                              child: Row(
-                                children: [
-                                  JerseyWidget(
-                                    jersey: team.jersey,
-                                    teamName: team.name,
-                                    size: 36,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          team.name,
-                                          style: AppTypography.body(
-                                            color: context.c.textPrimary,
-                                            size: 16,
-                                            weight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        Text(
-                                          _rosterLine(team),
-                                          style: AppTypography.body(
-                                            size: 12,
-                                            color: context.c.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    size: 18,
-                                    color: context.c.textSecondary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
+                  return _GroupTeamDirectory(teams: teams);
                 },
                 loading: () => const PateaLoading(height: 96),
                 error: (e, _) => PateaError(error: e, compact: true),
@@ -537,33 +481,40 @@ class _ActiveGroupView extends ConsumerWidget {
             _Section(
               icon: Icons.stadium_outlined,
               title: 'Canchas guardadas',
-              child: venuesAsync.when(
-                data: (venues) {
-                  if (venues.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        'Todavía no hay canchas guardadas. Cuando creen un partido, la cancha se guarda acá automáticamente.',
-                        style: AppTypography.body(
-                          size: 12,
-                          color: context.c.textSecondary,
-                        ),
-                      ),
-                    );
-                  }
-                  return Column(
-                    children: venues
-                        .map(
-                          (venue) => _GroupSavedVenueRow(
-                            venue: venue,
-                            groupId: groupId,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _GroupCountryRow(group: group, role: role),
+                  const SizedBox(height: 8),
+                  venuesAsync.when(
+                    data: (venues) {
+                      if (venues.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            'Todavía no hay canchas guardadas. Cuando creen un partido, la cancha se guarda acá automáticamente.',
+                            style: AppTypography.body(
+                              size: 12,
+                              color: context.c.textSecondary,
+                            ),
                           ),
-                        )
-                        .toList(),
-                  );
-                },
-                loading: () => const PateaLoading(height: 80),
-                error: (e, _) => PateaError(error: e, compact: true),
+                        );
+                      }
+                      return Column(
+                        children: venues
+                            .map(
+                              (venue) => _GroupSavedVenueRow(
+                                venue: venue,
+                                groupId: groupId,
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                    loading: () => const PateaLoading(height: 80),
+                    error: (e, _) => PateaError(error: e, compact: true),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -675,6 +626,137 @@ String _rosterLine(GroupTeamModel team) {
     return '$starters ${starters == 1 ? 'jugador' : 'jugadores'}';
   }
   return '$starters ${starters == 1 ? 'titular' : 'titulares'} · $subs supl.';
+}
+
+class _GroupTeamDirectory extends StatelessWidget {
+  final List<GroupTeamModel> teams;
+
+  const _GroupTeamDirectory({required this.teams});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      const gap = 10.0;
+      final grid =
+          constraints.maxWidth >= 300 &&
+          MediaQuery.textScalerOf(context).scale(16) <= 20;
+      return Wrap(
+        spacing: gap,
+        runSpacing: gap,
+        children: [
+          for (final team in teams)
+            SizedBox(
+              width: grid
+                  ? (constraints.maxWidth - gap) / 2
+                  : constraints.maxWidth,
+              child: _GroupTeamTile(team: team, compact: !grid),
+            ),
+        ],
+      );
+    },
+  );
+}
+
+class _GroupTeamTile extends StatelessWidget {
+  final GroupTeamModel team;
+  final bool compact;
+
+  const _GroupTeamTile({required this.team, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.c;
+    final jersey = JerseyWidget(
+      jersey: team.jersey,
+      teamName: team.name,
+      size: compact ? 42 : 52,
+    );
+    const nameSize = 16.0;
+    const nameLineHeight = 1.25;
+    final name = Text(
+      team.name,
+      maxLines: compact ? null : 2,
+      overflow: compact ? null : TextOverflow.ellipsis,
+      style: AppTypography.headline(
+        size: nameSize,
+        weight: FontWeight.w800,
+      ).copyWith(height: nameLineHeight),
+    );
+    final identity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (compact)
+          name
+        else
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight:
+                  MediaQuery.textScalerOf(context).scale(nameSize) *
+                  nameLineHeight * 2,
+            ),
+            child: name,
+          ),
+        const SizedBox(height: 3),
+        Text(
+          _rosterLine(team),
+          style: AppTypography.body(size: 12, color: colors.textSecondary),
+        ),
+      ],
+    );
+    final arrow = Icon(
+      Icons.chevron_right_rounded,
+      size: 19,
+      color: colors.textSecondary,
+    );
+
+    return Material(
+      color: colors.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadii.cardAll,
+        side: BorderSide(color: colors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/groups/teams/${team.id}'),
+        child: compact
+            ? Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    jersey,
+                    const SizedBox(width: 12),
+                    Expanded(child: identity),
+                    arrow,
+                  ],
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ColoredBox(
+                    color: Color.alphaBlend(
+                      parseJerseyHexColor(
+                        team.jersey.primaryColor,
+                      ).withValues(alpha: 0.15),
+                      colors.cardSurface,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 9, 10, 9),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [jersey, arrow],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 9, 12, 11),
+                    child: identity,
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
 }
 
 /// El recuadro con título que ya usaba la pantalla, extraído para no repetirlo
@@ -945,6 +1027,112 @@ class _GroupHeroCard extends ConsumerWidget {
     }
   }
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PateaActivityCover(
+          image: PateaSectionScene.groups,
+          title: group.name,
+          compact: true,
+          details: [
+            if (playersCount != null) '$playersCount jugadores',
+            if (teamsCount != null) '$teamsCount equipos',
+            if (playedCount != null) '$playedCount partidos jugados',
+          ].join(' · '),
+        ),
+        const SizedBox(height: 14),
+        PateaCard(
+          borderColor: context.c.border,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Wrap(
+                spacing: 14,
+                runSpacing: 6,
+                children: [
+                  Text(
+                    'Grupo activo',
+                    style: AppTypography.body(
+                      size: 13,
+                      weight: FontWeight.w700,
+                      color: context.c.primary,
+                    ),
+                  ),
+                  if (role != null)
+                    Text(
+                      roleLabel(role!),
+                      style: AppTypography.body(
+                        size: 13,
+                        color: context.c.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+              Divider(height: 16, color: context.c.overlayLine),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Código de invitación',
+                          style: AppTypography.body(
+                            size: 12,
+                            color: context.c.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SelectableText(
+                          group.inviteCode,
+                          style: AppTypography.body(
+                            size: 17,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Copiar código de invitación',
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: group.inviteCode),
+                      );
+                      if (context.mounted) {
+                        PateaSnack.ok(context, '¡Código copiado!');
+                      }
+                    },
+                    icon: const Icon(Icons.copy_outlined, size: 21),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: () => _shareInvite(context),
+                  icon: const Icon(Icons.share_outlined, size: 17),
+                  label: const Text('Invitar al grupo'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GroupCountryRow extends ConsumerWidget {
+  final GroupModel group;
+  final GroupRole? role;
+
+  const _GroupCountryRow({required this.group, required this.role});
+
   Future<void> _pickGroupCountry(BuildContext context, WidgetRef ref) async {
     final options = kSupportedCountries.where((c) => c.code != null).toList();
     final current = LocationService.defaultCountryCode(
@@ -1013,10 +1201,9 @@ class _GroupHeroCard extends ConsumerWidget {
     );
     if (picked == null || !context.mounted) return;
     try {
-      await ref.read(groupServiceProvider).setGroupCountry(
-            groupId: group.id,
-            countryCode: picked,
-          );
+      await ref
+          .read(groupServiceProvider)
+          .setGroupCountry(groupId: group.id, countryCode: picked);
       if (context.mounted) {
         final chosen = findCountryOption(picked);
         PateaSnack.ok(
@@ -1038,114 +1225,35 @@ class _GroupHeroCard extends ConsumerWidget {
     );
     final canEditCountry =
         role == GroupRole.admin || role == GroupRole.moderator;
-    return Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      PateaActivityCover(
-        image: PateaSectionScene.groups,
-        title: group.name,
-        details: [
-          if (playersCount != null) '$playersCount jugadores',
-          if (teamsCount != null) '$teamsCount equipos',
-          if (playedCount != null) '$playedCount partidos jugados',
-        ].join(' · '),
-      ),
-      const SizedBox(height: 14),
-      Wrap(
-        spacing: 14,
-        runSpacing: 6,
-        children: [
-          Text(
-            'Grupo activo',
-            style: AppTypography.body(
-              size: 13,
-              weight: FontWeight.w700,
-              color: context.c.primary,
-            ),
-          ),
-          if (role != null)
-            Text(
-              roleLabel(role!),
-              style: AppTypography.body(
-                size: 13,
-                color: context.c.textSecondary,
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'País de búsqueda de canchas',
+                style: AppTypography.body(
+                  size: 12,
+                  color: context.c.textSecondary,
+                ),
               ),
-            ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Código de invitación',
-                  style: AppTypography.body(
-                    size: 12,
-                    color: context.c.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                SelectableText(
-                  group.inviteCode,
-                  style: AppTypography.body(size: 17, weight: FontWeight.w700),
-                ),
-              ],
-            ),
+              const SizedBox(height: 4),
+              Text(
+                '${country.flag} ${country.name}',
+                style: AppTypography.body(size: 15, weight: FontWeight.w600),
+              ),
+            ],
           ),
-          IconButton(
-            tooltip: 'Copiar código de invitación',
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: group.inviteCode));
-              if (context.mounted) PateaSnack.ok(context, '¡Código copiado!');
-            },
-            icon: const Icon(Icons.copy_outlined, size: 21),
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'País de búsqueda de canchas',
-                  style: AppTypography.body(
-                    size: 12,
-                    color: context.c.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${country.flag} ${country.name}',
-                  style: AppTypography.body(size: 15, weight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-          if (canEditCountry)
-            TextButton.icon(
-              onPressed: () => _pickGroupCountry(context, ref),
-              icon: const Icon(Icons.edit_outlined, size: 17),
-              label: const Text('Cambiar'),
-            ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      FilledButton.icon(
-        onPressed: () => _shareInvite(context),
-        icon: const Icon(Icons.share_outlined, size: 19),
-        label: const Text('Invitar al grupo'),
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-      ),
-    ],
-  );
+        if (canEditCountry)
+          TextButton.icon(
+            onPressed: () => _pickGroupCountry(context, ref),
+            icon: const Icon(Icons.edit_outlined, size: 17),
+            label: const Text('Cambiar'),
+          ),
+      ],
+    );
   }
 }
 

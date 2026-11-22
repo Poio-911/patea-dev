@@ -907,6 +907,9 @@ List<Override> overridesDelArnes() {
     groupTeamsStreamProvider(
       idGrupo,
     ).overrideWith((ref) => Stream.value(equipos)),
+    groupVenuesStreamProvider(
+      idGrupo,
+    ).overrideWith((ref) => Stream.value(const [])),
     myGroupRoleProvider(
       idGrupo,
     ).overrideWith((ref) => Stream.value(GroupRole.admin)),
