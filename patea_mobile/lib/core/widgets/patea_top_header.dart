@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'patea_avatar.dart';
+import 'patea_account_avatar.dart';
 import '../../core/theme/app_radii.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,11 +68,8 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
         nonEmptyPhotoUrl(overrideUserPhotoUrl) ??
         nonEmptyPhotoUrl(player?.photoUrl) ??
         ref.watch(currentAuthPhotoUrlProvider);
-    final usePlayerCrop = nonEmptyPhotoUrl(overrideUserPhotoUrl) == null && player != null;
-    final initial = (firstName != null && firstName.isNotEmpty)
-        ? firstName[0].toUpperCase()
-        : 'P';
-
+    final usePlayerCrop =
+        nonEmptyPhotoUrl(overrideUserPhotoUrl) == null && player != null;
     final unread = ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
 
     return ClipRect(
@@ -253,12 +250,10 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
                                   const SizedBox(width: 8),
                                 ],
 
-                                // Era la tercera implementacion de un avatar en la app.
-                                PateaAvatar(
+                                PateaAccountAvatar(
                                   photoUrl: userPhotoUrl,
-                                  seed: currentUser?.uid ?? initial,
+                                  name: firstName ?? 'P',
                                   size: 36,
-                                  borderColor: context.c.overlayStrong,
                                   cropX: usePlayerCrop ? player.cropX : 50,
                                   cropY: usePlayerCrop ? player.cropY : 50,
                                   cropZoom: usePlayerCrop ? player.cropZoom : 1,
@@ -286,6 +281,3 @@ class PateaTopHeader extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 }
-
-/// Avatar del header. Estaba escrito tres veces seguidas —placeholder, error y
-/// caso sin foto— con el mismo `Container` de relleno copiado en cada rama.

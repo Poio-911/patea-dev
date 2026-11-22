@@ -11,7 +11,7 @@ import 'package:patea_mobile/core/services/firestore_service.dart';
 import 'package:patea_mobile/core/services/profile_service.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/widgets/cropped_photo.dart';
-import 'package:patea_mobile/core/widgets/patea_avatar.dart';
+import 'package:patea_mobile/core/widgets/patea_account_avatar.dart';
 import 'package:patea_mobile/core/widgets/patea_top_header.dart';
 import 'package:patea_mobile/features/players/edit_profile_screen.dart';
 import 'package:patea_mobile/features/players/player_detail_screen.dart';
@@ -187,7 +187,7 @@ void main() {
     );
 
     testWidgets(
-      'PateaTopHeader forwards auth fallback photo and player crop to PateaAvatar',
+      'PateaTopHeader uses the menu avatar with the saved crop at 36 pixels',
       (tester) async {
         final playerWithCrop = PlayerModel(
           id: uidYo,
@@ -222,7 +222,10 @@ void main() {
         );
 
         expect(errors, isEmpty, reason: resumirErrores(errors));
-        final avatar = tester.widget<PateaAvatar>(find.byType(PateaAvatar));
+        final avatar = tester.widget<PateaAccountAvatar>(
+          find.byType(PateaAccountAvatar),
+        );
+        expect(avatar.size, 36);
         expect(avatar.photoUrl, 'https://example.com/google.jpg');
         expect(avatar.cropX, 30);
         expect(avatar.cropY, 20);

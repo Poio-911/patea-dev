@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/messages_service.dart';
@@ -15,7 +14,7 @@ import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
 import '../utils/photo_url.dart';
 import '../models/player_model.dart';
-import 'cropped_photo.dart';
+import 'patea_account_avatar.dart';
 import 'ovr_accent.dart';
 
 /// Menú de usuario, port de `src/components/nav/user-menu.tsx`.
@@ -100,7 +99,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
                   lastChange: lastChange,
                   stats: player?.stats,
                   playerId: player?.id ?? uid,
-                  avatar: _Avatar(
+                  avatar: PateaAccountAvatar(
                     photoUrl: photoUrl,
                     name: displayName,
                     size: 64,
@@ -250,70 +249,6 @@ class PateaUserMenuSheet extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  final String? photoUrl;
-  final String name;
-  final double cropX;
-  final double cropY;
-  final double cropZoom;
-  final double size;
-
-  const _Avatar({
-    required this.photoUrl,
-    required this.name,
-    this.size = 48,
-    this.cropX = 50,
-    this.cropY = 50,
-    this.cropZoom = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fallback = Container(
-      decoration: BoxDecoration(
-        color: context.c.cardSurface,
-        shape: BoxShape.circle,
-        border: Border.all(color: context.c.border),
-      ),
-      child: Center(
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : 'P',
-          style: AppTypography.headline(
-            size: 18,
-            weight: FontWeight.w900,
-            color: context.c.primary,
-          ),
-        ),
-      ),
-    );
-
-    final url = photoUrl;
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ClipOval(
-        child: url != null && url.isNotEmpty
-            ? CroppedPhoto(
-                cropX: cropX,
-                cropY: cropY,
-                cropZoom: cropZoom,
-                child: CachedNetworkImage(
-                  imageUrl: url,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
-                  memCacheWidth: 256,
-                  maxWidthDiskCache: 512,
-                  placeholder: (context, url) => fallback,
-                  errorWidget: (context, url, error) => fallback,
-                ),
-              )
-            : fallback,
       ),
     );
   }
