@@ -350,7 +350,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
   }
 }
 
-/// Cabecera del equipo: la camiseta manda el color de todo el bloque.
+/// Identidad y títulos del equipo.
 class _TeamBanner extends StatelessWidget {
   final GroupTeamModel team;
   final List<TeamTrophy> trophies;
@@ -365,30 +365,23 @@ class _TeamBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.c;
-    final accent = parseJerseyHexColor(team.jersey.primaryColor);
-    return PateaCard(
-      borderColor: colors.border,
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final creator = creatorName?.trim();
+    final memberCount = team.members.length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: Color.alphaBlend(
-                accent.withValues(alpha: 0.16),
-                colors.cardSurface,
-              ),
-              borderRadius: AppRadii.chipAll,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
+          Row(
+            children: [
+              Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   JerseyWidget(
                     jersey: team.jersey,
                     teamName: team.name,
-                    size: 60,
+                    size: 68,
                   ),
                   if (team.jersey.hasCrest)
                     TeamCrestWidget(
@@ -398,92 +391,82 @@ class _TeamBanner extends StatelessWidget {
                     ),
                 ],
               ),
-            ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      team.name,
+                      style: AppTypography.headline(
+                        size: 24,
+                        weight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$memberCount ${memberCount == 1 ? 'jugador' : 'jugadores'}',
+                      style: AppTypography.body(
+                        size: 13,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    if (creator != null && creator.isNotEmpty)
+                      Text(
+                        'Creado por $creator',
+                        style: AppTypography.body(
+                          size: 12,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              ?actions,
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (trophies.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
               children: [
-                Text(
-                  team.name,
-                  style: AppTypography.headline(
-                    size: 22,
-                    weight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${team.members.length} ${team.members.length == 1 ? 'jugador' : 'jugadores'}',
-                  style: AppTypography.body(
-                    size: 14,
-                    color: context.c.textSecondary,
-                  ),
-                ),
-                if (creatorName != null && creatorName!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                for (final trophy in trophies)
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.person_outline_rounded,
-                        size: 14,
-                        color: context.c.textSecondary,
+                        trophy.isCup
+                            ? Icons.emoji_events_outlined
+                            : Icons.workspace_premium_outlined,
+                        size: 16,
+                        color: colors.goldText,
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
+                      const SizedBox(width: 6),
+                      Flexible(
                         child: Text(
-                          'Creado por $creatorName',
+                          trophy.name.isEmpty
+                              ? (trophy.isCup ? 'Copa' : 'Liga')
+                              : trophy.name,
                           style: AppTypography.body(
-                            size: 12.5,
-                            color: context.c.textSecondary,
+                            size: 12,
+                            weight: FontWeight.w700,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                ],
-                for (final trophy in trophies)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          trophy.isCup
-                              ? Icons.emoji_events_outlined
-                              : Icons.workspace_premium_outlined,
-                          size: 18,
-                          color: context.c.goldText,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            trophy.name.isEmpty
-                                ? (trophy.isCup ? 'Copa' : 'Liga')
-                                : trophy.name,
-                            style: AppTypography.body(
-                              size: 13,
-                              weight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
-          ),
-          ?actions,
+          ],
+          const SizedBox(height: 12),
+          Divider(height: 1, color: colors.overlayLine),
         ],
       ),
     );
   }
 }
 
-/// Rivales: buscar un equipo de otro grupo para desafiar, y decidir si este
-/// equipo recibe desafíos de otros. Sólo lo ve quien puede editar el equipo.
 class _RivalsCard extends ConsumerStatefulWidget {
   final GroupTeamModel team;
   const _RivalsCard({required this.team});
