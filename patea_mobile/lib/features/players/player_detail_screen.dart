@@ -12,6 +12,7 @@ import '../../core/theme/app_insets.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
+import '../../core/widgets/ovr_accent.dart';
 import '../../core/utils/photo_url.dart';
 import '../../core/utils/player_attribute_highlight.dart';
 import '../../core/widgets/cropped_photo.dart';
@@ -406,15 +407,27 @@ class _HeroCardHeader extends StatelessWidget {
                               color: c.textSecondary,
                             ),
                           ),
+                          // Misma escala de color y categoría que la carta del jugador.
+                          if (ovrCategory(player.ovr).isNotEmpty)
+                            Text(
+                              ovrCategory(player.ovr),
+                              style: AppTypography.body(
+                                size: 12,
+                                height: 1.2,
+                                weight: FontWeight.w700,
+                                color: ovrAccentColor(c, player.ovr),
+                              ),
+                            ),
                           Transform(
                             transform: Matrix4.identity()
                               ..setEntry(0, 1, -0.12),
-                            child: Text(
-                              '${player.ovr}',
+                            child: OvrPrismNumber(
+                              ovr: player.ovr,
+                              seed: player.id,
                               style:
                                   AppTypography.sportNumber(
                                     size: 52,
-                                    color: c.ratingAccent,
+                                    color: ovrAccentColor(c, player.ovr),
                                   ).copyWith(
                                     height: 0.95,
                                     fontWeight: FontWeight.w700,

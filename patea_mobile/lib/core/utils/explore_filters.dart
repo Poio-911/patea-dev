@@ -20,6 +20,9 @@ bool isDiscoverableFuture(MatchModel match, DateTime now) =>
 
 bool canRecruitFor(MatchModel match, String uid, DateTime now) =>
     match.ownerUid == uid &&
+    // Un partido de plantel fijo (entre equipos o de competición) no se
+    // completa con jugadores sueltos; el servidor rechaza la invitación.
+    !match.hasFixedRoster &&
     isDiscoverableFuture(match, now) &&
     (match.matchSize == 0 || match.playerUids.length < match.matchSize);
 

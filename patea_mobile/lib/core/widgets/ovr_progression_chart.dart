@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/player_model.dart';
 import '../theme/app_typography.dart';
 import '../theme/patea_colors.dart';
+import 'ovr_accent.dart';
 
 /// Gráfico de progresión de OVR más la banda de OVR actual/cambio/máximo/mínimo.
 class OvrProgressionChart extends StatelessWidget {
@@ -53,7 +54,7 @@ class OvrProgressionChart extends StatelessWidget {
               _MiniStat(
                 label: 'Actual',
                 value: '${player.ovr}',
-                accent: c.ratingAccent,
+                accent: ovrAccentColor(c, player.ovr),
               ),
               _Divider(color: c.border),
               _MiniStat(

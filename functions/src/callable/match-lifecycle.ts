@@ -1,6 +1,7 @@
 import { prepareLiveRoster } from '../lib/live-team-rosters';
 import { isGeneratingTeams, matchRosterIds, regenerateMatchTeams } from './match-management';
-import { assertCanJoinMatch, userCanManageMatch } from '../lib/match-access';
+import { assertCanJoinMatch, assertOpenRoster, hasFixedRoster, isTeamMatch, userCanManageMatch } from '../lib/match-access';
+import { assertFinishable, assertLive, staleTeamsPatch } from '../lib/match-state';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { generateBalancedTeamsCore } from './generate-balanced-teams';
@@ -53,7 +54,9 @@ export const startMatch = onCall({ region: 'us-central1' }, async (request) => {
     const assigned = data.teams.flatMap((team: any) => team.players.map((p: any) => p?.uid));
     if (assigned.length !== roster.length || new Set(assigned).size !== assigned.length ||
         roster.some(id => !assigned.includes(id))) {
-      throw new HttpsError('failed-precondition', 'El plantel cambió o hay jugadores repetidos. Tocá Equilibrar equipos antes de iniciar el partido.');
+      throw new HttpsError('failed-precondition', hasFixedRoster(data)
+        ? 'El plantel de un equipo cambió o hay jugadores repetidos. Revisá los planteles de los equipos antes de iniciar.'
+        : 'El plantel cambió o hay jugadores repetidos. Tocá Equilibrar equipos antes de iniciar el partido.');
     }
     tx.update(ref, { ...(liveRoster ?? {}), rosterSyncIssue: admin.firestore.FieldValue.delete(), status: 'active', liveStatus: 'first_half', currentMinute: 0,
       periodStartTs: admin.firestore.FieldValue.serverTimestamp(), timerPaused: false,
@@ -79,6 +82,7 @@ export const updateLiveMinute = onCall({ region: 'us-central1' }, async (request
   if (!(await userCanManageMatch(admin.firestore(), data, uid))) {
     throw new HttpsError('permission-denied', 'Solo los organizadores pueden actualizar el minuto en vivo.');
   }
+  assertLive(data);
   // Se congela el reloj en el minuto que mandó el cliente: es lo único
   // coherente, porque esas versiones no saben de `periodStartTs`.
   await ref.update({ currentMinute: minute, liveStatus, timerPaused: true });
@@ -127,12 +131,16 @@ export const updateLiveState = onCall({ region: 'us-central1' }, async (request)
   if (!(await userCanManageMatch(admin.firestore(), data, uid))) {
     throw new HttpsError('permission-denied', 'Solo los organizadores o capitanes pueden controlar el partido en vivo.');
   }
+  // Sólo se controla un partido que YA está en vivo. Antes esta función ponía
+  // `status: 'active'` desde cualquier estado: saltaba las validaciones de
+  // `startMatch` (equipos, plantel congelado) y reabría partidos terminados.
+  // Iniciar es `startMatch`.
+  assertLive(data);
 
   const updates: Record<string, unknown> = {
     liveStatus,
     currentMinute: baseMinute,
     timerPaused: paused,
-    status: 'active',
   };
 
   // El reloj sólo se reancla cuando efectivamente arranca a correr. Si está
@@ -192,6 +200,16 @@ export const joinMatch = onCall({ region: 'us-central1' }, async (request) => {
     // pertenecían a ningún plantel.
     await assertCanJoinMatch(db, match, uid);
 
+    // Un partido `manual` se arma a dedo: quien no lo organiza pide lugar y el
+    // organizador decide. La pantalla ya lo hacía, pero acá se aceptaba
+    // cualquier llamada directa y la persona entraba sin aprobación.
+    if (match.type === 'manual' && match.ownerUid !== uid) {
+      throw new HttpsError(
+        'failed-precondition',
+        'Este partido es por convocatoria: pedí lugar y el organizador decide.',
+      );
+    }
+
     const players: Array<Record<string, unknown>> = Array.isArray(match.players) ? match.players : [];
     const matchSize = Number(match.matchSize ?? 0);
     if (matchSize > 0 && players.length >= matchSize) {
@@ -215,6 +233,7 @@ export const joinMatch = onCall({ region: 'us-central1' }, async (request) => {
     transaction.update(ref, {
       players: admin.firestore.FieldValue.arrayUnion(playerPayload),
       playerUids: admin.firestore.FieldValue.arrayUnion(uid),
+      ...staleTeamsPatch(match),
     });
 
     if (match.ownerUid && match.ownerUid !== uid) {
@@ -274,6 +293,9 @@ export const leaveMatch = onCall({ region: 'us-central1' }, async (request) => {
 
     const playerUids: string[] = Array.isArray(match.playerUids) ? match.playerUids : [];
     if (!playerUids.includes(uid)) return; // idempotente
+    // En un partido de plantel fijo nadie "se baja": sacarlo del plantel no se
+    // podía deshacer (después no podía volver) y rompía los equipos armados.
+    assertOpenRoster(match, 'leave');
 
     const players: Array<Record<string, unknown>> = Array.isArray(match.players) ? match.players : [];
     transaction.update(ref, {
@@ -441,6 +463,8 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
     throw new HttpsError('permission-denied', 'Solo los organizadores o capitanes pueden finalizar el partido.');
   }
   if (data.status === 'completed' || data.status === 'evaluated') return { ok: true, assignmentsCount: 0 };
+  // Sólo se finaliza un partido que estuvo en vivo (ver lib/match-state.ts).
+  assertFinishable(data);
   if (isGeneratingTeams(data)) throw new HttpsError('aborted', 'Esperá a que termine el armado de equipos.');
 
   const playerUids: string[] = Array.isArray(data.playerUids) ? data.playerUids : [];
@@ -454,7 +478,8 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
   if (allPlayers.length !== new Set(realPlayerUids).size) throw new HttpsError('failed-precondition', 'Falta un perfil del plantel. Revisá la convocatoria antes de finalizar.');
   const matchSize = Number(data.matchSize ?? 0);
   let finalTeams = Array.isArray(data.teams) ? (data.teams as LifecycleTeam[]) : undefined;
-  const matchUpdateData: Record<string, unknown> = { status: 'completed' };
+  // Quién cerró el partido y cuándo, para poder responder por un resultado.
+  const matchUpdateData: Record<string, unknown> = { status: 'completed', finishedBy: uid, finishedAt: new Date().toISOString() };
 
   if ((!finalTeams || finalTeams.length === 0) && playerUids.length >= matchSize && matchSize > 0) {
     const guestPlayers = (Array.isArray(data.players) ? data.players : [])
@@ -492,6 +517,7 @@ export const finishMatch = onCall({ region: 'us-central1' }, async (request) => 
     const fresh = (await batch.get(ref)).data();
     if (!fresh) throw new HttpsError('not-found', 'El partido no existe.');
     if (fresh.status === 'completed' || fresh.status === 'evaluated') return;
+    assertFinishable(fresh);
     if (isGeneratingTeams(fresh) || JSON.stringify(fresh.playerUids ?? []) !== JSON.stringify(playerUids) || JSON.stringify(fresh.teams ?? []) !== JSON.stringify(data.teams ?? [])) {
       throw new HttpsError('aborted', 'El plantel cambió. Actualizá el partido antes de finalizar.');
     }
@@ -599,7 +625,9 @@ export const finalizePendingMatches = onCall({ region: 'us-central1' }, async (r
     const match = matchDoc.data() as Record<string, unknown>;
 
     if (match.ownerUid !== uid) continue;
-    if (match.status !== 'upcoming' || competitionTypes.has(String(match.type))) continue;
+    // Un partido entre equipos que no se jugó NO se cierra como 0-0: sumaría un
+    // empate falso al historial de rivales. Se elimina o se juega.
+    if (match.status !== 'upcoming' || competitionTypes.has(String(match.type)) || isTeamMatch(match)) continue;
 
     batch.update(matchDoc.ref, { status: 'completed', finalizedAt });
     finalizedCount += 1;

@@ -38,8 +38,8 @@ test('manual save only writes own side; forgetting is reversible, opt-out and sa
 test('simultaneous triggers count once, corrections apply deltas and backfill preserves metadata',options,async()=>{
  const f=await fixture(),m=await accept(f);await finish(f,m.matchId,[3,1]);
  await Promise.all([store.recordTeamMatchResult(db,m.matchId),store.recordTeamMatchResult(db,m.matchId)]);
- const ref=db.doc(`teamRivals/${rivalDocId(f.b,f.a)}`);let row=(await ref.get()).data();assert.equal(row.played,1);assert.equal(row.wins,1);assert.equal(row.goalsFor,3);
- await rivals.setTeamRival.run(req(f.ub,{ownTeamId:f.b,rivalTeamId:f.a,favorite:true,hidden:true}));
+ const ref=db.doc(`teamRivals/${rivalDocId(f.a,f.b)}`);let row=(await ref.get()).data();assert.equal(row.played,1);assert.equal(row.wins,1);assert.equal(row.goalsFor,3);
+ await rivals.setTeamRival.run(req(f.ua,{ownTeamId:f.a,rivalTeamId:f.b,favorite:true,hidden:true}));
  await finish(f,m.matchId,[0,2]);await store.recordTeamMatchResult(db,m.matchId);row=(await ref.get()).data();assert.equal(row.played,1);assert.equal(row.wins,0);assert.equal(row.losses,1);assert.equal(row.favorite,true);assert.equal(row.hidden,true);
  await ref.update({played:999});await store.reconcileRivalPair(db,f.a,f.b);row=(await ref.get()).data();assert.equal(row.played,1);assert.equal(row.hidden,true);assert.equal(row.favorite,true);
  await store.recordTeamMatchResult(db,m.matchId);assert.equal((await ref.get()).data().played,1);

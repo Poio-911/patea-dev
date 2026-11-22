@@ -647,6 +647,14 @@ export async function manageCompetitionCore(
         teams: sides,
         penaltyWinnerId: penalty,
         status: match.status === "evaluated" ? "evaluated" : "completed",
+        // Auditoría: cada carga o corrección de resultado queda registrada con
+        // quién la hizo y cuál era el marcador anterior.
+        resultHistory: admin.firestore.FieldValue.arrayUnion({
+          by: uid,
+          at: new Date().toISOString(),
+          score: score ?? null,
+          previous: match.finalScore ?? null,
+        }),
       });
       for (const a of assignments)
         tx.set(mref.collection("assignments").doc(), a);

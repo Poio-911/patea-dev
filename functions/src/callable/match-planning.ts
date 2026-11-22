@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { randomUUID } from 'crypto';
+import { assertCanVote, assertDatePlanning, assertScheduleOpen } from '../lib/match-state';
 
 /**
  * Votación de fecha y de cancha para un partido que todavía no tiene ninguna
@@ -119,6 +120,9 @@ export const voteMatchDate = onCall({ region: 'us-central1' }, async (request) =
     const snap = await transaction.get(ref);
     if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
     const match = snap.data()!;
+    // Antes votaba cualquier usuario con sesión, también en partidos privados
+    // ajenos, con sólo conocer el id.
+    assertCanVote(match, uid);
 
     if (match.isVotingOpen === false) {
       throw new HttpsError('failed-precondition', 'La votación está cerrada.');
@@ -162,6 +166,9 @@ export const confirmMatchDate = onCall({ region: 'us-central1' }, async (request
     if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
     const match = snap.data()!;
     requireCaptain(match, uid);
+    // Confirmar la fecha es `planning → upcoming`. Antes se podía "reconfirmar"
+    // un partido en vivo o terminado y volverlo a `upcoming`.
+    assertDatePlanning(match);
 
     const proposals: Array<Record<string, unknown>> = Array.isArray(match.dateProposals)
       ? match.dateProposals
@@ -205,6 +212,7 @@ export const proposeMatchLocation = onCall({ region: 'us-central1' }, async (req
 
   const { ref, data: match } = await getMatch(matchId);
   requireCaptain(match, uid);
+  assertScheduleOpen(match, 'proponer una cancha');
 
   await ref.update({
     locationProposals: admin.firestore.FieldValue.arrayUnion({
@@ -236,6 +244,9 @@ export const voteMatchLocation = onCall({ region: 'us-central1' }, async (reques
     const snap = await transaction.get(ref);
     if (!snap.exists) throw new HttpsError('not-found', 'El partido no existe.');
     const match = snap.data()!;
+    // Antes votaba cualquier usuario con sesión, también en partidos privados
+    // ajenos, con sólo conocer el id.
+    assertCanVote(match, uid);
 
     if (match.isVotingOpen === false) {
       throw new HttpsError('failed-precondition', 'La votación está cerrada.');
@@ -275,6 +286,7 @@ export const confirmMatchLocation = onCall({ region: 'us-central1' }, async (req
 
   const { ref, data: match } = await getMatch(matchId);
   requireCaptain(match, uid);
+  assertScheduleOpen(match, 'confirmar la cancha');
 
   const proposals: Array<Record<string, unknown>> = Array.isArray(match.locationProposals)
     ? match.locationProposals

@@ -1,7 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { geohashForLocation, geohashQueryBounds, distanceBetween } from 'geofire-common';
-import { assertNotTeamMatch, userCanManageMatch } from '../lib/match-access';
+import { assertOpenRoster, userCanManageMatch } from '../lib/match-access';
+import { assertConvocationOpen } from '../lib/match-state';
 import { sendPushToUsers } from '../lib/fcm-push';
 
 /**
@@ -384,10 +385,18 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
   if (!(await userCanManageMatch(db, match, uid))) {
     throw new HttpsError('permission-denied', 'No tienes permiso para invitar jugadores a este partido.');
   }
-  assertNotTeamMatch(match);
+  // Sólo se invita a un partido que admite jugadores sueltos y sigue abierto.
+  assertOpenRoster(match, 'invite');
+  assertConvocationOpen(match);
 
   const uniqueIds = [...new Set(playerIds)].filter(Boolean);
   if (uniqueIds.length === 0) throw new HttpsError('invalid-argument', 'No se seleccionaron jugadores.');
+  if (uniqueIds.length > 30 || uniqueIds.some((id) => typeof id !== 'string' || id.includes('/'))) {
+    throw new HttpsError('invalid-argument', 'Lista de jugadores inválida.');
+  }
+  // Antes se invitaba a cualquier id, existiera o no.
+  const profiles = await db.getAll(...uniqueIds.map((id) => db.doc(`players/${id}`)));
+  const existing = new Set(profiles.filter((p) => p.exists).map((p) => p.id));
 
   const senderSnap = await db.collection('players').doc(uid).get();
   const senderData = senderSnap.data() ?? {};
@@ -413,6 +422,7 @@ export const sendMatchInvitations = onCall({ region: 'us-central1' }, async (req
 
   for (const playerId of uniqueIds) {
     if ((match.playerUids as string[] | undefined)?.includes(playerId)) continue;
+    if (!existing.has(playerId) || playerId === match.ownerUid) continue;
     const invitationRef = db.collection(`matches/${matchId}/invitations`).doc();
     batch.set(invitationRef, {
       matchId,

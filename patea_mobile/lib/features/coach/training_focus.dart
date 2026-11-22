@@ -174,3 +174,88 @@ List<TrainingFocus> trainingFocusFor(PlayerModel p) {
 
 TrainingFocus suggestedFocus(List<TrainingFocus> focuses) =>
     focuses.reduce((a, b) => a.value <= b.value ? a : b);
+
+/// Una sesión de entrenamiento terminada (`players/{uid}/trainingLog`).
+class TrainingEntry {
+  final String focusId;
+  final DateTime at;
+  const TrainingEntry(this.focusId, this.at);
+}
+
+/// Resumen del registro: lo que hace dinámica a la pantalla.
+class TrainingSummary {
+  static const weeklyGoal = 3;
+
+  /// Sesiones desde el lunes de esta semana.
+  final int sessionsThisWeek;
+
+  /// Días seguidos con al menos una sesión, contando hasta hoy o hasta ayer.
+  final int streakDays;
+
+  /// La última vez que se trabajó cada objetivo.
+  final Map<String, DateTime> lastByFocus;
+
+  const TrainingSummary({
+    required this.sessionsThisWeek,
+    required this.streakDays,
+    required this.lastByFocus,
+  });
+
+  bool get goalReached => sessionsThisWeek >= weeklyGoal;
+}
+
+DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+TrainingSummary summarizeTraining(List<TrainingEntry> log, DateTime now) {
+  final today = _day(now);
+  final monday = today.subtract(Duration(days: today.weekday - DateTime.monday));
+  final days = <DateTime>{for (final e in log) _day(e.at)};
+  final last = <String, DateTime>{};
+  for (final e in log) {
+    final seen = last[e.focusId];
+    if (seen == null || e.at.isAfter(seen)) last[e.focusId] = e.at;
+  }
+  var streak = 0;
+  var cursor = days.contains(today) ? today : today.subtract(const Duration(days: 1));
+  while (days.contains(cursor)) {
+    streak++;
+    cursor = cursor.subtract(const Duration(days: 1));
+  }
+  return TrainingSummary(
+    sessionsThisWeek: log.where((e) => !_day(e.at).isBefore(monday)).length,
+    streakDays: streak,
+    lastByFocus: last,
+  );
+}
+
+/// El objetivo que conviene ahora: de los atributos más bajos, el que no se
+/// trabajó en las dos últimas sesiones (así la sugerencia rota en vez de repetir
+/// siempre el mismo). Con empate, el que hace más tiempo que no se practica.
+TrainingFocus suggestedFocusFor(
+  List<TrainingFocus> focuses,
+  List<TrainingEntry> log,
+) {
+  final recent = ([...log]..sort((a, b) => b.at.compareTo(a.at)))
+      .take(2)
+      .map((e) => e.focusId)
+      .toSet();
+  final last = summarizeTraining(log, DateTime.now()).lastByFocus;
+  final pool = focuses.where((f) => !recent.contains(f.id)).toList();
+  final candidates = pool.isEmpty ? focuses : pool;
+  return candidates.reduce((a, b) {
+    if (a.value != b.value) return a.value < b.value ? a : b;
+    final la = last[a.id], lb = last[b.id];
+    if (la == null) return a;
+    if (lb == null) return b;
+    return la.isBefore(lb) ? a : b;
+  });
+}
+
+/// "hoy", "ayer", "hace 3 días" o null si nunca.
+String? trainedAgoLabel(DateTime? when, DateTime now) {
+  if (when == null) return null;
+  final days = _day(now).difference(_day(when)).inDays;
+  if (days <= 0) return 'hoy';
+  if (days == 1) return 'ayer';
+  return 'hace $days días';
+}

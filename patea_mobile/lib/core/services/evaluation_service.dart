@@ -69,13 +69,21 @@ class EvaluationService {
 
   Future<List<MatchModel>> getMatchesByIds(List<String> ids) async {
     if (ids.isEmpty) return [];
-    final results = <MatchModel>[];
-    for (var i = 0; i < ids.length; i += 10) {
-      final chunk = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
-      final snap = await _firestore.collection('matches').where(FieldPath.documentId, whereIn: chunk).get();
-      results.addAll(snap.docs.map((d) => MatchModel.fromFirestore(d.data(), d.id)));
-    }
-    return results;
+    // Lecturas individuales: las reglas del partido se evalúan por documento y
+    // una consulta por `documentId` no las puede probar.
+    final snaps = await Future.wait(
+      ids.toSet().map((id) async {
+        try {
+          return await _firestore.collection('matches').doc(id).get();
+        } on FirebaseException {
+          return null; // sin acceso a ese partido
+        }
+      }),
+    );
+    return [
+      for (final d in snaps)
+        if (d != null && d.exists) MatchModel.fromFirestore(d.data()!, d.id),
+    ];
   }
 
   /// Listen to the evaluator's assignments, including the initial snapshot.

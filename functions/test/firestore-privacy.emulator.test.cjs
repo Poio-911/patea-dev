@@ -30,14 +30,6 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
         'matches/match/assignments/assignment/private/evaluation': { evaluationId: 'private-eval' },
         'matches/match/processedSubmissions/submission': { evaluatorId: 'alice', submission: {} },
         'matches/match/messages/message': { senderId: 'alice', text: 'Hola' },
-        // Partido entre dos grupos: jugadores de los dos equipos y un capitán
-        // por equipo, uno de los cuales no juega.
-        'matches/intergroup': {
-          ownerUid: 'captainA',
-          captains: ['captainA', 'captainB'],
-          playerUids: ['playerA', 'playerB'],
-          type: 'intergroup_friendly',
-        },
         'matches/match/invitations/invite': { playerId: 'bob' },
       };
       await Promise.all(Object.entries(fixtures).map(([key, value]) => setDoc(doc(db, key), value)));
@@ -94,20 +86,8 @@ describe('reglas publicadas corregidas: privacidad', { skip: !process.env.FIREST
     }
   });
 
-  it('en un partido entre equipos suben clips y escriben los dos equipos, capitanes incluidos', async () => {
-    const clip = (uid) => ({ minute: 12, url: 'https://example.com/c.mp4', uploadedBy: uid });
-    for (const uid of ['playerA', 'playerB', 'captainA', 'captainB']) {
-      const db = env.authenticatedContext(uid).firestore();
-      await assertSucceeds(setDoc(doc(db, `matches/intergroup/clips/${uid}`), clip(uid)));
-      await assertSucceeds(setDoc(doc(db, `matches/intergroup/messages/${uid}`), { senderId: uid, text: 'hola' }));
-    }
-    // Quien no participa no sube ni escribe, ni firmando como otro.
-    const stranger = env.authenticatedContext('stranger').firestore();
-    await assertFails(setDoc(doc(stranger, 'matches/intergroup/clips/x'), clip('stranger')));
-    await assertFails(setDoc(doc(stranger, 'matches/intergroup/messages/x'), { senderId: 'stranger', text: 'hola' }));
-    const playerB = env.authenticatedContext('playerB').firestore();
-    await assertFails(setDoc(doc(playerB, 'matches/intergroup/clips/y'), clip('playerA')));
-  });
+  // Clips y chat de un partido entre equipos (ambos equipos, capitanes y miembros
+  // de los grupos): ver match-content-rules.emulator.test.cjs.
 
   it('las reglas genéricas no reabren mensajes ni invitaciones', async () => {
     const stranger = env.authenticatedContext('stranger').firestore();

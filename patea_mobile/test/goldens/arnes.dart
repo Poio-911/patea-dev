@@ -51,6 +51,7 @@ import 'package:patea_mobile/core/services/explore_service.dart';
 import 'package:patea_mobile/core/services/firestore_service.dart';
 import 'package:patea_mobile/core/services/group_service.dart';
 import 'package:patea_mobile/core/services/match_clips_service.dart';
+import 'package:patea_mobile/core/services/training_service.dart';
 import 'package:patea_mobile/core/widgets/patea_background.dart';
 import 'package:patea_mobile/core/utils/clock.dart';
 import 'package:patea_mobile/features/matches/widgets/join_requests_section.dart';
@@ -1004,6 +1005,8 @@ List<Override> overridesDelArnes() {
     identityRevealRequestsProvider(
       uidYo,
     ).overrideWith((ref) async => solicitudesIdentidad),
+
+    trainingLogProvider(uidYo).overrideWith((ref) => Stream.value(const [])),
 
     // Comunidad
     feedActivitiesStreamProvider.overrideWith(

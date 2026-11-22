@@ -96,6 +96,7 @@ export const createMatch = onCall(
     let players: Array<Record<string, any>> = [];
     let playerUids: string[] = [];
     let teams: Array<Record<string, any>> = [];
+    let teamCreators: string[] = [];
     const canonicalPlayer = (id: string, p: Record<string, any>) => ({
       uid: id, displayName: String(p.name ?? p.displayName ?? 'Jugador'),
       ovr: Number(p.ovr ?? 50), position: String(p.position ?? 'MED'),
@@ -173,7 +174,7 @@ export const createMatch = onCall(
           teamPlayers.push(canonicalPlayer(id, profile));
         }
         const totalOVR = teamPlayers.reduce((sum, p) => sum + p.ovr, 0);
-        return { name: td.name ?? 'Equipo', jersey: td.jersey ?? null,
+        return { teamId: td.id, score: 0, name: td.name ?? 'Equipo', jersey: td.jersey ?? null,
           players: teamPlayers, totalOVR, averageOVR: teamPlayers.length ? totalOVR / teamPlayers.length : 0 };
       });
       if (teams.some(team => team.players.length === 0)) throw new HttpsError('failed-precondition', 'Cada equipo necesita un plantel propio. Revisá jugadores compartidos.');
@@ -181,6 +182,9 @@ export const createMatch = onCall(
       if (players.length > matchSize) throw new HttpsError('failed-precondition', 'Los planteles superan el cupo del partido. Aumentá el tamaño o ajustá los equipos.');
 
       playerUids = players.map((p: Record<string, any>) => p.uid);
+      teamCreators = teamDocs
+        .map((td) => td.createdBy)
+        .filter((id): id is string => typeof id === 'string' && !!id);
     }
 
     const matchData = {
@@ -196,6 +200,11 @@ export const createMatch = onCall(
       // encontrarse desde afuera.
       isPublic: data.isPublic === true,
       ownerUid: uid, // nunca confiar en un ownerUid que mande el cliente
+      // En un partido entre equipos los responsables de cada equipo lo gestionan
+      // (el DT puede no jugar). Se toman de los equipos, no del cliente.
+      ...(type === 'by_teams'
+        ? { captains: [...new Set([uid, ...teamCreators])] }
+        : {}),
       groupId,
       location: {
         name: locationName,

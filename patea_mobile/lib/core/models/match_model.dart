@@ -455,6 +455,18 @@ class MatchModel {
   final MatchTeam? teamB;
   final List<String> playerUids;
 
+  /// Jugadores de un partido de plantel fijo que avisaron que no pueden ir.
+  final List<String> unavailablePlayerUids;
+
+  /// Motivo que dio quien canceló el partido (si lo dio).
+  final String? cancelReason;
+
+  /// `false` cuando entró o salió alguien y los equipos ya armados no lo reflejan.
+  final bool? teamsGenerated;
+
+  /// Quienes un responsable sacó de este partido (se pueden volver a sumar).
+  final List<MatchPlayerEntry> removedPlayers;
+
   /// Quienes pidieron entrar y todavía esperan respuesta del organizador.
   /// Sólo se llena en partidos 'manual': ver requestJoinMatch.
   final List<String> pendingPlayerUids;
@@ -488,6 +500,28 @@ class MatchModel {
   /// Partido entre equipos con plantel armado ('by_teams' o entre grupos).
   /// No admite jugadores sueltos: cada uno juega por su equipo.
   bool get isTeamMatch => type == 'by_teams' || type == 'intergroup_friendly';
+
+  /// Partido que nace del motor de una liga o copa: se gestiona desde la
+  /// competición, no se borra ni admite jugadores sueltos.
+  bool get isCompetitionMatch =>
+      type == 'league' || type == 'cup' || type == 'league_final';
+
+  /// Plantel fijo: los jugadores no se anotan, salen, se invitan ni se reparten
+  /// a mano. Es lo que impone el servidor (`hasFixedRoster`).
+  bool get hasFixedRoster => isTeamMatch || isCompetitionMatch;
+
+  bool get isCancelled => status == 'cancelled';
+
+  /// Hay equipos armados pero la lista de jugadores cambió después.
+  bool get teamsOutOfSync =>
+      !hasFixedRoster &&
+      teamsGenerated == false &&
+      ((teamA?.players.isNotEmpty ?? false) ||
+          (teamB?.players.isNotEmpty ?? false));
+
+  /// Se puede cancelar mientras no empezó y no es de una competición.
+  bool get canCancel =>
+      !isCompetitionMatch && (status == 'planning' || status == 'upcoming');
 
   /// Organizador, co-organizador, capitán o admin/moderador del grupo:
   /// quienes pueden gestionar el partido (fijar fecha/cancha, sumar jugadores,
@@ -554,6 +588,10 @@ class MatchModel {
     this.teamA,
     this.teamB,
     this.playerUids = const [],
+    this.unavailablePlayerUids = const [],
+    this.cancelReason,
+    this.teamsGenerated,
+    this.removedPlayers = const [],
     this.pendingPlayerUids = const [],
     this.players = const [],
     this.events = const [],
@@ -644,6 +682,16 @@ class MatchModel {
       teamA: tA,
       teamB: tB,
       playerUids: playerUids,
+      unavailablePlayerUids:
+          ((data['unavailablePlayerUids'] as List<dynamic>?) ?? const [])
+              .whereType<String>()
+              .toList(),
+      cancelReason: data['cancelReason'] as String?,
+      teamsGenerated: data['teamsGenerated'] as bool?,
+      removedPlayers: ((data['removedPlayers'] as List<dynamic>?) ?? const [])
+          .whereType<Map>()
+          .map((p) => MatchPlayerEntry.fromMap(p.cast<String, dynamic>()))
+          .toList(),
       pendingPlayerUids: ((data['pendingPlayerUids'] as List<dynamic>?) ?? const [])
           .whereType<String>()
           .toList(),

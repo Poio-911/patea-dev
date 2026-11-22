@@ -40,6 +40,11 @@ export const onMatchCreate = onDocumentCreated({
         });
     }
 
+    // Un desafío que el rival todavía no aceptó no avisa a nadie: la gente del
+    // equipo desafiante no "fue convocada" a un partido que puede rechazarse. Se
+    // avisa cuando el rival acepta (respondTeamChallenge).
+    if (matchData.type === 'intergroup_friendly' && matchData.challengeStatus === 'pending') return;
+
     const { playerUids, ownerUid, title = 'Partido', groupId, type, matchSize } = matchData;
 
     if (!playerUids || !Array.isArray(playerUids)) {

@@ -94,7 +94,12 @@ final activeGroupPlayersProvider = StreamProvider<List<PlayerModel>>((ref) {
 final activeGroupMatchesProvider = StreamProvider<List<MatchModel>>((ref) {
   final groupAsync = ref.watch(activeGroupIdProvider);
   if (groupAsync.isLoading) return const Stream<List<MatchModel>>.empty();
-  return ref.watch(firestoreServiceProvider).getMatchesStream(groupId: groupAsync.value);
+  return ref
+      .watch(firestoreServiceProvider)
+      .getMatchesStream(
+        groupId: groupAsync.value,
+        uid: ref.watch(currentUidProvider),
+      );
 });
 
 final userDisplayNameProvider = FutureProvider.family<String?, String>((
@@ -152,7 +157,9 @@ final singleTeamStreamProvider = StreamProvider.family<GroupTeamModel?, String>(
 });
 
 final matchesStreamProvider = StreamProvider.family<List<MatchModel>, String?>((ref, groupId) {
-  return ref.watch(firestoreServiceProvider).getMatchesStream(groupId: groupId);
+  return ref
+      .watch(firestoreServiceProvider)
+      .getMatchesStream(groupId: groupId, uid: ref.watch(currentUidProvider));
 });
 
 final singleMatchStreamProvider = StreamProvider.family<MatchModel?, String>((ref, matchId) {
@@ -206,7 +213,12 @@ final userProfileProvider =
 /// El feed de Comunidad.
 final feedActivitiesStreamProvider =
     StreamProvider<List<Map<String, dynamic>>>((ref) {
-  return ref.watch(firestoreServiceProvider).getFeedActivitiesStream();
+  // Las novedades son del grupo activo: sin grupo no hay nada que mostrar.
+  final group = ref.watch(activeGroupIdProvider);
+  if (group.isLoading) return const Stream<List<Map<String, dynamic>>>.empty();
+  return ref
+      .watch(firestoreServiceProvider)
+      .getFeedActivitiesStream(groupId: group.asData?.value);
 });
 
 final leaguesStreamProvider = StreamProvider<List<CompetitionModel>>((ref) {
@@ -476,6 +488,7 @@ class FirestoreService {
   // Usa el índice `groupId ASC, date DESC`, ya existente.
   Stream<List<MatchModel>> getMatchesStream({
     String? groupId,
+    String? uid,
     int limit = QueryLimits.matches,
   }) {
     if (groupId == null || groupId.isEmpty) {
@@ -492,11 +505,12 @@ class FirestoreService {
             .toList());
 
     // Un partido entre grupos distintos se guarda con el `groupId` de UN solo
-    // equipo: el otro grupo no lo veía en su lista. `participantGroupIds`
-    // tiene a los dos. Usa el índice `participantGroupIds + date DESC`.
+    // equipo: el otro grupo lo ve por `secondaryGroupId` (las reglas no pueden
+    // consultar el arreglo `participantGroupIds`). Índice `secondaryGroupId +
+    // date DESC`.
     final shared = _firestore
         .collection('matches')
-        .where('participantGroupIds', arrayContains: groupId)
+        .where('secondaryGroupId', isEqualTo: groupId)
         .orderBy('date', descending: true)
         .limit(limit)
         .snapshots()
@@ -504,7 +518,21 @@ class FirestoreService {
             .map((doc) => MatchModel.fromFirestore(doc.data(), doc.id))
             .toList());
 
-    return mergeMatchLists(own, shared, limit: limit);
+    final groupMatches = mergeMatchLists(own, shared, limit: limit);
+    if (uid == null || uid.isEmpty) return groupMatches;
+
+    // Los partidos en los que estoy anotado aunque sean de otro grupo (un
+    // desafío, un partido de un amigo). Sin orderBy: no necesita otro índice;
+    // el orden lo pone la mezcla.
+    final mine = _firestore
+        .collection('matches')
+        .where('playerUids', arrayContains: uid)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MatchModel.fromFirestore(doc.data(), doc.id))
+            .toList());
+    return mergeMatchLists(groupMatches, mine, limit: limit);
   }
 
   Stream<MatchModel?> getMatchStream(String matchId) {
@@ -569,9 +597,13 @@ class FirestoreService {
 
   /// El feed de Comunidad. Los documentos van crudos porque todavía no hay un
   /// modelo: la pantalla lee `type`, `playerName`, `change` y `newOvr`.
-  Stream<List<Map<String, dynamic>>> getFeedActivitiesStream() {
+  Stream<List<Map<String, dynamic>>> getFeedActivitiesStream({
+    String? groupId,
+  }) {
+    if (groupId == null || groupId.isEmpty) return Stream.value(const []);
     return _firestore
         .collection('feedActivities')
+        .where('groupId', isEqualTo: groupId)
         .orderBy('createdAt', descending: true)
         .limit(25)
         .snapshots()

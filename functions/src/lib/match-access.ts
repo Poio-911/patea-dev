@@ -22,6 +22,33 @@ export function isTeamMatch(match: Doc): boolean {
   return (TEAM_MATCH_TYPES as readonly string[]).includes(String(match.type ?? ''));
 }
 
+/**
+ * Partidos que nacen del motor de una competición. Su plantel es el de cada
+ * equipo y se gestionan sólo desde la competición.
+ */
+export const COMPETITION_MATCH_TYPES = ['league', 'cup', 'league_final'] as const;
+
+/**
+ * Quién cierra la evaluación. En un partido entre grupos los dos capitanes
+ * dirigen y evalúan a su equipo, así que cualquiera de los dos puede cerrarla
+ * (antes sólo el organizador, y el rival quedaba mirando). En el resto, sólo
+ * el organizador.
+ */
+export function canFinalizeEvaluation(match: Doc, uid: string): boolean {
+  if (!uid) return false;
+  if (match.ownerUid === uid) return true;
+  return match.type === 'intergroup_friendly' && isMatchManager(match, uid);
+}
+
+export function isCompetitionMatch(match: Doc): boolean {
+  return (COMPETITION_MATCH_TYPES as readonly string[]).includes(String(match.type ?? ''));
+}
+
+/** Plantel fijo: los jugadores no se anotan, salen, se invitan ni se reparten a mano. */
+export function hasFixedRoster(match: Doc): boolean {
+  return isTeamMatch(match) || isCompetitionMatch(match);
+}
+
 /** Los grupos que participan: el del partido más los de cada equipo, sin repetir. */
 export function matchGroupIds(match: Doc): string[] {
   const ids = [
@@ -105,12 +132,39 @@ export function assertNotTeamMatch(match: Doc): void {
   }
 }
 
+/**
+ * Rechaza lo que un partido de plantel fijo no admite. `action` ajusta el
+ * mensaje: anotarse/invitar no es lo mismo que salir.
+ *
+ * Antes sólo `by_teams` e `intergroup_friendly` estaban cubiertos, y sólo al
+ * anotarse: ligas y copas dejaban entrar jugadores sueltos desde el servidor
+ * (la pantalla lo escondía) y nadie bloqueaba salir.
+ */
+export function assertOpenRoster(match: Doc, action: 'join' | 'leave' | 'invite' = 'join'): void {
+  if (isTeamMatch(match)) {
+    throw new HttpsError(
+      'failed-precondition',
+      action === 'leave'
+        ? 'En un partido entre equipos el plantel es el de cada equipo. Si no podés ir, avisale al capitán para que te reemplace.'
+        : 'Es un partido entre equipos con plantel armado. Los jugadores se suman desde su equipo, no de a uno.',
+    );
+  }
+  if (isCompetitionMatch(match)) {
+    throw new HttpsError(
+      'failed-precondition',
+      action === 'leave'
+        ? 'Es un partido de una competición. Si no podés ir, avisale al capitán de tu equipo.'
+        : 'Es un partido de una competición: el plantel es el de cada equipo y no admite jugadores sueltos.',
+    );
+  }
+}
+
 export async function assertCanJoinMatch(
   db: admin.firestore.Firestore,
   match: Doc,
   uid: string,
 ): Promise<void> {
-  assertNotTeamMatch(match);
+  assertOpenRoster(match, 'join');
   if (!(await userCanJoinMatch(db, match, uid))) {
     throw new HttpsError('permission-denied', 'Este partido es sólo para el grupo.');
   }
