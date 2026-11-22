@@ -342,3 +342,99 @@ export const searchSocialPlayers = onCall({ region: 'us-central1' }, async (requ
 
   return { ok: true, players };
 });
+
+const REPORT_REASONS = ['spam', 'acoso', 'ofensivo', 'sexual', 'violencia', 'otro'];
+
+/**
+ * Denuncia una publicación, un comentario o a una persona (guideline 1.2 de la
+ * App Store: contenido generado por usuarios tiene que poder denunciarse).
+ *
+ * Queda en `reports/` con el contenido tal como estaba, para que se pueda
+ * revisar aunque la persona lo borre después. Los clientes no leen esa
+ * colección: se revisa desde la consola de Firebase.
+ */
+export const reportContent = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const type = String(request.data?.type ?? '');
+  const targetId = String(request.data?.targetId ?? '').trim();
+  const activityId = String(request.data?.activityId ?? '').trim();
+  const reason = REPORT_REASONS.includes(String(request.data?.reason ?? ''))
+    ? String(request.data?.reason)
+    : 'otro';
+  const details = String(request.data?.details ?? '').trim().slice(0, 500);
+
+  if (!['post', 'comment', 'user'].includes(type) || !targetId || targetId.includes('/')) {
+    throw new HttpsError('invalid-argument', 'Denuncia inválida.');
+  }
+  if (type === 'comment' && (!activityId || activityId.includes('/'))) {
+    throw new HttpsError('invalid-argument', 'Denuncia inválida.');
+  }
+
+  const db = admin.firestore();
+  let snapshot: Record<string, unknown> = {};
+  let reportedUid = '';
+
+  if (type === 'post') {
+    const snap = await db.collection('socialActivities').doc(targetId).get();
+    if (!snap.exists) throw new HttpsError('not-found', 'La publicación ya no existe.');
+    const d = snap.data() ?? {};
+    reportedUid = String(d.userId ?? '');
+    snapshot = { text: d.text ?? d.message ?? '', imageUrl: d.imageUrl ?? '', userName: d.userName ?? '' };
+  } else if (type === 'comment') {
+    const snap = await db.collection('socialActivities').doc(activityId).collection('comments').doc(targetId).get();
+    if (!snap.exists) throw new HttpsError('not-found', 'El comentario ya no existe.');
+    const d = snap.data() ?? {};
+    reportedUid = String(d.userId ?? '');
+    snapshot = { text: d.text ?? '', userName: d.userName ?? '' };
+  } else {
+    reportedUid = targetId;
+  }
+
+  if (reportedUid === uid) throw new HttpsError('invalid-argument', 'No podés denunciarte a vos mismo.');
+
+  // Un mismo reporte de la misma persona sobre lo mismo no se duplica.
+  const reportId = `${uid}_${type}_${activityId ? `${activityId}_` : ''}${targetId}`;
+  await db.collection('reports').doc(reportId).set(
+    {
+      reporterId: uid,
+      type,
+      targetId,
+      ...(activityId ? { activityId } : {}),
+      reportedUid,
+      reason,
+      details,
+      snapshot,
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    },
+    { merge: true },
+  );
+  return { ok: true };
+});
+
+/**
+ * Bloquea o desbloquea a una persona. Quien bloquea deja de ver sus
+ * publicaciones y comentarios; la app lo filtra con la lista que lee de
+ * `users/{uid}/blockedUsers`.
+ */
+export const toggleBlockUser = onCall({ region: 'us-central1' }, async (request) => {
+  const uid = requireAuth(request);
+  const targetUid = String(request.data?.targetUid ?? '').trim();
+  if (!targetUid || targetUid.includes('/') || targetUid === uid) {
+    throw new HttpsError('invalid-argument', 'Usuario inválido.');
+  }
+  const db = admin.firestore();
+  const ref = db.collection('users').doc(uid).collection('blockedUsers').doc(targetUid);
+  const snap = await ref.get();
+  if (snap.exists) {
+    await ref.delete();
+    return { ok: true, blocked: false };
+  }
+  await ref.set({ blockedUid: targetUid, createdAt: new Date().toISOString() });
+  // Bloquear también corta el seguimiento en ambos sentidos.
+  await Promise.all([
+    db.collection('follows').doc(`${uid}_${targetUid}`).delete(),
+    db.collection('follows').doc(`${targetUid}_${uid}`).delete(),
+  ]);
+  return { ok: true, blocked: true };
+});

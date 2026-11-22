@@ -1,9 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/auth_service.dart';
+import '../../core/utils/legal_links.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
@@ -113,6 +116,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         setState(
           () => _error =
               'No se pudo ingresar con Google. Podés intentarlo de nuevo o usar tu correo.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _appleSignIn() async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final auth = ref.read(authServiceProvider);
+      await auth.signInWithApple();
+      await auth.ensureProfile();
+    } on FirebaseAuthException catch (error) {
+      // Cerrar la hoja de Apple no es un error: no mostramos nada.
+      final cancelled =
+          error.code == 'canceled' ||
+          error.code == 'web-context-canceled' ||
+          error.code == 'user-cancelled';
+      if (mounted && !cancelled) {
+        setState(
+          () => _error =
+              'No se pudo ingresar con Apple. Podés intentarlo de nuevo o usar tu correo.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error =
+              'No se pudo ingresar con Apple. Podés intentarlo de nuevo o usar tu correo.',
         );
       }
     } finally {
@@ -427,6 +464,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
             ),
             const SizedBox(height: 14),
+            if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+              ElevatedButton.icon(
+                onPressed: busy ? null : _appleSignIn,
+                icon: const Icon(Icons.apple, size: 22),
+                label: const Text('Continuar con Apple'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? Colors.black
+                      : Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             OutlinedButton(
               onPressed: busy ? null : _googleSignIn,
               style: OutlinedButton.styleFrom(
@@ -434,7 +490,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               child: const Text('Continuar con Google'),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'Al continuar aceptás los ',
+                  style: AppTypography.body(
+                    size: 11,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+                _LegalLink(
+                  label: 'Términos',
+                  onTap: () => LegalLinks.open(context, LegalLinks.terms),
+                ),
+                Text(
+                  ' y la ',
+                  style: AppTypography.body(
+                    size: 11,
+                    color: context.c.textSecondary,
+                  ),
+                ),
+                _LegalLink(
+                  label: 'Política de privacidad',
+                  onTap: () => LegalLinks.open(context, LegalLinks.privacy),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
             Text(
               'Los partidos se juegan entre amigos. Los recuerdos quedan acá.',
               textAlign: TextAlign.center,
@@ -449,6 +534,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
+}
+
+class _LegalLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _LegalLink({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Text(
+      label,
+      style: AppTypography.body(
+        size: 11,
+        weight: FontWeight.w700,
+        color: context.c.textPrimary,
+      ),
+    ),
+  );
 }
 
 class _ModeButton extends StatelessWidget {

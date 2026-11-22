@@ -46,6 +46,19 @@ final communitySocialFeedStreamProvider =
       return ref.watch(socialServiceProvider).streamCommunityFeed();
     });
 
+/// UIDs que el usuario actual bloqueó (`users/{uid}/blockedUsers`). El feed y
+/// los comentarios los ocultan.
+final blockedUidsStreamProvider = StreamProvider<Set<String>>((ref) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) return Stream.value(const <String>{});
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .collection('blockedUsers')
+      .snapshots()
+      .map((snap) => snap.docs.map((d) => d.id).toSet());
+});
+
 /// Comentarios en tiempo real de una publicación.
 final socialCommentsStreamProvider =
     StreamProvider.family<List<SocialCommentModel>, String>((ref, activityId) {
@@ -205,6 +218,32 @@ class SocialService {
 
   Future<void> deletePost(String activityId) async {
     await callFunction('deleteSocialPost', {'activityId': activityId});
+  }
+
+  /// Denuncia una publicación (`post`), un comentario (`comment`) o a una
+  /// persona (`user`). Para un comentario hace falta el id de su publicación.
+  Future<void> reportContent({
+    required String type,
+    required String targetId,
+    String? activityId,
+    String reason = 'otro',
+    String details = '',
+  }) async {
+    await callFunction('reportContent', {
+      'type': type,
+      'targetId': targetId,
+      if (activityId != null && activityId.isNotEmpty) 'activityId': activityId,
+      'reason': reason,
+      'details': details,
+    });
+  }
+
+  /// Bloquea o desbloquea. Devuelve `true` si quedó bloqueado.
+  Future<bool> toggleBlock(String targetUid) async {
+    final result = await callFunction('toggleBlockUser', {
+      'targetUid': targetUid,
+    });
+    return result['blocked'] as bool? ?? false;
   }
 
   Future<bool> toggleFollow(String targetUid) async {

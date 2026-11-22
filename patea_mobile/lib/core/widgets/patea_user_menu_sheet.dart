@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'patea_snack.dart';
+import 'delete_account_flow.dart';
+import '../utils/legal_links.dart';
 import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -238,12 +240,45 @@ class PateaUserMenuSheet extends ConsumerWidget {
                 ),
 
               _MenuItem(
+                icon: Icons.privacy_tip_outlined,
+                label: 'Política de privacidad',
+                onTap: () {
+                  Navigator.pop(context);
+                  LegalLinks.open(context, LegalLinks.privacy);
+                },
+              ),
+              _MenuItem(
+                icon: Icons.description_outlined,
+                label: 'Términos de uso',
+                onTap: () {
+                  Navigator.pop(context);
+                  LegalLinks.open(context, LegalLinks.terms);
+                },
+              ),
+
+              _MenuItem(
                 icon: Icons.logout_rounded,
                 label: 'Cerrar sesión',
                 color: context.c.destructive,
                 onTap: () async {
                   Navigator.pop(context);
                   await ref.read(authServiceProvider).signOut();
+                },
+              ),
+
+              _MenuItem(
+                icon: Icons.delete_forever_outlined,
+                label: 'Eliminar mi cuenta',
+                color: context.c.destructive,
+                onTap: () async {
+                  // La hoja se cierra antes: el diálogo cuelga del overlay del
+                  // navegador raíz, que sigue vivo cuando la hoja ya no está.
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  Navigator.pop(context);
+                  final overlayContext = navigator.overlay?.context;
+                  if (overlayContext != null && overlayContext.mounted) {
+                    await showDeleteAccountFlow(overlayContext);
+                  }
                 },
               ),
             ],

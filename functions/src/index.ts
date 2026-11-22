@@ -50,4 +50,5 @@ export { manageCompetition, syncCompetitionResult } from './callable/competition
 export { getTeamRivals, setTeamRival, getTeamRivalSeries } from './callable/team-rivals';
 export { onTeamMatchResult } from './triggers/on-team-match-result';
 export { suggestLocations, resolvePlaceLocation, updateGroupVenue, setGroupCountry } from './callable/venues';
-export { createSocialPost, toggleSocialReaction, voteSocialPoll, addSocialComment, deleteSocialPost, toggleFollowUser, searchSocialPlayers } from './callable/social';
+export { createSocialPost, toggleSocialReaction, voteSocialPoll, addSocialComment, deleteSocialPost, toggleFollowUser, searchSocialPlayers, reportContent, toggleBlockUser } from './callable/social';
+export { deleteMyAccount } from './callable/account-deletion';

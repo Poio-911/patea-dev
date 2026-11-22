@@ -65,6 +65,7 @@ void main() {
           (ref) => Stream.value([]),
         ),
         followingUidsStreamProvider.overrideWith((ref) => Stream.value({})),
+        blockedUidsStreamProvider.overrideWith((ref) => Stream.value({})),
         feedActivitiesStreamProvider.overrideWith(
           (ref) => Stream.value([
             {
@@ -149,6 +150,7 @@ void main() {
             (ref) => Stream.value([]),
           ),
           followingUidsStreamProvider.overrideWith((ref) => Stream.value({})),
+          blockedUidsStreamProvider.overrideWith((ref) => Stream.value({})),
           socialCommentsStreamProvider(post.id).overrideWith(
             (ref) => Stream.value([
               SocialCommentModel(

@@ -103,6 +103,91 @@ class AuthService {
     return await _auth.signInWithProvider(googleProvider);
   }
 
+  /// Sign in with Apple (guideline 4.8: hay login con Google, así que Apple
+  /// exige ofrecer este también). Usa el flujo nativo de iOS a través de
+  /// Firebase, sin plugin extra.
+  ///
+  /// Apple sólo entrega el nombre la PRIMERA vez que la persona autoriza la app,
+  /// y Firebase no siempre lo copia a `displayName`: se lo pasamos nosotros a
+  /// `ensureProfile` desde acá para que el perfil no quede como "Jugador".
+  Future<UserCredential> signInWithApple() async {
+    final provider = AppleAuthProvider()
+      ..addScope('email')
+      ..addScope('name');
+    final cred = await _auth.signInWithProvider(provider);
+
+    final user = cred.user;
+    final profile = cred.additionalUserInfo?.profile;
+    final given = (profile?['firstName'] ?? '').toString().trim();
+    final family = (profile?['lastName'] ?? '').toString().trim();
+    final fullName = '$given $family'.trim();
+    if (user != null &&
+        (user.displayName ?? '').trim().isEmpty &&
+        fullName.isNotEmpty) {
+      await user.updateDisplayName(fullName);
+    }
+    return cred;
+  }
+
+  /// Con qué se inició sesión: decide cómo se vuelve a autenticar al borrar.
+  bool get usesPassword =>
+      _auth.currentUser?.providerData.any((p) => p.providerId == 'password') ??
+      false;
+
+  /// Borra la cuenta y sus datos (guideline 5.1.1(v)).
+  ///
+  /// Firebase y el servidor piden una sesión iniciada hace poco, así que
+  /// primero se vuelve a autenticar: con la contraseña, o con Apple/Google
+  /// según cómo entró. Si la cuenta es de Apple se revoca además el permiso
+  /// concedido a la app, como exige Apple al borrar una cuenta con Sign in
+  /// with Apple.
+  Future<void> deleteAccount({String? password}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No hay sesión activa.');
+
+    final providers = user.providerData.map((p) => p.providerId).toSet();
+    String? appleAuthorizationCode;
+    if (providers.contains('password')) {
+      final email = user.email;
+      if (email == null || password == null || password.isEmpty) {
+        throw FirebaseAuthException(code: 'missing-password');
+      }
+      await user.reauthenticateWithCredential(
+        EmailAuthProvider.credential(email: email, password: password),
+      );
+    } else if (providers.contains('apple.com')) {
+      final result = await user.reauthenticateWithProvider(
+        AppleAuthProvider()..addScope('email'),
+      );
+      appleAuthorizationCode = result.additionalUserInfo?.authorizationCode;
+    } else if (providers.contains('google.com')) {
+      await user.reauthenticateWithProvider(GoogleAuthProvider());
+    }
+
+    // El ID token tiene que reflejar la sesión recién renovada.
+    await user.getIdToken(true);
+
+    if (appleAuthorizationCode != null) {
+      try {
+        await _auth.revokeTokenWithAuthorizationCode(appleAuthorizationCode);
+      } catch (_) {
+        // Si Apple no responde no frenamos el borrado: es lo que pidió la persona.
+      }
+    }
+
+    await callFunction(
+      'deleteMyAccount',
+      const {},
+      timeout: const Duration(seconds: 150),
+    );
+
+    try {
+      await _auth.signOut();
+    } catch (_) {
+      // La cuenta ya no existe; el listener de sesión igual la va a limpiar.
+    }
+  }
+
   Future<void> signOut() async {
     final uid = _auth.currentUser?.uid;
     if (uid != null) await NotificationsService.unregister(uid);

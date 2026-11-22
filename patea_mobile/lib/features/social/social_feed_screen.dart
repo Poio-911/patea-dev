@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+import 'moderation_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -150,7 +151,13 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
         message: 'No se pudo cargar el feed de la comunidad.',
         onRetry: onRefresh,
       ),
-      data: (allPosts) {
+      data: (rawPosts) {
+        // Lo de las personas bloqueadas no se muestra.
+        final blocked =
+            ref.watch(blockedUidsStreamProvider).value ?? const <String>{};
+        final allPosts = rawPosts
+            .where((p) => !blocked.contains(p.userId))
+            .toList();
         final posts = (!isGroupTab && _onlyFollowingInTab1)
             ? allPosts
                   .where(
@@ -999,6 +1006,24 @@ class _SocialPostCardState extends ConsumerState<_SocialPostCard> {
                     await _toggleFollow();
                     return;
                   }
+                  if (action == 'report') {
+                    await reportFlow(
+                      context,
+                      ref,
+                      type: 'post',
+                      targetId: post.id,
+                    );
+                    return;
+                  }
+                  if (action == 'block') {
+                    await blockFlow(
+                      context,
+                      ref,
+                      uid: post.userId,
+                      name: post.playerName,
+                    );
+                    return;
+                  }
                   final confirmed = await showDialog<bool>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
@@ -1023,7 +1048,7 @@ class _SocialPostCardState extends ConsumerState<_SocialPostCard> {
                       value: 'delete',
                       child: Text('Eliminar publicación'),
                     )
-                  else
+                  else ...[
                     PopupMenuItem(
                       value: 'follow',
                       enabled: !_togglingFollow,
@@ -1031,6 +1056,15 @@ class _SocialPostCardState extends ConsumerState<_SocialPostCard> {
                         widget.isFollowingAuthor ? 'Dejar de seguir' : 'Seguir',
                       ),
                     ),
+                    const PopupMenuItem(
+                      value: 'report',
+                      child: Text('Denunciar publicación'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'block',
+                      child: Text('Bloquear a esta persona'),
+                    ),
+                  ],
                 ],
               ),
           ],
@@ -1922,81 +1956,134 @@ class _SocialCommentsSheetState extends ConsumerState<_SocialCommentsSheet> {
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   slivers: commentsAsync.when(
-                    data: (comments) => [
-                      if (comments.isEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Text(
-                              'Sé el primero en comentar.',
-                              style: AppTypography.body(
-                                size: 13,
-                                color: colors.textSecondary,
+                    data: (allComments) {
+                      final blocked =
+                          ref.watch(blockedUidsStreamProvider).value ??
+                          const <String>{};
+                      final visibleComments = allComments
+                          .where((c) => !blocked.contains(c.userId))
+                          .toList();
+                      return [
+                        if (visibleComments.isEmpty)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Text(
+                                'Sé el primero en comentar.',
+                                style: AppTypography.body(
+                                  size: 13,
+                                  color: colors.textSecondary,
+                                ),
                               ),
                             ),
-                          ),
-                        )
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.all(16),
-                          sliver: SliverList.separated(
-                            itemCount: comments.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 14),
-                            itemBuilder: (context, index) {
-                              final comment = comments[index];
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  PateaAvatar(
-                                    photoUrl: comment.userPhotoUrl,
-                                    seed: comment.userId.isEmpty
-                                        ? comment.userName
-                                        : comment.userId,
-                                    size: 32,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 2,
-                                          crossAxisAlignment:
-                                              WrapCrossAlignment.center,
-                                          children: [
-                                            Text(
-                                              comment.userName,
-                                              style: AppTypography.body(
-                                                size: 13,
-                                                weight: FontWeight.w700,
-                                              ),
-                                            ),
-                                            Text(
-                                              _relativeTime(comment.createdAt),
-                                              style: AppTypography.body(
-                                                size: 11,
-                                                color: colors.textSecondary,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          comment.text,
-                                          style: AppTypography.body(size: 14),
-                                        ),
-                                      ],
+                          )
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.all(16),
+                            sliver: SliverList.separated(
+                              itemCount: visibleComments.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 14),
+                              itemBuilder: (context, index) {
+                                final comment = visibleComments[index];
+                                final canModerate =
+                                    uid != null &&
+                                    comment.userId.isNotEmpty &&
+                                    comment.userId != uid;
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    PateaAvatar(
+                                      photoUrl: comment.userPhotoUrl,
+                                      seed: comment.userId.isEmpty
+                                          ? comment.userName
+                                          : comment.userId,
+                                      size: 32,
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 2,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
+                                            children: [
+                                              Text(
+                                                comment.userName,
+                                                style: AppTypography.body(
+                                                  size: 13,
+                                                  weight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              Text(
+                                                _relativeTime(
+                                                  comment.createdAt,
+                                                ),
+                                                style: AppTypography.body(
+                                                  size: 11,
+                                                  color: colors.textSecondary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            comment.text,
+                                            style: AppTypography.body(size: 14),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (canModerate)
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(
+                                          Icons.more_horiz,
+                                          size: 18,
+                                        ),
+                                        tooltip: 'Opciones del comentario',
+                                        padding: EdgeInsets.zero,
+                                        onSelected: (action) async {
+                                          if (action == 'report') {
+                                            await reportFlow(
+                                              context,
+                                              ref,
+                                              type: 'comment',
+                                              targetId: comment.id,
+                                              activityId: widget.post.id,
+                                            );
+                                          } else {
+                                            await blockFlow(
+                                              context,
+                                              ref,
+                                              uid: comment.userId,
+                                              name: comment.userName,
+                                            );
+                                          }
+                                        },
+                                        itemBuilder: (_) => const [
+                                          PopupMenuItem(
+                                            value: 'report',
+                                            child: Text('Denunciar comentario'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'block',
+                                            child: Text(
+                                              'Bloquear a esta persona',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                    ],
+                      ];
+                    },
                     loading: () => const [
                       SliverFillRemaining(child: PateaLoading()),
                     ],

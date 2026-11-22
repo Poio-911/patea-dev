@@ -143,6 +143,13 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // Personas que este usuario bloqueó. Sólo las lee él; las escribe la
+      // callable `toggleBlockUser`.
+      match /blockedUsers/{blockedUid} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
       // Notificaciones del usuario.
       match /notifications/{notificationId} {
         allow read: if isOwner(userId);
