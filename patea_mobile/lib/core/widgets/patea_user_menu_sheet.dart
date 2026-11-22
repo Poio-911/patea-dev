@@ -178,7 +178,7 @@ class PateaUserMenuSheet extends ConsumerWidget {
               },
             ),
             _MenuItem(
-              icon: Icons.photo_camera_outlined,
+              icon: Icons.hub_outlined,
               svgAsset: 'assets/icons/nav-social-community.svg',
               label: 'Comunidad Pateá',
               onTap: () {

@@ -120,8 +120,8 @@ const sections = <Section, SectionSpec>{
     navLabel: 'Comunidad',
     title: 'Comunidad Pateá',
     description: 'Fotos, resultados, encuestas y momentos de tus partidos.',
-    icon: Icons.photo_camera_outlined,
-    activeIcon: Icons.photo_camera,
+    icon: Icons.hub_outlined,
+    activeIcon: Icons.hub,
   ),
   Section.explorar: SectionSpec(
     iconAsset: 'assets/icons/nav-map-search.svg',

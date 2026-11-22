@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -22,6 +21,8 @@ import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
+import '../../core/widgets/patea_tabs.dart';
+import '../../core/widgets/player_position_badge.dart';
 
 class SocialFeedScreen extends ConsumerStatefulWidget {
   const SocialFeedScreen({super.key});
@@ -36,7 +37,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = ref.watch(authStateProvider).value?.uid;
+    final user = ref.watch(authStateProvider).value;
+    final uid = user?.uid;
+    final currentPlayer =
+        (uid != null && uid.isNotEmpty)
+            ? ref.watch(singlePlayerStreamProvider(uid)).value
+            : null;
     final followingSet =
         ref.watch(followingUidsStreamProvider).value ?? const <String>{};
     final groupFeedAsync = ref.watch(groupSocialFeedStreamProvider);
@@ -46,7 +52,6 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Volver',
@@ -58,36 +63,15 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
             }
           },
         ),
-        title: Row(
-          children: [
-            SvgPicture.asset(
-              'assets/icons/nav-social-community.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                context.c.primary,
-                BlendMode.srcIn,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Comunidad Pateá',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.headline(
-                  size: 20,
-                  weight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
+        title: Text(
+          'Comunidad Pateá',
+          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
         actions: [
           IconButton(
             tooltip: 'Buscar jugadores para seguir',
             onPressed: () => _DiscoverPlayersSheet.show(context),
-            icon: const Icon(Icons.person_add_alt_1_outlined, size: 21),
+            icon: const Icon(Icons.person_search_outlined, size: 22),
           ),
           IconButton(
             tooltip: 'Sobre la comunidad',
@@ -97,54 +81,25 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
             ),
             icon: const Icon(Icons.help_outline_rounded, size: 21),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12, left: 2),
-            child: FilledButton(
-              onPressed: () => CreateSocialPostSheet.show(context),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                minimumSize: Size.zero,
-              ),
-              child: const Text('+ Publicar'),
-            ),
-          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 6),
-
-          // Tabs: Mi Grupo vs Siguiendo / Comunidad
+          // Pestañas nativas de Pateá con espacio aireado
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _FeedTabButton(
-                    label: 'Mi Grupo',
-                    icon: Icons.groups_outlined,
-                    selected: _tab == 0,
-                    onTap: () => setState(() => _tab = 0),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _FeedTabButton(
-                    label: followingSet.isEmpty
-                        ? 'Siguiendo · Global'
-                        : 'Siguiendo (${followingSet.length})',
-                    icon: Icons.public_outlined,
-                    selected: _tab == 1,
-                    onTap: () => setState(() => _tab = 1),
-                  ),
-                ),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: PateaTabs(
+              tabs: [
+                const PateaTab('Mi Grupo'),
+                PateaTab('Siguiendo · Global', count: followingSet.length),
               ],
+              active: _tab,
+              onChanged: (index) => setState(() => _tab = index),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           Expanded(
             child: _tab == 0
@@ -152,6 +107,9 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                     context: context,
                     feedAsync: groupFeedAsync,
                     uid: uid,
+                    myName:
+                        currentPlayer?.name ?? user?.displayName ?? 'Jugador',
+                    myPhotoUrl: currentPlayer?.photoUrl ?? user?.photoURL,
                     followingSet: followingSet,
                     isGroupTab: true,
                     onRefresh: () async =>
@@ -161,6 +119,9 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                     context: context,
                     feedAsync: communityFeedAsync,
                     uid: uid,
+                    myName:
+                        currentPlayer?.name ?? user?.displayName ?? 'Jugador',
+                    myPhotoUrl: currentPlayer?.photoUrl ?? user?.photoURL,
                     followingSet: followingSet,
                     isGroupTab: false,
                     onRefresh: () async =>
@@ -176,6 +137,8 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     required BuildContext context,
     required AsyncValue<List<SocialPostModel>> feedAsync,
     required String? uid,
+    required String myName,
+    required String? myPhotoUrl,
     required Set<String> followingSet,
     required bool isGroupTab,
     required Future<void> Function() onRefresh,
@@ -202,60 +165,133 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
           onRefresh: onRefresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16, 6, 16, bottomInset(context)),
+            padding: EdgeInsets.fromLTRB(16, 4, 16, bottomInset(context)),
             children: [
-              if (!isGroupTab) ...[
-                PateaCard(
+              // Barra amplia y cómoda para crear una publicación
+              InkWell(
+                borderRadius: AppRadii.cardAll,
+                onTap: () => CreateSocialPostSheet.show(context),
+                child: PateaCard(
                   color: context.c.card,
                   radius: AppRadii.cardAll,
                   borderColor: context.c.border.withValues(alpha: 0.45),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
-                    vertical: 10,
+                    vertical: 12,
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.person_search_outlined,
-                        size: 20,
-                        color: context.c.primary,
+                      PateaAvatar(
+                        photoUrl: myPhotoUrl,
+                        seed: uid ?? myName,
+                        size: 38,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '¿Qué pasó en la cancha?',
+                          style: AppTypography.body(
+                            size: 14,
+                            color: context.c.textSecondary,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Seguí jugadores de otros grupos',
-                              style: AppTypography.body(
-                                size: 13,
-                                weight: FontWeight.w700,
-                              ),
+                      FilledButton(
+                        onPressed: () => CreateSocialPostSheet.show(context),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 9,
+                          ),
+                          minimumSize: Size.zero,
+                        ),
+                        child: const Text('Publicar'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (!isGroupTab) ...[
+                PateaCard(
+                  color: context.c.card,
+                  radius: AppRadii.cardAll,
+                  borderColor: context.c.border.withValues(alpha: 0.45),
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.person_search_outlined,
+                            size: 20,
+                            color: context.c.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Seguí jugadores de otros grupos',
+                                  style: AppTypography.body(
+                                    size: 14,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  followingSet.isEmpty
+                                      ? 'Descubrí jugadores y mirá sus partidos y momentos.'
+                                      : 'Seguís a ${followingSet.length} ${followingSet.length == 1 ? 'jugador' : 'jugadores'}.',
+                                  style: AppTypography.body(
+                                    size: 12,
+                                    color: context.c.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              followingSet.isEmpty
-                                  ? 'Descubrí cracks y mirá sus partidos y momentos.'
-                                  : 'Seguís a ${followingSet.length} ${followingSet.length == 1 ? 'jugador' : 'jugadores'}.',
-                              style: AppTypography.body(
-                                size: 11,
-                                color: context.c.textSecondary,
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: () =>
+                                _DiscoverPlayersSheet.show(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
                               ),
+                              minimumSize: Size.zero,
+                            ),
+                            child: const Text('Buscar'),
+                          ),
+                        ],
+                      ),
+                      if (followingSet.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            ChoiceChip(
+                              label: const Text('Todos'),
+                              selected: !_onlyFollowingInTab1,
+                              onSelected: (_) =>
+                                  setState(() => _onlyFollowingInTab1 = false),
+                            ),
+                            const SizedBox(width: 8),
+                            ChoiceChip(
+                              label: Text(
+                                'Solo seguidos (${followingSet.length})',
+                              ),
+                              selected: _onlyFollowingInTab1,
+                              onSelected: (_) =>
+                                  setState(() => _onlyFollowingInTab1 = true),
                             ),
                           ],
                         ),
-                      ),
-                      if (followingSet.isNotEmpty)
-                        FilterChip(
-                          label: const Text('Solo seguidos'),
-                          selected: _onlyFollowingInTab1,
-                          onSelected: (v) =>
-                              setState(() => _onlyFollowingInTab1 = v),
-                        ),
-                      const SizedBox(width: 6),
-                      TextButton(
-                        onPressed: () => _DiscoverPlayersSheet.show(context),
-                        child: const Text('Buscar'),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -270,7 +306,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                   child: Column(
                     children: [
                       Icon(
-                        Icons.photo_camera_outlined,
+                        Icons.sports_soccer_outlined,
                         size: 36,
                         color: context.c.primary,
                       ),
@@ -296,12 +332,6 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                           color: context.c.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      FilledButton.icon(
-                        onPressed: () => CreateSocialPostSheet.show(context),
-                        icon: const Icon(Icons.add_a_photo_outlined, size: 17),
-                        label: const Text('Crear primera publicación'),
-                      ),
                     ],
                   ),
                 )
@@ -318,64 +348,6 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _FeedTabButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FeedTabButton({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: AppRadii.pillAll,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
-        decoration: BoxDecoration(
-          color: selected
-              ? context.c.primary.withValues(alpha: 0.16)
-              : context.c.card,
-          borderRadius: AppRadii.pillAll,
-          border: Border.all(
-            color: selected ? context.c.primary : context.c.border,
-            width: selected ? 1.4 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: selected ? context.c.primary : context.c.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(
-                  size: 12,
-                  weight: selected ? FontWeight.w700 : FontWeight.w600,
-                  color: selected ? context.c.textPrimary : context.c.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -495,96 +467,98 @@ class _SocialPostCardState extends ConsumerState<_SocialPostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header de autor estilo Instagram
+          // Header de autor
           Row(
             children: [
-              InkWell(
-                borderRadius: AppRadii.pillAll,
-                onTap: () => _PlayerSocialProfileSheet.show(
-                  context,
-                  uid: post.userId,
-                  name: post.playerName,
-                  photoUrl: post.playerPhotoUrl,
-                  position: post.playerPosition,
-                  ovr: post.playerOvr,
-                ),
-                child: Row(
-                  children: [
-                    PateaAvatar(
-                      photoUrl: post.playerPhotoUrl,
-                      seed: post.userId.isNotEmpty
-                          ? post.userId
-                          : post.playerName,
-                      size: 40,
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+              Expanded(
+                child: InkWell(
+                  borderRadius: AppRadii.pillAll,
+                  onTap: () => _PlayerSocialProfileSheet.show(
+                    context,
+                    uid: post.userId,
+                    name: post.playerName,
+                    photoUrl: post.playerPhotoUrl,
+                    position: post.playerPosition,
+                    ovr: post.playerOvr,
+                  ),
+                  child: Row(
+                    children: [
+                      PateaAvatar(
+                        photoUrl: post.playerPhotoUrl,
+                        seed: post.userId.isNotEmpty
+                            ? post.userId
+                            : post.playerName,
+                        size: 42,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              post.playerName,
-                              style: AppTypography.headline(
-                                size: 14,
-                                weight: FontWeight.w700,
-                              ),
-                            ),
-                            if (post.playerPosition.isNotEmpty ||
-                                post.playerOvr > 0) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: context.c.cardSurface,
-                                  borderRadius: AppRadii.pillAll,
-                                ),
-                                child: Text(
-                                  [
-                                    if (post.playerPosition.isNotEmpty)
-                                      post.playerPosition,
-                                    if (post.playerOvr > 0) '${post.playerOvr}',
-                                  ].join(' · '),
-                                  style: AppTypography.code(
-                                    size: 10,
-                                    weight: FontWeight.w700,
-                                    color: context.c.primary,
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    post.playerName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.headline(
+                                      size: 15,
+                                      weight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
+                                if (post.playerPosition.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  PlayerPositionBadge(
+                                    position: post.playerPosition,
+                                    fontSize: 12,
+                                    dense: true,
+                                  ),
+                                ],
+                                if (post.playerOvr > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '· ${post.playerOvr} OVR',
+                                    style: AppTypography.body(
+                                      size: 12,
+                                      weight: FontWeight.w700,
+                                      color: context.c.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _relativeTime(post.createdAt),
+                              style: AppTypography.body(
+                                size: 12,
+                                color: context.c.textSecondary,
                               ),
-                            ],
+                            ),
                           ],
                         ),
-                        Text(
-                          _relativeTime(post.createdAt),
-                          style: AppTypography.body(
-                            size: 11,
-                            color: context.c.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               if (!isMine && post.userId.isNotEmpty)
                 TextButton(
                   onPressed: _togglingFollow ? null : _toggleFollow,
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 4,
+                      vertical: 6,
                     ),
                     minimumSize: Size.zero,
                   ),
                   child: Text(
                     widget.isFollowingAuthor ? 'Siguiendo' : 'Seguir',
                     style: AppTypography.body(
-                      size: 12,
+                      size: 13,
                       weight: FontWeight.w700,
                       color: widget.isFollowingAuthor
                           ? context.c.textSecondary
@@ -596,7 +570,7 @@ class _SocialPostCardState extends ConsumerState<_SocialPostCard> {
                 IconButton(
                   icon: Icon(
                     Icons.delete_outline,
-                    size: 18,
+                    size: 19,
                     color: context.c.textSecondary,
                   ),
                   tooltip: 'Eliminar publicación',
