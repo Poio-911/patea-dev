@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Flujo de trabajo (obligatorio)
+
+- **Una sola rama de desarrollo: `feat/flutter-mobile-app`** (app iOS y Android, functions, reglas). No se crean ramas paralelas ni worktrees para trabajar en la app: se trabaja directo en esta rama.
+- **Una sola carpeta de trabajo: `D:\Desarrollo\Flutter\patea_mobile`** (la app Flutter está en `patea_mobile/`). El clon de `D:\Desarrollo\Otros\patea-dev` no es de desarrollo de la app.
+- Antes de empezar: `git pull origin feat/flutter-mobile-app`. Al terminar un cambio: commit y push a esa misma rama, para que el siguiente (persona o sesión) parta de lo último.
+- Las versiones y los tags (`ios-testflight-*`) salen siempre de esta rama.
+
 ## Project Overview
 
 **Pateá** is a Next.js 14 application for managing amateur football groups. It combines Firebase backend services with Google Gemini AI to provide intelligent player management, match organization, and performance analytics.
