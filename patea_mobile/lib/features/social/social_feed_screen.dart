@@ -22,7 +22,6 @@ import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/patea_tabs.dart';
-import '../../core/widgets/player_position_badge.dart';
 
 class SocialFeedScreen extends ConsumerStatefulWidget {
   const SocialFeedScreen({super.key});
@@ -39,10 +38,9 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).value;
     final uid = user?.uid;
-    final currentPlayer =
-        (uid != null && uid.isNotEmpty)
-            ? ref.watch(singlePlayerStreamProvider(uid)).value
-            : null;
+    final currentPlayer = (uid != null && uid.isNotEmpty)
+        ? ref.watch(singlePlayerStreamProvider(uid)).value
+        : null;
     final followingSet =
         ref.watch(followingUidsStreamProvider).value ?? const <String>{};
     final groupFeedAsync = ref.watch(groupSocialFeedStreamProvider);
@@ -75,10 +73,8 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
           ),
           IconButton(
             tooltip: 'Sobre la comunidad',
-            onPressed: () => showContextualHelpSheet(
-              context,
-              topic: HelpTopic.community,
-            ),
+            onPressed: () =>
+                showContextualHelpSheet(context, topic: HelpTopic.community),
             icon: const Icon(Icons.help_outline_rounded, size: 21),
           ),
           const SizedBox(width: 4),
@@ -338,11 +334,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
               else
                 for (final post in posts) ...[
                   _SocialPostCard(
+                    key: ValueKey(post.id),
                     post: post,
                     currentUid: uid,
                     isFollowingAuthor: followingSet.contains(post.userId),
                   ),
-                  const SizedBox(height: 14),
+                  Divider(height: 24, color: context.c.overlayLine),
                 ],
             ],
           ),
@@ -368,6 +365,7 @@ class _SocialPostCard extends ConsumerStatefulWidget {
   final bool isFollowingAuthor;
 
   const _SocialPostCard({
+    super.key,
     required this.post,
     required this.currentUid,
     required this.isFollowingAuthor,
@@ -380,23 +378,58 @@ class _SocialPostCard extends ConsumerStatefulWidget {
 class _SocialPostCardState extends ConsumerState<_SocialPostCard> {
   bool _togglingFollow = false;
 
-  Future<void> _react(String reaction) async {
+  bool _captionExpanded = false;
+  final _pendingReactions = <String>{};
+  final _localReactions = <String, bool>{};
+
+  bool _hasReacted(String reaction) =>
+      _localReactions[reaction] ??
+      widget.post.hasReacted(reaction, widget.currentUid);
+
+  @override
+  void didUpdateWidget(covariant _SocialPostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUid != widget.currentUid) {
+      _localReactions.clear();
+    } else {
+      _localReactions.removeWhere(
+        (reaction, added) =>
+            widget.post.hasReacted(reaction, widget.currentUid) == added,
+      );
+    }
+  }
+
+  Future<void> _react(String reaction, {bool addOnly = false}) async {
+    final uid = widget.currentUid;
+    if (uid == null ||
+        (addOnly && _hasReacted(reaction)) ||
+        !_pendingReactions.add(reaction)) {
+      return;
+    }
     try {
-      await ref.read(socialServiceProvider).toggleReaction(
-            activityId: widget.post.id,
-            reaction: reaction,
-          );
+      final added = await ref
+          .read(socialServiceProvider)
+          .toggleReaction(activityId: widget.post.id, reaction: reaction);
+      if (!mounted || widget.currentUid != uid) return;
+      setState(() {
+        if (widget.post.hasReacted(reaction, uid) == added) {
+          _localReactions.remove(reaction);
+        } else {
+          _localReactions[reaction] = added;
+        }
+      });
     } catch (e) {
-      if (mounted) PateaSnack.error(context, '$e');
+      if (mounted) PateaSnack.error(context, 'No pudimos guardar tu reacción.');
+    } finally {
+      _pendingReactions.remove(reaction);
     }
   }
 
   Future<void> _vote(String optionId) async {
     try {
-      await ref.read(socialServiceProvider).votePoll(
-            activityId: widget.post.id,
-            optionId: optionId,
-          );
+      await ref
+          .read(socialServiceProvider)
+          .votePoll(activityId: widget.post.id, optionId: optionId);
     } catch (e) {
       if (mounted) PateaSnack.error(context, '$e');
     }
@@ -452,299 +485,324 @@ class _SocialPostCardState extends ConsumerState<_SocialPostCard> {
     }
   }
 
+  static const _primaryReaction = '🔥';
+  static const _reactionLabels = {
+    '⚽': 'Gol',
+    '🔥': 'Fuego',
+    '👏': 'Aplausos',
+    '💪': 'Fuerza',
+    '😂': 'Risa',
+  };
+
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
-    final isMine =
-        widget.currentUid != null && post.userId == widget.currentUid;
+    final colors = context.c;
+    final uid = widget.currentUid;
+    final isMine = uid != null && post.userId == uid;
     final headline = _autoHeadline(post);
+    final imageUrl = post.imageUrl;
+    final hasPhoto = imageUrl != null && imageUrl.isNotEmpty;
+    final reacting = _hasReacted(_primaryReaction);
+    final activeCounts = {
+      for (final reaction in kSocialReactions)
+        reaction:
+            post.reactionCount(reaction) +
+            (_hasReacted(reaction) ? 1 : 0) -
+            (post.hasReacted(reaction, uid) ? 1 : 0),
+    }..removeWhere((_, count) => count <= 0);
 
-    return PateaCard(
-      color: context.c.card,
-      radius: AppRadii.cardAll,
-      borderColor: context.c.border.withValues(alpha: 0.45),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header de autor
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  borderRadius: AppRadii.pillAll,
-                  onTap: () => _PlayerSocialProfileSheet.show(
-                    context,
-                    uid: post.userId,
-                    name: post.playerName,
-                    photoUrl: post.playerPhotoUrl,
-                    position: post.playerPosition,
-                    ovr: post.playerOvr,
-                  ),
-                  child: Row(
-                    children: [
-                      PateaAvatar(
+    void openComments() => _SocialCommentsSheet.show(context, post);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                borderRadius: AppRadii.chipAll,
+                onTap: post.userId.isEmpty
+                    ? null
+                    : () => _PlayerSocialProfileSheet.show(
+                        context,
+                        uid: post.userId,
+                        name: post.playerName,
                         photoUrl: post.playerPhotoUrl,
-                        seed: post.userId.isNotEmpty
-                            ? post.userId
-                            : post.playerName,
-                        size: 42,
+                        position: post.playerPosition,
+                        ovr: post.playerOvr,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    post.playerName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.headline(
-                                      size: 15,
-                                      weight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                if (post.playerPosition.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  PlayerPositionBadge(
-                                    position: post.playerPosition,
-                                    fontSize: 12,
-                                    dense: true,
-                                  ),
-                                ],
-                                if (post.playerOvr > 0) ...[
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '· ${post.playerOvr} OVR',
-                                    style: AppTypography.body(
-                                      size: 12,
-                                      weight: FontWeight.w700,
-                                      color: context.c.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                child: Row(
+                  children: [
+                    PateaAvatar(
+                      photoUrl: post.playerPhotoUrl,
+                      seed: post.userId.isEmpty ? post.playerName : post.userId,
+                      size: 38,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post.playerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.headline(
+                              size: 15,
+                              weight: FontWeight.w700,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _relativeTime(post.createdAt),
-                              style: AppTypography.body(
-                                size: 12,
-                                color: context.c.textSecondary,
-                              ),
+                          ),
+                          Text(
+                            _relativeTime(post.createdAt),
+                            style: AppTypography.body(
+                              size: 12,
+                              color: colors.textSecondary,
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (!isMine && post.userId.isNotEmpty)
-                TextButton(
-                  onPressed: _togglingFollow ? null : _toggleFollow,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    minimumSize: Size.zero,
-                  ),
-                  child: Text(
-                    widget.isFollowingAuthor ? 'Siguiendo' : 'Seguir',
-                    style: AppTypography.body(
-                      size: 13,
-                      weight: FontWeight.w700,
-                      color: widget.isFollowingAuthor
-                          ? context.c.textSecondary
-                          : context.c.primary,
-                    ),
-                  ),
-                ),
-              if (isMine)
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    size: 19,
-                    color: context.c.textSecondary,
-                  ),
-                  tooltip: 'Eliminar publicación',
-                  onPressed: _deletePost,
-                ),
-            ],
-          ),
-
-          if (headline.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              headline,
-              style: AppTypography.body(
-                size: 14,
-                color: context.c.textPrimary,
-              ),
-            ),
-          ],
-
-          // Foto con doble tap para reaccionar
-          if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            GestureDetector(
-              onDoubleTap: () => _react('🔥'),
-              child: ClipRRect(
-                borderRadius: AppRadii.cardAll,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 340),
-                  child: Image.network(
-                    post.imageUrl!,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      height: 160,
-                      color: context.c.cardSurface,
-                      child: Center(
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          color: context.c.textSecondary,
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
+            if (uid != null && (isMine || post.userId.isNotEmpty))
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_horiz),
+                tooltip: 'Opciones de la publicación',
+                onSelected: (action) async {
+                  if (action == 'follow') {
+                    await _toggleFollow();
+                    return;
+                  }
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('¿Eliminar publicación?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('Eliminar'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (mounted && confirmed == true) await _deletePost();
+                },
+                itemBuilder: (_) => [
+                  if (isMine)
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Eliminar publicación'),
+                    )
+                  else
+                    PopupMenuItem(
+                      value: 'follow',
+                      enabled: !_togglingFollow,
+                      child: Text(
+                        widget.isFollowingAuthor ? 'Dejar de seguir' : 'Seguir',
+                      ),
+                    ),
+                ],
+              ),
           ],
-
-          // Tarjeta deportiva embebida (partido / marcador / MVP / salto de OVR)
-          if (post.hasMatchCard || post.newOvr != null || post.mvpName != null) ...[
-            const SizedBox(height: 10),
-            _MatchHighlightCard(post: post),
-          ],
-
-          // Encuesta rápida interactiva
-          if (post.poll != null) ...[
-            const SizedBox(height: 10),
-            _SocialPollCard(
-              poll: post.poll!,
-              currentUid: widget.currentUid,
-              onVote: _vote,
-            ),
-          ],
-
-          const SizedBox(height: 12),
-          Divider(height: 1, color: context.c.border.withValues(alpha: 0.4)),
+        ),
+        if (!hasPhoto && headline.isNotEmpty) ...[
           const SizedBox(height: 10),
-
-          // Barra de reacciones futboleras + Comentarios
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              for (final emoji in kSocialReactions)
-                _ReactionChip(
-                  emoji: emoji,
-                  count: post.reactionCount(emoji),
-                  selected: post.hasReacted(emoji, widget.currentUid),
-                  onTap: () => _react(emoji),
-                ),
-              InkWell(
-                borderRadius: AppRadii.pillAll,
-                onTap: () => _SocialCommentsSheet.show(context, post),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.c.cardSurface,
-                    borderRadius: AppRadii.pillAll,
-                    border: Border.all(color: context.c.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        size: 14,
-                        color: context.c.textSecondary,
+          _caption(headline),
+        ],
+        if (hasPhoto) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onDoubleTap: uid == null
+                ? null
+                : () => _react(_primaryReaction, addOnly: true),
+            child: LayoutBuilder(
+              builder: (context, constraints) => Image.network(
+                imageUrl,
+                width: constraints.maxWidth,
+                fit: BoxFit.cover,
+                semanticLabel: 'Foto de la publicación',
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded || frame != null) return child;
+                  return ColoredBox(
+                    color: colors.cardSurface,
+                    child: SizedBox(
+                      height: constraints.maxWidth * 0.75,
+                      child: child,
+                    ),
+                  );
+                },
+                errorBuilder: (_, _, _) => ColoredBox(
+                  color: colors.cardSurface,
+                  child: SizedBox(
+                    height: constraints.maxWidth * 0.75,
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: colors.textSecondary,
+                        semanticLabel: 'No se pudo cargar la foto',
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        post.commentCount > 0
-                            ? '${post.commentCount}'
-                            : 'Comentar',
-                        style: AppTypography.body(
-                          size: 11,
-                          weight: FontWeight.w600,
-                          color: context.c.textPrimary,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ReactionChip extends StatelessWidget {
-  final String emoji;
-  final int count;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ReactionChip({
-    required this.emoji,
-    required this.count,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: AppRadii.pillAll,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected
-              ? context.c.primary.withValues(alpha: 0.18)
-              : context.c.cardSurface,
-          borderRadius: AppRadii.pillAll,
-          border: Border.all(
-            color: selected ? context.c.primary : context.c.border,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        if (post.hasMatchCard ||
+            post.newOvr != null ||
+            post.mvpName != null) ...[
+          const SizedBox(height: 10),
+          _MatchHighlightCard(post: post),
+        ],
+        if (post.poll case final poll?) ...[
+          const SizedBox(height: 10),
+          _SocialPollCard(poll: poll, currentUid: uid, onVote: _vote),
+        ],
+        Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 13)),
-            if (count > 0) ...[
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: AppTypography.code(
-                  size: 11,
-                  weight: FontWeight.w700,
-                  color: selected ? context.c.primary : context.c.textPrimary,
-                ),
-              ),
-            ],
+            MenuAnchor(
+              menuChildren: [
+                for (final reaction in kSocialReactions)
+                  MenuItemButton(
+                    onPressed: () => _react(reaction),
+                    leadingIcon: Icon(
+                      _hasReacted(reaction) ? Icons.check : null,
+                      size: 18,
+                    ),
+                    child: Text('$reaction  ${_reactionLabels[reaction]}'),
+                  ),
+              ],
+              builder: (context, controller, _) {
+                final action = reacting
+                    ? 'Quitar reacción Fuego'
+                    : 'Reaccionar con Fuego';
+                return Tooltip(
+                  message: action,
+                  triggerMode: TooltipTriggerMode.manual,
+                  child: Semantics(
+                    button: true,
+                    selected: reacting,
+                    enabled: uid != null,
+                    label: action,
+                    hint: 'Mantené presionado para elegir otra reacción',
+                    child: InkWell(
+                      borderRadius: AppRadii.pillAll,
+                      onTap: uid == null
+                          ? null
+                          : () => _react(_primaryReaction),
+                      onLongPress: uid == null ? null : controller.open,
+                      child: SizedBox.square(
+                        dimension: 48,
+                        child: Icon(
+                          reacting
+                              ? Icons.local_fire_department
+                              : Icons.local_fire_department_outlined,
+                          color: reacting ? colors.primary : colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              tooltip: 'Comentarios',
+              onPressed: openComments,
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+            ),
           ],
         ),
-      ),
+        if (activeCounts.isNotEmpty)
+          Wrap(
+            spacing: 10,
+            runSpacing: 4,
+            children: [
+              for (final entry in activeCounts.entries)
+                Semantics(
+                  label: '${_reactionLabels[entry.key]}: ${entry.value}',
+                  selected: _hasReacted(entry.key),
+                  excludeSemantics: true,
+                  child: Text(
+                    '${entry.key} ${entry.value}',
+                    style: AppTypography.body(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: _hasReacted(entry.key)
+                          ? colors.primary
+                          : colors.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
+          )
+        else if (post.reactions.isEmpty && post.likes.isNotEmpty)
+          Text(
+            '${post.likes.length} Me gusta',
+            style: AppTypography.body(size: 12, color: colors.textSecondary),
+          ),
+        if (hasPhoto && headline.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          _caption(headline),
+        ],
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton(
+            onPressed: openComments,
+            style: TextButton.styleFrom(
+              foregroundColor: colors.textSecondary,
+              padding: EdgeInsets.zero,
+            ),
+            child: Text(switch (post.commentCount) {
+              0 => 'Comentá primero',
+              1 => 'Ver 1 comentario',
+              final count => 'Ver los $count comentarios',
+            }),
+          ),
+        ),
+      ],
     );
   }
+
+  Widget _caption(String text) => LayoutBuilder(
+    builder: (context, constraints) {
+      final style = AppTypography.body(size: 14, color: context.c.textPrimary);
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 3,
+      )..layout(maxWidth: constraints.maxWidth);
+      final canExpand = painter.didExceedMaxLines;
+      painter.dispose();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            style: style,
+            maxLines: _captionExpanded ? null : 3,
+            overflow: _captionExpanded
+                ? TextOverflow.visible
+                : TextOverflow.ellipsis,
+          ),
+          if (canExpand)
+            TextButton(
+              onPressed: () =>
+                  setState(() => _captionExpanded = !_captionExpanded),
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              child: Text(_captionExpanded ? 'Ver menos' : 'Ver más'),
+            ),
+        ],
+      );
+    },
+  );
 }
 
 class _MatchHighlightCard extends StatelessWidget {
@@ -754,123 +812,125 @@ class _MatchHighlightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasScore = post.teamAName != null && post.teamBName != null;
+    final hasScore = post.teamAScore != null && post.teamBScore != null;
     final change = post.ovrChange ?? 0;
+    final title = post.matchTitle?.trim();
+    final matchId = post.matchId;
+    final teams = [
+      post.teamAName,
+      post.teamBName,
+    ].whereType<String>().join(' vs ');
+    final canOpen = matchId != null && matchId.isNotEmpty;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.c.cardSurface,
-        borderRadius: AppRadii.chipAll,
-        border: Border.all(color: context.c.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (post.matchTitle != null && post.matchTitle!.isNotEmpty)
-            Row(
-              children: [
-                Icon(Icons.sports_soccer, size: 16, color: context.c.primary),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    post.matchTitle!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(
-                      size: 13,
-                      weight: FontWeight.w700,
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (post.hasMatchCard)
+          Material(
+            color: context.c.cardSurface,
+            borderRadius: AppRadii.chipAll,
+            child: InkWell(
+              borderRadius: AppRadii.chipAll,
+              onTap: canOpen ? () => context.push('/matches/$matchId') : null,
+              child: Tooltip(
+                message: canOpen ? 'Ver partido' : '',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.sports_soccer_outlined,
+                        size: 16,
+                        color: context.c.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          title != null && title.isNotEmpty
+                              ? title
+                              : (teams.isEmpty ? 'Partido' : teams),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.body(
+                            size: 13,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (hasScore) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '${post.teamAScore}–${post.teamBScore}',
+                          style: AppTypography.sportNumber(
+                            size: 16,
+                            color: context.c.primary,
+                          ),
+                        ),
+                      ],
+                      if (canOpen)
+                        Icon(
+                          Icons.chevron_right,
+                          size: 18,
+                          color: context.c.textSecondary,
+                        ),
+                    ],
                   ),
                 ),
-                if (post.matchId != null && post.matchId!.isNotEmpty)
-                  TextButton(
-                    onPressed: () => context.push('/matches/${post.matchId}'),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                    ),
-                    child: const Text('Ver partido'),
-                  ),
-              ],
+              ),
             ),
-          if (hasScore) ...[
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    post.teamAName!,
-                    textAlign: TextAlign.right,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 13, weight: FontWeight.w700),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    '${post.teamAScore ?? 0} - ${post.teamBScore ?? 0}',
-                    style: AppTypography.sportNumber(
-                      size: 20,
-                      color: context.c.primary,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    post.teamBName!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 13, weight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (post.mvpName != null && post.mvpName!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(Icons.emoji_events_outlined, size: 16, color: context.c.ratingAccent),
-                const SizedBox(width: 6),
-                Text(
-                  'MVP: ${post.mvpName}',
+          ),
+        if (post.mvpName != null && post.mvpName!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(
+                Icons.emoji_events_outlined,
+                size: 16,
+                color: context.c.ratingAccent,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'MVP · ${post.mvpName}',
                   style: AppTypography.body(
                     size: 12,
                     weight: FontWeight.w700,
                     color: context.c.ratingAccent,
                   ),
                 ),
-              ],
-            ),
-          ],
-          if (post.newOvr != null) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(
-                  change >= 0 ? Icons.trending_up : Icons.trending_down,
-                  size: 16,
-                  color: change >= 0 ? context.c.success : context.c.destructive,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  post.oldOvr != null
-                      ? 'OVR ${post.oldOvr} → ${post.newOvr} (${change >= 0 ? '+$change' : '$change'})'
-                      : 'OVR ${post.newOvr}',
-                  style: AppTypography.code(
-                    size: 12,
-                    weight: FontWeight.w700,
-                    color: change >= 0 ? context.c.success : context.c.destructive,
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ],
-      ),
+        if (post.newOvr != null) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(
+                change >= 0 ? Icons.trending_up : Icons.trending_down,
+                size: 16,
+                color: change >= 0 ? context.c.success : context.c.destructive,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                post.oldOvr != null
+                    ? 'OVR ${post.oldOvr} → ${post.newOvr} (${change >= 0 ? '+$change' : '$change'})'
+                    : 'OVR ${post.newOvr}',
+                style: AppTypography.code(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: change >= 0
+                      ? context.c.success
+                      : context.c.destructive,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }
@@ -913,60 +973,55 @@ class _SocialPollCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          for (final opt in poll.options) ...[
+          for (final option in poll.options)
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child: InkWell(
-                borderRadius: AppRadii.chipAll,
-                onTap: () => onVote(opt.id),
-                child: Container(
+              child: OutlinedButton(
+                onPressed: currentUid == null ? null : () => onVote(option.id),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.c.textPrimary,
+                  side: BorderSide(
+                    color: myVote == option.id
+                        ? context.c.primary
+                        : context.c.border,
+                  ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
+                    horizontal: 12,
+                    vertical: 10,
                   ),
-                  decoration: BoxDecoration(
-                    color: myVote == opt.id
-                        ? context.c.primary.withValues(alpha: 0.16)
-                        : context.c.card,
-                    borderRadius: AppRadii.chipAll,
-                    border: Border.all(
-                      color: myVote == opt.id
-                          ? context.c.primary
-                          : context.c.border,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: Text(option.text)),
+                        if (myVote != null) ...[
+                          const SizedBox(width: 8),
+                          Text('${(poll.ratioFor(option.id) * 100).round()}%'),
+                        ],
+                      ],
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          opt.text,
-                          style: AppTypography.body(
-                            size: 12,
-                            weight: myVote == opt.id
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${(poll.ratioFor(opt.id) * 100).round()}% (${poll.votesFor(opt.id)})',
-                        style: AppTypography.code(
-                          size: 11,
-                          color: context.c.textSecondary,
+                    if (myVote != null) ...[
+                      const SizedBox(height: 6),
+                      ExcludeSemantics(
+                        child: LinearProgressIndicator(
+                          value: poll.ratioFor(option.id),
+                          minHeight: 4,
+                          borderRadius: AppRadii.pillAll,
+                          backgroundColor: context.c.border,
+                          color: myVote == option.id
+                              ? context.c.primary
+                              : context.c.textSecondary,
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
-          ],
           Text(
             '${poll.totalVotes} ${poll.totalVotes == 1 ? 'voto' : 'votos'}',
-            style: AppTypography.body(
-              size: 11,
-              color: context.c.textSecondary,
-            ),
+            style: AppTypography.body(size: 11, color: context.c.textSecondary),
           ),
         ],
       ),
@@ -1037,12 +1092,16 @@ class _CreateSocialPostSheetState extends ConsumerState<CreateSocialPostSheet> {
 
   Future<void> _submit() async {
     final text = _textController.text.trim();
-    final hasPoll = _withPoll &&
+    final hasPoll =
+        _withPoll &&
         _pollQuestionController.text.trim().length >= 3 &&
         _pollOpt1Controller.text.trim().isNotEmpty &&
         _pollOpt2Controller.text.trim().isNotEmpty;
 
-    if (text.isEmpty && _imageFile == null && !hasPoll && _selectedMatchId == null) {
+    if (text.isEmpty &&
+        _imageFile == null &&
+        !hasPoll &&
+        _selectedMatchId == null) {
       PateaSnack.error(
         context,
         'Escribí algo, subí una foto o agregá una encuesta.',
@@ -1060,7 +1119,9 @@ class _CreateSocialPostSheetState extends ConsumerState<CreateSocialPostSheet> {
       }
 
       final activeGroupId = ref.read(activeGroupIdProvider).value;
-      await ref.read(socialServiceProvider).createPost(
+      await ref
+          .read(socialServiceProvider)
+          .createPost(
             text: text,
             imageUrl: uploadedUrl,
             matchId: _selectedMatchId,
@@ -1135,7 +1196,9 @@ class _CreateSocialPostSheetState extends ConsumerState<CreateSocialPostSheet> {
                   IconButton(
                     icon: const Icon(Icons.close, size: 20),
                     tooltip: 'Cerrar',
-                    onPressed: _submitting ? null : () => Navigator.pop(context),
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.pop(context),
                   ),
                 ],
               ),
@@ -1242,16 +1305,18 @@ class _CreateSocialPostSheetState extends ConsumerState<CreateSocialPostSheet> {
                               value: null,
                               child: Text('Sin partido etiquetado'),
                             ),
-                            ...matches.take(15).map(
-                              (m) => DropdownMenuItem<String?>(
-                                value: m.id,
-                                child: Text(
-                                  '${m.title} · ${fmtDate(m.date)}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                            ...matches
+                                .take(15)
+                                .map(
+                                  (m) => DropdownMenuItem<String?>(
+                                    value: m.id,
+                                    child: Text(
+                                      '${m.title} · ${fmtDate(m.date)}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                           ],
                           onChanged: _submitting
                               ? null
@@ -1351,12 +1416,15 @@ class _SocialCommentsSheetState extends ConsumerState<_SocialCommentsSheet> {
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _sending) return;
+    if (text.length > 500) {
+      PateaSnack.error(context, 'El comentario admite hasta 500 caracteres.');
+      return;
+    }
     setState(() => _sending = true);
     try {
-      await ref.read(socialServiceProvider).addComment(
-            activityId: widget.post.id,
-            text: text,
-          );
+      await ref
+          .read(socialServiceProvider)
+          .addComment(activityId: widget.post.id, text: text);
       if (mounted) {
         _controller.clear();
         setState(() => _sending = false);
@@ -1364,144 +1432,201 @@ class _SocialCommentsSheetState extends ConsumerState<_SocialCommentsSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _sending = false);
-        PateaSnack.error(context, '$e');
+        PateaSnack.error(
+          context,
+          'No pudimos enviar el comentario. Volvé a intentar.',
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final commentsAsync = ref.watch(socialCommentsStreamProvider(widget.post.id));
+    final commentsAsync = ref.watch(
+      socialCommentsStreamProvider(widget.post.id),
+    );
+
+    final colors = context.c;
+    final uid = ref.watch(authServiceProvider).currentUser?.uid;
 
     return SafeArea(
-      child: Padding(
+      top: false,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 160),
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.65,
-          child: Column(
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.72,
+          minChildSize: 0.48,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) => Column(
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Container(
-                width: 40,
+                width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: context.c.border,
-                  borderRadius: AppRadii.hairAll,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Comentarios',
-                style: AppTypography.headline(size: 16),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: commentsAsync.when(
-                  data: (comments) {
-                    if (comments.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'Sé el primero en comentar.',
-                          style: AppTypography.body(
-                            size: 13,
-                            color: context.c.textSecondary,
-                          ),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: comments.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final c = comments[index];
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            PateaAvatar(
-                              photoUrl: c.userPhotoUrl,
-                              seed: c.userName,
-                              size: 32,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        c.userName,
-                                        style: AppTypography.body(
-                                          size: 13,
-                                          weight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _relativeTime(c.createdAt),
-                                        style: AppTypography.body(
-                                          size: 11,
-                                          color: context.c.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    c.text,
-                                    style: AppTypography.body(size: 13),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                  loading: () => const PateaLoading(),
-                  error: (e, _) => PateaError(error: e, compact: true),
+                  color: colors.border,
+                  borderRadius: AppRadii.pillAll,
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
+                    const SizedBox(width: 48),
                     Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          hintText: 'Escribí un comentario...',
-                          isDense: true,
-                        ),
-                        onSubmitted: (_) => _send(),
+                      child: Text(
+                        'Comentarios',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.headline(size: 16),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: _sending ? null : _send,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        minimumSize: Size.zero,
-                      ),
-                      child: _sending
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: PateaButtonProgress(),
-                            )
-                          : const Text('Enviar'),
+                    IconButton(
+                      tooltip: 'Cerrar comentarios',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, size: 20),
                     ),
                   ],
                 ),
               ),
+              Divider(height: 1, color: colors.overlayLine),
+              Expanded(
+                child: CustomScrollView(
+                  controller: scrollController,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  slivers: commentsAsync.when(
+                    data: (comments) => [
+                      if (comments.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Text(
+                              'Sé el primero en comentar.',
+                              style: AppTypography.body(
+                                size: 13,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        SliverPadding(
+                          padding: const EdgeInsets.all(16),
+                          sliver: SliverList.separated(
+                            itemCount: comments.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 14),
+                            itemBuilder: (context, index) {
+                              final comment = comments[index];
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  PateaAvatar(
+                                    photoUrl: comment.userPhotoUrl,
+                                    seed: comment.userId.isEmpty
+                                        ? comment.userName
+                                        : comment.userId,
+                                    size: 32,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 2,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            Text(
+                                              comment.userName,
+                                              style: AppTypography.body(
+                                                size: 13,
+                                                weight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            Text(
+                                              _relativeTime(comment.createdAt),
+                                              style: AppTypography.body(
+                                                size: 11,
+                                                color: colors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          comment.text,
+                                          style: AppTypography.body(size: 14),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                    loading: () => const [
+                      SliverFillRemaining(child: PateaLoading()),
+                    ],
+                    error: (error, _) => [
+                      SliverFillRemaining(
+                        child: PateaError(error: error, compact: true),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (uid != null) ...[
+                Divider(height: 1, color: colors.overlayLine),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+                  child: TextField(
+                    controller: _controller,
+                    readOnly: _sending,
+                    minLines: 1,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      hintText: 'Escribí un comentario…',
+                      isDense: true,
+                      suffixIcon: ValueListenableBuilder(
+                        valueListenable: _controller,
+                        builder: (context, value, _) {
+                          if (_sending) {
+                            return const Center(
+                              widthFactor: 2,
+                              child: SizedBox.square(
+                                dimension: 16,
+                                child: PateaButtonProgress(),
+                              ),
+                            );
+                          }
+                          if (value.text.trim().isEmpty) {
+                            return const SizedBox();
+                          }
+                          return IconButton(
+                            tooltip: 'Enviar comentario',
+                            onPressed: _send,
+                            icon: Icon(
+                              Icons.send_rounded,
+                              color: colors.primary,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1591,7 +1716,10 @@ class _DiscoverPlayersSheetState extends ConsumerState<_DiscoverPlayersSheet> {
               const SizedBox(height: 14),
               Text(
                 'Seguir jugadores',
-                style: AppTypography.headline(size: 17, weight: FontWeight.w800),
+                style: AppTypography.headline(
+                  size: 17,
+                  weight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
