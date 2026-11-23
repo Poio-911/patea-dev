@@ -116,8 +116,6 @@ export async function loadCompetitionTeams(
       fail(`${t.name}: el plantel necesita entre 1 y 50 jugadores.`);
     for (const m of t.members) {
       const key = id(m.playerId);
-      if (seen.has(key))
-        fail("Un jugador no puede representar a dos equipos del torneo.");
       seen.add(key);
     }
   }
@@ -138,7 +136,8 @@ export async function loadCompetitionTeams(
     });
   }
   return teams.map((t) => {
-    const roster = t.members.map((m: Data) => players.get(m.playerId)!);
+    const roster = [...new Set<string>(t.members.map((m: Data) => m.playerId))]
+      .map((playerId) => players.get(playerId)!);
     const total = roster.reduce((sum: number, p: Data) => sum + p.ovr, 0);
     return {
       ...t,
@@ -149,6 +148,30 @@ export async function loadCompetitionTeams(
     };
   });
 }
+/** A shared player can appear for either team during the tournament, once per match. */
+export function competitionMatchSides(a: Data, b: Data) {
+  const awayIds = new Set(b.players.map((p: Data) => p.uid));
+  const homeIds = new Set(a.players.map((p: Data) => p.uid));
+  const home = a.players.filter((p: Data) => !awayIds.has(p.uid));
+  const away = b.players.filter((p: Data) => !homeIds.has(p.uid));
+  for (const player of a.players.filter((p: Data) => awayIds.has(p.uid))) {
+    (home.length <= away.length ? home : away).push(player);
+  }
+  return [a, b].map((team, index) => {
+    const players = index === 0 ? home : away;
+    const totalOVR = players.reduce((sum: number, p: Data) => sum + p.ovr, 0);
+    return {
+      id: team.id,
+      name: team.name,
+      jersey: team.jersey ?? null,
+      players,
+      totalOVR,
+      averageOVR: players.length ? totalOVR / players.length : 0,
+      score: 0,
+    };
+  });
+}
+
 export function competitionMatch(
   comp: Data,
   competitionId: string,
@@ -159,7 +182,8 @@ export function competitionMatch(
   const date = comp.startDate ?? "",
     time = comp.matchTime ?? "21:00";
   const scheduled = buildMatchDateTime(date, time);
-  const players = [...a.players, ...b.players];
+  const sides = competitionMatchSides(a, b);
+  const players = sides.flatMap((team) => team.players);
   return {
     title: `${a.name} vs ${b.name}`,
     type: "cup",
@@ -169,18 +193,10 @@ export function competitionMatch(
     time: scheduled && scheduled.getTime() > Date.now() ? time : "",
     ownerUid: comp.ownerUid,
     groupId: comp.groupId,
-    matchSize: Math.max(a.players.length, b.players.length) * 2,
+    matchSize: Math.max(...sides.map((team) => team.players.length)) * 2,
     isPublic: false,
     participantTeamIds: [a.id, b.id],
-    teams: [a, b].map((t) => ({
-      id: t.id,
-      name: t.name,
-      jersey: t.jersey ?? null,
-      players: t.players,
-      totalOVR: t.totalOVR,
-      averageOVR: t.averageOVR,
-      score: 0,
-    })),
+    teams: sides,
     players,
     playerUids: players.map((p) => p.uid),
     teamsGenerated: true,

@@ -5,6 +5,7 @@ import { buildMatchDateTime } from "../lib/match-date";
 import {
   loadCompetitionTeams,
   competitionLocation,
+  competitionMatchSides,
 } from "./competition-management";
 
 export const startLeagueTournament = onCall(
@@ -93,22 +94,9 @@ export async function startLeagueCore(
     const interval = frequency === "biweekly" ? 14 : 7;
     const venue = competitionLocation(data?.location ?? league.defaultLocation);
     for (const pair of pairs) {
-      const sides = [teams.get(pair.home)!, teams.get(pair.away)!].map(
-        (team) => {
-          const roster = team.players;
-          const totalOVR = roster.reduce(
-            (sum: number, p: any) => sum + p.ovr,
-            0,
-          );
-          return {
-            name: team.name,
-            jersey: team.jersey ?? null,
-            players: roster,
-            totalOVR,
-            averageOVR: totalOVR / roster.length,
-            score: 0,
-          };
-        },
+      const sides = competitionMatchSides(
+        teams.get(pair.home)!,
+        teams.get(pair.away)!,
       );
       const roster = sides.flatMap((t) => t.players);
       const matchSize = Math.max(...sides.map((t) => t.players.length)) * 2;

@@ -303,6 +303,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
             return const PateaLoading();
           }
           final teams = teamState.value ?? [], matches = matchState.value ?? [];
+          final sharedPlayers = competitionSharedPlayerCount(teams);
           final names = <String, String>{
             for (final id in comp.teamIds)
               id: (comp.teamSnapshots[id]?['name'] ?? 'Equipo no disponible')
@@ -418,6 +419,8 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                           color: context.c.textSecondary,
                         ),
                       ),
+                      if (sharedPlayers > 0)
+                        CompetitionSharedPlayersNotice(count: sharedPlayers),
                       const SizedBox(height: 16),
                       if ([
                             'draft',

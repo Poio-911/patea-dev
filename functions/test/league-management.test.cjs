@@ -172,12 +172,10 @@ test("rechaza fechas pasadas e inválidas", async () => {
       { code: "invalid-argument" },
     );
 });
-test("rechaza planteles vacíos, jugadores compartidos, perfiles faltantes sin escrituras parciales", async () => {
-  for (const fault of ["empty", "shared", "missing"]) {
+test("rechaza planteles vacíos y perfiles faltantes sin escrituras parciales", async () => {
+  for (const fault of ["empty", "missing"]) {
     const { db, records, data } = fixture();
     if (fault === "empty") records.get("teams/a").members = [];
-    if (fault === "shared")
-      records.get("teams/b").members = [{ playerId: "a" }];
     if (fault === "missing") records.delete("players/a");
     if (fault === "otherGroup") records.get("teams/a").groupId = "other";
     await assert.rejects(() => startLeagueCore("owner", data, db), {
@@ -219,4 +217,20 @@ test("una liga archivada no se puede iniciar aunque sea borrador", async () => {
     [...records.keys()].some((p) => p.startsWith("matches/")),
     false,
   );
+});
+
+test("la liga admite jugadores en varios equipos sin duplicarlos en el mismo partido", async () => {
+  const { db, records, data } = fixture();
+  records.get("teams/b").members.push({ playerId: "a" });
+  await startLeagueCore("owner", data, db);
+
+  const matches = [...records].filter(([path]) => path.startsWith("matches/"));
+  assert.equal(matches.length, 3);
+  const direct = matches.find(([, match]) =>
+    ["a", "b"].every((id) => match.participantTeamIds.includes(id))
+  )[1];
+  assert.deepEqual(new Set(direct.playerUids), new Set(["a", "b"]));
+  assert.equal(direct.teams.flatMap((team) => team.players).length, 2);
+  assert.equal(direct.teams.every((team) => team.players.length === 1), true);
+  assert.equal(records.get("teams/b").members.length, 2);
 });

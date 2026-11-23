@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import '../../core/models/competition_model.dart';
+import '../../core/models/group_model.dart';
 import '../../core/services/competition_service.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/theme/app_typography.dart';
@@ -254,6 +255,11 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
   @override
   Widget build(BuildContext context) {
     final group = ref.watch(groupTeamsStreamProvider(widget.groupId));
+    final sharedPlayers = competitionSharedPlayerCount(
+      (group.value ?? const <GroupTeamModel>[]).where(
+        (team) => _selected.contains(team.id),
+      ),
+    );
     return PopScope<dynamic>(
       canPop: !_saving && _step == 0,
       onPopInvokedWithResult: (didPop, _) {
@@ -465,6 +471,8 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
                           weight: FontWeight.w600,
                         ),
                       ),
+                      if (sharedPlayers > 0)
+                        CompetitionSharedPlayersNotice(count: sharedPlayers),
                       group.when(
                         loading: () => const PateaLoading(),
                         error: (e, _) => PateaError(error: e),
@@ -786,4 +794,39 @@ Future<bool> confirmDeleteCompetition(
     if (context.mounted) PateaSnack.error(context, competitionError(e));
     return false;
   }
+}
+
+int competitionSharedPlayerCount(Iterable<GroupTeamModel> teams) {
+  final seen = <String>{};
+  final shared = <String>{};
+  for (final team in teams) {
+    for (final id in team.members.map((member) => member.playerId).toSet()) {
+      if (id.isNotEmpty && !seen.add(id)) shared.add(id);
+    }
+  }
+  return shared.length;
+}
+
+class CompetitionSharedPlayersNotice extends StatelessWidget {
+  const CompetitionSharedPlayersNotice({super.key, required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.info_outline, size: 18, color: context.c.warningText),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '${count == 1 ? 'Hay 1 jugador inscrito' : 'Hay $count jugadores inscritos'} en más de un equipo. Si sus equipos se enfrentan, cada jugador contará una sola vez en ese partido.',
+            style: AppTypography.body(size: 13, color: context.c.warningText),
+          ),
+        ),
+      ],
+    ),
+  );
 }

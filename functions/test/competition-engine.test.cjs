@@ -154,3 +154,13 @@ test("partidos de copa preservan equipos, participantes, sede y marcador sin inv
   assert.equal(m.leagueInfo.leagueId, "c");
   assert.equal(m.teams[0].score, 0);
 });
+
+test("un jugador compartido figura de un solo lado en el partido de copa", () => {
+  const a = { id: "a", name: "Local", players: [{ uid: "shared", ovr: 60 }, { uid: "a1", ovr: 80 }] };
+  const b = { id: "b", name: "Visita", players: [{ uid: "shared", ovr: 60 }] };
+  const match = competitionMatch({}, "cup", a, b, "final");
+  assert.deepEqual(match.teams.map((team) => team.players.map((p) => p.uid)), [["a1"], ["shared"]]);
+  assert.deepEqual(match.playerUids, ["a1", "shared"]);
+  assert.equal(match.teams[1].averageOVR, 60);
+  assert.equal(a.players.length, 2);
+});
