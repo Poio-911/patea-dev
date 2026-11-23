@@ -38,6 +38,21 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
   /// Quiénes tienen un cambio en camino, para frenar el doble toque.
   final _busy = <String>{};
 
+  bool _paymentsExpanded = false;
+
+  @override
+  void didUpdateWidget(covariant MatchCostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.match.id != widget.match.id) _paymentsExpanded = false;
+  }
+
+  Future<void> _editCost(MatchCost? current) async {
+    final saved = await showCostSheet(context, widget.match, current: current);
+    if (saved == true && mounted && _paymentsExpanded) {
+      setState(() => _paymentsExpanded = false);
+    }
+  }
+
   Future<void> _toggle(String playerId, bool paid) async {
     if (_busy.contains(playerId)) return;
     final avisar = PateaSnack.of(context);
@@ -67,7 +82,8 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
     final cost = effectiveMatchCost(match, venues);
 
     if (cost == null) {
-      if (!widget.isManager || match.isCancelled) return const SizedBox.shrink();
+      if (!widget.isManager || match.isCancelled)
+        return const SizedBox.shrink();
       return PateaCard(
         padding: const EdgeInsets.all(14),
         borderColor: c.border.withValues(alpha: 0.45),
@@ -82,7 +98,7 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
               ),
             ),
             TextButton(
-              onPressed: () => showCostSheet(context, match, current: null),
+              onPressed: () => _editCost(null),
               child: const Text('Este partido'),
             ),
           ],
@@ -91,16 +107,19 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
     }
 
     final summary = summarizeCost(cost, match.playerUids, match.costPaidUids);
-    final names = {for (final p in match.players) p.uid: p.displayName};
+    final names = {
+      if (_paymentsExpanded)
+        for (final player in match.players) player.uid: player.displayName,
+    };
     final paid = match.costPaidUids.toSet();
-    final roster = match.playerUids.toSet().toList()
-      // Primero los que faltan pagar.
-      ..sort((a, b) {
-        final pa = paid.contains(a);
-        final pb = paid.contains(b);
-        if (pa != pb) return pa ? 1 : -1;
-        return (names[a] ?? '').compareTo(names[b] ?? '');
-      });
+    final roster = _paymentsExpanded
+        ? (match.playerUids.toSet().toList()..sort((a, b) {
+            final pa = paid.contains(a);
+            final pb = paid.contains(b);
+            if (pa != pb) return pa ? 1 : -1;
+            return (names[a] ?? '').compareTo(names[b] ?? '');
+          }))
+        : const <String>[];
 
     return PateaCard(
       padding: const EdgeInsets.all(16),
@@ -115,13 +134,16 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
               Expanded(
                 child: Text(
                   'Costo del partido',
-                  style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+                  style: AppTypography.headline(
+                    size: 16,
+                    weight: FontWeight.w700,
+                  ),
                 ),
               ),
               if (widget.isManager && !match.isCancelled)
                 IconButton(
                   tooltip: 'Cambiar el costo',
-                  onPressed: () => showCostSheet(context, match, current: cost),
+                  onPressed: () => _editCost(cost),
                   icon: const Icon(Icons.edit_outlined, size: 20),
                 ),
             ],
@@ -161,7 +183,19 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
                 color: summary.allPaid ? c.success : c.textSecondary,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
+            TextButton.icon(
+              onPressed: () =>
+                  setState(() => _paymentsExpanded = !_paymentsExpanded),
+              icon: Icon(
+                _paymentsExpanded ? Icons.expand_less : Icons.expand_more,
+                size: 20,
+              ),
+              label: Text(_paymentsExpanded ? 'Ocultar pagos' : 'Ver pagos'),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+            ),
             for (final id in roster)
               _PersonRow(
                 name: names[id] ?? 'Jugador',
@@ -265,12 +299,12 @@ class _PersonRow extends StatelessWidget {
 ///
 /// [current] es el costo que rige hoy (el de la cancha o el propio); lo que se
 /// guarda acá es solo para este partido.
-Future<void> showCostSheet(
+Future<bool?> showCostSheet(
   BuildContext context,
   MatchModel match, {
   MatchCost? current,
 }) {
-  return showModalBottomSheet<void>(
+  return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -343,9 +377,12 @@ class _CostSheetState extends ConsumerState<_CostSheet> {
       await ref
           .read(matchServiceProvider)
           .setCost(widget.match.id, total: total, currency: _currency);
-      navigator.pop();
+      if (!mounted) return;
+      navigator.pop(true);
       avisar.ok(
-        total == 0 ? 'Vuelve a regir el costo de la cancha.' : 'Costo guardado.',
+        total == 0
+            ? 'Vuelve a regir el costo de la cancha.'
+            : 'Costo guardado.',
       );
     } catch (e) {
       if (mounted) {
@@ -388,7 +425,9 @@ class _CostSheetState extends ConsumerState<_CostSheet> {
             TextField(
               controller: _total,
               autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Total',
                 errorText: _error,
