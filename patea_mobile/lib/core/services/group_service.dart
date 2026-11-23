@@ -75,6 +75,21 @@ class GroupService {
     });
   }
 
+  /// Cuánto cuesta jugar en la cancha. Con monto 0 se saca el costo.
+  Future<void> setVenueCost({
+    required String groupId,
+    required String venueId,
+    required double total,
+    required String currency,
+  }) async {
+    await callFunction('updateGroupVenue', {
+      'groupId': groupId,
+      'venueId': venueId,
+      'costPerMatch': total,
+      'costCurrency': currency,
+    });
+  }
+
   Future<String> createTeam({
     required String groupId,
     required String name,

@@ -1,3 +1,4 @@
+import { normalizeCost } from '../lib/match-extras';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
@@ -176,7 +177,8 @@ export const resolvePlaceLocation = onCall(
 );
 
 /**
- * Actualiza nombre o foto personalizada de una cancha guardada en el grupo.
+ * Actualiza nombre, foto personalizada o costo por partido de una cancha guardada
+ * en el grupo.
  */
 export const updateGroupVenue = onCall(REGION, async (request) => {
   const uid = requireAuth(request);
@@ -236,6 +238,24 @@ export const updateGroupVenue = onCall(REGION, async (request) => {
       patch.photoUrl = photoUrl;
       patch.photos = [photoUrl, ...existingPhotos].slice(0, 5);
       patch.customPhoto = true;
+    }
+  }
+
+  // Costo por partido de la cancha. Presente = se cambia (monto 0 lo saca);
+  // ausente = no se toca.
+  if ('costPerMatch' in (request.data ?? {})) {
+    let cost;
+    try {
+      cost = normalizeCost(request.data.costPerMatch, request.data.costCurrency);
+    } catch (e) {
+      throw new HttpsError('invalid-argument', e instanceof Error ? e.message : 'Costo no válido.');
+    }
+    if (cost) {
+      patch.costPerMatch = cost.total;
+      patch.costCurrency = cost.currency;
+    } else {
+      patch.costPerMatch = admin.firestore.FieldValue.delete();
+      patch.costCurrency = admin.firestore.FieldValue.delete();
     }
   }
 

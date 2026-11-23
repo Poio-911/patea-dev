@@ -758,34 +758,20 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         onRebuild: () => _handleShuffle(match),
                       ),
                     ],
-                    if (isManager &&
-                        !isCompetition &&
-                        (match.status == 'planning' ||
-                            match.status == 'upcoming')) ...[
-                      const SizedBox(height: 6),
-                      ManageRosterSection(match: match),
-                    ],
                     if (match.status == 'evaluated' ||
                         match.status == 'completed' ||
                         match.chronicle != null) ...[
                       MatchStoryView(match: match, part: MatchStoryPart.figure),
                       const SizedBox(height: 18),
                     ],
-                    if (match.stream != null || isManager) ...[
-                      MatchStreamRow(match: match, isManager: isManager),
-                      const SizedBox(height: 14),
-                    ],
                     hasTeams
                         ? _TeamsRoster(match: match)
                         : _PlayersConfirmedRoster(match: match),
-                    if ((match.cost != null || isManager) &&
-                        !match.isCancelled) ...[
+                    // Quienes juegan ven cuánto les toca y quién pagó. Quien organiza
+                    // lo maneja desde su panel (más abajo).
+                    if (!isManager && !match.isCancelled) ...[
                       const SizedBox(height: 20),
-                      MatchCostCard(
-                        match: match,
-                        uid: uid,
-                        isManager: isManager,
-                      ),
+                      MatchCostCard(match: match, uid: uid, isManager: false),
                     ],
                     if (match.status == 'evaluated' ||
                         match.status == 'completed' ||
@@ -841,10 +827,29 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                         ),
                       ),
                     ],
+                    // La transmisión va al final: no es lo primero que se busca.
+                    if (match.stream != null || isManager) ...[
+                      const SizedBox(height: 16),
+                      MatchStreamRow(match: match, isManager: isManager),
+                    ],
                     if (isManager) ...[
                       const SizedBox(height: 16),
                       _OrganizerPanel(
                         match: match,
+                        // Jugadores y costo viven acá, no sueltos en la pantalla.
+                        rosterSection:
+                            !isCompetition &&
+                                (match.status == 'planning' ||
+                                    match.status == 'upcoming')
+                            ? ManageRosterSection(match: match)
+                            : null,
+                        costSection: match.isCancelled
+                            ? null
+                            : MatchCostCard(
+                                match: match,
+                                uid: uid,
+                                isManager: true,
+                              ),
                         isOwner: isOwner,
                         canManageOrganizers: canManageOrganizers,
                         hasTeams: hasTeams,
@@ -1515,6 +1520,11 @@ class _PlayersConfirmedRoster extends ConsumerWidget {
 class _OrganizerPanel extends StatelessWidget {
   final MatchModel match;
 
+  /// Gestión del plantel y costo con pagos: lo que antes estaba suelto en la
+  /// pantalla y solo le sirve a quien organiza.
+  final Widget? rosterSection;
+  final Widget? costSection;
+
   /// Sólo el organizador creador borra el partido; co-organizadores y
   /// admins/moderadores del grupo gestionan lo operativo.
   final bool isOwner;
@@ -1533,6 +1543,8 @@ class _OrganizerPanel extends StatelessWidget {
 
   const _OrganizerPanel({
     required this.match,
+    this.rosterSection,
+    this.costSection,
     required this.isOwner,
     required this.canManageOrganizers,
     required this.hasTeams,
@@ -1580,6 +1592,14 @@ class _OrganizerPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (rosterSection != null) ...[
+                rosterSection!,
+                const SizedBox(height: 12),
+              ],
+              if (costSection != null) ...[
+                costSection!,
+                const SizedBox(height: 14),
+              ],
               Wrap(
                 spacing: 8,
                 runSpacing: 8,

@@ -90,3 +90,44 @@ function youtube(id: string): MatchStream {
 export function isInRoster(playerUids: unknown, playerId: string): boolean {
   return Array.isArray(playerUids) && playerUids.includes(playerId);
 }
+
+// ───────────────────────────── Costo por cancha ─────────────────────────────
+
+export interface VenueLike {
+  name?: unknown;
+  placeId?: unknown;
+  costPerMatch?: unknown;
+  costCurrency?: unknown;
+}
+
+/**
+ * La cancha de un partido entre las canchas guardadas del grupo: primero por
+ * `placeId` (si lo tienen los dos) y si no, por nombre sin mayúsculas. Es lo
+ * mismo que hace el selector de canchas de la app.
+ */
+export function pickVenueForLocation(
+  location: { placeId?: unknown; name?: unknown } | null | undefined,
+  venues: readonly VenueLike[],
+): VenueLike | null {
+  if (!location) return null;
+  const placeId = typeof location.placeId === 'string' ? location.placeId.trim() : '';
+  if (placeId) {
+    const byPlace = venues.find((v) => typeof v.placeId === 'string' && v.placeId.trim() === placeId);
+    if (byPlace) return byPlace;
+  }
+  const name = typeof location.name === 'string' ? location.name.trim().toLowerCase() : '';
+  if (!name) return null;
+  return venues.find((v) => typeof v.name === 'string' && v.name.trim().toLowerCase() === name) ?? null;
+}
+
+/** El costo por partido que tiene cargado una cancha, o null si no tiene. */
+export function venueCost(venue: VenueLike | null | undefined): MatchCost | null {
+  if (!venue) return null;
+  const total = Number(venue.costPerMatch);
+  if (!Number.isFinite(total) || total <= 0) return null;
+  const currency = String(venue.costCurrency ?? 'UYU').toUpperCase();
+  return {
+    total: Math.round(total * 100) / 100,
+    currency: ((COST_CURRENCIES as readonly string[]).includes(currency) ? currency : 'UYU') as CostCurrency,
+  };
+}

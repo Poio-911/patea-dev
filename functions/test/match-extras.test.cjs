@@ -61,3 +61,26 @@ test('plantel: reconoce invitados y descarta lo que no está', () => {
   assert.equal(m.isInRoster(['a'], 'b'), false);
   assert.equal(m.isInRoster(undefined, 'a'), false);
 });
+
+test('cancha del partido: por placeId y, si no, por nombre', () => {
+  const venues = [
+    { name: 'Club Norte', placeId: 'p1', costPerMatch: 1800 },
+    { name: 'Cancha del Parque', placeId: '', costPerMatch: 900, costCurrency: 'ARS' },
+    { name: 'Sin costo', placeId: 'p3' },
+  ];
+  assert.equal(m.pickVenueForLocation({ placeId: 'p1', name: 'otro nombre' }, venues).name, 'Club Norte');
+  assert.equal(m.pickVenueForLocation({ placeId: '', name: '  cancha DEL parque ' }, venues).name, 'Cancha del Parque');
+  assert.equal(m.pickVenueForLocation({ placeId: 'zzz', name: 'Club Norte' }, venues).name, 'Club Norte', 'si el placeId no está, cae al nombre');
+  assert.equal(m.pickVenueForLocation({ name: 'No existe' }, venues), null);
+  assert.equal(m.pickVenueForLocation(null, venues), null);
+  assert.equal(m.pickVenueForLocation({ placeId: '', name: '' }, venues), null);
+});
+
+test('costo de una cancha: solo si es un monto positivo, con moneda válida', () => {
+  assert.deepEqual(m.venueCost({ costPerMatch: 1800 }), { total: 1800, currency: 'UYU' });
+  assert.deepEqual(m.venueCost({ costPerMatch: '950.555', costCurrency: 'usd' }), { total: 950.56, currency: 'USD' });
+  assert.deepEqual(m.venueCost({ costPerMatch: 10, costCurrency: 'EUR' }), { total: 10, currency: 'UYU' });
+  for (const bad of [{}, { costPerMatch: 0 }, { costPerMatch: -5 }, { costPerMatch: 'x' }, null, undefined]) {
+    assert.equal(m.venueCost(bad), null, JSON.stringify(bad));
+  }
+});

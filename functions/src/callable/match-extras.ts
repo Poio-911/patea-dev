@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { userCanManageMatch } from '../lib/match-access';
-import { isInRoster, normalizeCost, parseStreamLink } from '../lib/match-extras';
+import { isInRoster, normalizeCost, parseStreamLink, pickVenueForLocation, venueCost } from '../lib/match-extras';
 
 /**
  * Costo del partido y transmisión. Los escribe solo quien administra el
@@ -57,7 +57,16 @@ export const markMatchPayment = onCall({ region: 'us-central1' }, async (request
   const uid = requireUid(request);
   const { ref, match } = await loadManagedMatch(request.data?.matchId, uid);
 
-  if (!match.cost) throw new HttpsError('failed-precondition', 'El partido no tiene costo cargado.');
+  // El costo es de la cancha; el partido puede tener uno propio que lo reemplaza.
+  if (!match.cost) {
+    const groupId = typeof match.groupId === 'string' ? match.groupId : '';
+    const venues = groupId
+      ? (await admin.firestore().collection('venues').where('groupId', '==', groupId).limit(200).get()).docs.map((d) => d.data())
+      : [];
+    if (!venueCost(pickVenueForLocation(match.location, venues))) {
+      throw new HttpsError('failed-precondition', 'El partido no tiene costo cargado.');
+    }
+  }
   const playerId = typeof request.data?.playerId === 'string' ? request.data.playerId : '';
   if (!playerId || !isInRoster(match.playerUids, playerId)) {
     throw new HttpsError('invalid-argument', 'Esa persona no está en el partido.');

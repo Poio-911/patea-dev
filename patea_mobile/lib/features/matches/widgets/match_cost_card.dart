@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/match_model.dart';
+import '../../../core/models/venue_model.dart';
+import '../../../core/services/firestore_service.dart';
 import '../../../core/services/coach_service.dart' show coachErrorMessage;
 import '../../../core/services/match_service.dart';
 import '../../../core/theme/app_radii.dart';
@@ -55,7 +57,14 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
   Widget build(BuildContext context) {
     final c = context.c;
     final match = widget.match;
-    final cost = match.cost;
+    // El costo es de la cancha (se carga en Grupos); el partido puede tener uno
+    // propio que lo reemplaza.
+    final groupId = match.groupId;
+    final venues = (groupId == null || groupId.isEmpty)
+        ? const <VenueModel>[]
+        : (ref.watch(groupVenuesStreamProvider(groupId)).asData?.value ??
+              const <VenueModel>[]);
+    final cost = effectiveMatchCost(match, venues);
 
     if (cost == null) {
       if (!widget.isManager || match.isCancelled) return const SizedBox.shrink();
@@ -68,13 +77,13 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Cargá lo que cuesta la cancha y dividilo entre los que juegan.',
+                'Esta cancha no tiene costo cargado. Cargalo en Grupos, en las canchas guardadas, o ponelo solo para este partido.',
                 style: AppTypography.body(size: 13, color: c.textSecondary),
               ),
             ),
             TextButton(
-              onPressed: () => showCostSheet(context, match),
-              child: const Text('Cargar costo'),
+              onPressed: () => showCostSheet(context, match, current: null),
+              child: const Text('Este partido'),
             ),
           ],
         ),
@@ -112,7 +121,7 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
               if (widget.isManager && !match.isCancelled)
                 IconButton(
                   tooltip: 'Cambiar el costo',
-                  onPressed: () => showCostSheet(context, match),
+                  onPressed: () => showCostSheet(context, match, current: cost),
                   icon: const Icon(Icons.edit_outlined, size: 20),
                 ),
             ],
@@ -253,18 +262,26 @@ class _PersonRow extends StatelessWidget {
 }
 
 /// Cuánto sale la cancha: monto y moneda. Con el monto en cero se saca el costo.
-Future<void> showCostSheet(BuildContext context, MatchModel match) {
+///
+/// [current] es el costo que rige hoy (el de la cancha o el propio); lo que se
+/// guarda acá es solo para este partido.
+Future<void> showCostSheet(
+  BuildContext context,
+  MatchModel match, {
+  MatchCost? current,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _CostSheet(match: match),
+    builder: (_) => _CostSheet(match: match, current: current),
   );
 }
 
 class _CostSheet extends ConsumerStatefulWidget {
   final MatchModel match;
-  const _CostSheet({required this.match});
+  final MatchCost? current;
+  const _CostSheet({required this.match, this.current});
 
   @override
   ConsumerState<_CostSheet> createState() => _CostSheetState();
@@ -279,7 +296,7 @@ class _CostSheetState extends ConsumerState<_CostSheet> {
   @override
   void initState() {
     super.initState();
-    final cost = widget.match.cost;
+    final cost = widget.current ?? widget.match.cost;
     _currency = cost?.currency ?? 'UYU';
     _total = TextEditingController(
       text: cost == null
@@ -327,7 +344,9 @@ class _CostSheetState extends ConsumerState<_CostSheet> {
           .read(matchServiceProvider)
           .setCost(widget.match.id, total: total, currency: _currency);
       navigator.pop();
-      avisar.ok(total == 0 ? 'Sacaste el costo.' : 'Costo guardado.');
+      avisar.ok(
+        total == 0 ? 'Vuelve a regir el costo de la cancha.' : 'Costo guardado.',
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -357,12 +376,12 @@ class _CostSheetState extends ConsumerState<_CostSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Costo del partido',
+              'Costo de este partido',
               style: AppTypography.headline(size: 20, weight: FontWeight.w800),
             ),
             const SizedBox(height: 4),
             Text(
-              'Lo que sale la cancha en total. Se divide en partes iguales entre quienes juegan.',
+              'Solo para este partido. Si no lo cambiás, rige el costo de la cancha (se carga en Grupos).',
               style: AppTypography.body(size: 13, color: c.textSecondary),
             ),
             const SizedBox(height: 16),
@@ -394,7 +413,7 @@ class _CostSheetState extends ConsumerState<_CostSheet> {
                   TextButton(
                     onPressed: _saving ? null : () => _save(remove: true),
                     child: Text(
-                      'Sacar costo',
+                      'Usar el de la cancha',
                       style: TextStyle(color: c.destructive),
                     ),
                   ),

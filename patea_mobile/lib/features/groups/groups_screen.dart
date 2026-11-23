@@ -1,4 +1,6 @@
 import '../../core/services/ai_assist_service.dart';
+import '../../core/utils/cost_split.dart';
+import '../../core/widgets/venue_cost_sheet.dart';
 import 'dart:io';
 
 import '../../core/widgets/patea_activity_cover.dart';
@@ -467,6 +469,7 @@ class _ActiveGroupView extends ConsumerWidget {
                               (venue) => _GroupSavedVenueRow(
                                 venue: venue,
                                 groupId: groupId,
+                                canEditCost: canCreateTeam,
                               ),
                             )
                             .toList(),
@@ -1294,7 +1297,14 @@ class _GroupSavedVenueRow extends ConsumerStatefulWidget {
   final VenueModel venue;
   final String groupId;
 
-  const _GroupSavedVenueRow({required this.venue, required this.groupId});
+  /// Quién puede editar canchas del grupo (el servidor lo vuelve a exigir).
+  final bool canEditCost;
+
+  const _GroupSavedVenueRow({
+    required this.venue,
+    required this.groupId,
+    this.canEditCost = false,
+  });
 
   @override
   ConsumerState<_GroupSavedVenueRow> createState() =>
@@ -1401,6 +1411,15 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
                     ),
                   ),
                 const SizedBox(height: 2),
+                if (v.costPerMatch != null)
+                  Text(
+                    '${formatMoney(v.costPerMatch!, v.costCurrency)} por partido',
+                    style: AppTypography.body(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: context.c.primary,
+                    ),
+                  ),
                 Text(
                   '${v.usageCount} ${v.usageCount == 1 ? 'partido' : 'partidos'}',
                   style: AppTypography.body(
@@ -1412,6 +1431,18 @@ class _GroupSavedVenueRowState extends ConsumerState<_GroupSavedVenueRow> {
               ],
             ),
           ),
+          if (widget.canEditCost)
+            IconButton(
+              onPressed: () => showVenueCostSheet(context, v),
+              tooltip: v.costPerMatch == null ? 'Cargar costo' : 'Cambiar costo',
+              icon: Icon(
+                Icons.payments_outlined,
+                size: 20,
+                color: v.costPerMatch == null
+                    ? context.c.textSecondary
+                    : context.c.primary,
+              ),
+            ),
           IconButton(
             onPressed: _uploading ? null : _uploadPhoto,
             tooltip: hasPhoto ? 'Cambiar foto' : 'Subir foto',

@@ -18,6 +18,11 @@ class VenueModel {
   final bool customPhoto;
   final bool customName;
 
+  /// Lo que sale jugar un partido en esta cancha (lo carga quien administra el
+  /// grupo). Los partidos que se juegan acá lo usan para dividir el costo.
+  final double? costPerMatch;
+  final String costCurrency; // UYU, ARS, USD
+
   VenueModel({
     required this.id,
     required this.groupId,
@@ -32,6 +37,8 @@ class VenueModel {
     this.lastUsedAt,
     this.customPhoto = false,
     this.customName = false,
+    this.costPerMatch,
+    this.costCurrency = 'UYU',
   });
 
   factory VenueModel.fromFirestore(Map<String, dynamic> data, String id) {
@@ -65,6 +72,10 @@ class VenueModel {
       lastUsedAt: data['lastUsedAt'] as String?,
       customPhoto: data['customPhoto'] as bool? ?? false,
       customName: data['customName'] as bool? ?? false,
+      costPerMatch: (data['costPerMatch'] as num?)?.toDouble(),
+      costCurrency: data['costCurrency'] is String
+          ? data['costCurrency'] as String
+          : 'UYU',
     );
   }
 

@@ -1,4 +1,5 @@
 import '../models/match_model.dart';
+import '../models/venue_model.dart';
 
 /// Parte de cada jugador: el total dividido en partes iguales y redondeado
 /// hacia arriba al centavo, así lo que se junta nunca queda por debajo del
@@ -62,4 +63,35 @@ String formatMoney(double amount, String currency) {
   }
   final decimals = fraction == 0 ? '' : ',${fraction.toString().padLeft(2, '0')}';
   return '$symbol $grouped$decimals';
+}
+
+/// La cancha de un partido entre las canchas guardadas del grupo: primero por
+/// `placeId` (si lo tienen los dos) y si no, por nombre sin mayúsculas. Es la
+/// misma regla que usa el servidor para los pagos.
+VenueModel? venueForMatch(MatchModel match, List<VenueModel> venues) {
+  final loc = match.locationDetail;
+  final placeId = loc?.placeId.trim() ?? '';
+  final name = (loc?.name ?? match.location ?? '').trim().toLowerCase();
+  if (placeId.isNotEmpty) {
+    for (final v in venues) {
+      if (v.placeId.trim() == placeId) return v;
+    }
+  }
+  if (name.isEmpty) return null;
+  for (final v in venues) {
+    if (v.name.trim().toLowerCase() == name) return v;
+  }
+  return null;
+}
+
+/// El costo que rige para un partido: el propio si el organizador lo cargó (por
+/// ejemplo, un precio distinto ese día) y, si no, el de su cancha.
+MatchCost? effectiveMatchCost(MatchModel match, List<VenueModel> venues) {
+  if (match.cost != null) return match.cost;
+  final cost = venueForMatch(match, venues)?.costPerMatch;
+  if (cost == null || cost <= 0) return null;
+  return MatchCost(
+    total: cost,
+    currency: venueForMatch(match, venues)!.costCurrency,
+  );
 }
