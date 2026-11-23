@@ -11,7 +11,6 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/patea_activity_cover.dart';
 import '../../core/widgets/patea_button_progress.dart';
-import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_help_dialog.dart';
 import '../../core/widgets/patea_page_header.dart';
 import '../../core/widgets/patea_section_scene.dart';
@@ -376,116 +375,20 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
                       ? 'Las competiciones con inscripciones abiertas aparecerán acá.'
                       : 'Creá el próximo desafío de tu equipo.',
                 ),
-              for (final c in items)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: InkWell(
-                    borderRadius: AppRadii.cardAll,
-                    onTap: () => context
-                        .push(
-                          '/competitions/${c.type == 'cup' ? 'cup' : 'league'}/${c.id}',
-                        )
-                        .then((_) {
-                          if (mounted) _load();
-                        }),
-                    child: PateaCard(
-                      padding: const EdgeInsets.all(16),
-                      color: context.c.card,
-                      borderColor: context.c.border,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color:
-                                  (c.type == 'cup'
-                                          ? context.c.goldText
-                                          : context.c.primary)
-                                      .withValues(alpha: 0.12),
-                              borderRadius: AppRadii.chipAll,
-                            ),
-                            child: c.logoUrl?.trim().isNotEmpty == true
-                                ? ClipRRect(
-                                    borderRadius: AppRadii.chipAll,
-                                    child: Image.network(
-                                      c.logoUrl!,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, _, _) => Icon(
-                                        c.type == 'cup'
-                                            ? Icons.emoji_events_outlined
-                                            : Icons.leaderboard_outlined,
-                                        color: c.type == 'cup'
-                                            ? context.c.goldText
-                                            : context.c.primary,
-                                      ),
-                                    ),
-                                  )
-                                : Icon(
-                                    c.type == 'cup'
-                                        ? Icons.emoji_events_outlined
-                                        : Icons.leaderboard_outlined,
-                                    color: c.type == 'cup'
-                                        ? context.c.goldText
-                                        : context.c.primary,
-                                  ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  c.name,
-                                  style: AppTypography.headline(size: 19),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  '${c.teamIds.length} de ${c.maxTeams} equipos · ${competitionFormat(c)}',
-                                  style: AppTypography.body(
-                                    size: 13,
-                                    color: context.c.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 3,
-                                  children: [
-                                    Text(
-                                      c.isArchived
-                                          ? 'Archivada'
-                                          : competitionStatusLabel(c.status),
-                                      style: AppTypography.body(
-                                        size: 12,
-                                        weight: FontWeight.w700,
-                                        color:
-                                            !c.isArchived &&
-                                                c.status == 'in_progress'
-                                            ? context.c.primary
-                                            : context.c.textSecondary,
-                                      ),
-                                    ),
-                                    if (c.ownerUid == uid)
-                                      Text(
-                                        'Organizás este torneo',
-                                        style: AppTypography.body(
-                                          size: 12,
-                                          color: context.c.textSecondary,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right, size: 20),
-                        ],
-                      ),
-                    ),
-                  ),
+              for (final (index, competition) in items.indexed) ...[
+                if (index > 0) Divider(height: 1, color: context.c.overlayLine),
+                _CompetitionListRow(
+                  competition: competition,
+                  isOrganizer: competition.ownerUid == uid,
+                  onTap: () => context
+                      .push(
+                        '/competitions/${competition.type == 'cup' ? 'cup' : 'league'}/${competition.id}',
+                      )
+                      .then((_) {
+                        if (mounted) _load();
+                      }),
                 ),
+              ],
               if (_more)
                 OutlinedButton.icon(
                   onPressed: _loading ? null : () => _load(reset: false),
@@ -499,6 +402,117 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
                   label: Text(_loading ? 'Cargando…' : 'Cargar más torneos'),
                 ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompetitionListRow extends StatelessWidget {
+  const _CompetitionListRow({
+    required this.competition,
+    required this.isOrganizer,
+    required this.onTap,
+  });
+
+  final CompetitionModel competition;
+  final bool isOrganizer;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.c;
+    final isCup = competition.type == 'cup';
+    final status = competition.isArchived
+        ? 'Archivada'
+        : competitionStatusLabel(competition.status);
+    final active =
+        !competition.isArchived &&
+        (competition.status == 'in_progress' ||
+            competition.status == 'open_for_applications');
+    final mark = Icon(
+      isCup ? Icons.emoji_events_outlined : Icons.leaderboard_outlined,
+      color: isCup ? colors.goldText : colors.primary,
+      size: 24,
+    );
+    final logo = competition.logoUrl?.trim();
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: AppRadii.chipAll,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
+        child: Row(
+          children: [
+            SizedBox.square(
+              dimension: 36,
+              child: logo == null || logo.isEmpty
+                  ? mark
+                  : ClipRRect(
+                      borderRadius: AppRadii.chipAll,
+                      child: Image.network(
+                        logo,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => mark,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    competition.name,
+                    style: AppTypography.headline(
+                      size: 18,
+                      weight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Wrap(
+                    spacing: 9,
+                    runSpacing: 3,
+                    children: [
+                      Text(
+                        status,
+                        style: AppTypography.body(
+                          size: 12,
+                          weight: FontWeight.w700,
+                          color: active ? colors.primary : colors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        '${competition.teamIds.length}/${competition.maxTeams} equipos',
+                        style: AppTypography.body(
+                          size: 12,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      if (!isCup)
+                        Text(
+                          competitionFormat(competition),
+                          style: AppTypography.body(
+                            size: 12,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      if (isOrganizer)
+                        Text(
+                          'Organizás',
+                          style: AppTypography.body(
+                            size: 12,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, size: 19, color: colors.textSecondary),
           ],
         ),
       ),
