@@ -33,6 +33,7 @@ export { syncAchievements } from './callable/achievements';
 export { getPlayerAnalysis, coachChat } from './callable/coach';
 export { askAppHelp, getGroupSummary, recommendRecruits } from './callable/ai-assist';
 export { setMatchCost, markMatchPayment, setMatchStream } from './callable/match-extras';
+export { sendCompetitionMessage, manageCompetitionVenue, manageCompetitionSponsor } from './callable/competition-extras';
 export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteManualPlayer, findManualPlayerClaims, claimManualPlayer } from './callable/manual-player-management';
 export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations, sendPlayerMessage } from './callable/explore';
 export { submitEvaluationSubmission, requestIdentityReveal, respondToIdentityReveal, getEvaluationAudio, finalizeMatchEvaluation } from './callable/evaluations';

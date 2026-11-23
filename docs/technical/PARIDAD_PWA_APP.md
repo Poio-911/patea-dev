@@ -1,5 +1,7 @@
 # Paridad PWA → app móvil
 
+> **Actualización 23/11/2026 (noche):** el punto 5 está hecho en lo que valía la pena: avisos, sedes y patrocinadores (lo demás ya estaba o se descartó, con el motivo); falta decidir los árbitros.
+>
 > **Actualización 23/11/2026 (tarde):** el punto 4 (partidos) también está hecho desde cero, salvo las «plantillas», que resultaron ser de competición y pasan al punto 5. Detalle en el mismo documento.
 >
 > **Actualización 23/11/2026:** los puntos 1 (Logros), 2 (Configuración, sin Salud) y 3 (IA; la imagen de dúo se descartó porque la PWA no la usa) ya están hechos desde cero. Detalle en [MIGRACION_PWA_A_APP_2026-11-23.md](MIGRACION_PWA_A_APP_2026-11-23.md).

@@ -502,7 +502,9 @@ service cloud.firestore {
       allow create, update, delete: if false;
 
       match /{subcollection}/{docId} {
-        allow read: if isAuthenticated() && (subcollection != 'applications'
+        // Postulaciones y avisos: solo quien los mandó o el organizador. A los
+        // participantes los avisos les llegan como notificación.
+        allow read: if isAuthenticated() && ((subcollection != 'applications' && subcollection != 'messages')
           || resource.data.get('submittedBy', '') == request.auth.uid
           || get(/databases/$(database)/documents/leagues/$(leagueId)).data.ownerUid == request.auth.uid);
         allow write: if false;
@@ -514,7 +516,9 @@ service cloud.firestore {
       allow create, update, delete: if false;
 
       match /{subcollection}/{docId} {
-        allow read: if isAuthenticated() && (subcollection != 'applications'
+        // Postulaciones y avisos: solo quien los mandó o el organizador. A los
+        // participantes los avisos les llegan como notificación.
+        allow read: if isAuthenticated() && ((subcollection != 'applications' && subcollection != 'messages')
           || resource.data.get('submittedBy', '') == request.auth.uid
           || get(/databases/$(database)/documents/cups/$(cupId)).data.ownerUid == request.auth.uid);
         allow write: if false;

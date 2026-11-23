@@ -8,7 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader, rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:patea_mobile/core/models/competition_extras_models.dart';
+import 'package:patea_mobile/core/models/competition_model.dart';
 import 'package:patea_mobile/core/models/match_model.dart';
+import 'package:patea_mobile/core/services/competition_extras_service.dart';
+import 'package:patea_mobile/features/competitions/competition_extras.dart';
 import 'package:patea_mobile/core/theme/app_theme.dart';
 import 'package:patea_mobile/core/theme/app_typography.dart';
 import 'package:patea_mobile/features/matches/widgets/match_cost_card.dart';
@@ -24,6 +28,7 @@ Future<List<FlutterErrorDetails>> montarPantalla(
   WidgetTester tester,
   Widget pantalla, {
   required ThemeData tema,
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 3.0;
@@ -34,6 +39,7 @@ Future<List<FlutterErrorDetails>> montarPantalla(
   try {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: overrides,
         child: MaterialApp(
           theme: tema,
           debugShowCheckedModeBanner: false,
@@ -164,6 +170,70 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('../build/preview/calendario.png'),
+    );
+  });
+
+  testWidgets('sedes, patrocinadores y avisos', (tester) async {
+    final comp = CompetitionModel(
+      id: 'l1',
+      name: 'Liga de los Martes',
+      type: 'league',
+      status: 'in_progress',
+      ownerUid: 'o',
+      sponsors: const [
+        CompetitionSponsor(id: 'a', name: 'Pizzería Don Pepe', websiteUrl: 'https://donpepe.com'),
+        CompetitionSponsor(id: 'b', name: 'Ferretería Sur'),
+      ],
+    );
+    final errors = await montarPantalla(
+      tester,
+      Scaffold(
+        backgroundColor: const Color(0xFF0B1017),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            const CompetitionVenuesSection(collection: 'leagues', id: 'l1', canEdit: true),
+            const SizedBox(height: 24),
+            CompetitionSponsorsSection(competition: comp, collection: 'leagues', canEdit: true),
+            const SizedBox(height: 24),
+            const CompetitionMessagesSection(collection: 'leagues', id: 'l1'),
+          ],
+        ),
+      ),
+      tema: AppTheme.darkTheme,
+      overrides: [
+        competitionVenuesProvider(('leagues', 'l1')).overrideWith(
+          (ref) => Stream.value(const [
+            CompetitionVenue(
+              id: 'v1',
+              name: 'Club Atlético Norte',
+              address: 'Av. Italia 3456',
+              capacity: 150,
+              costPerMatch: 1800,
+              notes: 'Vestuarios y estacionamiento',
+            ),
+            CompetitionVenue(id: 'v2', name: 'Cancha del Parque'),
+          ]),
+        ),
+        competitionMessagesProvider(('leagues', 'l1')).overrideWith(
+          (ref) => Stream.value([
+            CompetitionMessage(
+              id: 'm1',
+              subject: 'Cambio de cancha',
+              body: 'El jueves jugamos en el Club Norte a las 21.',
+              audience: 'all',
+              recipientCount: 24,
+              createdAt: DateTime(2026, 11, 22, 18, 30),
+            ),
+          ]),
+        ),
+      ],
+    );
+    expect(errors, isEmpty);
+    await tester.pump(const Duration(milliseconds: 300));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('../build/preview/competicion_extras.png'),
     );
   });
 }

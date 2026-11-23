@@ -1,3 +1,5 @@
+import 'competition_extras_models.dart';
+
 class StandingRow {
   final String teamId;
   final String teamName;
@@ -121,6 +123,9 @@ class CompetitionModel {
   final List<BracketMatchModel> bracket;
   final List<StandingRow> standings;
 
+  /// Quiénes apoyan la competición (los carga el organizador).
+  final List<CompetitionSponsor> sponsors;
+
   CompetitionModel({
     required this.id,
     required this.name,
@@ -147,6 +152,7 @@ class CompetitionModel {
     this.teamIds = const [],
     this.bracket = const [],
     this.standings = const [],
+    this.sponsors = const [],
   });
 
   factory CompetitionModel.fromFirestore(
@@ -200,6 +206,7 @@ class CompetitionModel {
       standings: rawStandings
           .map((s) => StandingRow.fromMap(s as Map<String, dynamic>))
           .toList(),
+      sponsors: CompetitionSponsor.listFrom(data['sponsors']),
     );
   }
 }

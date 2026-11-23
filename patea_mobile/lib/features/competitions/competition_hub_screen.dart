@@ -1,3 +1,4 @@
+import 'competition_extras.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -343,6 +344,8 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
             if (comp.type == 'league') 'Tabla',
             'Equipos',
             'Datos',
+            'Sedes',
+            if (owner) 'Avisos',
             if (owner) 'Gestión',
           ];
           final selected = _tab.clamp(0, tabs.length - 1),
@@ -381,6 +384,26 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                       ..._table(comp, table, teams, team?.id),
                     if (active == 'Equipos') ..._teams(comp, teams, names),
                     if (active == 'Datos') ..._stats(matches),
+                    if (active == 'Sedes')
+                      CompetitionVenuesSection(
+                        collection: widget.collection,
+                        id: widget.id,
+                        canEdit: owner && !comp.isArchived,
+                      ),
+                    if (active == 'Avisos')
+                      CompetitionMessagesSection(
+                        collection: widget.collection,
+                        id: widget.id,
+                      ),
+                    if (active == 'Resumen' && comp.sponsors.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: CompetitionSponsorsSection(
+                          competition: comp,
+                          collection: widget.collection,
+                          canEdit: false,
+                        ),
+                      ),
                     if (active == 'Gestión') ...[
                       Text(
                         'Tu torneo, bien organizado',
@@ -433,6 +456,14 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                           label: const Text('Cerrar liga y confirmar campeón'),
                         ),
                       const SizedBox(height: 28),
+                      if (!comp.isArchived) ...[
+                        CompetitionSponsorsSection(
+                          competition: comp,
+                          collection: widget.collection,
+                          canEdit: true,
+                        ),
+                        const SizedBox(height: 28),
+                      ],
                       CompetitionApplicationsPanel(competition: comp),
                     ],
                   ],

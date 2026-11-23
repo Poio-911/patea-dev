@@ -57,6 +57,8 @@ IconData _iconForType(String? type) {
       return Icons.trending_up_rounded;
     case 'achievement_unlocked':
       return Icons.emoji_events_rounded;
+    case 'competition_message':
+      return Icons.campaign_outlined;
     case 'identity_reveal_requested':
       return Icons.shield_outlined;
     default:

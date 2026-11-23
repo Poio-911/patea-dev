@@ -87,6 +87,26 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 
 **Estado de este punto:** las tres funciones (`setMatchCost`, `markMatchPayment`, `setMatchStream`) están desplegadas. Probado en el emulador con datos reales: el calendario y el aviso de sin conexión (se cortó el wifi y apareció la franja roja; al volver se ocultó, pero no llegué a ver el texto «Conexión restaurada»). **Sin probar en el teléfono**: cargar el costo, marcar pagos y cargar la transmisión, porque la cuenta del emulador no administra ningún partido; se vieron en las vistas previas (`tool/match_extras_preview_test.dart`) y la lógica está probada con tests. Nota de diseño: la franja de sin conexión se dibuja encima del encabezado de la app y lo tapa mientras dura.
 
+## 5. Competiciones y portal del organizador (primera parte)
+
+**Qué ya tenía la app** y no se tocó: lista con alcance grupo/público y búsqueda, resumen, fechas y cruces, tabla, equipos, datos (goles, asistencias, disciplina), postulaciones, gestión (configurar, iniciar, cerrar, archivar). Por eso el «explorador público» y la «búsqueda» del informe ya estaban cubiertos.
+
+**Qué se hizo, desde cero** (`functions/src/callable/competition-extras.ts`, `lib/competition-extras.ts`; app en `features/competitions/competition_extras.dart`)
+- **Avisos** (`sendCompetitionMessage`): el organizador manda un asunto y un mensaje (hasta 80 y 500 caracteres) a todos los equipos o solo a los capitanes. El servidor arma los destinatarios (solo personas con cuenta, nunca el propio organizador) y les llega como notificación; queda un historial en `…/messages`, que **solo lee el organizador** (se cerró en `firestore.rules`). Tope de 5 avisos por hora por competición. Pestaña «Avisos», solo para el organizador.
+- **Sedes** (`manageCompetitionVenue`): agregar, editar y sacar canchas (nombre, dirección, capacidad, costo por partido, notas; hasta 30). Subcolección `…/venues`, visible para todos. Pestaña «Sedes»; el organizador edita, los demás miran.
+- **Patrocinadores** (`manageCompetitionSponsor`): nombre y enlace https opcional (hasta 12), en el campo `sponsors` de la competición. Se ven en «Resumen» como «Con el apoyo de» y se administran en «Gestión». **Sin logo**: subir imágenes de terceros pide un flujo de carga y moderación que no se hizo; si el patrocinador ya tiene logo cargado desde la web, se conserva al editar.
+- Seguridad: solo el organizador (`ownerUid`) escribe; no se permite en competiciones archivadas o canceladas; los enlaces deben ser https sin usuario ni contraseña.
+
+**Se decidió no migrar**
+- **Analíticas y juego limpio**: lo que muestran (goles, tarjetas, puntos por tarjetas) sale de los mismos eventos que ya alimentan «Datos» y el resumen; no aportan algo que el organizador no vea hoy.
+- **Código QR para compartir**: necesita una dirección pública estable de la competición y la app todavía no tiene enlaces profundos.
+- **Portal aparte del organizador** (login y perfil de organizador): en la app hay una sola cuenta; no hace falta un acceso distinto.
+- **Plantillas de competición**: guardan reglas y formato para reutilizar al crear un torneo. No se hicieron: dependen del asistente de creación, que es otro frente.
+
+**Falta de este punto**
+- **Árbitros** (asignar árbitros a los partidos y evaluarlos): es lo más grande que queda y requiere decidir el modelo (¿lista propia de árbitros o personas de la app?). Sin hacer.
+- Probar las tres funciones nuevas con un organizador real y desplegar (funciones y reglas).
+
 ## Decidido no migrar
 
 - **Imagen de dúo** (`generate-duo-image` de la PWA): no se migra. La acción `generateDuoImageAction` existe pero **ninguna pantalla de la PWA la llama** (se buscó en todo `src`), así que no hay una función de producto que trasladar. Además genera imágenes con la cara de otra persona a partir de su foto, y eso pide un consentimiento que hoy no existe. Si algún día se quiere, hay que diseñarla como función nueva, con ese permiso explícito y sus créditos (en iOS, solo se compran en la tienda).
@@ -95,5 +115,5 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 
 - **Sugerencias de refuerzos**: desplegada y con la lógica probada, pero sin ver andar con el modelo en un partido real: hace falta un partido propio con lugares libres y gente. Cuidado al probarla: crear un partido en el proyecto real avisa por push a todo el grupo. Las pruebas de permisos y casos vacíos están en `functions/test/ai-assist.emulator.test.cjs` (pide el emulador de Firestore, que necesita Java 21; localmente hay Java 17, así que corre en CI y todavía no se ejecutó).
 - **Google Fit / Salud**: sin hacer (ver arriba).
-- Del informe [PARIDAD_PWA_APP.md](PARIDAD_PWA_APP.md): puntos 5 (competiciones y portal del organizador, que ahora incluye las plantillas de competición) y 6 (Comunidad).
+- Del informe [PARIDAD_PWA_APP.md](PARIDAD_PWA_APP.md): el punto 5 solo en lo que falta (árbitros) y el 6 (Comunidad: ticker de actividad y rankings por categoría).
 - **Rediseño**: las pantallas nuevas siguen el estilo actual, que se quiere rediseñar completo.
