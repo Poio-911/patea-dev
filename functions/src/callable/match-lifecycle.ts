@@ -629,7 +629,37 @@ export const finalizePendingMatches = onCall({ region: 'us-central1' }, async (r
     // empate falso al historial de rivales. Se elimina o se juega.
     if (match.status !== 'upcoming' || competitionTypes.has(String(match.type)) || isTeamMatch(match)) continue;
 
+    const playerUids: string[] = (Array.isArray(match.playerUids) ? match.playerUids : [])
+      .map(String)
+      .filter((id) => Boolean(id) && !id.startsWith('guest_'));
+    const playerDocs = playerUids.length > 0
+      ? await db.getAll(...playerUids.map((id) => db.collection('players').doc(id)))
+      : [];
+    const allPlayers: LifecyclePlayer[] = playerDocs
+      .filter((doc) => doc.exists)
+      .map((doc) => ({ id: doc.id, ...(doc.data() as Record<string, unknown>) }));
+    const teams = Array.isArray(match.teams) ? (match.teams as LifecycleTeam[]) : undefined;
+    const assignments = generateEvaluationAssignments(
+      { id: matchDoc.id, playerUids, teams },
+      allPlayers,
+    );
+
     batch.update(matchDoc.ref, { status: 'completed', finalizedAt });
+    for (const assignment of assignments) {
+      batch.set(db.collection(`matches/${matchDoc.id}/assignments`).doc(), assignment);
+    }
+    const uniqueEvaluatorIds = [...new Set(assignments.map((a) => a.evaluatorId))];
+    for (const evaluatorId of uniqueEvaluatorIds) {
+      batch.set(db.collection(`users/${evaluatorId}/notifications`).doc(), {
+        type: 'evaluation_pending',
+        title: '¡Evaluación pendiente!',
+        message: `Es hora de evaluar a tus compañeros del partido "${match.title ?? ''}".`,
+        link: `/evaluations/${matchDoc.id}`,
+        isRead: false,
+        createdAt: finalizedAt,
+        metadata: { fromUserId: uid },
+      });
+    }
     finalizedCount += 1;
   }
 
