@@ -92,8 +92,8 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 **Qué ya tenía la app** y no se tocó: lista con alcance grupo/público y búsqueda, resumen, fechas y cruces, tabla, equipos, datos (goles, asistencias, disciplina), postulaciones, gestión (configurar, iniciar, cerrar, archivar). Por eso el «explorador público» y la «búsqueda» del informe ya estaban cubiertos.
 
 **Qué se hizo, desde cero** (`functions/src/callable/competition-extras.ts`, `lib/competition-extras.ts`; app en `features/competitions/competition_extras.dart`)
-- **Avisos** (`sendCompetitionMessage`): el organizador manda un asunto y un mensaje (hasta 80 y 500 caracteres) a todos los equipos o solo a los capitanes. El servidor arma los destinatarios (solo personas con cuenta, nunca el propio organizador) y les llega como notificación; queda un historial en `…/messages`, que **solo lee el organizador** (se cerró en `firestore.rules`). Tope de 5 avisos por hora por competición. Pestaña «Avisos», solo para el organizador.
-- **Sedes** (`manageCompetitionVenue`): agregar, editar y sacar canchas (nombre, dirección, capacidad, costo por partido, notas; hasta 30). Subcolección `…/venues`, visible para todos. Pestaña «Sedes»; el organizador edita, los demás miran.
+- **Avisos** (`sendCompetitionMessage`): el organizador manda un asunto y un mensaje (hasta 80 y 500 caracteres) a todos los equipos o solo a los capitanes. El servidor arma los destinatarios (solo personas con cuenta, nunca el propio organizador) y les llega como notificación; queda un historial en `…/messages`, que **solo lee el organizador** (se cerró en `firestore.rules`). Tope de 5 avisos por hora por competición. Vive dentro de «Gestión» (solo organizador), junto con los patrocinadores y las postulaciones.
+- **Sedes** (`manageCompetitionVenue`): agregar, editar y sacar canchas (nombre, dirección, capacidad, costo por partido, notas; hasta 30). Subcolección `…/venues`, visible para todos. Pestaña «Sedes» (al final de la barra); el organizador edita, los demás miran.
 - **Patrocinadores** (`manageCompetitionSponsor`): nombre y enlace https opcional (hasta 12), en el campo `sponsors` de la competición. Se ven en «Resumen» como «Con el apoyo de» y se administran en «Gestión». **Sin logo**: subir imágenes de terceros pide un flujo de carga y moderación que no se hizo; si el patrocinador ya tiene logo cargado desde la web, se conserva al editar.
 - Seguridad: solo el organizador (`ownerUid`) escribe; no se permite en competiciones archivadas o canceladas; los enlaces deben ser https sin usuario ni contraseña.
 
@@ -105,7 +105,9 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 
 **Falta de este punto**
 - **Árbitros** (asignar árbitros a los partidos y evaluarlos): es lo más grande que queda y requiere decidir el modelo (¿lista propia de árbitros o personas de la app?). Sin hacer.
-- Probar las tres funciones nuevas con un organizador real y desplegar (funciones y reglas).
+- Probado en el emulador con una copa de prueba (`Copa_de_prueba_organizador`, borrador, solo del grupo, con una sede `Cancha_de_prueba`): crear sede, verla al instante, y ver Gestión con patrocinadores y el historial de avisos. **No se envió ningún aviso** (le llegaría a los jugadores de los equipos) ni se cargó un patrocinador.
+- La copa y la sede de prueba quedaron en el proyecto real; se pueden borrar desde la app o la consola.
+- Al probarlo apareció un error preexistente de `PateaTabs` (en barras que desbordan, las últimas pestañas eran inalcanzables); está corregido con test.
 
 ## Decidido no migrar
 
