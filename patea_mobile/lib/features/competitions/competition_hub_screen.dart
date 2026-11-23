@@ -10,6 +10,8 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/patea_avatar.dart';
+import '../../core/widgets/patea_activity_cover.dart';
+import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
@@ -223,7 +225,8 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          c?.name ?? (widget.collection == 'cups' ? 'Copa' : 'Liga'),
+          (_tab == 0 ? null : c?.name) ??
+              (widget.collection == 'cups' ? 'Copa' : 'Liga'),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.headline(size: 20, weight: FontWeight.w700),
@@ -343,7 +346,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
             comp.type == 'cup' ? 'Cruces' : 'Fechas',
             if (comp.type == 'league') 'Tabla',
             'Equipos',
-            'Datos',
+            'Estadísticas',
             // Gestión sigue donde estaba para el organizador; Sedes va al final.
             if (owner) 'Gestión',
             'Sedes',
@@ -363,6 +366,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
               ),
               Expanded(
                 child: ListView(
+                  key: PageStorageKey('competition-${comp.id}-$active'),
                   padding: const EdgeInsets.fromLTRB(18, 20, 18, 32),
                   children: [
                     if (active == 'Resumen')
@@ -383,7 +387,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                     if (active == 'Tabla')
                       ..._table(comp, table, teams, team?.id),
                     if (active == 'Equipos') ..._teams(comp, teams, names),
-                    if (active == 'Datos') ..._stats(matches),
+                    if (active == 'Estadísticas') ..._stats(matches),
                     if (active == 'Sedes')
                       CompetitionVenuesSection(
                         collection: widget.collection,
@@ -401,14 +405,14 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                       ),
                     if (active == 'Gestión') ...[
                       Text(
-                        'Tu torneo, bien organizado',
+                        'Gestión del torneo',
                         style: AppTypography.headline(size: 24),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         comp.isArchived
                             ? 'Está archivado. Restauralo para volver a administrar sus acciones.'
-                            : 'Los cambios deportivos se habilitan según el estado del torneo.',
+                            : '${competitionStatusLabel(comp.status)} · ${comp.teamIds.length} de ${comp.maxTeams} equipos',
                         style: AppTypography.body(
                           size: 14,
                           color: context.c.textSecondary,
@@ -520,22 +524,39 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
             .firstOrNull;
     final row = table.where((r) => r.teamId == team?.id).firstOrNull;
     final done = matches.where(confirmedMatch).length;
+    final isCup = c.type == 'cup';
+    final status = c.isArchived
+        ? 'Archivada'
+        : competitionStatusLabel(c.status);
+    final format = competitionFormat(c);
     return [
-      Text(
-        c.isArchived ? 'Archivada' : competitionStatusLabel(c.status),
-        style: AppTypography.body(
-          size: 14,
-          color: c.status == 'in_progress'
-              ? context.c.primary
-              : context.c.textSecondary,
-        ),
+      PateaActivityCover(
+        image: isCup
+            ? PateaSectionScene.competitions
+            : PateaSectionScene.league,
+        title: c.name,
+        details: '$status · $format',
+        compact: true,
       ),
-      const SizedBox(height: 8),
-      Text(c.name, style: AppTypography.headline(size: 29)),
-      const SizedBox(height: 8),
-      Text(
-        '${competitionFormat(c)} · ${c.teamIds.length}/${c.maxTeams} equipos${c.type == 'league' ? ' · ${c.matchFrequency == 'biweekly' ? 'Quincenal' : 'Semanal'}' : ''}',
-        style: AppTypography.body(size: 14, color: context.c.textSecondary),
+      const SizedBox(height: 14),
+      Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          FilledButton.icon(
+            onPressed: () => setState(() => _tab = isCup ? 1 : 2),
+            icon: Icon(
+              isCup ? Icons.account_tree_outlined : Icons.leaderboard_outlined,
+            ),
+            label: Text(isCup ? 'Ver cruces' : 'Ver tabla'),
+          ),
+          if (!isCup)
+            TextButton.icon(
+              onPressed: () => setState(() => _tab = 1),
+              icon: const Icon(Icons.calendar_month_outlined),
+              label: const Text('Ver fechas'),
+            ),
+        ],
       ),
       if (c.description?.isNotEmpty == true)
         Padding(
@@ -547,8 +568,14 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
         spacing: 28,
         runSpacing: 16,
         children: [
-          _Metric('$done', 'Partidos finalizados'),
-          _Metric('${matches.length}', 'Partidos creados'),
+          _Metric('${c.teamIds.length}/${c.maxTeams}', 'Equipos'),
+          if (matches.isNotEmpty)
+            _Metric('$done/${matches.length}', 'Partidos finalizados'),
+          if (!isCup)
+            _Metric(
+              c.matchFrequency == 'biweekly' ? 'Quincenal' : 'Semanal',
+              'Frecuencia',
+            ),
         ],
       ),
       if (c.championTeamId != null) ...[
@@ -556,7 +583,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.emoji_events, color: context.c.primary, size: 36),
+            Icon(Icons.emoji_events, color: context.c.goldText, size: 36),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -835,7 +862,12 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
             ),
           );
     return [
-      Text('Una fecha a la vez', style: AppTypography.headline(size: 24)),
+      Text('Fixture', style: AppTypography.headline(size: 24)),
+      const SizedBox(height: 4),
+      Text(
+        '${rounds.length} ${rounds.length == 1 ? 'fecha' : 'fechas'}',
+        style: AppTypography.body(size: 13, color: context.c.textSecondary),
+      ),
       const SizedBox(height: 12),
       PateaTabs(
         tabs: [for (final r in rounds) PateaTab('Fecha $r')],
@@ -892,156 +924,166 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
       'semifinals',
       'final',
     ];
-    final available = order
-        .where((r) => c.bracket.any((b) => b.round == r))
-        .toList();
+    final available = {
+      ...order.where((round) => c.bracket.any((match) => match.round == round)),
+      ...c.bracket.map((match) => match.round),
+    }.toList();
     final selected = available.contains(_cupRound)
         ? _cupRound!
         : available.contains(c.currentRound)
         ? c.currentRound!
         : c.bracket.where((b) => b.winnerId == null).firstOrNull?.round ??
               available.last;
+    final roundMatches = <String, List<BracketMatchModel>>{
+      for (final round in available)
+        round: c.bracket.where((match) => match.round == round).toList(),
+    };
+    final byId = {
+      for (final match in matches)
+        if (match['id'] case final String id) id: match,
+    };
     final cards = [
-      for (final b in c.bracket.where(
-        (b) => _fullBracket || b.round == selected,
-      ))
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_fullBracket)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    roundLabel(b.round),
-                    style: AppTypography.body(
-                      size: 13,
-                      color: context.c.textSecondary,
-                    ),
-                  ),
-                ),
-              if (matches.any((m) => m['id'] == b.matchId))
-                _card(c, matches.firstWhere((m) => m['id'] == b.matchId), owner)
-              else
-                PateaCard(
-                  color: context.c.card,
-                  borderColor: context.c.border,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        '${b.team1Name ?? 'Equipo por definir'}  vs  ${b.team2Name ?? 'Equipo por definir'}',
-                        style: AppTypography.headline(size: 18),
-                      ),
-                      if (b.scoreTeam1 != null && b.scoreTeam2 != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            '${b.scoreTeam1} — ${b.scoreTeam2}',
-                            style: AppTypography.sportNumber(size: 30),
-                          ),
-                        ),
-                      if (b.winnerId != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            'Avanza ${b.winnerId == b.team1Id ? b.team1Name : b.team2Name}',
-                            style: AppTypography.body(
-                              size: 14,
-                              color: context.c.primary,
-                            ),
-                          ),
-                        ),
-                      if (b.matchId != null)
-                        Consumer(
-                          builder: (context, ref, _) => ref
-                              .watch(singleMatchStreamProvider(b.matchId!))
-                              .when(
-                                loading: () => const LinearProgressIndicator(),
-                                error: (e, _) => TextButton(
-                                  onPressed: () => ref.invalidate(
-                                    singleMatchStreamProvider(b.matchId!),
-                                  ),
-                                  child: const Text(
-                                    'Reintentar vínculo al partido',
-                                  ),
-                                ),
-                                data: (match) => match == null
-                                    ? Padding(
-                                        padding: const EdgeInsets.only(top: 12),
-                                        child: Text(
-                                          'El partido vinculado ya no está disponible. Se conserva el resultado del cruce.',
-                                          style: AppTypography.body(
-                                            size: 13,
-                                            color: context.c.textSecondary,
-                                          ),
-                                        ),
-                                      )
-                                    : TextButton.icon(
-                                        onPressed: () => _openCup(b),
-                                        icon: const Icon(Icons.open_in_new),
-                                        label: const Text('Abrir partido'),
-                                      ),
-                              ),
-                        )
-                      else if (b.winnerId == null &&
-                          b.team1Id != null &&
-                          b.team2Id != null &&
-                          owner &&
-                          !c.isArchived)
-                        FilledButton.icon(
-                          onPressed: _busy ? null : () => _openCup(b),
-                          icon: const Icon(Icons.sports_soccer),
-                          label: const Text('Preparar y abrir partido'),
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Text(
-                            b.winnerId != null
-                                ? 'Resultado histórico sin partido vinculado'
-                                : b.team1Id == null || b.team2Id == null
-                                ? 'Esperando ganadores de la ronda anterior'
-                                : 'El organizador todavía no preparó el partido.',
-                            style: AppTypography.body(
-                              size: 13,
-                              color: context.c.textSecondary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-    ];
-    return [
-      Row(
-        children: [
-          Expanded(
+      for (final round in (_fullBracket ? available : [selected])) ...[
+        if (_fullBracket)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8, top: 8),
             child: Text(
-              'La próxima ronda se gana acá',
-              style: AppTypography.headline(size: 23),
+              roundLabel(round),
+              style: AppTypography.headline(size: 18),
             ),
           ),
-          IconButton(
-            tooltip: _fullBracket ? 'Ver ronda actual' : 'Ver cuadro completo',
+        for (final b in roundMatches[round] ?? const <BracketMatchModel>[])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (byId[b.matchId] case final match?)
+                  _card(c, match, owner)
+                else
+                  PateaCard(
+                    color: context.c.card,
+                    borderColor: context.c.border,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        CompetitionScoreLine(
+                          name: b.team1Name ?? 'Equipo por definir',
+                          score: b.scoreTeam1,
+                          emphasized:
+                              b.winnerId != null && b.winnerId == b.team1Id,
+                        ),
+                        Divider(height: 10, color: context.c.overlayLine),
+                        CompetitionScoreLine(
+                          name: b.team2Name ?? 'Equipo por definir',
+                          score: b.scoreTeam2,
+                          emphasized:
+                              b.winnerId != null && b.winnerId == b.team2Id,
+                        ),
+                        if (b.winnerId != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'Avanza ${b.winnerId == b.team1Id ? b.team1Name : b.team2Name}',
+                              style: AppTypography.body(
+                                size: 14,
+                                color: context.c.primary,
+                              ),
+                            ),
+                          ),
+                        if (b.matchId != null)
+                          Consumer(
+                            builder: (context, ref, _) => ref
+                                .watch(singleMatchStreamProvider(b.matchId!))
+                                .when(
+                                  loading: () =>
+                                      const LinearProgressIndicator(),
+                                  error: (e, _) => TextButton(
+                                    onPressed: () => ref.invalidate(
+                                      singleMatchStreamProvider(b.matchId!),
+                                    ),
+                                    child: const Text(
+                                      'Reintentar vínculo al partido',
+                                    ),
+                                  ),
+                                  data: (match) => match == null
+                                      ? Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 12,
+                                          ),
+                                          child: Text(
+                                            'El partido vinculado ya no está disponible. Se conserva el resultado del cruce.',
+                                            style: AppTypography.body(
+                                              size: 13,
+                                              color: context.c.textSecondary,
+                                            ),
+                                          ),
+                                        )
+                                      : TextButton.icon(
+                                          onPressed: () => _openCup(b),
+                                          icon: const Icon(Icons.open_in_new),
+                                          label: const Text('Abrir partido'),
+                                        ),
+                                ),
+                          )
+                        else if (b.winnerId == null &&
+                            b.team1Id != null &&
+                            b.team2Id != null &&
+                            owner &&
+                            !c.isArchived)
+                          FilledButton.icon(
+                            onPressed: _busy ? null : () => _openCup(b),
+                            icon: const Icon(Icons.sports_soccer),
+                            label: const Text('Preparar y abrir partido'),
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Text(
+                              b.winnerId != null
+                                  ? 'Resultado histórico sin partido vinculado'
+                                  : b.team1Id == null || b.team2Id == null
+                                  ? 'Esperando ganadores de la ronda anterior'
+                                  : 'El organizador todavía no preparó el partido.',
+                              style: AppTypography.body(
+                                size: 13,
+                                color: context.c.textSecondary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    ];
+    return [
+      Text('Cuadro de la copa', style: AppTypography.headline(size: 24)),
+      if (available.length > 1)
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
             onPressed: () => setState(() => _fullBracket = !_fullBracket),
             icon: Icon(
               _fullBracket
                   ? Icons.view_agenda_outlined
                   : Icons.account_tree_outlined,
+              size: 18,
             ),
+            label: Text(_fullBracket ? 'Ver por ronda' : 'Ver cuadro completo'),
           ),
-        ],
-      ),
-      const SizedBox(height: 12),
+        )
+      else
+        const SizedBox(height: 12),
       if (!_fullBracket)
         PateaTabs(
-          tabs: [for (final r in available) PateaTab(roundLabel(r))],
+          tabs: [
+            for (final round in available)
+              PateaTab(roundLabel(round), count: roundMatches[round]!.length),
+          ],
           active: available.indexOf(selected),
           onChanged: (i) => setState(() => _cupRound = available[i]),
         ),
@@ -1057,7 +1099,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
     String? mine,
   ) {
     return [
-      Text('Cada punto cuenta', style: AppTypography.headline(size: 24)),
+      Text('Tabla de posiciones', style: AppTypography.headline(size: 24)),
       const SizedBox(height: 8),
       Text(
         'Orden: puntos, diferencia de goles y goles a favor. Tocá un equipo para ver su campaña.',
@@ -1069,7 +1111,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
         child: Row(
           children: [
             Expanded(
-              child: Text('Equipo', style: AppTypography.body(size: 12)),
+              child: Text('Pos. / Equipo', style: AppTypography.body(size: 12)),
             ),
             for (final s in ['PJ', 'DG', 'Pts'])
               SizedBox(
@@ -1091,6 +1133,12 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
           tilePadding: const EdgeInsets.symmetric(horizontal: 8),
           childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 18),
           showTrailingIcon: false,
+          backgroundColor: context.c.card,
+          collapsedBackgroundColor: rows[i].teamId == mine
+              ? context.c.primary.withValues(alpha: 0.08)
+              : i.isEven
+              ? context.c.card
+              : Colors.transparent,
           title: Row(
             children: [
               SizedBox(
@@ -1115,20 +1163,25 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                   ),
                 ),
               ),
-              for (final v in [
-                rows[i].played,
-                rows[i].goalDiff,
-                rows[i].points,
+              for (final (value, points) in [
+                (rows[i].played, false),
+                (rows[i].goalDiff, false),
+                (rows[i].points, true),
               ])
                 SizedBox(
                   width: 38,
                   child: Text(
-                    '$v',
+                    '$value',
                     textAlign: TextAlign.center,
-                    style: AppTypography.body(
-                      size: 15,
-                      weight: FontWeight.w600,
-                    ),
+                    style: points
+                        ? AppTypography.sportNumber(
+                            size: 19,
+                            color: context.c.primary,
+                          )
+                        : AppTypography.body(
+                            size: 14,
+                            color: context.c.textSecondary,
+                          ),
                   ),
                 ),
             ],
@@ -1169,7 +1222,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
     List<GroupTeamModel> teams,
     Map<String, String> names,
   ) => [
-    Text('Los que salen a la cancha', style: AppTypography.headline(size: 24)),
+    Text('Equipos inscritos', style: AppTypography.headline(size: 24)),
     const SizedBox(height: 16),
     for (final id in c.teamIds) ...[
       if (teams.any((t) => t.id == id))
@@ -1277,10 +1330,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
         )
         .toList();
     return [
-      Text(
-        'Los nombres de este torneo',
-        style: AppTypography.headline(size: 24),
-      ),
+      Text('Estadísticas del torneo', style: AppTypography.headline(size: 24)),
       const SizedBox(height: 8),
       Text(
         'Sólo partidos finalizados. Se muestran goles, asistencias y tarjetas con autor registrado.',

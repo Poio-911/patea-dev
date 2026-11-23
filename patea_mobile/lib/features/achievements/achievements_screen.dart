@@ -62,12 +62,12 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
               ),
               children: [
                 PateaActivityCover(
-                  image: 'assets/brand/patea_competitions.webp',
+                  image: 'assets/brand/patea_ranking.webp',
                   compact: true,
                   title: 'Vitrina de logros',
                   details: unlocked == total && total > 0
-                      ? 'Completaste los $total logros disponibles.'
-                      : '$unlocked de $total conseguidos · $inProgress en progreso',
+                      ? 'Completaste todos los logros disponibles.'
+                      : '',
                 ),
                 const SizedBox(height: 14),
                 _Summary(result: result),
@@ -134,7 +134,10 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
             Expanded(
               child: Text(
                 category.label,
-                style: AppTypography.headline(size: 16, weight: FontWeight.w700),
+                style: AppTypography.headline(
+                  size: 16,
+                  weight: FontWeight.w700,
+                ),
               ),
             ),
             Text(
@@ -385,7 +388,11 @@ class _NewChip extends StatelessWidget {
     ),
     child: Text(
       'NUEVO',
-      style: AppTypography.code(size: 10, weight: FontWeight.w800, color: color),
+      style: AppTypography.code(
+        size: 10,
+        weight: FontWeight.w800,
+        color: color,
+      ),
     ),
   );
 }

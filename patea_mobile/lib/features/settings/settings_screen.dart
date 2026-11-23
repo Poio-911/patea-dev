@@ -15,8 +15,8 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/theme_mode_provider.dart';
 import '../../core/utils/legal_links.dart';
+import '../../core/utils/photo_url.dart';
 import '../../core/widgets/credits_store_sheet.dart';
-import '../../core/widgets/cropped_photo.dart';
 import '../../core/widgets/delete_account_flow.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_card.dart';
@@ -46,7 +46,10 @@ class SettingsScreen extends ConsumerWidget {
     final player = uid.isEmpty
         ? null
         : ref.watch(singlePlayerStreamProvider(uid)).asData?.value;
-    final notificationsOn = ref.watch(notificationsAllowedProvider).asData?.value;
+    final notificationsOn = ref
+        .watch(notificationsAllowedProvider)
+        .asData
+        ?.value;
     final blocked =
         ref.watch(blockedUidsStreamProvider).asData?.value ?? const {};
     final selectedTheme = ref.watch(themeControllerProvider);
@@ -80,17 +83,15 @@ class SettingsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    ClipOval(
-                      child: CroppedPhoto(
-                        cropX: player?.cropX ?? 50,
-                        cropY: player?.cropY ?? 50,
-                        cropZoom: player?.cropZoom ?? 1,
-                        child: PateaAvatar(
-                          photoUrl: player?.photoUrl,
-                          seed: uid.isEmpty ? 'yo' : uid,
-                          size: 58,
-                        ),
-                      ),
+                    PateaAvatar(
+                      photoUrl:
+                          nonEmptyPhotoUrl(player?.photoUrl) ??
+                          ref.watch(currentAuthPhotoUrlProvider),
+                      seed: uid.isEmpty ? 'yo' : uid,
+                      size: 58,
+                      cropX: player?.cropX ?? 50,
+                      cropY: player?.cropY ?? 50,
+                      cropZoom: player?.cropZoom ?? 1,
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -559,8 +560,9 @@ class _BlockedUsersSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final blocked = (ref.watch(blockedUidsStreamProvider).asData?.value ?? const {})
-        .toList();
+    final blocked =
+        (ref.watch(blockedUidsStreamProvider).asData?.value ?? const {})
+            .toList();
     return PateaCard(
       color: c.popover,
       radius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -635,8 +637,10 @@ class _BlockedTileState extends ConsumerState<_BlockedTile> {
 
   @override
   Widget build(BuildContext context) {
-    final player =
-        ref.watch(singlePlayerStreamProvider(widget.uid)).asData?.value;
+    final player = ref
+        .watch(singlePlayerStreamProvider(widget.uid))
+        .asData
+        ?.value;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: PateaAvatar(

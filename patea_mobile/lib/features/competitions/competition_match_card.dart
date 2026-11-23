@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/models/group_model.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/dates.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/patea_card.dart';
@@ -25,8 +26,17 @@ class CompetitionMatchCard extends StatelessWidget {
         live = match['status'] == 'active',
         done = confirmedMatch(match);
     Map side(int i) => teams.length > i ? teams[i] as Map : {};
-    final day = DateTime.tryParse((match['date'] ?? '').toString());
-    final place = match['location'] is Map ? match['location'] as Map : {};
+    final date = match['date']?.toString() ?? '';
+    final time = match['time']?.toString().trim() ?? '';
+    final rawPlace = match['location'];
+    final place =
+        (rawPlace is Map ? rawPlace['name'] : rawPlace)?.toString().trim() ??
+        '';
+    final when = [
+      if (date.isNotEmpty) fmtDate(date),
+      if (time.isNotEmpty) '$time hs',
+      if (place.isNotEmpty) place,
+    ].join(' · ');
     final pair = match['participantTeamIds'] as List? ?? [];
     final penalty = pair.indexOf(match['penaltyWinnerId']);
     return PateaCard(
@@ -48,62 +58,39 @@ class CompetitionMatchCard extends StatelessWidget {
                   color: live ? context.c.primary : context.c.textSecondary,
                 ),
               ),
-              if (day != null)
+              if (when.isNotEmpty)
                 Text(
-                  '${day.day}/${day.month} · ${match['time'] ?? ''}',
+                  when,
                   style: AppTypography.body(
-                    size: 13,
+                    size: 12,
                     color: context.c.textSecondary,
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              for (var i = 0; i < 2; i++) ...[
-                if (i == 1)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      (done || live) && score != null
-                          ? '${score['team1']} — ${score['team2']}'
-                          : 'vs',
-                      style: (done || live) && score != null
-                          ? AppTypography.sportNumber(size: 28)
-                          : AppTypography.body(
-                              size: 20,
-                              color: context.c.textSecondary,
-                            ),
-                    ),
-                  ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      JerseyWidget(
-                        jersey: JerseyModel.fromMap(
-                          side(i)['jersey'] is Map
-                              ? Map<String, dynamic>.from(side(i)['jersey'])
-                              : null,
-                        ),
-                        size: 42,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        (side(i)['name'] ?? 'Equipo por definir').toString(),
-                        textAlign: TextAlign.center,
-                        style: AppTypography.body(
-                          size: 15,
-                          weight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < 2; i++) ...[
+            if (i == 1) Divider(height: 10, color: context.c.overlayLine),
+            CompetitionScoreLine(
+              name: (side(i)['name'] ?? 'Equipo por definir').toString(),
+              jersey: side(i)['jersey'] is Map
+                  ? JerseyModel.fromMap(
+                      Map<String, dynamic>.from(side(i)['jersey']),
+                    )
+                  : null,
+              score: (done || live) && score != null
+                  ? score[i == 0 ? 'team1' : 'team2']
+                  : null,
+              emphasized:
+                  done &&
+                  (penalty >= 0
+                      ? penalty == i
+                      : score != null &&
+                            (i == 0
+                                ? score['team1']! > score['team2']!
+                                : score['team2']! > score['team1']!)),
+            ),
+          ],
           if (penalty >= 0 && penalty < 2)
             Padding(
               padding: const EdgeInsets.only(top: 10),
@@ -111,17 +98,6 @@ class CompetitionMatchCard extends StatelessWidget {
                 '${side(penalty)['name'] ?? 'Equipo'} ganó por penales',
                 textAlign: TextAlign.center,
                 style: AppTypography.body(size: 13, color: context.c.primary),
-              ),
-            ),
-          if ((place['name'] ?? '').toString().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                place['name'].toString(),
-                style: AppTypography.body(
-                  size: 13,
-                  color: context.c.textSecondary,
-                ),
               ),
             ),
           const SizedBox(height: 8),
@@ -150,6 +126,54 @@ class CompetitionMatchCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A team and its score share a row so names keep the available width.
+class CompetitionScoreLine extends StatelessWidget {
+  const CompetitionScoreLine({
+    super.key,
+    required this.name,
+    this.jersey,
+    this.score,
+    this.emphasized = false,
+  });
+
+  final String name;
+  final JerseyModel? jersey;
+  final int? score;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.c;
+    return Row(
+      children: [
+        if (jersey case final kit?) ...[
+          JerseyWidget(jersey: kit, teamName: name, size: 30),
+          const SizedBox(width: 8),
+        ],
+        Expanded(
+          child: Text(
+            name,
+            style: AppTypography.headline(
+              size: 16,
+              weight: emphasized ? FontWeight.w800 : FontWeight.w700,
+            ),
+          ),
+        ),
+        if (score case final result?) ...[
+          const SizedBox(width: 12),
+          Text(
+            '$result',
+            style: AppTypography.sportNumber(
+              size: 24,
+              color: emphasized ? colors.primary : colors.textPrimary,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

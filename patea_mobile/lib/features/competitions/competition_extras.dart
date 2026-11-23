@@ -170,7 +170,7 @@ class CompetitionVenuesSection extends ConsumerWidget {
                   (_) => _VenueSheet(collection: collection, id: id),
                 ),
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Agregar'),
+                label: const Text('Agregar sede'),
               ),
           ],
         ),
@@ -677,14 +677,22 @@ class _CompetitionMessagesSectionState
           style: AppTypography.body(size: 13, color: c.textSecondary),
         ),
         const SizedBox(height: 14),
-        SegmentedButton<String>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(value: 'all', label: Text('Todos los equipos')),
-            ButtonSegment(value: 'captains', label: Text('Solo capitanes')),
+        DropdownButtonFormField<String>(
+          initialValue: _audience,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Destinatarios',
+            prefixIcon: Icon(Icons.groups_outlined),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'all', child: Text('Todos los equipos')),
+            DropdownMenuItem(value: 'captains', child: Text('Solo capitanes')),
           ],
-          selected: {_audience},
-          onSelectionChanged: (s) => setState(() => _audience = s.first),
+          onChanged: _sending
+              ? null
+              : (value) {
+                  if (value != null) setState(() => _audience = value);
+                },
         ),
         const SizedBox(height: 12),
         TextField(

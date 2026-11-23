@@ -28,9 +28,9 @@ Widget _wrap({
     child: MaterialApp(
       theme: theme,
       builder: (context, inner) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          textScaler: const TextScaler.linear(1.3),
-        ),
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: const TextScaler.linear(1.3)),
         child: PateaBackground(child: inner ?? const SizedBox.shrink()),
       ),
       home: child,
@@ -75,15 +75,25 @@ void main() {
   const fakeAnalysis = AnalysisResult(
     PlayerAnalysis(
       headline: 'Volante con llegada y buen pase corto',
-      summary: 'Venís sosteniendo un nivel parejo en los últimos cuatro partidos.',
+      summary:
+          'Venís sosteniendo un nivel parejo en los últimos cuatro partidos.',
       strengths: [
-        AnalysisItem('Primer toque limpio', 'Perdés pocas pelotas saliendo del fondo.'),
+        AnalysisItem(
+          'Primer toque limpio',
+          'Perdés pocas pelotas saliendo del fondo.',
+        ),
       ],
       improvements: [
-        AnalysisItem('Definición de media distancia', 'Probá más al arco cuando quedás de frente.'),
+        AnalysisItem(
+          'Definición de media distancia',
+          'Probá más al arco cuando quedás de frente.',
+        ),
       ],
       patterns: ['Rendís mejor cuando jugás por el centro.'],
-      plan: ['Buscá descargas rápidas al pivot.', 'Llegá al área en segunda línea.'],
+      plan: [
+        'Buscá descargas rápidas al pivot.',
+        'Llegá al área en segunda línea.',
+      ],
     ),
   );
 
@@ -167,24 +177,30 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Volante con llegada y buen pase corto'), findsOneWidget);
+      expect(
+        find.text('Volante con llegada y buen pase corto'),
+        findsOneWidget,
+      );
       expect(find.text('Lo que te sale'), findsOneWidget);
       expect(find.text('Para trabajar'), findsOneWidget);
       expect(find.text('Lo que se repite'), findsOneWidget);
-      expect(find.text('Para los próximos partidos'), findsOneWidget);
+      final plan = find.text('Para los próximos partidos');
+      await tester.scrollUntilVisible(
+        plan,
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(plan, findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('AiChatScreen.coach & .help ($themeName, 1.3x)', (tester) async {
+    testWidgets('AiChatScreen.coach & .help ($themeName, 1.3x)', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        _wrap(
-          theme: theme,
-          child: AiChatScreen.coach(),
-        ),
-      );
+      await tester.pumpWidget(_wrap(theme: theme, child: AiChatScreen.coach()));
       await tester.pumpAndSettle();
 
       expect(find.text('Datos reales de tus partidos'), findsOneWidget);
@@ -192,12 +208,7 @@ void main() {
       expect(find.text('¿Cómo vengo jugando?'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(
-        _wrap(
-          theme: theme,
-          child: AiChatScreen.help(),
-        ),
-      );
+      await tester.pumpWidget(_wrap(theme: theme, child: AiChatScreen.help()));
       await tester.pumpAndSettle();
 
       expect(find.text('Guía oficial de Pateá'), findsOneWidget);

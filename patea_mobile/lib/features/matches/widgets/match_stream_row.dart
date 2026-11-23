@@ -17,7 +17,11 @@ class MatchStreamRow extends StatelessWidget {
   final MatchModel match;
   final bool isManager;
 
-  const MatchStreamRow({super.key, required this.match, required this.isManager});
+  const MatchStreamRow({
+    super.key,
+    required this.match,
+    required this.isManager,
+  });
 
   static String providerName(String provider) => switch (provider) {
     'youtube' => 'YouTube',
@@ -54,37 +58,38 @@ class MatchStreamRow extends StatelessWidget {
     }
 
     return PateaCard(
-      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
-      borderColor: c.primary.withValues(alpha: 0.5),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      borderColor: c.border,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.live_tv_rounded, color: c.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Row(
+            children: [
+              Icon(Icons.live_tv_rounded, color: c.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
                   'Transmisión del partido',
-                  style: AppTypography.headline(size: 14, weight: FontWeight.w700),
+                  style: AppTypography.headline(
+                    size: 15,
+                    weight: FontWeight.w700,
+                  ),
                 ),
-                Text(
-                  'En ${providerName(stream.provider)}',
-                  style: AppTypography.body(size: 12.5, color: c.textSecondary),
+              ),
+              if (canEdit)
+                IconButton(
+                  tooltip: 'Cambiar la transmisión',
+                  onPressed: () => showStreamSheet(context, match),
+                  icon: const Icon(Icons.edit_outlined, size: 20),
                 ),
-              ],
-            ),
+            ],
           ),
-          FilledButton.tonal(
+          if (!canEdit) const SizedBox(height: 6),
+          TextButton.icon(
             onPressed: () => _open(context, stream),
-            child: const Text('Ver'),
+            icon: const Icon(Icons.open_in_new_rounded, size: 17),
+            label: Text('Ver en ${providerName(stream.provider)}'),
           ),
-          if (canEdit)
-            IconButton(
-              tooltip: 'Cambiar la transmisión',
-              onPressed: () => showStreamSheet(context, match),
-              icon: const Icon(Icons.edit_outlined, size: 20),
-            ),
         ],
       ),
     );
@@ -142,7 +147,9 @@ class _StreamSheetState extends ConsumerState<_StreamSheet> {
           .read(matchServiceProvider)
           .setStream(widget.match.id, text.isEmpty ? null : text);
       navigator.pop();
-      avisar.ok(text.isEmpty ? 'Sacaste la transmisión.' : 'Transmisión guardada.');
+      avisar.ok(
+        text.isEmpty ? 'Sacaste la transmisión.' : 'Transmisión guardada.',
+      );
     } catch (e) {
       if (mounted) {
         setState(() {

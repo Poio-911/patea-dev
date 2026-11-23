@@ -117,8 +117,16 @@ class _Analysis extends StatelessWidget {
           image: 'assets/brand/patea_coach.webp',
           compact: true,
           title: analysis.headline,
-          details: analysis.summary,
+          details: '',
         ),
+        if (analysis.summary.trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 14, 2, 0),
+            child: Text(
+              analysis.summary,
+              style: AppTypography.body(size: 15, color: c.textSecondary),
+            ),
+          ),
         if (analysis.strengths.isNotEmpty)
           _Section(
             title: 'Lo que te sale',

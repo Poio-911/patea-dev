@@ -160,6 +160,7 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
       ),
     );
   }
+
   Future<void> _load({bool reset = true}) async {
     if (!reset && (_loading || !_more)) return;
     final generation = ++_generation,
@@ -291,21 +292,23 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            PateaActivityCover(
-              image: _kind == 0
-                  ? PateaSectionScene.league
-                  : PateaSectionScene.competitions,
-              title: 'Hay un nuevo desafío',
-              details: 'Tu equipo, la próxima fecha y todo lo que se juega.',
-              compact: true,
-            ),
-            const SizedBox(height: 18),
             PateaTabs(
               tabs: const [PateaTab('Ligas'), PateaTab('Copas')],
               active: _kind,
               onChanged: (v) => setState(() => _kind = v),
             ),
             const SizedBox(height: 12),
+            PateaActivityCover(
+              image: _kind == 0
+                  ? PateaSectionScene.league
+                  : PateaSectionScene.competitions,
+              title: _kind == 0 ? 'Temporada de liga' : 'Eliminación directa',
+              details: _kind == 0
+                  ? 'Tabla de posiciones y fechas'
+                  : 'Cruces y rondas eliminatorias',
+              compact: true,
+            ),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
@@ -389,59 +392,79 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
                       padding: const EdgeInsets.all(16),
                       color: context.c.card,
                       borderColor: context.c.border,
-                      child: Column(
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                c.type == 'cup'
-                                    ? Icons.emoji_events_outlined
-                                    : Icons.leaderboard_outlined,
-                                color: context.c.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color:
+                                  (c.type == 'cup'
+                                          ? context.c.goldText
+                                          : context.c.primary)
+                                      .withValues(alpha: 0.12),
+                              borderRadius: AppRadii.chipAll,
+                            ),
+                            child: Icon(
+                              c.type == 'cup'
+                                  ? Icons.emoji_events_outlined
+                                  : Icons.leaderboard_outlined,
+                              color: c.type == 'cup'
+                                  ? context.c.goldText
+                                  : context.c.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
                                   c.name,
                                   style: AppTypography.headline(size: 19),
                                 ),
-                              ),
-                              const Icon(Icons.chevron_right),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            c.isArchived
-                                ? 'Archivada'
-                                : competitionStatusLabel(c.status),
-                            style: AppTypography.body(
-                              size: 13,
-                              color: c.status == 'in_progress'
-                                  ? context.c.primary
-                                  : context.c.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${c.teamIds.length}/${c.maxTeams} equipos · ${competitionFormat(c)}',
-                            style: AppTypography.body(
-                              size: 13,
-                              color: context.c.textSecondary,
-                            ),
-                          ),
-                          if (c.ownerUid == uid)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                'Organizás este torneo',
-                                style: AppTypography.body(
-                                  size: 12,
-                                  color: context.c.textSecondary,
+                                const SizedBox(height: 5),
+                                Text(
+                                  '${c.teamIds.length} de ${c.maxTeams} equipos · ${competitionFormat(c)}',
+                                  style: AppTypography.body(
+                                    size: 13,
+                                    color: context.c.textSecondary,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 5),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 3,
+                                  children: [
+                                    Text(
+                                      c.isArchived
+                                          ? 'Archivada'
+                                          : competitionStatusLabel(c.status),
+                                      style: AppTypography.body(
+                                        size: 12,
+                                        weight: FontWeight.w700,
+                                        color:
+                                            !c.isArchived &&
+                                                c.status == 'in_progress'
+                                            ? context.c.primary
+                                            : context.c.textSecondary,
+                                      ),
+                                    ),
+                                    if (c.ownerUid == uid)
+                                      Text(
+                                        'Organizás este torneo',
+                                        style: AppTypography.body(
+                                          size: 12,
+                                          color: context.c.textSecondary,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
                             ),
+                          ),
+                          const Icon(Icons.chevron_right, size: 20),
                         ],
                       ),
                     ),
