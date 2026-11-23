@@ -48,6 +48,12 @@ class PateaTabs extends StatefulWidget {
 
 class _PateaTabsState extends State<PateaTabs> {
   final ScrollController _scroll = ScrollController();
+
+  /// El scroll se envuelve en un `ShaderMask` solo mientras hay pestañas fuera
+  /// de la vista. Sin esta clave, al quitar el envoltorio el scroll se
+  /// reconstruía y volvía a la posición 0, y las últimas pestañas quedaban
+  /// fuera de alcance. Con ella, Flutter lo mueve conservando su estado.
+  final GlobalKey _scrollKey = GlobalKey();
   bool _showRightFade = false;
 
   @override
@@ -82,6 +88,7 @@ class _PateaTabsState extends State<PateaTabs> {
   Widget build(BuildContext context) {
     final c = context.c;
     final scrollView = SingleChildScrollView(
+      key: _scrollKey,
       controller: _scroll,
       scrollDirection: Axis.horizontal,
       physics: const ClampingScrollPhysics(),

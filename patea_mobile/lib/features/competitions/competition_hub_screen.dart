@@ -344,9 +344,9 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
             if (comp.type == 'league') 'Tabla',
             'Equipos',
             'Datos',
-            'Sedes',
-            if (owner) 'Avisos',
+            // Gestión sigue donde estaba para el organizador; Sedes va al final.
             if (owner) 'Gestión',
+            'Sedes',
           ];
           final selected = _tab.clamp(0, tabs.length - 1),
               active = tabs[selected];
@@ -389,11 +389,6 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                         collection: widget.collection,
                         id: widget.id,
                         canEdit: owner && !comp.isArchived,
-                      ),
-                    if (active == 'Avisos')
-                      CompetitionMessagesSection(
-                        collection: widget.collection,
-                        id: widget.id,
                       ),
                     if (active == 'Resumen' && comp.sponsors.isNotEmpty)
                       Padding(
@@ -461,6 +456,11 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
                           competition: comp,
                           collection: widget.collection,
                           canEdit: true,
+                        ),
+                        const SizedBox(height: 28),
+                        CompetitionMessagesSection(
+                          collection: widget.collection,
+                          id: widget.id,
                         ),
                         const SizedBox(height: 28),
                       ],
