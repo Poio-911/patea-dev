@@ -105,7 +105,9 @@ export function buildGroupSummaryInput(
     .map((p) => ({ name: str(p.name, 40) || 'Jugador', position: str(p.position, 4) || 'MED', ovr: Math.round(num(p.ovr)) }));
   return {
     name: str(group?.name, 60) || 'El grupo',
-    memberCount: Array.isArray(group?.members) ? group.members.length : players.length,
+    // Lo que la pantalla del grupo llama "jugadores": todo el plantel, incluidos
+    // los que todavía no tienen cuenta. Contar solo las cuentas daba otro número.
+    memberCount: players.length,
     matchesPlayed: Math.max(0, Math.round(matchesPlayed)),
     totalGoals: Math.round(players.reduce((a, p) => a + num(p?.stats?.goals), 0)),
     averageOvr,
@@ -114,7 +116,7 @@ export function buildGroupSummaryInput(
 }
 
 /** Subir la versión invalida los resúmenes guardados cuando cambia el prompt. */
-export const SUMMARY_PROMPT_VERSION = 1;
+export const SUMMARY_PROMPT_VERSION = 2;
 
 export const summaryCacheKey = (groupId: string, input: GroupSummaryInput): string =>
   `group-summary-${sha(`v${SUMMARY_PROMPT_VERSION}:${groupId}:${JSON.stringify(input)}`)}`;
@@ -128,11 +130,11 @@ export function buildGroupSummaryPrompt(input: GroupSummaryInput): string {
     : '';
   return `Sos un redactor deportivo que escribe sobre grupos de fútbol amateur. Español rioplatense (voseo), tono cálido y con buena onda.
 
-Escribí un párrafo de 2 o 3 oraciones, en prosa (sin listas), dirigido a quienes integran el grupo ("ustedes"). Usá solo los datos de abajo, tal cual: no inventes resultados ni nombres.${noActivity}
+Escribí un párrafo de 2 o 3 oraciones, en prosa (sin listas), dirigido al grupo en segunda persona del plural ("ustedes", "tienen"), no en primera. Usá solo los datos de abajo, tal cual: no inventes resultados, nombres ni novedades (nada de "el nuevo" ni de quién llegó) y no cambies ningún número.${noActivity}
 
 DATOS:
 - Grupo: ${input.name}
-- Integrantes: ${input.memberCount}
+- Jugadores en el plantel: ${input.memberCount}
 - Partidos jugados: ${input.matchesPlayed}
 - Goles entre todos: ${input.totalGoals}
 - OVR promedio: ${input.averageOvr}

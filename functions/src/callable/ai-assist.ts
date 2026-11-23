@@ -93,16 +93,20 @@ export const getGroupSummary = onCall({ region: 'us-central1', timeoutSeconds: 6
   const group = groupSnap.data()!;
   if (!isGroupMember(group, uid)) throw new HttpsError('permission-denied', 'Solo quienes integran el grupo pueden verlo.');
 
-  const [players, matches] = await Promise.all([
+  // Los partidos jugados se cuentan como los muestra la app: los del grupo y
+  // también los que juega como uno de los grupos participantes (sin repetir).
+  const finished = ['completed', 'evaluated'];
+  const [players, own, participating] = await Promise.all([
     db.collection('players').where('groupId', '==', groupId).limit(200).get(),
-    db
-      .collection('matches')
-      .where('groupId', '==', groupId)
-      .where('status', 'in', ['completed', 'evaluated'])
-      .count()
-      .get(),
+    db.collection('matches').where('groupId', '==', groupId).where('status', 'in', finished).select().get(),
+    // Sin filtrar por estado en la consulta: así no hace falta un índice nuevo.
+    db.collection('matches').where('participantGroupIds', 'array-contains', groupId).select('status').get(),
   ]);
-  const input = buildGroupSummaryInput(group, players.docs.map((d) => d.data()), matches.data().count);
+  const matchIds = new Set([
+    ...own.docs.map((d) => d.id),
+    ...participating.docs.filter((d) => finished.includes(d.data().status)).map((d) => d.id),
+  ]);
+  const input = buildGroupSummaryInput(group, players.docs.map((d) => d.data()), matchIds.size);
 
   const cacheKey = summaryCacheKey(groupId, input);
   const cached = await readCache<{ summary: string }>(db, cacheKey, SUMMARY_TTL_MS);

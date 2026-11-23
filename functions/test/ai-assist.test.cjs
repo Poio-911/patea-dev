@@ -34,7 +34,7 @@ const players = [
 
 test('resumen: datos del grupo, top 3 y promedio sin contar OVR vacíos', () => {
   const i = a.buildGroupSummaryInput(group, players, 12.4);
-  assert.equal(i.memberCount, 4);
+  assert.equal(i.memberCount, 5); // todo el plantel, como lo muestra la pantalla
   assert.equal(i.matchesPlayed, 12);
   assert.equal(i.totalGoals, 7);
   assert.equal(i.averageOvr, 65); // (70+60+80+50)/4
@@ -44,6 +44,8 @@ test('resumen: datos del grupo, top 3 y promedio sin contar OVR vacíos', () => 
 test('resumen: sin partidos no se inventa actividad; la clave cambia con los datos', () => {
   const none = a.buildGroupSummaryInput(group, players, 0);
   assert.match(a.buildGroupSummaryPrompt(none), /no jugó ningún partido/);
+  assert.match(a.buildGroupSummaryPrompt(none), /segunda persona del plural/);
+  assert.match(a.buildGroupSummaryPrompt(none), /nada de "el nuevo"/);
   assert.doesNotMatch(a.buildGroupSummaryPrompt(a.buildGroupSummaryInput(group, players, 3)), /no jugó ningún partido/);
   const k1 = a.summaryCacheKey('g1', none);
   assert.equal(k1, a.summaryCacheKey('g1', none));
