@@ -118,6 +118,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+  testWidgets('copa solo ofrece los cupos que admite el sorteo', (
+    tester,
+  ) async {
+    final errors = await montarPantalla(
+      tester,
+      const CreateCompetitionScreen(isCup: true, groupId: idGrupo),
+      tema: AppTheme.darkTheme,
+      extraOverrides: [
+        competitionServiceProvider.overrideWithValue(TournamentFake()),
+      ],
+    );
+    expect(errors, isEmpty);
+    final capacity = find.byType(DropdownButtonFormField<int>);
+    await tester.ensureVisible(capacity);
+    await tester.pump();
+    await tester.tap(capacity);
+    await tester.pumpAndSettle();
+    expect(find.text('6 equipos'), findsNothing);
+    expect(find.text('8 equipos').hitTestable(), findsOneWidget);
+    await tester.tap(find.text('8 equipos').hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.text('8 equipos'), findsOneWidget);
+  });
+
   testWidgets('liga elige formato primero y guarda sin fecha', (tester) async {
     final fake = TournamentFake();
     final errors = await montarPantalla(

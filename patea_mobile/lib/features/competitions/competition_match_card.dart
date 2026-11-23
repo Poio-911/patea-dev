@@ -12,13 +12,21 @@ class CompetitionMatchCard extends StatelessWidget {
   final Map<String, dynamic> match;
   final VoidCallback? schedule, result;
   final bool busy;
+  final bool compact;
   const CompetitionMatchCard({
     super.key,
     required this.match,
     this.schedule,
     this.result,
     this.busy = false,
+    this.compact = false,
   });
+  static final _compactActionStyle = TextButton.styleFrom(
+    padding: const EdgeInsets.symmetric(horizontal: 7),
+    minimumSize: const Size(0, 40),
+    visualDensity: VisualDensity.compact,
+  );
+
   @override
   Widget build(BuildContext context) {
     final teams = match['teams'] as List? ?? [],
@@ -35,14 +43,14 @@ class CompetitionMatchCard extends StatelessWidget {
     final when = [
       if (date.isNotEmpty) fmtDate(date),
       if (time.isNotEmpty) '$time hs',
-      if (place.isNotEmpty) place,
+      if (place.isNotEmpty && place.toLowerCase() != 'a definir') place,
     ].join(' · ');
     final pair = match['participantTeamIds'] as List? ?? [];
     final penalty = pair.indexOf(match['penaltyWinnerId']);
     return PateaCard(
       color: context.c.card,
       borderColor: context.c.border,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(compact ? 12 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -68,7 +76,7 @@ class CompetitionMatchCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: compact ? 8 : 12),
           for (var i = 0; i < 2; i++) ...[
             if (i == 1) Divider(height: 10, color: context.c.overlayLine),
             CompetitionScoreLine(
@@ -100,24 +108,30 @@ class CompetitionMatchCard extends StatelessWidget {
                 style: AppTypography.body(size: 13, color: context.c.primary),
               ),
             ),
-          const SizedBox(height: 8),
+          if (compact)
+            Divider(height: 12, color: context.c.overlayLine)
+          else
+            const SizedBox(height: 8),
           Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: compact ? 2 : 8,
+            runSpacing: compact ? 0 : 4,
             children: [
               TextButton.icon(
+                style: compact ? _compactActionStyle : null,
                 onPressed: () => context.push('/matches/${match['id']}'),
                 icon: const Icon(Icons.open_in_new, size: 18),
                 label: const Text('Abrir partido'),
               ),
               if (schedule != null)
                 TextButton.icon(
+                  style: compact ? _compactActionStyle : null,
                   onPressed: busy ? null : schedule,
                   icon: const Icon(Icons.edit_calendar_outlined, size: 18),
                   label: const Text('Programar'),
                 ),
               if (result != null)
                 TextButton.icon(
+                  style: compact ? _compactActionStyle : null,
                   onPressed: busy ? null : result,
                   icon: const Icon(Icons.sports_score, size: 18),
                   label: Text(done ? 'Resolver penales' : 'Cargar resultado'),

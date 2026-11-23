@@ -61,6 +61,13 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
 
   Future<void> _start(CompetitionModel c) async {
     if (c.type == 'cup') {
+      if (!cupTeamCounts.contains(c.teamIds.length)) {
+        PateaSnack.info(
+          context,
+          '${c.teamIds.length} equipos inscritos. $cupTeamCountMessage',
+        );
+        return;
+      }
       final seeding = await competitionSeedingDialog(context);
       if (seeding != null && mounted) {
         await _command('startCup', {'seedingType': seeding});
@@ -692,7 +699,9 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Revisá participantes, planteles y configuración antes de comenzar.',
+          c.type == 'cup' && !cupTeamCounts.contains(c.teamIds.length)
+              ? '${c.teamIds.length} equipos inscritos. $cupTeamCountMessage Revisá los participantes en Gestión.'
+              : 'Revisá participantes, planteles y configuración antes de comenzar.',
           style: AppTypography.body(size: 13, color: context.c.textSecondary),
         ),
       ],
@@ -793,6 +802,7 @@ class _HubState extends ConsumerState<CompetitionHubScreen> {
         m['penaltyWinnerId'] == null;
     return CompetitionMatchCard(
       match: m,
+      compact: c.type == 'cup',
       busy: _busy,
       schedule:
           owner &&

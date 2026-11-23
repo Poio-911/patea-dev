@@ -15,6 +15,10 @@ import '../../core/widgets/patea_snack.dart';
 import '../../core/widgets/patea_states.dart';
 import '../../core/widgets/jersey_painter.dart';
 
+const cupTeamCounts = [2, 4, 8, 16, 32];
+const cupTeamCountMessage =
+    'La copa necesita 2, 4, 8, 16 o 32 equipos inscritos.';
+
 String competitionError(Object e) => e
     .toString()
     .replaceFirst('Exception: ', '')
@@ -88,6 +92,15 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
     super.initState();
     final c = widget.competition;
     _capacity = c?.maxTeams ?? (widget.isCup ? 32 : 16);
+    if (widget.isCup && !cupTeamCounts.contains(_capacity)) {
+      final minimum = _capacity > (c?.teamIds.length ?? 0)
+          ? _capacity
+          : c!.teamIds.length;
+      _capacity = cupTeamCounts.firstWhere(
+        (size) => size >= minimum,
+        orElse: () => cupTeamCounts.last,
+      );
+    }
     _name.text = c?.name ?? '';
     _description.text = c?.description ?? '';
     _venue.text = c?.defaultLocation['name']?.toString() ?? '';
@@ -144,6 +157,12 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
     }
     if (_step == 1 && (!_public && _selected.length < 2)) {
       error = 'Elegí al menos dos equipos, o abrí las inscripciones.';
+    }
+    if (_step > 0 &&
+        widget.isCup &&
+        !_public &&
+        !cupTeamCounts.contains(_selected.length)) {
+      error = cupTeamCountMessage;
     }
     if (_step > 0 && _selected.length > _capacity) {
       error = 'El cupo es menor que la cantidad de equipos seleccionados.';
@@ -240,12 +259,19 @@ class _CompetitionEditorState extends ConsumerState<CreateCompetitionScreen> {
     DropdownButtonFormField<int>(
       initialValue: _capacity,
       isExpanded: true,
-      decoration: const InputDecoration(labelText: 'Cupo de equipos'),
+      decoration: InputDecoration(
+        labelText: 'Cupo de equipos',
+        helperText: widget.isCup
+            ? 'Los cruces se arman con 2, 4, 8, 16 o 32 equipos.'
+            : null,
+        helperMaxLines: 2,
+      ),
       items: [
-        for (final n in ({
-          ...List.generate((widget.isCup ? 32 : 16) - 1, (i) => i + 2),
-          _capacity,
-        }.toList()..sort()))
+        for (final n
+            in widget.isCup
+                ? cupTeamCounts
+                : ({...List.generate(15, (i) => i + 2), _capacity}.toList()
+                    ..sort()))
           DropdownMenuItem(value: n, child: Text('$n equipos')),
       ],
       onChanged: _saving ? null : (v) => setState(() => _capacity = v!),

@@ -98,13 +98,15 @@ export function standings(
     goalDifference: r.goalDiff,
   }));
 }
+export const cupTeamCounts = [2, 4, 8, 16, 32] as const;
+
 export function generateCup(
   teams: Data[],
   seeding = "random",
   random = Math.random,
 ): Data[] {
   if (
-    ![2, 4, 8, 16, 32].includes(teams.length) ||
+    !cupTeamCounts.some((count) => count === teams.length) ||
     new Set(teams.map((t) => t.id)).size !== teams.length
   )
     throw new HttpsError(

@@ -5,6 +5,7 @@ import {
   Data,
   teamIds,
   generateCup,
+  cupTeamCounts,
   advanceCup,
   standings,
   validScore,
@@ -73,6 +74,8 @@ function settings(d: Data, isCup: boolean): Data {
   const count = d.maxTeams ?? (isCup ? 32 : 16);
   integer(count, isCup ? 32 : 16);
   if (count < 2) fail("El cupo mínimo es de dos equipos.");
+  if (isCup && !cupTeamCounts.some((size) => size === count))
+    fail("Elegí un cupo de 2, 4, 8, 16 o 32 equipos para la copa.");
   return {
     ...(typeof d.logoUrl === "string" &&
       /^https:\/\//.test(d.logoUrl) &&
@@ -273,6 +276,8 @@ export async function manageCompetitionCore(
         (!config.isPublic && ids.length < 2)
       )
         fail("Revisá los equipos seleccionados.");
+      if (isCup && !config.isPublic && !cupTeamCounts.some((size) => size === ids.length))
+        fail("Una copa privada necesita 2, 4, 8, 16 o 32 equipos inscritos.");
       const teams = ids.length
         ? await tx.getAll(...ids.map((t) => db.doc(`teams/${t}`)))
         : [];
@@ -465,6 +470,8 @@ export async function manageCompetitionCore(
         (!config.isPublic && ids.length < 2)
       )
         fail("Revisá los equipos y el cupo.");
+      if (isCup && !config.isPublic && !cupTeamCounts.some((size) => size === ids.length))
+        fail("Una copa privada necesita 2, 4, 8, 16 o 32 equipos inscritos.");
       const docs = ids.length
         ? await tx.getAll(...ids.map((t) => db.doc(`teams/${id(t)}`)))
         : [];
