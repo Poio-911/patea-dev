@@ -114,6 +114,20 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
         _cover('Práctica con pelota, a partir de tu ficha.'),
+        const SizedBox(height: 16),
+        const _AiEntry(
+          icon: Icons.insights_rounded,
+          title: 'Tu análisis con IA',
+          subtitle: 'Qué te sale, qué trabajar y un plan corto.',
+          route: '/coach/analysis',
+        ),
+        const SizedBox(height: 10),
+        const _AiEntry(
+          icon: Icons.chat_bubble_outline_rounded,
+          title: 'Preguntale al DT',
+          subtitle: 'Charlá sobre tu juego con tus datos de fondo.',
+          route: '/coach/chat',
+        ),
         const SizedBox(height: 20),
         Row(
           children: [
@@ -367,6 +381,64 @@ class _WeekProgress extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Entrada a una de las pantallas de IA del entrenador.
+class _AiEntry extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String route;
+  const _AiEntry({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return PateaCard(
+      borderColor: c.border.withValues(alpha: 0.5),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => context.push(route),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: c.primary, size: 26),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.headline(
+                        size: 15,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTypography.body(
+                        size: 12.5,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

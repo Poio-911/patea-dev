@@ -41,6 +41,9 @@ void main() {
     'lib/core/widgets/jersey_painter.dart': 34,
     'lib/core/widgets/ovr_accent.dart': 15,
     'lib/features/players/portrait_studio_screen.dart': 2,
+    // El botón «Continuar con Apple»: Apple fija sus colores (blanco sobre
+    // fondo oscuro, negro sobre claro) y no se pueden tomar del tema.
+    'lib/features/auth/login_screen.dart': 4,
   };
   final presupuesto = artworkBudgets.values.reduce((a, b) => a + b);
 

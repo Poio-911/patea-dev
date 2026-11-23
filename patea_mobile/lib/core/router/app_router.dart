@@ -39,6 +39,8 @@ import '../../features/evaluations/evaluation_form_screen.dart';
 import '../../features/social/social_feed_screen.dart';
 import '../../features/social/leaderboard_screen.dart';
 import '../../features/coach/ai_coach_screen.dart';
+import '../../features/coach/coach_chat_screen.dart';
+import '../../features/coach/player_analysis_screen.dart';
 import '../../features/achievements/achievements_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/dev/design_gallery_screen.dart';
@@ -344,6 +346,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/coach',
         builder: (context, state) => _withBackground(const AICoachScreen()),
+      ),
+      GoRoute(
+        path: '/coach/analysis',
+        builder: (context, state) =>
+            _withBackground(const PlayerAnalysisScreen()),
+      ),
+      GoRoute(
+        path: '/coach/chat',
+        builder: (context, state) => _withBackground(const CoachChatScreen()),
       ),
       GoRoute(
         path: '/achievements',

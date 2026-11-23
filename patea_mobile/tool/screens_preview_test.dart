@@ -11,6 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:patea_mobile/core/models/achievement_model.dart';
+import 'package:patea_mobile/core/models/coach_models.dart';
+import 'package:patea_mobile/core/services/coach_service.dart';
+import 'package:patea_mobile/features/coach/coach_chat_screen.dart';
+import 'package:patea_mobile/features/coach/player_analysis_screen.dart';
 import 'package:patea_mobile/core/services/achievements_service.dart';
 import 'package:patea_mobile/core/services/credits_store_service.dart';
 import 'package:patea_mobile/core/services/social_service.dart';
@@ -118,6 +122,58 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('../build/preview/configuracion.png'),
+    );
+  });
+
+  testWidgets('análisis', (tester) async {
+    final errors = await montarPantalla(
+      tester,
+      const PlayerAnalysisScreen(),
+      tema: AppTheme.darkTheme,
+      extraOverrides: [
+        playerAnalysisProvider.overrideWith(
+          (ref) async => const AnalysisResult(
+            PlayerAnalysis(
+              headline: 'Viene en alza y con pegada',
+              summary:
+                  'Tres partidos, cinco goles y una nota promedio de 7.8. Tus últimas notas son más altas que las anteriores.',
+              strengths: [
+                AnalysisItem('Ritmo', 'Tu mejor atributo: ganás en carrera.'),
+                AnalysisItem('Definición', 'Cinco goles en tres partidos.'),
+              ],
+              improvements: [
+                AnalysisItem('Defensa', 'Es lo más flojo: volvé a marcar cuando perdés.'),
+              ],
+              patterns: ['La etiqueta «Letal» se repite en tus mejores partidos.'],
+              plan: [
+                'Un partido con foco en volver a marcar.',
+                'Practicá pases cortos antes de definir.',
+                'Pedí que te evalúen para afinar el análisis.',
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+    expect(errors, isEmpty);
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('../build/preview/analisis.png'),
+    );
+  });
+
+  testWidgets('chat', (tester) async {
+    final errors = await montarPantalla(
+      tester,
+      const CoachChatScreen(),
+      tema: AppTheme.darkTheme,
+    );
+    expect(errors, isEmpty);
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('../build/preview/chat.png'),
     );
   });
 }
