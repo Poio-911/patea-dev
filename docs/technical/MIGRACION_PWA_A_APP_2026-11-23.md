@@ -119,7 +119,7 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 
 **No se migró:** la novedad de «jugador creado» (la PWA la publicaba al sumar a alguien al grupo; no aporta).
 
-**Pendiente de este punto:** desplegar `syncAchievements` (cambió) y mirarlo en el emulador con una cuenta que desbloquee algo nuevo.
+**Estado:** `syncAchievements` desplegada. Probado en el emulador que Logros sigue sincronizando bien (5 de 16) y que la Comunidad del grupo carga. **No se vio una novedad de logro**: la cuenta de prueba no desbloqueó ninguno nuevo en esa sincronización, así que no hubo qué publicar. La publicación está cubierta por tests del servidor (id fijo, tope de tres, sin grupo → nada).
 
 ## Decidido no migrar
 
