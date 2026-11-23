@@ -25,7 +25,7 @@ void main() {
     addTearDown(tester.view.reset);
     final router = GoRouter(routes: [
       GoRoute(path: '/', builder: (_, state) => Scaffold(body: SingleChildScrollView(
-        child: Padding(padding: const EdgeInsets.all(16), child: DashboardMatchHero(match: match, isLive: match.status == 'active'))))),
+        child: Padding(padding: const EdgeInsets.all(16), child: DashboardMatchHero(match: match, isLive: match.status == 'active', organizerName: 'José P.'))))),
       GoRoute(path: '/matches/:id/live', builder: (_, state) => const Scaffold(body: Text('Partido abierto'))),
       GoRoute(path: '/matches/:id', builder: (_, state) => const Scaffold(body: Text('Convocatoria abierta'))),
     ]);
@@ -59,11 +59,12 @@ void main() {
     expect(find.textContaining('Gol registrado'), findsNothing);
     expect(tester.takeException(), isNull);
   });
-  testWidgets('Upcoming keeps countdown and opens the existing match detail', (tester) async {
+  testWidgets('Upcoming shows the compact match card and opens details', (tester) async {
     await mount(tester, game(upcoming: true), scale: 1.3);
-    expect(find.text('Próximo partido'), findsOneWidget);
+    expect(find.text('Clásico del barrio'), findsOneWidget);
+    expect(find.text('Organiza José P.'), findsOneWidget);
     expect(find.text('02:00'), findsNothing);
-    await tester.tap(find.text('Ver convocatoria')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Ver detalles')); await tester.pumpAndSettle();
     expect(find.text('Convocatoria abierta'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

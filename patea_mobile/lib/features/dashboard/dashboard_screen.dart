@@ -262,6 +262,12 @@ class _ResumenTabBody extends ConsumerWidget {
             ? live.first
             : (upcoming.isNotEmpty ? upcoming.first : null);
 
+        final organizerId = live.isEmpty ? next?.ownerUid : null;
+        final organizerName = organizerId == null || organizerId.isEmpty
+            ? null
+            : ref.watch(userProfileProvider(organizerId)).value?['displayName']
+                  as String?;
+
         final played =
             matches
                 .where(
@@ -288,7 +294,11 @@ class _ResumenTabBody extends ConsumerWidget {
           children: [
             // ── 1. EL TÚNEL DE PRÓXIMO PARTIDO (CON CAMISETAS ROTADAS) ──
             if (next != null)
-              DashboardMatchHero(match: next, isLive: live.isNotEmpty)
+              DashboardMatchHero(
+                match: next,
+                isLive: live.isNotEmpty,
+                organizerName: organizerName,
+              )
             else
               PateaEmpty(
                 icon: Icons.sports_soccer_outlined,

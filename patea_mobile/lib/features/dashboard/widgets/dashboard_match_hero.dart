@@ -7,22 +7,25 @@ import '../../../core/theme/app_radii.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/patea_colors.dart';
 import '../../../core/theme/match_theme.dart'
-    show fallbackTeamAColor, fallbackTeamBColor;
+    show fallbackTeamAColor, fallbackTeamBColor, getMatchTypeTheme;
 import '../../../core/widgets/match_countdown.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/match_photography.dart';
 import '../../../core/widgets/jersey_painter.dart';
 import '../../../core/widgets/patea_avatar.dart';
+import '../../../core/widgets/patea_card.dart';
 import '../../matches/widgets/live_clock.dart';
 
 /// Broadcast composition: the score belongs between the actual teams.
 class DashboardMatchHero extends StatefulWidget {
   final MatchModel match;
   final bool isLive;
+  final String? organizerName;
   const DashboardMatchHero({
     super.key,
     required this.match,
     required this.isLive,
+    this.organizerName,
   });
   @override
   State<DashboardMatchHero> createState() => _DashboardMatchHeroState();
@@ -62,6 +65,9 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
   @override
   Widget build(BuildContext context) {
     final m = widget.match;
+    if (!widget.isLive) {
+      return _UpcomingMatchCard(match: m, organizerName: widget.organizerName);
+    }
     final c = context.c;
     final clock = LiveClock.of(m);
     final phase = m.liveStatus == 'half_time'
@@ -389,6 +395,139 @@ class _DashboardMatchHeroState extends State<DashboardMatchHero> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpcomingMatchCard extends StatelessWidget {
+  const _UpcomingMatchCard({required this.match, this.organizerName});
+
+  final MatchModel match;
+  final String? organizerName;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.c;
+    final date = DateTime.tryParse(match.date)?.toLocal();
+    final organizer = organizerName?.trim();
+    final venue = match.location?.trim();
+    final time = match.time?.trim();
+    final when = [
+      if (date != null) weekdayShort(date.weekday),
+      if (match.date.isNotEmpty) fmtDate(match.date),
+    ].join(' ');
+    final schedule = [
+      if (when.isNotEmpty) when,
+      if (time != null && time.isNotEmpty) time,
+    ].join(' · ');
+    final meta = AppTypography.body(size: 14, color: colors.textSecondary);
+
+    return PateaCard(
+      borderColor: colors.border,
+      radius: AppRadii.surfaceAll,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final photoWidth =
+                  constraints.maxWidth *
+                  (MediaQuery.textScalerOf(context).scale(14) > 19
+                      ? 0.24
+                      : 0.34);
+              return Stack(
+                children: [
+                  PositionedDirectional(
+                    top: 0,
+                    bottom: 0,
+                    end: 0,
+                    width: photoWidth,
+                    child: Image.asset(
+                      MatchPhotography.forMatch(match.id),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.centerRight,
+                      excludeFromSemantics: true,
+                      errorBuilder: (_, _, _) =>
+                          ColoredBox(color: colors.cardSurface),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsetsDirectional.fromSTEB(
+                      14,
+                      15,
+                      photoWidth + 12,
+                      15,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          getMatchTypeTheme(match.type).label,
+                          style: AppTypography.body(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: colors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          match.title,
+                          style: AppTypography.headline(
+                            size: 23,
+                            weight: FontWeight.w800,
+                          ),
+                        ),
+                        if (schedule.isNotEmpty) ...[
+                          const SizedBox(height: 5),
+                          Text(schedule, style: meta),
+                        ],
+                        if (venue != null && venue.isNotEmpty)
+                          Text(venue, style: meta),
+                        if (organizer != null && organizer.isNotEmpty)
+                          Text('Organiza $organizer', style: meta),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          Divider(height: 1, color: colors.overlayLine),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.push('/matches/${match.id}'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Ver detalles',
+                        style: AppTypography.action(
+                          size: 14,
+                          weight: FontWeight.w700,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_outward_rounded,
+                      size: 17,
+                      color: colors.primary,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
