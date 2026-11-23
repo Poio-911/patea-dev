@@ -85,7 +85,7 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 **Aviso de sin conexión**
 - `connectivity_service.dart` revisa cada 15 s (cada 4 s si está caída) si resuelve el servidor de la base de datos, sin plugin nativo, y recién da por caída la conexión al segundo fallo seguido. `offline_banner.dart` muestra «Sin conexión: mostrando lo último guardado» y, al volver, «Conexión restaurada» tres segundos. Va por encima de todas las pantallas (`main.dart`).
 
-**Pendiente de este punto:** las tres funciones nuevas (`setMatchCost`, `markMatchPayment`, `setMatchStream`) hay que desplegarlas y probar el flujo en el emulador; y mirar las vistas previas (`tool/match_extras_preview_test.dart`), que no se pudieron generar porque la compilación estaba rota por el rediseño en curso.
+**Estado de este punto:** las tres funciones (`setMatchCost`, `markMatchPayment`, `setMatchStream`) están desplegadas. Probado en el emulador con datos reales: el calendario y el aviso de sin conexión (se cortó el wifi y apareció la franja roja; al volver se ocultó, pero no llegué a ver el texto «Conexión restaurada»). **Sin probar en el teléfono**: cargar el costo, marcar pagos y cargar la transmisión, porque la cuenta del emulador no administra ningún partido; se vieron en las vistas previas (`tool/match_extras_preview_test.dart`) y la lógica está probada con tests. Nota de diseño: la franja de sin conexión se dibuja encima del encabezado de la app y lo tapa mientras dura.
 
 ## Decidido no migrar
 

@@ -101,7 +101,7 @@ void main() {
       final errors = await montarPantalla(
         tester,
         Scaffold(
-          backgroundColor: Colors.transparent,
+          backgroundColor: const Color(0xFF0B1017),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -135,7 +135,7 @@ void main() {
     final errors = await montarPantalla(
       tester,
       Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF0B1017),
         body: SingleChildScrollView(
           child: MatchesCalendarView(
             today: DateTime(2026, 11, 23),
