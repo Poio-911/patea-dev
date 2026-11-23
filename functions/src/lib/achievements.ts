@@ -96,3 +96,37 @@ export function matchOutcomeFor(match: any, uid: string): { won: boolean; goals:
   const theirs = Number(side === 0 ? score.team2 : score.team1);
   return { won: mine > theirs, goals };
 }
+
+/**
+ * Qué logros merecen aparecer primero en las novedades del grupo. Se publican
+ * pocos por vez (la primera sincronización de un veterano puede desbloquear
+ * una docena) y van los más difíciles.
+ */
+const FEED_PRIORITY = [
+  'champion',
+  'ovr_90',
+  'fifty_goals',
+  'fifty_matches',
+  'ovr_80',
+  'hat_trick',
+  'ten_wins',
+  'ten_goals',
+  'ten_followers',
+  'ten_matches',
+  'organizer',
+  'ovr_70',
+  'first_win',
+  'first_goal',
+  'first_match',
+  'first_follower',
+];
+
+export const MAX_FEED_ACHIEVEMENTS = 3;
+
+export function featuredForFeed(earned: readonly AchievementDef[], limit = MAX_FEED_ACHIEVEMENTS): AchievementDef[] {
+  const rank = (id: string) => {
+    const i = FEED_PRIORITY.indexOf(id);
+    return i === -1 ? FEED_PRIORITY.length : i;
+  };
+  return [...earned].sort((a, b) => rank(a.id) - rank(b.id)).slice(0, limit);
+}

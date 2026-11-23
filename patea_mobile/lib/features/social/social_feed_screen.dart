@@ -168,10 +168,10 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                   .toList()
             : allPosts;
 
-        // Novedades del grupo (cambios de OVR, partidos armados y terminados):
+        // Novedades del grupo (OVR, logros, partidos armados y terminados):
         // las escribe el servidor y se mezclan con las publicaciones por fecha.
         final news = isGroupTab
-            ? (ref.watch(feedActivitiesStreamProvider).value ??
+            ? (ref.watch(feedActivitiesStreamProvider).asData?.value ??
                   const <Map<String, dynamic>>[])
             : const <Map<String, dynamic>>[];
         final items = <({DateTime at, Widget widget})>[
@@ -726,7 +726,8 @@ class _FeedActivityTile extends StatelessWidget {
     final message = (data['message'] as String?)?.trim() ?? '';
     final name = data['playerName'] as String? ?? '';
     final photo = data['playerPhotoUrl'] as String?;
-    final isPlayerEvent = type == 'ovr_updated';
+    final isPlayerEvent =
+        type == 'ovr_updated' || type == 'achievement_unlocked';
     final icon = type == 'match_finished'
         ? Icons.sports_score_outlined
         : Icons.event_available_outlined;

@@ -3,11 +3,13 @@ import * as admin from 'firebase-admin';
 import {
   ACHIEVEMENTS,
   emptyProgress,
+  featuredForFeed,
   matchOutcomeFor,
   newlyEarned,
   type AchievementProgress,
 } from '../lib/achievements';
 import { notifyUsers } from '../lib/notify-users';
+import { achievementFeedEntry } from '../lib/feed';
 
 /**
  * Cuenta lo que hace falta para los logros de una persona. Todo con conteos y
@@ -101,6 +103,17 @@ export const syncAchievements = onCall({ region: 'us-central1' }, async (request
       unlockedAt.set(a.id, now);
     }
     await batch.commit();
+
+    // En las novedades del grupo van solo los más difíciles (máximo tres), para
+    // que la primera sincronización de alguien con historia no inunde el feed.
+    // Es un agregado: si falla, el desbloqueo ya quedó guardado.
+    const playerData = player.data();
+    const feedBatch = db.batch();
+    for (const a of featuredForFeed(earned)) {
+      const entry = achievementFeedEntry(uid, a, playerData);
+      if (entry) feedBatch.set(db.doc(`feedActivities/${entry.id}`), entry.data, { merge: false });
+    }
+    await feedBatch.commit().catch(() => undefined);
 
     // Un solo aviso, aunque se hayan juntado varios (la primera vez puede ser un montón).
     const message =

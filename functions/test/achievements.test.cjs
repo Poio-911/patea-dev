@@ -34,3 +34,27 @@ test('resultado del partido: victoria y goles propios', () => {
   assert.deepEqual(matchOutcomeFor({ ...match, finalScore: undefined }, 'a').won, false);
   assert.deepEqual(matchOutcomeFor(match, 'zzz'), { won: false, goals: 0 });
 });
+
+const feed = require('../lib/lib/feed');
+
+test('novedades: los más difíciles primero y como máximo tres', () => {
+  const all = ACHIEVEMENTS.filter((a) => ['first_match', 'first_goal', 'ten_goals', 'champion', 'ovr_80'].includes(a.id));
+  assert.deepEqual(require('../lib/lib/achievements').featuredForFeed(all).map((a) => a.id), ['champion', 'ovr_80', 'ten_goals']);
+  assert.equal(require('../lib/lib/achievements').featuredForFeed(ACHIEVEMENTS).length, 3);
+  assert.equal(require('../lib/lib/achievements').featuredForFeed(ACHIEVEMENTS, 5).length, 5);
+  assert.deepEqual(require('../lib/lib/achievements').featuredForFeed([]), []);
+});
+
+test('novedades: entrada del feed con id fijo, y nada si no hay grupo', () => {
+  const player = { name: 'Aurelio', groupId: 'g1', photoURL: 'https://x/foto.png' };
+  const a = { id: 'first_goal', name: 'Primer Gol', icon: 'target' };
+  const e = feed.achievementFeedEntry('uid1', a, player);
+  assert.equal(e.id, 'ach_uid1_first_goal');
+  assert.equal(e.data.type, 'achievement_unlocked');
+  assert.equal(e.data.groupId, 'g1');
+  assert.equal(e.data.playerName, 'Aurelio');
+  assert.equal(e.data.message, 'Consiguió el logro «Primer Gol».');
+  assert.equal(feed.achievementFeedEntry('uid1', a, { name: 'Sin grupo' }), null);
+  assert.equal(feed.achievementFeedEntry('uid1', a, undefined), null);
+  assert.equal(feed.achievementFeedEntry('uid1', { id: '', name: 'x', icon: '' }, player), null);
+});

@@ -51,6 +51,32 @@ export function ovrFeedEntry(
   };
 }
 
+/** Alguien consiguió un logro: queda en las novedades de su grupo. */
+export function achievementFeedEntry(
+  playerId: string,
+  achievement: { id: string; name: string; icon: string },
+  player: Doc | undefined,
+): FeedEntry | null {
+  const groupId = typeof player?.groupId === 'string' ? player.groupId : '';
+  if (!groupId || !achievement.id || !achievement.name) return null;
+  return {
+    // Un id fijo por persona y logro: reintentar no duplica la novedad.
+    id: `ach_${playerId}_${achievement.id}`,
+    data: {
+      type: 'achievement_unlocked',
+      groupId,
+      playerId,
+      playerName: String(player?.name ?? player?.displayName ?? 'Jugador'),
+      playerPhotoUrl: String(player?.photoURL ?? player?.photoUrl ?? ''),
+      achievementId: achievement.id,
+      achievementName: achievement.name,
+      achievementIcon: achievement.icon,
+      message: `Consiguió el logro «${achievement.name}».`,
+      createdAt: new Date().toISOString(),
+    },
+  };
+}
+
 /** Grupos a los que les interesa un partido (el propio y, entre grupos, el rival). */
 export function matchFeedGroups(match: Doc): string[] {
   const ids = [match.groupId, ...(Array.isArray(match.participantGroupIds) ? match.participantGroupIds : [])];

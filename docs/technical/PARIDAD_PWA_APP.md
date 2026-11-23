@@ -1,5 +1,7 @@
 # Paridad PWA → app móvil
 
+> **Actualización 23/11/2026 (final):** el punto 6 (Comunidad) está resuelto: lo que faltaba eran los logros en las novedades del grupo; el resto ya existía. Queda solo la decisión sobre árbitros.
+>
 > **Actualización 23/11/2026 (noche):** el punto 5 está hecho en lo que valía la pena: avisos, sedes y patrocinadores (lo demás ya estaba o se descartó, con el motivo); falta decidir los árbitros.
 >
 > **Actualización 23/11/2026 (tarde):** el punto 4 (partidos) también está hecho desde cero, salvo las «plantillas», que resultaron ser de competición y pasan al punto 5. Detalle en el mismo documento.

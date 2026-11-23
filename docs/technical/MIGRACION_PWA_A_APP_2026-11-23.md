@@ -109,6 +109,18 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 - La copa y la sede de prueba quedaron en el proyecto real; se pueden borrar desde la app o la consola.
 - Al probarlo apareció un error preexistente de `PateaTabs` (en barras que desbordan, las últimas pestañas eran inalcanzables); está corregido con test.
 
+## 6. Comunidad: ticker de actividad y rankings
+
+**Qué ya tenía la app:** las novedades del grupo en Comunidad (cambios de OVR, partidos armados y terminados, escritas por el servidor en `feedActivities`) y el ranking por categoría (una pestaña por métrica). La PWA muestra todas las categorías juntas en tarjetas; en el celular una pestaña por métrica cubre lo mismo sin apretar la pantalla, así que **no se migró esa vista**.
+
+**Lo que faltaba y se hizo:** los **logros** en las novedades del grupo. Al desbloquear (`syncAchievements`) se publica «Consiguió el logro «X»» en el grupo de la persona, con id fijo por persona y logro (reintentar no duplica). Se publican como máximo tres por sincronización, los más difíciles primero (`featuredForFeed`), para que la primera vez que alguien con historia abre Logros no llene el feed con una docena. Quien lo ve es solo el grupo (las reglas de `feedActivities` ya lo exigen). Si falla, el desbloqueo igual queda guardado.
+
+**También:** en la pantalla de Comunidad el feed leía las novedades con `.value`, que en esta versión de Riverpod lanza si el stream falla; ahora usa `.asData?.value`.
+
+**No se migró:** la novedad de «jugador creado» (la PWA la publicaba al sumar a alguien al grupo; no aporta).
+
+**Pendiente de este punto:** desplegar `syncAchievements` (cambió) y mirarlo en el emulador con una cuenta que desbloquee algo nuevo.
+
 ## Decidido no migrar
 
 - **Imagen de dúo** (`generate-duo-image` de la PWA): no se migra. La acción `generateDuoImageAction` existe pero **ninguna pantalla de la PWA la llama** (se buscó en todo `src`), así que no hay una función de producto que trasladar. Además genera imágenes con la cara de otra persona a partir de su foto, y eso pide un consentimiento que hoy no existe. Si algún día se quiere, hay que diseñarla como función nueva, con ese permiso explícito y sus créditos (en iOS, solo se compran en la tienda).
@@ -117,5 +129,5 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 
 - **Sugerencias de refuerzos**: desplegada y con la lógica probada, pero sin ver andar con el modelo en un partido real: hace falta un partido propio con lugares libres y gente. Cuidado al probarla: crear un partido en el proyecto real avisa por push a todo el grupo. Las pruebas de permisos y casos vacíos están en `functions/test/ai-assist.emulator.test.cjs` (pide el emulador de Firestore, que necesita Java 21; localmente hay Java 17, así que corre en CI y todavía no se ejecutó).
 - **Google Fit / Salud**: sin hacer (ver arriba).
-- Del informe [PARIDAD_PWA_APP.md](PARIDAD_PWA_APP.md): el punto 5 solo en lo que falta (árbitros) y el 6 (Comunidad: ticker de actividad y rankings por categoría).
+- Del informe [PARIDAD_PWA_APP.md](PARIDAD_PWA_APP.md): solo los árbitros del punto 5 (decisión pendiente).
 - **Rediseño**: las pantallas nuevas siguen el estilo actual, que se quiere rediseñar completo.
