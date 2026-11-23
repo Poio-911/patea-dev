@@ -50,6 +50,12 @@ test('mismo contexto, mismo hash; si cambia, cambia', () => {
   assert.notEqual(c.contextHash(a), c.contextHash(d));
 });
 
+test('el prompt del análisis pide hablarle al jugador y no sumar goles con asistencias', () => {
+  const prompt = c.buildAnalysisPrompt(c.buildCoachContext(player, evals));
+  assert.match(prompt, /segunda persona/);
+  assert.match(prompt, /no las sumes/);
+});
+
 test('mensaje e historial se limpian', () => {
   assert.equal(c.sanitizeMessage('  hola  '), 'hola');
   assert.equal(c.sanitizeMessage(''), null);

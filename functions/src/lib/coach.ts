@@ -109,9 +109,17 @@ export function buildCoachContext(player: Record<string, any>, evaluations: Reco
   };
 }
 
+/**
+ * Cambiar el prompt del análisis invalida los análisis guardados: sin esto, la
+ * misma situación del jugador seguiría devolviendo el texto del prompt viejo.
+ */
+export const ANALYSIS_PROMPT_VERSION = 2;
+
 /** Misma situación del jugador → mismo hash → se reutiliza el análisis. */
 export function contextHash(ctx: CoachContext): string {
-  return createHash('sha256').update(JSON.stringify(ctx)).digest('hex');
+  return createHash('sha256')
+    .update(`v${ANALYSIS_PROMPT_VERSION}:${JSON.stringify(ctx)}`)
+    .digest('hex');
 }
 
 /** Con menos que esto el análisis sería inventar: no se llama al modelo. */
@@ -163,7 +171,11 @@ DEVOLVÉ un JSON con:
 - patterns: hasta 2 patrones que se vean en los datos (tendencia, etiquetas que se repiten). Si los datos no alcanzan, dejá la lista vacía.
 - plan: exactamente 3 acciones cortas para los próximos partidos.
 
-Reglas: no menciones a quienes evaluaron ni cuántas personas lo hicieron; no uses la palabra "bo"; sin introducciones ni despedidas.`;
+Reglas:
+- Hablale DIRECTO al jugador, en segunda persona con voseo ("venís", "tenés", "te sale"). Nunca hables de él en tercera persona ni lo nombres en el titular.
+- Citá los números tal cual están: goles y asistencias son cosas distintas, no las sumes ni las llames de otra forma.
+- Cada fortaleza y cada punto a mejorar tiene que apoyarse en un dato concreto de arriba (un atributo, una nota, una etiqueta, la tendencia). Si no hay un dato que lo respalde, no lo digas.
+- No menciones a quienes evaluaron ni cuántas personas lo hicieron; no uses la palabra "bo"; sin introducciones ni despedidas.`;
 }
 
 export interface CoachTurn {
