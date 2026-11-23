@@ -1,5 +1,7 @@
 # Paridad PWA → app móvil
 
+> **Actualización 23/11/2026:** los puntos 1 (Logros), 2 (Configuración, sin Salud) y 3 (IA, salvo la imagen de dúo) ya están hechos desde cero. Detalle en [MIGRACION_PWA_A_APP_2026-11-23.md](MIGRACION_PWA_A_APP_2026-11-23.md).
+
 Análisis del 23/11/2026. Se comparó el código de la PWA (`src/app`, `src/components`, `src/lib/actions`, `src/ai/flows`) con el de la app Flutter (`patea_mobile/lib`, `functions/src`). Es una comparación por rutas, componentes y llamadas al servidor: los ítems marcados **parcial** hay que confirmar a mano en la pantalla.
 
 ## Ya migrado (resumen)
