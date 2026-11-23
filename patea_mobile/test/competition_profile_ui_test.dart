@@ -38,6 +38,7 @@ class ProfileFake extends Fake implements ProfileService {
 class TournamentFake extends CompetitionServiceFake {
   int sends = 0;
   List<String>? ids;
+  Map<String, dynamic>? payload;
   @override
   Future<String> create({
     required String collection,
@@ -46,6 +47,7 @@ class TournamentFake extends CompetitionServiceFake {
   }) async {
     sends++;
     ids = List<String>.from(data['teams']);
+    payload = data;
     throw StateError('Error de prueba recuperable');
   }
 }
@@ -116,6 +118,49 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+  testWidgets('liga elige formato primero y guarda sin fecha', (tester) async {
+    final fake = TournamentFake();
+    final errors = await montarPantalla(
+      tester,
+      const CreateCompetitionScreen(isCup: false, groupId: idGrupo),
+      tema: AppTheme.darkTheme,
+      extraOverrides: [competitionServiceProvider.overrideWithValue(fake)],
+    );
+    expect(errors, isEmpty);
+    expect(find.text('Logo de la liga (opcional)'), findsOneWidget);
+    expect(find.text('Una vuelta'), findsOneWidget);
+    expect(find.text('Abrir inscripciones'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, 'Liga del barrio');
+    tester.testTextInput.hide();
+    await tester.tap(find.text('Ida y vuelta'));
+    await tester.pump();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Abrir inscripciones'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Inicio por definir'), findsOneWidget);
+    expect(find.text('Ida y vuelta'), findsNothing);
+    final rules = find.text('Reglas de puntuación');
+    await tester.scrollUntilVisible(
+      rules,
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Victoria'), findsNothing);
+    await tester.tap(rules);
+    await tester.pumpAndSettle();
+    expect(find.text('Victoria'), findsOneWidget);
+    await tester.tap(find.text('Abrir inscripciones'));
+    await tester.pumpAndSettle();
+    expect(fake.payload?['format'], 'double_round_robin');
+    expect(fake.payload?['isPublic'], true);
+    expect(fake.payload?['startDate'], '');
+    expect(fake.payload?['rules'], {'pointsForWin': 3, 'pointsForDraw': 1});
+  });
+
   testWidgets('crear torneo queda por encima de la navegación del shell', (
     tester,
   ) async {

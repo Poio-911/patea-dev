@@ -406,14 +406,30 @@ class _CompetitionsState extends ConsumerState<CompetitionsScreen> {
                                       .withValues(alpha: 0.12),
                               borderRadius: AppRadii.chipAll,
                             ),
-                            child: Icon(
-                              c.type == 'cup'
-                                  ? Icons.emoji_events_outlined
-                                  : Icons.leaderboard_outlined,
-                              color: c.type == 'cup'
-                                  ? context.c.goldText
-                                  : context.c.primary,
-                            ),
+                            child: c.logoUrl?.trim().isNotEmpty == true
+                                ? ClipRRect(
+                                    borderRadius: AppRadii.chipAll,
+                                    child: Image.network(
+                                      c.logoUrl!,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, _, _) => Icon(
+                                        c.type == 'cup'
+                                            ? Icons.emoji_events_outlined
+                                            : Icons.leaderboard_outlined,
+                                        color: c.type == 'cup'
+                                            ? context.c.goldText
+                                            : context.c.primary,
+                                      ),
+                                    ),
+                                  )
+                                : Icon(
+                                    c.type == 'cup'
+                                        ? Icons.emoji_events_outlined
+                                        : Icons.leaderboard_outlined,
+                                    color: c.type == 'cup'
+                                        ? context.c.goldText
+                                        : context.c.primary,
+                                  ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/competition_model.dart';
@@ -78,6 +80,24 @@ class CompetitionService {
           'action': action,
           ...payload,
         }, timeout: const Duration(seconds: 120));
+  Future<String> uploadLeagueLogo({
+    required String groupId,
+    required String uid,
+    required String uploadId,
+    required Uint8List bytes,
+  }) async {
+    final jpeg = bytes[0] == 0xff;
+    final ext = jpeg ? 'jpg' : 'png';
+    final target = FirebaseStorage.instance.ref(
+      'leagues/$groupId/$uid/$uploadId.$ext',
+    );
+    await target.putData(
+      bytes,
+      SettableMetadata(contentType: jpeg ? 'image/jpeg' : 'image/png'),
+    );
+    return target.getDownloadURL();
+  }
+
   Future<CompetitionPage> page({
     required String collection,
     required String scope,

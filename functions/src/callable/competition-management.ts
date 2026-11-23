@@ -74,6 +74,9 @@ function settings(d: Data, isCup: boolean): Data {
   integer(count, isCup ? 32 : 16);
   if (count < 2) fail("El cupo mínimo es de dos equipos.");
   return {
+    ...(typeof d.logoUrl === "string" &&
+      /^https:\/\//.test(d.logoUrl) &&
+      d.logoUrl.length <= 2048 ? { logoUrl: d.logoUrl } : {}),
     name,
     description: text(d.description, 500),
     isPublic: d.isPublic === true,
