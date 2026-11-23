@@ -78,6 +78,8 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 - App: fila en el detalle (`match_stream_row.dart`): botón «Ver» que abre el enlace afuera; el organizador lo agrega, cambia o saca. La transmisión en sí no pasa por Pateá, así que no se incrusta ningún reproductor.
 - El «visualizador» de la PWA no hace falta: la app ya tiene cancha, estadísticas y línea de tiempo en vivo.
 
+**Ajuste posterior (pantalla del partido y costo por cancha):** tras verlo, lo que solo le sirve a quien organiza salió de la pantalla y pasó al **Panel del organizador** (Gestionar jugadores y el costo con pagos); los jugadores siguen viendo su parte y quién pagó, y la **transmisión** quedó abajo de todo. El **costo es por cancha**: se carga en Grupos, en las canchas guardadas (ícono de billetes), y los partidos que se juegan ahí lo usan; el organizador puede ponerle uno propio solo a un partido («Este partido») y volver al de la cancha. La cancha de un partido se resuelve por `placeId` y, si no, por nombre (misma regla en la app y en el servidor, que la usa para validar los pagos). Cambios en `updateGroupVenue` (acepta `costPerMatch` y `costCurrency`) y `markMatchPayment`.
+
 **Calendario**
 - Tercer modo en Partidos, junto a lista y cuadrícula (`matches_calendar_view.dart`, lógica en `lib/core/utils/match_calendar.dart`): mes de lunes a domingo, puntos por día (color si falta jugarse, apagado si ya se jugó), «Hoy», y al tocar un día aparecen sus partidos con la misma tarjeta de la lista.
 - Respeta los filtros de tipo, estado y «mis partidos», pero no el de tiempo; en este modo se esconden las pestañas Próximos/Semana/Historial.

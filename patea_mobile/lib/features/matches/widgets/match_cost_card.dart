@@ -77,7 +77,7 @@ class _MatchCostCardState extends ConsumerState<MatchCostCard> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Esta cancha no tiene costo cargado. Cargalo en Grupos, en las canchas guardadas, o ponelo solo para este partido.',
+                'Sin costo cargado. Se carga en Grupos (canchas guardadas) o solo para este partido.',
                 style: AppTypography.body(size: 13, color: c.textSecondary),
               ),
             ),
