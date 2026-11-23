@@ -282,6 +282,21 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
+
+          // La galería del sistema de diseño: solo en debug, para aprobar un
+          // cambio de paleta sin recorrer la app. Antes estaba en el menú.
+          if (kDebugMode) ...[
+            const _SectionTitle('Desarrollo'),
+            _SettingsGroup(
+              children: [
+                _Row(
+                  icon: Icons.palette_outlined,
+                  title: 'Sistema de diseño',
+                  onTap: () => context.push('/dev/gallery'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

@@ -1,10 +1,3 @@
-import 'package:flutter/foundation.dart';
-import 'patea_snack.dart';
-import 'delete_account_flow.dart';
-import 'credits_store_sheet.dart';
-import '../services/credits_store_service.dart';
-import '../utils/legal_links.dart';
-import '../theme/theme_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/messages_service.dart';
-import '../services/push_permission.dart';
 import '../theme/patea_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_typography.dart';
@@ -179,48 +171,13 @@ class PateaUserMenuSheet extends ConsumerWidget {
                   context.push('/achievements');
                 },
               ),
-              // Explorar y Evaluaciones estaban acá también, y las dos son
-              // pestañas de la barra de abajo: abrías el menú de usuario para ir
-              // a algo que está a un toque de distancia.
-              _MenuItem(
-                icon: Icons.notifications_active_outlined,
-                label: 'Activar Notificaciones',
-                onTap: () async {
-                  // Se captura antes del await: después el contexto puede no
-                  // valer, y esta hoja además se cierra en el medio.
-                  final avisar = PateaSnack.of(context);
-                  Navigator.pop(context);
-                  final granted = await PushPermission.requestNow();
-                  if (granted) {
-                    avisar.ok('Listo, te vamos a avisar.');
-                  } else {
-                    final isIos = defaultTargetPlatform == TargetPlatform.iOS;
-                    avisar.error(
-                      isIos
-                          ? 'iOS tiene las notificaciones bloqueadas para Pateá. '
-                                'Habilitalas desde Configuración › Pateá › Notificaciones.'
-                          : 'Android tiene las notificaciones bloqueadas para Pateá. '
-                                'Se habilitan desde Ajustes › Apps › Pateá › Notificaciones.',
-                    );
-                  }
-                },
-              ),
-
-              // Créditos de IA: solo en la versión de la App Store. En TestFlight
-              // y desarrollo este ítem no existe.
-              if (ref.watch(creditsStoreEnabledProvider).value ?? false)
-                _MenuItem(
-                  icon: Icons.auto_awesome_outlined,
-                  label: 'Comprar créditos de IA',
-                  onTap: () async {
-                    final navigator = Navigator.of(context, rootNavigator: true);
-                    Navigator.pop(context);
-                    final overlayContext = navigator.overlay?.context;
-                    if (overlayContext != null && overlayContext.mounted) {
-                      await showCreditsStoreSheet(overlayContext);
-                    }
-                  },
-                ),
+              // Explorar y Evaluaciones están en la barra de abajo. Lo demás (tema,
+              // notificaciones, privacidad, términos, créditos y eliminar la
+              // cuenta) vive en Configuración, para que este menú entre en la
+              // pantalla sin scroll.
+              const SizedBox(height: 8),
+              Divider(color: context.c.overlayLine, height: 1),
+              const SizedBox(height: 8),
 
               _MenuItem(
                 icon: Icons.settings_outlined,
@@ -230,65 +187,6 @@ class PateaUserMenuSheet extends ConsumerWidget {
                   context.push('/settings');
                 },
               ),
-
-              const SizedBox(height: 8),
-              Divider(color: context.c.overlayLine, height: 1),
-              const SizedBox(height: 8),
-
-              // El tema. Dos opciones, no tres: ver theme_mode_provider.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
-                child: SegmentedButton<PateaTheme>(
-                  showSelectedIcon: false,
-                  segments: [
-                    for (final t in PateaTheme.values)
-                      ButtonSegment(
-                        value: t,
-                        icon: Icon(
-                          t == PateaTheme.game
-                              ? Icons.sports_soccer_rounded
-                              : Icons.light_mode_rounded,
-                          size: 16,
-                        ),
-                        label: Text(t.etiqueta),
-                      ),
-                  ],
-                  selected: {ref.watch(themeControllerProvider)},
-                  onSelectionChanged: (s) => ref
-                      .read(themeControllerProvider.notifier)
-                      .elegir(s.first),
-                ),
-              ),
-
-              // La galeria del sistema de diseno. Solo en debug: es la vista con
-              // la que se aprueba un cambio de paleta sin recorrer la app.
-              if (kDebugMode)
-                _MenuItem(
-                  icon: Icons.palette_outlined,
-                  label: 'Sistema de diseño',
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/dev/gallery');
-                  },
-                ),
-
-              _MenuItem(
-                icon: Icons.privacy_tip_outlined,
-                label: 'Política de privacidad',
-                onTap: () {
-                  Navigator.pop(context);
-                  LegalLinks.open(context, LegalLinks.privacy);
-                },
-              ),
-              _MenuItem(
-                icon: Icons.description_outlined,
-                label: 'Términos de uso',
-                onTap: () {
-                  Navigator.pop(context);
-                  LegalLinks.open(context, LegalLinks.terms);
-                },
-              ),
-
               _MenuItem(
                 icon: Icons.logout_rounded,
                 label: 'Cerrar sesión',
@@ -296,22 +194,6 @@ class PateaUserMenuSheet extends ConsumerWidget {
                 onTap: () async {
                   Navigator.pop(context);
                   await ref.read(authServiceProvider).signOut();
-                },
-              ),
-
-              _MenuItem(
-                icon: Icons.delete_forever_outlined,
-                label: 'Eliminar mi cuenta',
-                color: context.c.destructive,
-                onTap: () async {
-                  // La hoja se cierra antes: el diálogo cuelga del overlay del
-                  // navegador raíz, que sigue vivo cuando la hoja ya no está.
-                  final navigator = Navigator.of(context, rootNavigator: true);
-                  Navigator.pop(context);
-                  final overlayContext = navigator.overlay?.context;
-                  if (overlayContext != null && overlayContext.mounted) {
-                    await showDeleteAccountFlow(overlayContext);
-                  }
                 },
               ),
             ],

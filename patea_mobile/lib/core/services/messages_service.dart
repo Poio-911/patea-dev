@@ -27,7 +27,7 @@ final directChatMessagesStreamProvider =
     });
 
 final unreadMessagesCountProvider = Provider<int>((ref) {
-  final list = ref.watch(directChatsStreamProvider).value ?? const [];
+  final list = ref.watch(directChatsStreamProvider).asData?.value ?? const [];
   return list.fold<int>(0, (sum, c) => sum + c.unreadCount);
 });
 
