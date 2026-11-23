@@ -1,3 +1,4 @@
+import '../../core/services/ai_assist_service.dart';
 import 'dart:io';
 
 import '../../core/widgets/patea_activity_cover.dart';
@@ -400,6 +401,7 @@ class _ActiveGroupView extends ConsumerWidget {
               teamsCount: teamsAsync.value?.length,
               playedCount: matchesAsync.value == null ? null : recent.length,
             ),
+            _GroupSummaryCard(groupId: groupId),
             const SizedBox(height: 20),
 
             _Section(
@@ -905,6 +907,49 @@ class _PlayedMatchRow extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Un párrafo sobre el grupo, escrito con IA a partir de sus números. Es un
+/// agregado: si todavía no está o falla, la pantalla sigue sin él.
+class _GroupSummaryCard extends ConsumerWidget {
+  final String groupId;
+  const _GroupSummaryCard({required this.groupId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final summary = ref.watch(groupSummaryProvider(groupId));
+    final text = summary.asData?.value;
+    if (summary.isLoading) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Text(
+          'Armando el resumen del grupo…',
+          style: AppTypography.body(size: 13, color: c.textSecondary),
+        ),
+      );
+    }
+    if (text == null || text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.auto_awesome_outlined, size: 16, color: c.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTypography.body(size: 14, color: c.textSecondary),
+            ),
+          ),
+        ],
       ),
     );
   }

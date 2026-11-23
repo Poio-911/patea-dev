@@ -13,7 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:patea_mobile/core/models/achievement_model.dart';
 import 'package:patea_mobile/core/models/coach_models.dart';
 import 'package:patea_mobile/core/services/coach_service.dart';
-import 'package:patea_mobile/features/coach/coach_chat_screen.dart';
+import 'package:patea_mobile/features/coach/ai_chat_screen.dart';
 import 'package:patea_mobile/features/coach/player_analysis_screen.dart';
 import 'package:patea_mobile/core/services/achievements_service.dart';
 import 'package:patea_mobile/core/services/credits_store_service.dart';
@@ -166,7 +166,7 @@ void main() {
   testWidgets('chat', (tester) async {
     final errors = await montarPantalla(
       tester,
-      const CoachChatScreen(),
+      AiChatScreen.coach(),
       tema: AppTheme.darkTheme,
     );
     expect(errors, isEmpty);

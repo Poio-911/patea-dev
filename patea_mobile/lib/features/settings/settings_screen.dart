@@ -43,7 +43,7 @@ class SettingsScreen extends ConsumerWidget {
     final player = uid.isEmpty
         ? null
         : ref.watch(singlePlayerStreamProvider(uid)).value;
-    final notificationsOn = ref.watch(notificationsAllowedProvider).value;
+    final notificationsOn = ref.watch(notificationsAllowedProvider).asData?.value;
     final blocked = ref.watch(blockedUidsStreamProvider).value ?? const {};
 
     return Scaffold(

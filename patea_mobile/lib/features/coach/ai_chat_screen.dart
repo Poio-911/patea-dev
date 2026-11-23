@@ -2,28 +2,83 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/coach_models.dart';
+import '../../core/services/ai_assist_service.dart';
 import '../../core/services/coach_service.dart';
 import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 
-/// Charla con el DT: preguntas sobre tu juego, con tus datos reales de fondo.
-/// La conversación vive mientras la pantalla está abierta; el servidor se queda
-/// con los últimos turnos.
-class CoachChatScreen extends ConsumerStatefulWidget {
-  const CoachChatScreen({super.key});
+/// Cómo manda un mensaje al servidor: recibe lo que se escribió y los turnos
+/// anteriores, y devuelve la respuesta con sugerencias de preguntas.
+typedef AiChatSender =
+    Future<CoachReply> Function(
+      WidgetRef ref,
+      String message,
+      List<ChatMessage> history,
+    );
+
+/// Charla con una IA: la misma pantalla sirve para el DT y para el asistente de
+/// la app. La conversación vive mientras la pantalla está abierta; el servidor
+/// se queda con los últimos turnos.
+class AiChatScreen extends ConsumerStatefulWidget {
+  final String title;
+  final IconData icon;
+  final String introTitle;
+  final String introText;
+  final String hint;
+  final List<String> starters;
+  final AiChatSender send;
+
+  const AiChatScreen({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.introTitle,
+    required this.introText,
+    required this.hint,
+    required this.starters,
+    required this.send,
+  });
+
+  /// Charla con el DT sobre tu juego, con tus datos reales de fondo.
+  factory AiChatScreen.coach() => AiChatScreen(
+    title: 'El DT',
+    icon: Icons.sports_rounded,
+    introTitle: 'Charlá con tu DT',
+    introText:
+        'Conoce tus números, tus notas y tus etiquetas. Preguntale lo que quieras sobre tu juego.',
+    hint: 'Preguntale al DT…',
+    starters: const [
+      '¿Cómo vengo jugando?',
+      '¿Qué trabajo esta semana?',
+      'Vengo bajando, ¿qué hago?',
+    ],
+    send: (ref, message, history) =>
+        ref.read(coachServiceProvider).chat(message, history),
+  );
+
+  /// Asistente que explica cómo usar Pateá.
+  factory AiChatScreen.help() => AiChatScreen(
+    title: 'Ayuda',
+    icon: Icons.help_outline_rounded,
+    introTitle: '¿Cómo te ayudo?',
+    introText:
+        'Preguntame cómo se usa Pateá: armar partidos, evaluar, grupos, competiciones y más.',
+    hint: 'Escribí tu pregunta…',
+    starters: const [
+      '¿Cómo armo un partido?',
+      '¿Cuándo sube mi OVR?',
+      '¿Cómo entro a un grupo?',
+    ],
+    send: (ref, message, history) =>
+        ref.read(aiAssistServiceProvider).askHelp(message, history),
+  );
 
   @override
-  ConsumerState<CoachChatScreen> createState() => _CoachChatScreenState();
+  ConsumerState<AiChatScreen> createState() => _AiChatScreenState();
 }
 
-class _CoachChatScreenState extends ConsumerState<CoachChatScreen> {
-  static const _starters = [
-    '¿Cómo vengo jugando?',
-    '¿Qué trabajo esta semana?',
-    'Vengo bajando, ¿qué hago?',
-  ];
-
+class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final _messages = <ChatMessage>[];
   final _input = TextEditingController();
   final _scroll = ScrollController();
@@ -51,7 +106,7 @@ class _CoachChatScreenState extends ConsumerState<CoachChatScreen> {
     });
     _toBottom();
     try {
-      final reply = await ref.read(coachServiceProvider).chat(text, history);
+      final reply = await widget.send(ref, text, history);
       if (!mounted) return;
       setState(() {
         _messages.add(ChatMessage(ChatRole.coach, reply.reply));
@@ -90,7 +145,7 @@ class _CoachChatScreenState extends ConsumerState<CoachChatScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'El DT',
+          widget.title,
           style: AppTypography.headline(size: 20, weight: FontWeight.w700),
         ),
       ),
@@ -98,7 +153,13 @@ class _CoachChatScreenState extends ConsumerState<CoachChatScreen> {
         children: [
           Expanded(
             child: _messages.isEmpty
-                ? _Intro(onPick: _send)
+                ? _Intro(
+                    icon: widget.icon,
+                    title: widget.introTitle,
+                    text: widget.introText,
+                    starters: widget.starters,
+                    onPick: _send,
+                  )
                 : ListView(
                     controller: _scroll,
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -126,7 +187,10 @@ class _CoachChatScreenState extends ConsumerState<CoachChatScreen> {
                   for (final s in _suggestions)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ActionChip(label: Text(s), onPressed: () => _send(s)),
+                      child: ActionChip(
+                        label: Text(s),
+                        onPressed: () => _send(s),
+                      ),
                     ),
                 ],
               ),
@@ -147,8 +211,8 @@ class _CoachChatScreenState extends ConsumerState<CoachChatScreen> {
                       textCapitalization: TextCapitalization.sentences,
                       textInputAction: TextInputAction.send,
                       onSubmitted: _send,
-                      decoration: const InputDecoration(
-                        hintText: 'Preguntale al DT…',
+                      decoration: InputDecoration(
+                        hintText: widget.hint,
                         counterText: '',
                       ),
                     ),
@@ -170,8 +234,18 @@ class _CoachChatScreenState extends ConsumerState<CoachChatScreen> {
 }
 
 class _Intro extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String text;
+  final List<String> starters;
   final ValueChanged<String> onPick;
-  const _Intro({required this.onPick});
+  const _Intro({
+    required this.icon,
+    required this.title,
+    required this.text,
+    required this.starters,
+    required this.onPick,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -179,15 +253,15 @@ class _Intro extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        Icon(Icons.sports_rounded, size: 44, color: c.primary),
+        Icon(icon, size: 44, color: c.primary),
         const SizedBox(height: 14),
         Text(
-          'Charlá con tu DT',
+          title,
           style: AppTypography.headline(size: 22, weight: FontWeight.w800),
         ),
         const SizedBox(height: 6),
         Text(
-          'Conoce tus números, tus notas y tus etiquetas. Preguntale lo que quieras sobre tu juego.',
+          text,
           style: AppTypography.body(size: 14, color: c.textSecondary),
         ),
         const SizedBox(height: 20),
@@ -195,7 +269,7 @@ class _Intro extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final s in _CoachChatScreenState._starters)
+            for (final s in starters)
               ActionChip(label: Text(s), onPressed: () => onPick(s)),
           ],
         ),
@@ -223,7 +297,9 @@ class _Bubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: mine ? c.primary : c.card,
           borderRadius: AppRadii.cardAll,
-          border: mine ? null : Border.all(color: c.border.withValues(alpha: 0.5)),
+          border: mine
+              ? null
+              : Border.all(color: c.border.withValues(alpha: 0.5)),
         ),
         child: Text(
           message.text,
@@ -244,7 +320,7 @@ class _Typing extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 10, left: 4),
     child: Text(
-      'El DT está escribiendo…',
+      'Escribiendo…',
       style: AppTypography.body(size: 13, color: context.c.textSecondary),
     ),
   );

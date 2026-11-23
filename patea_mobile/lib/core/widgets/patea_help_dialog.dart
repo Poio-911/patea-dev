@@ -591,6 +591,23 @@ class _PateaSectionHelpSheetState extends State<PateaSectionHelpSheet> {
                       ),
                     ),
                   ],
+                  // Lo que la guía no responde, se le pregunta al asistente.
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: widget.onOpenFullTour == null ? 16 : 0,
+                    ),
+                    child: Center(
+                      child: TextButton.icon(
+                        onPressed: () {
+                          final router = GoRouter.of(context);
+                          Navigator.of(context).pop();
+                          router.push('/help');
+                        },
+                        icon: const Icon(Icons.auto_awesome_outlined, size: 17),
+                        label: const Text('Preguntale al asistente'),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -39,7 +39,7 @@ import '../../features/evaluations/evaluation_form_screen.dart';
 import '../../features/social/social_feed_screen.dart';
 import '../../features/social/leaderboard_screen.dart';
 import '../../features/coach/ai_coach_screen.dart';
-import '../../features/coach/coach_chat_screen.dart';
+import '../../features/coach/ai_chat_screen.dart';
 import '../../features/coach/player_analysis_screen.dart';
 import '../../features/achievements/achievements_screen.dart';
 import '../../features/settings/settings_screen.dart';
@@ -354,7 +354,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/coach/chat',
-        builder: (context, state) => _withBackground(const CoachChatScreen()),
+        builder: (context, state) => _withBackground(AiChatScreen.coach()),
+      ),
+      GoRoute(
+        path: '/help',
+        builder: (context, state) => _withBackground(AiChatScreen.help()),
       ),
       GoRoute(
         path: '/achievements',

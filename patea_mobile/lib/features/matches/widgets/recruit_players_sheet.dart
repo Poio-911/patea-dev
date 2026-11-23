@@ -4,6 +4,9 @@ import '../../../core/widgets/patea_card.dart';
 import '../../../core/widgets/patea_snack.dart';
 import '../../../core/widgets/patea_states.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/models/coach_models.dart';
+import '../../../core/services/ai_assist_service.dart';
+import '../../../core/services/coach_service.dart';
 
 import '../../../core/models/available_player_model.dart';
 import '../../../core/models/match_model.dart';
@@ -54,6 +57,12 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
   bool _searching = false;
   String? _searchError;
 
+  /// Sugerencia del DT sobre la lista que se está viendo.
+  bool _suggesting = false;
+  List<RecruitRecommendation>? _recs;
+  String? _suggestError;
+  Map<String, String> _recNames = const {};
+
   @override
   void initState() {
     super.initState();
@@ -93,6 +102,126 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
     } finally {
       if (mounted) setState(() => _searching = false);
     }
+  }
+
+  /// Quiénes están a la vista en la pestaña actual: uid → nombre.
+  Map<String, String> _visibleCandidates() {
+    if (_tab == 1) {
+      return {for (final p in _nearby ?? const <AvailablePlayerModel>[]) p.uid: p.displayName};
+    }
+    final players = ref.read(activeGroupPlayersProvider).value ?? const [];
+    return {
+      for (final p in players)
+        if (!_alreadyIn.contains(p.id) && p.ownerUid == p.id) p.id: p.name,
+    };
+  }
+
+  Future<void> _suggest() async {
+    final names = _visibleCandidates();
+    if (names.isEmpty || _suggesting) return;
+    setState(() {
+      _suggesting = true;
+      _suggestError = null;
+      _recs = null;
+      _recNames = names;
+    });
+    try {
+      final recs = await ref
+          .read(aiAssistServiceProvider)
+          .recommendRecruits(widget.match.id, names.keys.toList());
+      if (mounted) setState(() => _recs = recs);
+    } catch (e) {
+      if (mounted) setState(() => _suggestError = coachErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _suggesting = false);
+    }
+  }
+
+  /// El pedido al DT: un botón, y después lo que sugiere con su motivo.
+  Widget _buildSuggestion() {
+    final c = context.c;
+    if (_suggesting) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'El DT está mirando la lista…',
+              style: AppTypography.body(size: 13, color: c.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+    final recs = _recs;
+    if (recs == null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: _suggest,
+            icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+            label: const Text('Que el DT sugiera'),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      child: PateaCard(
+        padding: const EdgeInsets.all(12),
+        borderColor: c.primary.withValues(alpha: 0.45),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.auto_awesome_outlined, size: 16, color: c.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    recs.isEmpty ? 'El DT no ve a nadie que encaje' : 'El DT sugiere',
+                    style: AppTypography.headline(size: 14, weight: FontWeight.w700),
+                  ),
+                ),
+                if (recs.isNotEmpty)
+                  TextButton(
+                    onPressed: () => setState(
+                      () => _selected.addAll(recs.map((r) => r.playerId)),
+                    ),
+                    child: Text(recs.length == 1 ? 'Elegir' : 'Elegir a todos'),
+                  ),
+              ],
+            ),
+            for (final r in recs)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${_recNames[r.playerId] ?? 'Jugador'}: ',
+                        style: AppTypography.body(size: 13, weight: FontWeight.w700),
+                      ),
+                      TextSpan(
+                        text: r.reason,
+                        style: AppTypography.body(size: 13, color: c.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _invite() async {
@@ -150,13 +279,21 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
                       _Tab(
                         label: 'Del grupo',
                         selected: _tab == 0,
-                        onTap: () => setState(() => _tab = 0),
+                        onTap: () => setState(() {
+                          _tab = 0;
+                          _recs = null;
+                          _suggestError = null;
+                        }),
                       ),
                       const SizedBox(width: 8),
                       _Tab(
                         label: 'Cerca de la cancha',
                         selected: _tab == 1,
-                        onTap: () => setState(() => _tab = 1),
+                        onTap: () => setState(() {
+                          _tab = 1;
+                          _recs = null;
+                          _suggestError = null;
+                        }),
                       ),
                     ],
                   ),
@@ -164,6 +301,15 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
               ),
             ),
             const SizedBox(height: 12),
+            _buildSuggestion(),
+            if (_suggestError != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Text(
+                  _suggestError!,
+                  style: AppTypography.body(size: 13, color: context.c.destructive),
+                ),
+              ),
             Expanded(child: _tab == 0 ? _buildGroupTab() : _buildNearbyTab()),
             SafeArea(
               top: false,

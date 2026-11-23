@@ -44,6 +44,16 @@ void main() {
     expect(const ChatMessage(ChatRole.coach, 'che').toWire()['role'], 'coach');
   });
 
+  test('refuerzos: lee las recomendaciones', () {
+    final r = RecruitRecommendation.fromMap({
+      'playerId': 'u1',
+      'reason': 'Te falta un golero',
+    });
+    expect(r.playerId, 'u1');
+    expect(r.reason, 'Te falta un golero');
+    expect(RecruitRecommendation.fromMap(const {}).playerId, '');
+  });
+
   test('el mensaje de error pierde el prefijo Exception', () {
     expect(coachErrorMessage(Exception('Hablaste mucho.')), 'Hablaste mucho.');
     expect(coachErrorMessage('otro'), 'otro');

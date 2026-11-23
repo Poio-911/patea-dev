@@ -81,6 +81,20 @@ class ChatMessage {
   };
 }
 
+/// Un refuerzo que sugiere el DT para un partido, con su motivo.
+@immutable
+class RecruitRecommendation {
+  final String playerId;
+  final String reason;
+  const RecruitRecommendation(this.playerId, this.reason);
+
+  factory RecruitRecommendation.fromMap(Map<String, dynamic> map) =>
+      RecruitRecommendation(
+        map['playerId'] as String? ?? '',
+        map['reason'] as String? ?? '',
+      );
+}
+
 @immutable
 class CoachReply {
   final String reply;

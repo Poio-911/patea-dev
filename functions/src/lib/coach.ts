@@ -289,7 +289,7 @@ export function parseChatReply(text: string | undefined, finishReason: string | 
 }
 
 /** Topes diarios por persona, para que la IA no se vuelva un gasto sin techo. */
-export const DAILY_LIMITS = { chat: 25, analysis: 6 } as const;
+export const DAILY_LIMITS = { chat: 25, analysis: 6, help: 30, summary: 10, recruit: 10 } as const;
 export type UsageKind = keyof typeof DAILY_LIMITS;
 
 export const usageDocId = (uid: string, now = new Date()): string =>
