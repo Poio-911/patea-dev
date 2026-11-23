@@ -155,9 +155,52 @@ class CreditsStoreService {
   }
 }
 
+/// Solo para mirar la tienda en un emulador:
+/// `flutter run --dart-define=PREVIEW_CREDITS_STORE=true`. Se ignora fuera de
+/// debug, así que ningún build de TestFlight o de la tienda puede activarlo.
+const _previewStore =
+    kDebugMode && bool.fromEnvironment('PREVIEW_CREDITS_STORE');
+
+/// Tienda simulada: productos de ejemplo y compra que no cobra ni suma nada.
+class _PreviewCreditsStoreService extends CreditsStoreService {
+  @override
+  void start() {}
+
+  @override
+  Future<bool> get available async => true;
+
+  @override
+  Future<List<ProductDetails>> loadProducts() async => [
+    for (final e in const {
+      'com.patea.app.credits_5': r'$0.99',
+      'com.patea.app.credits_15': r'$2.99',
+      'com.patea.app.credits_40': r'$6.99',
+    }.entries)
+      ProductDetails(
+        id: e.key,
+        title: '${kCreditProducts[e.key]} créditos de IA',
+        description: 'Vista previa',
+        price: e.value,
+        rawPrice: double.parse(e.value.substring(1)),
+        currencyCode: 'USD',
+      ),
+  ];
+
+  @override
+  Future<void> buy(ProductDetails product) async {
+    state.value = const CreditsPurchaseState(CreditsPurchaseStatus.validating);
+    await Future<void>.delayed(const Duration(seconds: 1));
+    state.value = CreditsPurchaseState(
+      CreditsPurchaseStatus.success,
+      creditsAdded: kCreditProducts[product.id] ?? 0,
+    );
+  }
+}
+
 /// ¿Hay que mostrar las compras? Solo en un build de la App Store y con la
 /// tienda disponible. En TestFlight y en desarrollo es siempre `false`.
 final creditsStoreEnabledProvider = FutureProvider<bool>((ref) async {
+  if (_previewStore) return true;
   if (!await ref.watch(appStoreBuildProvider.future)) return false;
   try {
     return await InAppPurchase.instance.isAvailable();
@@ -171,7 +214,9 @@ final creditsStoreEnabledProvider = FutureProvider<bool>((ref) async {
 final creditsStoreServiceProvider = Provider<CreditsStoreService?>((ref) {
   final enabled = ref.watch(creditsStoreEnabledProvider).value ?? false;
   if (!enabled) return null;
-  final service = CreditsStoreService()..start();
+  final service = _previewStore
+      ? _PreviewCreditsStoreService()
+      : (CreditsStoreService()..start());
   ref.onDispose(service.dispose);
   return service;
 });

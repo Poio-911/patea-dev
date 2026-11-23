@@ -29,6 +29,7 @@ export { searchTeams, challengeTeam, respondTeamChallenge, getMyTeamChallenges }
 export { onTeamWrite } from './triggers/on-team-write';
 export { onOvrHistoryFeed, onMatchFeed } from './triggers/on-feed-events';
 export { logTrainingSession } from './callable/training';
+export { syncAchievements } from './callable/achievements';
 export { createManualPlayer, getManualPlayerContact, updateManualPlayer, deleteManualPlayer, findManualPlayerClaims, claimManualPlayer } from './callable/manual-player-management';
 export { saveUserLocation, enableAvailability, disableAvailability, updateAvailabilityPreferences, getAvailableLocalPlayers, sendMatchInvitations, sendPlayerMessage } from './callable/explore';
 export { submitEvaluationSubmission, requestIdentityReveal, respondToIdentityReveal, getEvaluationAudio, finalizeMatchEvaluation } from './callable/evaluations';

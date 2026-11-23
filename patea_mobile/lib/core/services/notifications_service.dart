@@ -29,7 +29,7 @@ class NotificationsService {
       GlobalKey<ScaffoldMessengerState>();
 
   static final RegExp _allowedRoutePattern = RegExp(
-    r'^/(matches|evaluations|players|groups|competitions|social|explorar|profile|leaderboard|coach)(/[A-Za-z0-9_.-]+)*$',
+    r'^/(matches|evaluations|players|groups|competitions|social|explorar|profile|leaderboard|coach|achievements)(/[A-Za-z0-9_.-]+)*$',
   );
 
   static StreamSubscription<String>? _tokenRefreshSub;

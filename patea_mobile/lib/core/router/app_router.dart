@@ -39,6 +39,8 @@ import '../../features/evaluations/evaluation_form_screen.dart';
 import '../../features/social/social_feed_screen.dart';
 import '../../features/social/leaderboard_screen.dart';
 import '../../features/coach/ai_coach_screen.dart';
+import '../../features/achievements/achievements_screen.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../features/dev/design_gallery_screen.dart';
 import '../../features/explorar/explorar_screen.dart';
 import '../../features/evaluations/evaluations_inbox_screen.dart';
@@ -342,6 +344,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/coach',
         builder: (context, state) => _withBackground(const AICoachScreen()),
+      ),
+      GoRoute(
+        path: '/achievements',
+        builder: (context, state) =>
+            _withBackground(const AchievementsScreen()),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => _withBackground(const SettingsScreen()),
       ),
       // La galeria del sistema de diseno. Sin `_withBackground` a proposito:
       // es para mirar los tokens contra el fondo real de cada tema, no contra

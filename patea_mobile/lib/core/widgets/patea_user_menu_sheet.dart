@@ -33,8 +33,6 @@ import 'ovr_accent.dart';
 /// Ahora la identidad va apoyada directo sobre la hoja y las filas son ícono +
 /// etiqueta, como la web.
 ///
-/// Faltan **Logros** y **Configuración**, que la web sí tiene: no existen
-/// `/achievements` ni `/settings` en el router del móvil todavía.
 class PateaUserMenuSheet extends ConsumerWidget {
   const PateaUserMenuSheet({super.key});
 
@@ -173,6 +171,14 @@ class PateaUserMenuSheet extends ConsumerWidget {
                   context.push('/coach');
                 },
               ),
+              _MenuItem(
+                icon: Icons.emoji_events_outlined,
+                label: 'Logros',
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/achievements');
+                },
+              ),
               // Explorar y Evaluaciones estaban acá también, y las dos son
               // pestañas de la barra de abajo: abrías el menú de usuario para ir
               // a algo que está a un toque de distancia.
@@ -215,6 +221,15 @@ class PateaUserMenuSheet extends ConsumerWidget {
                     }
                   },
                 ),
+
+              _MenuItem(
+                icon: Icons.settings_outlined,
+                label: 'Configuración',
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/settings');
+                },
+              ),
 
               const SizedBox(height: 8),
               Divider(color: context.c.overlayLine, height: 1),

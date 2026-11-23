@@ -8,6 +8,7 @@ void main() {
   group('NotificationsService.normalizeLink', () {
     test('permite rutas internas válidas y rechaza externas', () {
       expect(NotificationsService.normalizeLink('/matches/abc123'), '/matches/abc123');
+      expect(NotificationsService.normalizeLink('/achievements'), '/achievements');
       expect(NotificationsService.normalizeLink(' /evaluations/m-1 '), '/evaluations/m-1');
       expect(NotificationsService.normalizeLink('/players/u1'), '/players/u1');
       expect(NotificationsService.normalizeLink('/'), '/');
