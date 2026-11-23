@@ -23,19 +23,31 @@ import '../../../core/widgets/jersey_painter.dart';
 class EditTeamsSheet extends ConsumerStatefulWidget {
   final MatchModel match;
 
-  const EditTeamsSheet({super.key, required this.match});
+  final bool allowRebalance;
 
-  static Future<void> show(BuildContext context, MatchModel match) async {
+  const EditTeamsSheet({
+    super.key,
+    required this.match,
+    this.allowRebalance = false,
+  });
+
+  static Future<void> show(
+    BuildContext context,
+    MatchModel match, {
+    VoidCallback? onRebalance,
+  }) async {
     // Defensa en profundidad: los botones ya no se ofrecen en partidos entre
     // equipos, y el servidor lo rechaza igual. Si alguien llega hasta acá, el
     // editor no se abre: ahí los planteles son los de cada equipo.
     if (match.isTeamMatch) return;
-    return showModalBottomSheet(
+    final rebalance = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.surfaceTop),
-      builder: (_) => EditTeamsSheet(match: match),
+      builder: (_) =>
+          EditTeamsSheet(match: match, allowRebalance: onRebalance != null),
     );
+    if (rebalance == true && context.mounted) onRebalance?.call();
   }
 
   @override
@@ -48,6 +60,7 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
   late Map<String, MatchPlayerEntry> _byUid;
   bool _saving = false;
   bool _recoveredPlayers = false;
+  late final Map<String, int> _initialSide;
 
   @override
   void initState() {
@@ -73,18 +86,13 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
       _byUid[player.uid] = player;
       _recoveredPlayers = true;
     }
+    _initialSide = Map.of(_side);
   }
 
-  bool get _dirty {
-    if (_recoveredPlayers) return true;
-    final teams = [widget.match.teamA, widget.match.teamB];
-    for (var i = 0; i < teams.length; i++) {
-      for (final p in teams[i]?.players ?? const <MatchPlayerEntry>[]) {
-        if (_side[p.uid] != i) return true;
-      }
-    }
-    return false;
-  }
+  bool get _movedPlayers =>
+      _side.entries.any((entry) => _initialSide[entry.key] != entry.value);
+
+  bool get _dirty => _recoveredPlayers || _movedPlayers;
 
   Future<void> _save() async {
     if (_saving || _playersOf(0).isEmpty || _playersOf(1).isEmpty) return;
@@ -184,6 +192,14 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
                     color: context.c.textSecondary,
                   ),
                 ),
+                if (widget.allowRebalance)
+                  TextButton.icon(
+                    onPressed: _saving || _movedPlayers
+                        ? null
+                        : () => Navigator.pop(context, true),
+                    icon: const Icon(Icons.shuffle_rounded, size: 17),
+                    label: const Text('Recalcular equilibrio'),
+                  ),
               ],
             ),
           ),
@@ -241,7 +257,8 @@ class _EditTeamsSheetState extends ConsumerState<EditTeamsSheet> {
                         style: AppTypography.headline(
                           size: 14,
                           weight: FontWeight.w800,
-                          color: (_saving ||
+                          color:
+                              (_saving ||
                                   !canEdit ||
                                   aPlayers.isEmpty ||
                                   bPlayers.isEmpty)
@@ -367,7 +384,9 @@ class _TeamColumn extends StatelessWidget {
                                   minWidth: 28,
                                   minHeight: 28,
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: tierCol.withValues(alpha: 0.12),
                                   borderRadius: AppRadii.surfaceAll,
@@ -474,7 +493,11 @@ class DuplicatePlayersAlert extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 20, color: context.c.warningText),
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: context.c.warningText,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

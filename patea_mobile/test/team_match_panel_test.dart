@@ -109,8 +109,15 @@ void main() {
       await abrir(tester, partido(type: 'collaborative'));
       await abrirPanel(tester);
 
+      expect(find.text('Recalcular equilibrio'), findsNothing);
+      final edit = find.widgetWithText(OutlinedButton, 'Armar equipos');
+      expect(edit, findsOneWidget);
+      final button = tester.widget<OutlinedButton>(edit);
+      expect(button.onPressed, isNotNull);
+      button.onPressed!();
+      await tester.pumpAndSettle();
+      expect(find.byType(EditTeamsSheet), findsOneWidget);
       expect(find.text('Recalcular equilibrio'), findsOneWidget);
-      expect(find.text('Armar equipos'), findsOneWidget);
     },
   );
 

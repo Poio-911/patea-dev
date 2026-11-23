@@ -1634,25 +1634,24 @@ class _OrganizerPanel extends StatelessWidget {
               ],
               if (canConfigure) ...[
                 if (!isTeamMatch) ...[
-                  _OrganizerActionGrid(
-                    actions: [
-                      if (hasTeams)
-                        _OrganizerAction(
-                          label: 'Armar equipos',
-                          icon: Icons.swap_horiz_rounded,
-                          onPressed: isShuffling
-                              ? null
-                              : () => EditTeamsSheet.show(context, match),
-                        ),
-                      _OrganizerAction(
-                        label: hasTeams
-                            ? 'Recalcular equilibrio'
-                            : 'Equilibrar equipos',
-                        icon: Icons.shuffle_rounded,
-                        busy: isShuffling,
-                        onPressed: isShuffling ? null : onShuffle,
-                      ),
-                    ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: _OrganizerAction(
+                      label: hasTeams ? 'Armar equipos' : 'Equilibrar equipos',
+                      icon: hasTeams
+                          ? Icons.swap_horiz_rounded
+                          : Icons.shuffle_rounded,
+                      busy: isShuffling,
+                      onPressed: isShuffling
+                          ? null
+                          : hasTeams
+                          ? () => EditTeamsSheet.show(
+                              context,
+                              match,
+                              onRebalance: onShuffle,
+                            )
+                          : onShuffle,
+                    ),
                   ),
                   const SizedBox(height: 8),
                 ],
