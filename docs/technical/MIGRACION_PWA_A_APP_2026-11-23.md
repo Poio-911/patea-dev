@@ -62,10 +62,13 @@ Todas las funciones de IA comparten `functions/src/lib/ai-runtime.ts` (cliente d
 - App: 29 fallos, todos preexistentes (goldens, fechas, el trinquete de colores por `social_feed_screen.dart`, pruebas del menú de usuario y de «Explorar»). Ninguno es de lo hecho acá. El trinquete de colores sí tenía un fallo mío (botón de Apple): se agregó su presupuesto con la razón.
 - Probado en el emulador Android con el servidor real: Logros, Configuración, Tu análisis, El DT, la ayuda y el resumen del grupo.
 
+## Decidido no migrar
+
+- **Imagen de dúo** (`generate-duo-image` de la PWA): no se migra. La acción `generateDuoImageAction` existe pero **ninguna pantalla de la PWA la llama** (se buscó en todo `src`), así que no hay una función de producto que trasladar. Además genera imágenes con la cara de otra persona a partir de su foto, y eso pide un consentimiento que hoy no existe. Si algún día se quiere, hay que diseñarla como función nueva, con ese permiso explícito y sus créditos (en iOS, solo se compran en la tienda).
+
 ## Pendiente
 
-- **Sugerencias de refuerzos**: desplegada y con la lógica probada, pero sin ver andar en un partido real (hace falta un partido propio con lugares libres y gente).
-- **Imagen de dúo** (`generate-duo-image` de la PWA): sin hacer. Gasta créditos de IA y en iOS los créditos solo se compran en la tienda; falta definir cuánto cuesta y quién la puede generar.
+- **Sugerencias de refuerzos**: desplegada y con la lógica probada, pero sin ver andar con el modelo en un partido real: hace falta un partido propio con lugares libres y gente. Cuidado al probarla: crear un partido en el proyecto real avisa por push a todo el grupo. Las pruebas de permisos y casos vacíos están en `functions/test/ai-assist.emulator.test.cjs` (pide el emulador de Firestore, que necesita Java 21; localmente hay Java 17, así que corre en CI y todavía no se ejecutó).
 - **Google Fit / Salud**: sin hacer (ver arriba).
 - Del informe [PARIDAD_PWA_APP.md](PARIDAD_PWA_APP.md): puntos 4 (partidos: dividir costo, transmisión, plantillas, calendario, aviso sin conexión), 5 (competiciones y portal del organizador) y 6 (Comunidad).
 - **Rediseño**: las pantallas nuevas siguen el estilo actual, que se quiere rediseñar completo.
