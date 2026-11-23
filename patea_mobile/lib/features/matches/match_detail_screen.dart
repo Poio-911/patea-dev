@@ -1571,6 +1571,33 @@ class _OrganizerPanel extends StatelessWidget {
         !isTeamMatch &&
         !isCompetition;
 
+    final canConfigure = match.status == 'upcoming' && !isCompetition;
+    final hasRosterSpace =
+        match.matchSize <= 0 || match.players.length < match.matchSize;
+    final playerActions = <Widget>[
+      if (canEditRoster && hasRosterSpace) ...[
+        if (match.groupId?.isNotEmpty ?? false)
+          _OrganizerAction(
+            label: 'Agregar del grupo',
+            icon: Icons.group_add_outlined,
+            onPressed: () => _AddGroupPlayersSheet.show(context, match),
+          ),
+        _OrganizerAction(
+          label: 'Invitado puntual',
+          icon: Icons.person_add_alt_1_outlined,
+          onPressed: () => _showAddGuestDialog(context, match),
+        ),
+      ],
+      if (canConfigure &&
+          !isTeamMatch &&
+          match.players.length < match.matchSize)
+        _OrganizerAction(
+          label: 'Falta uno',
+          icon: Icons.person_search_outlined,
+          onPressed: () => RecruitPlayersSheet.show(context, match),
+        ),
+    ];
+
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
       shape: const Border(),
@@ -1600,324 +1627,98 @@ class _OrganizerPanel extends StatelessWidget {
                 costSection!,
                 const SizedBox(height: 14),
               ],
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (canEditRoster &&
-                      (match.matchSize <= 0 ||
-                          match.players.length < match.matchSize)) ...[
-                    if (match.groupId != null && match.groupId!.isNotEmpty)
-                      OutlinedButton.icon(
-                        onPressed: () =>
-                            _AddGroupPlayersSheet.show(context, match),
-                        icon: const Icon(Icons.group_add_outlined, size: 15),
-                        label: const Text('Agregar del grupo'),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.c.cardSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                          foregroundColor: context.c.textPrimary,
-                          side: BorderSide(
-                            color: context.c.border.withValues(alpha: 0.5),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
+              if (playerActions.isNotEmpty) ...[
+                _OrganizerActionGrid(actions: playerActions),
+                if (canConfigure || canEvaluate || isOwner)
+                  const SizedBox(height: 12),
+              ],
+              if (canConfigure) ...[
+                if (!isTeamMatch) ...[
+                  _OrganizerActionGrid(
+                    actions: [
+                      if (hasTeams)
+                        _OrganizerAction(
+                          label: 'Armar equipos',
+                          icon: Icons.swap_horiz_rounded,
+                          onPressed: isShuffling
+                              ? null
+                              : () => EditTeamsSheet.show(context, match),
                         ),
-                      ),
-                    OutlinedButton.icon(
-                      onPressed: () => _showAddGuestDialog(context, match),
-                      icon: const Icon(Icons.person_add_alt_1_outlined, size: 15),
-                      label: const Text('Invitado puntual'),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: context.c.cardSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                        foregroundColor: context.c.textPrimary,
-                        side: BorderSide(
-                          color: context.c.border.withValues(alpha: 0.5),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadii.cardAll,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (match.status == 'upcoming' && !isCompetition) ...[
-                    if (match.players.length < match.matchSize && !isTeamMatch)
-                      OutlinedButton.icon(
-                        onPressed: () =>
-                            RecruitPlayersSheet.show(context, match),
-                        icon: const Icon(
-                          Icons.person_search_outlined,
-                          size: 15,
-                        ),
-                        label: const Text('Falta uno'),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.c.cardSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                          foregroundColor: context.c.textPrimary,
-                          side: BorderSide(
-                            color: context.c.border.withValues(alpha: 0.5),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                      ),
-                    if (hasTeams && !isTeamMatch)
-                      OutlinedButton.icon(
-                        onPressed: isShuffling
-                            ? null
-                            : () => EditTeamsSheet.show(context, match),
-                        icon: const Icon(Icons.swap_horiz_rounded, size: 15),
-                        label: const Text('Armar equipos'),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.c.cardSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                          foregroundColor: context.c.textPrimary,
-                          side: BorderSide(
-                            color: context.c.border.withValues(alpha: 0.5),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                      ),
-                    if (!isTeamMatch)
-                      OutlinedButton.icon(
+                      _OrganizerAction(
+                        label: hasTeams
+                            ? 'Recalcular equilibrio'
+                            : 'Equilibrar equipos',
+                        icon: Icons.shuffle_rounded,
+                        busy: isShuffling,
                         onPressed: isShuffling ? null : onShuffle,
-                        icon: isShuffling
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: PateaButtonProgress(),
-                              )
-                            : const Icon(Icons.shuffle_rounded, size: 15),
-                        label: Text(
-                          hasTeams
-                              ? 'Recalcular equilibrio'
-                              : 'Equilibrar equipos',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.c.cardSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                          foregroundColor: context.c.primary,
-                          side: BorderSide(
-                            color: context.c.primary.withValues(alpha: 0.4),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
                       ),
-                    OutlinedButton.icon(
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _OrganizerActionGrid(
+                  actions: [
+                    _OrganizerAction(
+                      label: 'Reprogramar',
+                      icon: Icons.calendar_month_outlined,
                       onPressed: onReschedule,
-                      icon: const Icon(Icons.calendar_month_outlined, size: 15),
-                      label: const Text('Reprogramar'),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: context.c.cardSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                        foregroundColor: context.c.textPrimary,
-                        side: BorderSide(
-                          color: context.c.border.withValues(alpha: 0.5),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadii.cardAll,
-                        ),
-                      ),
                     ),
-                    OutlinedButton.icon(
+                    _OrganizerAction(
+                      label: 'Cambiar Cancha',
+                      icon: Icons.map_outlined,
                       onPressed: onChangeVenue,
-                      icon: const Icon(Icons.map_outlined, size: 15),
-                      label: const Text('Cambiar Cancha'),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: context.c.cardSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                        foregroundColor: context.c.textPrimary,
-                        side: BorderSide(
-                          color: context.c.border.withValues(alpha: 0.5),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadii.cardAll,
-                        ),
-                      ),
                     ),
                     if (canManageOrganizers &&
-                        match.groupId != null &&
-                        match.groupId!.isNotEmpty)
-                      OutlinedButton.icon(
-                        onPressed: () => _CoOrganizersSheet.show(context, match),
-                        icon: const Icon(
-                          Icons.manage_accounts_outlined,
-                          size: 15,
-                        ),
-                        label: Text(
-                          match.coOrganizerUids.isEmpty
-                              ? 'Co-organizadores'
-                              : 'Co-organizadores (${match.coOrganizerUids.length})',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.c.cardSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                          foregroundColor: context.c.textPrimary,
-                          side: BorderSide(
-                            color: context.c.border.withValues(alpha: 0.5),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
-                      ),
-                    if (canFinalize)
-                      ElevatedButton.icon(
-                        onPressed: isFinishing ? null : onFinish,
-                        icon: isFinishing
-                            ? SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: const PateaButtonProgress(),
-                              )
-                            : Icon(Icons.check_circle_outline, size: 15),
-                        label: Text(
-                          'Finalizar Partido',
-                          style: AppTypography.action(
-                            size: 14,
-                            weight: FontWeight.w700,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.c.primary,
-                          foregroundColor: context.c.onPrimary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.cardAll,
-                          ),
-                        ),
+                        (match.groupId?.isNotEmpty ?? false))
+                      _OrganizerAction(
+                        label: match.coOrganizerUids.isEmpty
+                            ? 'Co-organizadores'
+                            : 'Co-organizadores (${match.coOrganizerUids.length})',
+                        icon: Icons.manage_accounts_outlined,
+                        onPressed: () =>
+                            _CoOrganizersSheet.show(context, match),
                       ),
                   ],
-                  if (canEvaluate) ...[
-                    ElevatedButton.icon(
-                      onPressed: () =>
-                          context.push('/matches/${match.id}/evaluate'),
-                      icon: Icon(
-                        Icons.fact_check_rounded,
-                        size: 15,
-                        color: context.c.onPrimary,
+                ),
+              ],
+              if ((canConfigure && canFinalize) || canEvaluate) ...[
+                if (canConfigure) const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: _OrganizerAction(
+                    label: canEvaluate
+                        ? 'Ver Evaluaciones'
+                        : 'Finalizar Partido',
+                    icon: canEvaluate
+                        ? Icons.fact_check_rounded
+                        : Icons.check_circle_outline,
+                    primary: true,
+                    busy: !canEvaluate && isFinishing,
+                    onPressed: canEvaluate
+                        ? () => context.push('/matches/${match.id}/evaluate')
+                        : (isFinishing ? null : onFinish),
+                  ),
+                ),
+              ],
+              if (isOwner) ...[
+                Divider(height: 24, color: context.c.overlayLine),
+                _OrganizerActionGrid(
+                  actions: [
+                    if (onCancel != null)
+                      _OrganizerAction(
+                        label: 'Cancelar Partido',
+                        icon: Icons.event_busy_rounded,
+                        onPressed: onCancel,
                       ),
-                      label: Text(
-                        'Ver Evaluaciones',
-                        style: AppTypography.action(
-                          size: 14,
-                          weight: FontWeight.w700,
-                          color: context.c.onPrimary,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: context.c.primary,
-                        foregroundColor: context.c.onPrimary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadii.cardAll,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (isOwner && onCancel != null)
-                    OutlinedButton.icon(
-                      onPressed: onCancel,
-                      icon: Icon(
-                        Icons.event_busy_rounded,
-                        size: 15,
-                        color: context.c.textSecondary,
-                      ),
-                      label: Text(
-                        'Cancelar Partido',
-                        style: AppTypography.action(
-                          size: 14,
-                          color: context.c.textSecondary,
-                        ),
-                      ),
-                    ),
-                  if (isOwner)
-                    OutlinedButton.icon(
+                    _OrganizerAction(
+                      label: 'Eliminar Partido',
+                      icon: Icons.delete_outline_rounded,
+                      destructive: true,
                       onPressed: onDelete,
-                      icon: Icon(
-                        Icons.delete_outline_rounded,
-                        size: 15,
-                        color: context.c.destructive,
-                      ),
-                      label: Text(
-                        'Eliminar Partido',
-                        style: AppTypography.action(
-                          size: 14,
-                          color: context.c.destructive,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: context.c.cardSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                        foregroundColor: context.c.destructive,
-                        side: BorderSide(
-                          color: context.c.destructive.withValues(alpha: 0.4),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadii.cardAll,
-                        ),
-                      ),
                     ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -1926,6 +1727,116 @@ class _OrganizerPanel extends StatelessWidget {
   }
 }
 
+class _OrganizerActionGrid extends StatelessWidget {
+  const _OrganizerActionGrid({required this.actions});
+
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final paired =
+          constraints.maxWidth >= 240 &&
+          MediaQuery.textScalerOf(context).scale(14) <= 18;
+      final columns = paired ? 2 : 1;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var index = 0; index < actions.length; index += columns) ...[
+            if (index > 0) const SizedBox(height: 8),
+            if (paired && index + 1 < actions.length)
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: actions[index]),
+                    const SizedBox(width: 8),
+                    Expanded(child: actions[index + 1]),
+                  ],
+                ),
+              )
+            else
+              actions[index],
+          ],
+        ],
+      );
+    },
+  );
+}
+
+class _OrganizerAction extends StatelessWidget {
+  const _OrganizerAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.primary = false,
+    this.destructive = false,
+    this.busy = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool primary;
+  final bool destructive;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.c;
+    const padding = EdgeInsets.symmetric(horizontal: 10, vertical: 10);
+    const minimumSize = Size(0, 44);
+    const shape = RoundedRectangleBorder(borderRadius: AppRadii.cardAll);
+    final content = Row(
+      mainAxisAlignment: primary
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.start,
+      children: [
+        if (busy)
+          const SizedBox.square(dimension: 16, child: PateaButtonProgress())
+        else
+          Icon(icon, size: 16),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            label,
+            style: AppTypography.action(size: 13, weight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+
+    if (primary) {
+      return FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          padding: padding,
+          minimumSize: minimumSize,
+          shape: shape,
+        ),
+        child: content,
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: destructive ? colors.destructive : colors.textPrimary,
+        backgroundColor: colors.cardSurface.withValues(alpha: 0.35),
+        side: BorderSide(
+          color: destructive
+              ? colors.destructive.withValues(alpha: 0.45)
+              : colors.border,
+        ),
+        padding: padding,
+        minimumSize: minimumSize,
+        shape: shape,
+      ),
+      child: content,
+    );
+  }
+}
 /// Sticky Action Bar flotante fija en la parte inferior.
 class _StickyActionBar extends StatelessWidget {
   final MatchModel match;

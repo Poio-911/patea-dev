@@ -43,11 +43,18 @@ void main() {
     location: 'Cancha 5',
   );
 
-  Future<void> abrir(WidgetTester tester, MatchModel match) async {
+  Future<void> abrir(
+    WidgetTester tester,
+    MatchModel match, {
+    double escala = 1,
+    Size tamano = const Size(1080, 2400),
+  }) async {
     await montarPantalla(
       tester,
       const MatchDetailScreen(matchId: 'tm1'),
       tema: AppTheme.darkTheme,
+      escala: escala,
+      tamano: tamano,
       extraOverrides: [
         singleMatchStreamProvider(
           'tm1',
@@ -106,6 +113,31 @@ void main() {
       expect(find.text('Armar equipos'), findsOneWidget);
     },
   );
+
+  testWidgets('acciones del organizador en una columna con texto ampliado', (
+    tester,
+  ) async {
+    await abrir(
+      tester,
+      partido(type: 'collaborative'),
+      escala: 1.5,
+      tamano: const Size(960, 2400),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Panel del organizador'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await abrirPanel(tester);
+
+    Finder action(String label) => find.widgetWithText(OutlinedButton, label);
+    final reschedule = tester.getRect(action('Reprogramar'));
+    final venue = tester.getRect(action('Cambiar Cancha'));
+    expect(reschedule.left, venue.left);
+    expect(reschedule.width, venue.width);
+    expect(venue.top, greaterThanOrEqualTo(reschedule.bottom));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'un capitán gestiona fecha y cancha pero no puede borrar el partido',
