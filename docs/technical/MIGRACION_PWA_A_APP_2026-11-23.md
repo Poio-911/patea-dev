@@ -62,6 +62,31 @@ Todas las funciones de IA comparten `functions/src/lib/ai-runtime.ts` (cliente d
 - App: 29 fallos, todos preexistentes (goldens, fechas, el trinquete de colores por `social_feed_screen.dart`, pruebas del menú de usuario y de «Explorar»). Ninguno es de lo hecho acá. El trinquete de colores sí tenía un fallo mío (botón de Apple): se agregó su presupuesto con la razón.
 - Probado en el emulador Android con el servidor real: Logros, Configuración, Tu análisis, El DT, la ayuda y el resumen del grupo.
 
+## 4. Partidos: costo, transmisión, calendario y sin conexión
+
+Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es un esqueleto (los pagos están marcados «próximamente» y nunca se guardan) y las «plantillas» son **de competición**, no de partido: pasan al punto 5 (portal del organizador).
+
+**Costo del partido y quién pagó** (`functions/src/callable/match-extras.ts`, `lib/match-extras.ts`)
+- `setMatchCost`: el organizador (o capitán, co-organizador, admin o moderador del grupo) carga el total y la moneda (UYU, ARS o USD). Un monto cero lo saca. Tope de 1.000.000.
+- `markMatchPayment`: marca o desmarca que alguien del plantel (invitados incluidos) ya pagó.
+- Se guarda en el propio partido: `cost {total, currency}` y `costPaidUids[]`; lo ve quien ve el partido, sin reglas nuevas.
+- La app **no mueve plata**: es la planilla de quien junta. La parte de cada uno es el total dividido en partes iguales y redondeado hacia arriba al centavo (`lib/core/utils/cost_split.dart`), así lo que se junta nunca queda por debajo del costo.
+- App: tarjeta «Costo del partido» en el detalle (`match_cost_card.dart`): por persona, total, progreso, «faltan $X» y la lista con un interruptor por persona para el organizador; los demás ven «Pagó» o «Falta» y a ellos mismos marcados.
+
+**Transmisión** (`setMatchStream`)
+- El organizador pega un enlace de YouTube, Twitch o Kick; el servidor lo reduce a `{provider, id, url}` (mismo contrato que la web) y rechaza cualquier otro sitio, `http` y trampas de dirección (por ejemplo `youtube.com.malo.com`). Se aceptan solo esos tres porque un enlace libre dentro de una app con contenido de usuarios sería una puerta a sitios engañosos.
+- App: fila en el detalle (`match_stream_row.dart`): botón «Ver» que abre el enlace afuera; el organizador lo agrega, cambia o saca. La transmisión en sí no pasa por Pateá, así que no se incrusta ningún reproductor.
+- El «visualizador» de la PWA no hace falta: la app ya tiene cancha, estadísticas y línea de tiempo en vivo.
+
+**Calendario**
+- Tercer modo en Partidos, junto a lista y cuadrícula (`matches_calendar_view.dart`, lógica en `lib/core/utils/match_calendar.dart`): mes de lunes a domingo, puntos por día (color si falta jugarse, apagado si ya se jugó), «Hoy», y al tocar un día aparecen sus partidos con la misma tarjeta de la lista.
+- Respeta los filtros de tipo, estado y «mis partidos», pero no el de tiempo; en este modo se esconden las pestañas Próximos/Semana/Historial.
+
+**Aviso de sin conexión**
+- `connectivity_service.dart` revisa cada 15 s (cada 4 s si está caída) si resuelve el servidor de la base de datos, sin plugin nativo, y recién da por caída la conexión al segundo fallo seguido. `offline_banner.dart` muestra «Sin conexión: mostrando lo último guardado» y, al volver, «Conexión restaurada» tres segundos. Va por encima de todas las pantallas (`main.dart`).
+
+**Pendiente de este punto:** las tres funciones nuevas (`setMatchCost`, `markMatchPayment`, `setMatchStream`) hay que desplegarlas y probar el flujo en el emulador; y mirar las vistas previas (`tool/match_extras_preview_test.dart`), que no se pudieron generar porque la compilación estaba rota por el rediseño en curso.
+
 ## Decidido no migrar
 
 - **Imagen de dúo** (`generate-duo-image` de la PWA): no se migra. La acción `generateDuoImageAction` existe pero **ninguna pantalla de la PWA la llama** (se buscó en todo `src`), así que no hay una función de producto que trasladar. Además genera imágenes con la cara de otra persona a partir de su foto, y eso pide un consentimiento que hoy no existe. Si algún día se quiere, hay que diseñarla como función nueva, con ese permiso explícito y sus créditos (en iOS, solo se compran en la tienda).
@@ -70,5 +95,5 @@ Todas las funciones de IA comparten `functions/src/lib/ai-runtime.ts` (cliente d
 
 - **Sugerencias de refuerzos**: desplegada y con la lógica probada, pero sin ver andar con el modelo en un partido real: hace falta un partido propio con lugares libres y gente. Cuidado al probarla: crear un partido en el proyecto real avisa por push a todo el grupo. Las pruebas de permisos y casos vacíos están en `functions/test/ai-assist.emulator.test.cjs` (pide el emulador de Firestore, que necesita Java 21; localmente hay Java 17, así que corre en CI y todavía no se ejecutó).
 - **Google Fit / Salud**: sin hacer (ver arriba).
-- Del informe [PARIDAD_PWA_APP.md](PARIDAD_PWA_APP.md): puntos 4 (partidos: dividir costo, transmisión, plantillas, calendario, aviso sin conexión), 5 (competiciones y portal del organizador) y 6 (Comunidad).
+- Del informe [PARIDAD_PWA_APP.md](PARIDAD_PWA_APP.md): puntos 5 (competiciones y portal del organizador, que ahora incluye las plantillas de competición) y 6 (Comunidad).
 - **Rediseño**: las pantallas nuevas siguen el estilo actual, que se quiere rediseñar completo.

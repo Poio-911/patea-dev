@@ -1,3 +1,4 @@
+import 'core/widgets/offline_banner.dart';
 import 'dart:async';
 import 'core/theme/theme_mode_provider.dart';
 
@@ -138,6 +139,12 @@ class PateaApp extends ConsumerWidget {
       // a alguien porque tiene el teléfono en oscuro sería una suposición.
       themeMode: ref.watch(themeControllerProvider).modo,
       routerConfig: router,
+      // El aviso de sin conexión va por encima de todas las pantallas.
+      builder: (context, child) =>
+          Stack(
+            fit: StackFit.expand,
+            children: [child ?? const SizedBox.shrink(), const OfflineBanner()],
+          ),
     );
   }
 }

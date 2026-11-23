@@ -1,5 +1,7 @@
 # Paridad PWA → app móvil
 
+> **Actualización 23/11/2026 (tarde):** el punto 4 (partidos) también está hecho desde cero, salvo las «plantillas», que resultaron ser de competición y pasan al punto 5. Detalle en el mismo documento.
+>
 > **Actualización 23/11/2026:** los puntos 1 (Logros), 2 (Configuración, sin Salud) y 3 (IA; la imagen de dúo se descartó porque la PWA no la usa) ya están hechos desde cero. Detalle en [MIGRACION_PWA_A_APP_2026-11-23.md](MIGRACION_PWA_A_APP_2026-11-23.md).
 
 Análisis del 23/11/2026. Se comparó el código de la PWA (`src/app`, `src/components`, `src/lib/actions`, `src/ai/flows`) con el de la app Flutter (`patea_mobile/lib`, `functions/src`). Es una comparación por rutas, componentes y llamadas al servidor: los ítems marcados **parcial** hay que confirmar a mano en la pantalla.
@@ -35,7 +37,7 @@ Los flujos de la PWA corren como acciones de Next.js, no como funciones de Fireb
 ### 4. Partidos
 - **Dividir el costo** (`match-cost-split`): no está.
 - **Transmisión y visualizador en vivo** (`match-stream-dialog`, `match-visualizer`): no está (la app tiene cancha y estadísticas en vivo, pero no la vista de transmisión).
-- **Plantillas de partido** (`template-actions`): no está.
+- **Plantillas** (`template-actions`): en realidad son plantillas de **competición** (liga o copa), no de partido; se migran con el portal del organizador (punto 5).
 - **Calendario de partidos** (`matches-calendar`): no está en Partidos.
 - **Aviso sin conexión** (`offline-banner`): no está.
 

@@ -428,6 +428,42 @@ class MatchTeam {
   }
 }
 
+/// Costo del partido (la cancha), que se divide entre quienes juegan.
+class MatchCost {
+  final double total;
+  final String currency; // UYU, ARS, USD
+
+  const MatchCost({required this.total, required this.currency});
+
+  static MatchCost? fromMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final total = (raw['total'] as num?)?.toDouble();
+    if (total == null || total <= 0) return null;
+    return MatchCost(
+      total: total,
+      currency: raw['currency'] is String ? raw['currency'] as String : 'UYU',
+    );
+  }
+}
+
+/// Enlace a la transmisión del partido (YouTube, Twitch o Kick).
+class MatchStream {
+  final String provider; // youtube, twitch, kick
+  final String url;
+
+  const MatchStream({required this.provider, required this.url});
+
+  static MatchStream? fromMap(dynamic raw) {
+    if (raw is! Map || raw['active'] == false) return null;
+    final url = raw['url'];
+    if (url is! String || url.isEmpty) return null;
+    return MatchStream(
+      provider: raw['provider'] is String ? raw['provider'] as String : '',
+      url: url,
+    );
+  }
+}
+
 class MatchModel {
   final String id;
   final String title;
@@ -569,6 +605,15 @@ class MatchModel {
   /// real existe y se ve distinto de "todavía no hay resultado".
   final bool hasFinalScore;
 
+  /// Lo que cuesta jugarlo, si el organizador lo cargó.
+  final MatchCost? cost;
+
+  /// Quiénes del plantel ya pagaron su parte (lo marca el organizador).
+  final List<String> costPaidUids;
+
+  /// Transmisión del partido, si hay una cargada.
+  final MatchStream? stream;
+
   MatchModel({
     required this.id,
     required this.title,
@@ -603,6 +648,9 @@ class MatchModel {
     this.bestPlayerId,
     this.chronicle,
     this.hasFinalScore = false,
+    this.cost,
+    this.costPaidUids = const [],
+    this.stream,
     this.dateProposals = const [],
     this.locationProposals = const [],
     this.isVotingOpen = false,
@@ -704,6 +752,9 @@ class MatchModel {
       bestPlayerId: _str(data['bestPlayerId']),
       chronicle: MatchChronicle.fromMap(data['chronicle']),
       hasFinalScore: hasFinalScore,
+      cost: MatchCost.fromMap(data['cost']),
+      costPaidUids: _strList(data['costPaidUids']),
+      stream: MatchStream.fromMap(data['stream']),
       dateProposals: ((data['dateProposals'] as List<dynamic>?) ?? const [])
           .map(MatchDateProposal.fromMap)
           .whereType<MatchDateProposal>()

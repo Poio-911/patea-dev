@@ -268,6 +268,37 @@ class MatchService {
 
   /// Cancela un partido que no empezó (organizador o capitán): queda en el
   /// historial como cancelado y se avisa a los anotados.
+  /// Pone, cambia o saca (con monto 0) el costo del partido.
+  Future<void> setCost(
+    String matchId, {
+    required double total,
+    required String currency,
+  }) async {
+    await callFunction('setMatchCost', {
+      'matchId': matchId,
+      'total': total,
+      'currency': currency,
+    });
+  }
+
+  /// Marca o desmarca que alguien del plantel ya pagó su parte.
+  Future<void> markPayment(
+    String matchId,
+    String playerId, {
+    required bool paid,
+  }) async {
+    await callFunction('markMatchPayment', {
+      'matchId': matchId,
+      'playerId': playerId,
+      'paid': paid,
+    });
+  }
+
+  /// Carga el enlace de la transmisión; `null` o vacío la saca.
+  Future<void> setStream(String matchId, String? url) async {
+    await callFunction('setMatchStream', {'matchId': matchId, 'url': url});
+  }
+
   Future<void> cancelMatch(String matchId, {String? reason}) async {
     await callFunction('cancelMatch', {
       'matchId': matchId,

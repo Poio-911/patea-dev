@@ -1,3 +1,5 @@
+import 'widgets/match_cost_card.dart';
+import 'widgets/match_stream_row.dart';
 import 'widgets/team_rival_series.dart';
 import '../../core/models/group_permissions.dart';
 import '../../core/services/group_service.dart';
@@ -769,9 +771,22 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       MatchStoryView(match: match, part: MatchStoryPart.figure),
                       const SizedBox(height: 18),
                     ],
+                    if (match.stream != null || isManager) ...[
+                      MatchStreamRow(match: match, isManager: isManager),
+                      const SizedBox(height: 14),
+                    ],
                     hasTeams
                         ? _TeamsRoster(match: match)
                         : _PlayersConfirmedRoster(match: match),
+                    if ((match.cost != null || isManager) &&
+                        !match.isCancelled) ...[
+                      const SizedBox(height: 20),
+                      MatchCostCard(
+                        match: match,
+                        uid: uid,
+                        isManager: isManager,
+                      ),
+                    ],
                     if (match.status == 'evaluated' ||
                         match.status == 'completed' ||
                         match.chronicle != null) ...[

@@ -1,3 +1,4 @@
+import 'widgets/matches_calendar_view.dart';
 import '../../core/utils/match_photography.dart';
 import '../../core/widgets/patea_section_scene.dart';
 import '../../core/widgets/patea_button_progress.dart';
@@ -141,7 +142,7 @@ class MatchFiltersState {
   int get activeCount => types.length + statuses.length + (onlyMine ? 1 : 0);
 }
 
-enum MatchViewMode { grid, compact }
+enum MatchViewMode { grid, compact, calendar }
 
 class MatchesScreen extends ConsumerStatefulWidget {
   const MatchesScreen({super.key});
@@ -403,6 +404,10 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             return true;
           }).toList();
 
+          // El calendario muestra todos los meses: respeta los filtros de tipo,
+          // estado y «mis partidos», pero no el de tiempo (Próximos, Semana…).
+          final forCalendar = List<MatchModel>.of(filtered);
+
           switch (_timeFilter) {
             case TimeFilter.upcoming:
               filtered = filtered.where((m) {
@@ -467,13 +472,16 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   ),
                 ),
               ),
-              if (allMatches.isNotEmpty && _timeFilter != TimeFilter.history)
+              if (allMatches.isNotEmpty &&
+                  _timeFilter != TimeFilter.history &&
+                  _viewMode != MatchViewMode.calendar)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                     child: _NextMatchBanner(matches: bannerMatches),
                   ),
                 ),
+              if (_viewMode != MatchViewMode.calendar)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -516,7 +524,14 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              if (filtered.isEmpty)
+              if (_viewMode == MatchViewMode.calendar)
+                SliverToBoxAdapter(
+                  child: MatchesCalendarView(
+                    matches: forCalendar,
+                    cardBuilder: (m) => _MatchCard(match: m),
+                  ),
+                )
+              else if (filtered.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Padding(
@@ -649,6 +664,8 @@ class _ViewModeToggle extends StatelessWidget {
           button(Icons.view_list_rounded, MatchViewMode.grid),
           const SizedBox(width: 2),
           button(Icons.grid_view_rounded, MatchViewMode.compact),
+          const SizedBox(width: 2),
+          button(Icons.calendar_month_rounded, MatchViewMode.calendar),
         ],
       ),
     );
