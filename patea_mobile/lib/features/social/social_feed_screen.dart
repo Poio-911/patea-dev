@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'moderation_actions.dart';
+import 'ovr_round_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/match_theme.dart';
 import '../../core/utils/dates.dart';
+import '../../core/utils/feed_grouping.dart';
 import '../../core/utils/match_photography.dart';
 import '../../core/widgets/jersey_painter.dart';
 import '../../core/widgets/patea_avatar.dart';
@@ -196,12 +198,16 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                 ),
               ),
             ),
-          for (final data in news)
+          // Los cambios de OVR de un mismo partido van juntos en una tarjeta.
+          for (final item in groupOvrNews(news, _feedActivityDate))
             (
-              at: _feedActivityDate(data),
+              at: item.at,
               widget: Padding(
                 padding: const EdgeInsets.only(bottom: 14),
-                child: _buildFeedTile(data),
+                child: switch (item) {
+                  FeedRound(:final round) => OvrRoundCard(round: round),
+                  FeedSingle(:final data) => _buildFeedTile(data),
+                },
               ),
             ),
         ]..sort((a, b) => b.at.compareTo(a.at));

@@ -117,6 +117,8 @@ Se rehizo desde cero. Dos hallazgos al revisar la PWA: su «dividir costo» es u
 
 **También:** en la pantalla de Comunidad el feed leía las novedades con `.value`, que en esta versión de Riverpod lanza si el stream falla; ahora usa `.asData?.value`.
 
+**Novedades de OVR agrupadas por partido** (pedido tras verlo en el emulador): al evaluarse un partido el servidor escribe una novedad por jugador, y diez filas seguidas tapaban todo lo demás. Ahora se juntan en una tarjeta por partido («Se evaluó «X»»: cuántos subieron, se mantuvieron o bajaron, los tres que más subieron y «Ver todo (+N más)», que abre la lista completa ordenada). Es solo de presentación: no cambia lo que se guarda, así que las novedades viejas también se agrupan. Una novedad de OVR sin partido, o la única de su partido, queda como fila suelta. Lógica en `lib/core/utils/feed_grouping.dart` (con tests), tarjeta en `features/social/ovr_round_card.dart`.
+
 **No se migró:** la novedad de «jugador creado» (la PWA la publicaba al sumar a alguien al grupo; no aporta).
 
 **Estado:** `syncAchievements` desplegada. Probado en el emulador que Logros sigue sincronizando bien (5 de 16) y que la Comunidad del grupo carga. **No se vio una novedad de logro**: la cuenta de prueba no desbloqueó ninguno nuevo en esa sincronización, así que no hubo qué publicar. La publicación está cubierta por tests del servidor (id fijo, tope de tres, sin grupo → nada).
