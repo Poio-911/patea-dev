@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../core/models/coach_models.dart';
 import '../../core/services/coach_service.dart';
 import '../../core/theme/app_insets.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
+import '../../core/widgets/patea_activity_cover.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_states.dart';
 
@@ -51,22 +53,54 @@ class _Thinking extends StatelessWidget {
   const _Thinking();
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const CircularProgressIndicator(),
-        const SizedBox(height: 18),
-        Text(
-          'El DT está mirando tus números…',
-          style: AppTypography.body(
-            size: 14,
-            color: context.c.textSecondary,
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: PateaCard(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          borderColor: c.primary.withValues(alpha: 0.3),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.primary.withValues(alpha: 0.14),
+                  border: Border.all(color: c.primary.withValues(alpha: 0.35)),
+                ),
+                child: Icon(Icons.insights_rounded, color: c.primary, size: 28),
+              ),
+              const SizedBox(height: 18),
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'El DT está mirando tus números…',
+                textAlign: TextAlign.center,
+                style: AppTypography.headline(
+                  size: 15.5,
+                  weight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Cruzando partidos, evaluaciones y evolución reciente.',
+                textAlign: TextAlign.center,
+                style: AppTypography.body(size: 13, color: c.textSecondary),
+              ),
+            ],
           ),
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _Analysis extends StatelessWidget {
@@ -79,14 +113,11 @@ class _Analysis extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(18, 4, 18, bottomInset(context, extra: 24)),
       children: [
-        Text(
-          analysis.headline,
-          style: AppTypography.headline(size: 24, weight: FontWeight.w800),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          analysis.summary,
-          style: AppTypography.body(size: 15, color: c.textSecondary),
+        PateaActivityCover(
+          image: 'assets/brand/patea_coach.webp',
+          compact: true,
+          title: analysis.headline,
+          details: analysis.summary,
         ),
         if (analysis.strengths.isNotEmpty)
           _Section(
@@ -107,22 +138,30 @@ class _Analysis extends StatelessWidget {
           for (final p in analysis.patterns)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Icon(
-                      Icons.show_chart_rounded,
-                      size: 18,
-                      color: c.textSecondary,
+              child: PateaCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                color: c.cardSurface.withValues(alpha: 0.65),
+                borderColor: c.border.withValues(alpha: 0.45),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        Icons.show_chart_rounded,
+                        size: 18,
+                        color: c.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(p, style: AppTypography.body(size: 14)),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(p, style: AppTypography.body(size: 14)),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
@@ -130,7 +169,7 @@ class _Analysis extends StatelessWidget {
           const _Title('Para los próximos partidos'),
           PateaCard(
             padding: const EdgeInsets.all(16),
-            borderColor: c.border.withValues(alpha: 0.5),
+            borderColor: c.primary.withValues(alpha: 0.35),
             child: Column(
               children: [
                 for (var i = 0; i < analysis.plan.length; i++)
@@ -142,17 +181,20 @@ class _Analysis extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 24,
-                          height: 24,
+                          width: 28,
+                          height: 28,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: c.primary.withValues(alpha: 0.18),
+                            borderRadius: AppRadii.hairAll,
+                            color: c.primary.withValues(alpha: 0.16),
+                            border: Border.all(
+                              color: c.primary.withValues(alpha: 0.35),
+                            ),
                           ),
                           child: Text(
                             '${i + 1}',
-                            style: AppTypography.body(
-                              size: 12,
+                            style: AppTypography.sportNumber(
+                              size: 15,
                               weight: FontWeight.w800,
                               color: c.primary,
                             ),
@@ -160,9 +202,12 @@ class _Analysis extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            analysis.plan[i],
-                            style: AppTypography.body(size: 14),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              analysis.plan[i],
+                              style: AppTypography.body(size: 14),
+                            ),
                           ),
                         ),
                       ],
@@ -224,11 +269,20 @@ class _Section extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: PateaCard(
               padding: const EdgeInsets.all(14),
-              borderColor: c.border.withValues(alpha: 0.45),
+              color: color.withValues(alpha: 0.06),
+              borderColor: color.withValues(alpha: 0.32),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, color: color, size: 22),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withValues(alpha: 0.16),
+                    ),
+                    child: Icon(icon, color: color, size: 18),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

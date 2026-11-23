@@ -926,30 +926,61 @@ class _GroupSummaryCard extends ConsumerWidget {
     if (summary.isLoading) {
       return Padding(
         padding: const EdgeInsets.only(top: 14),
-        child: Text(
-          'Armando el resumen del grupo…',
-          style: AppTypography.body(size: 13, color: c.textSecondary),
+        child: PateaCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          color: c.cardSurface.withValues(alpha: 0.5),
+          borderColor: c.border.withValues(alpha: 0.4),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: c.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Armando el resumen del grupo…',
+                style: AppTypography.body(size: 13, color: c.textSecondary),
+              ),
+            ],
+          ),
         ),
       );
     }
     if (text == null || text.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(Icons.auto_awesome_outlined, size: 16, color: c.primary),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: AppTypography.body(size: 14, color: c.textSecondary),
+      child: PateaCard(
+        padding: const EdgeInsets.all(14),
+        color: c.cardSurface.withValues(alpha: 0.65),
+        borderColor: c.primary.withValues(alpha: 0.25),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.auto_awesome_outlined, size: 14, color: c.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'LECTURA DEL DT',
+                  style: AppTypography.code(
+                    size: 10.5,
+                    weight: FontWeight.w700,
+                    color: c.primary,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              text,
+              style: AppTypography.body(size: 13.5, color: c.textPrimary),
+            ),
+          ],
+        ),
       ),
     );
   }

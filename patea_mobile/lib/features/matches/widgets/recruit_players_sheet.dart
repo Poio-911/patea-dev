@@ -162,43 +162,60 @@ class _RecruitPlayersSheetState extends ConsumerState<RecruitPlayersSheet> {
     final recs = _recs;
     if (recs == null) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton.icon(
-            onPressed: _suggest,
-            icon: const Icon(Icons.auto_awesome_outlined, size: 16),
-            label: const Text('Que el DT sugiera'),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: OutlinedButton.icon(
+          onPressed: _suggest,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: c.primary,
+            side: BorderSide(color: c.primary.withValues(alpha: 0.45)),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           ),
+          icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+          label: const Text('Que el DT sugiera'),
         ),
       );
     }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: PateaCard(
-        padding: const EdgeInsets.all(12),
-        borderColor: c.primary.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(14),
+        color: c.cardSurface.withValues(alpha: 0.65),
+        borderColor: c.primary.withValues(alpha: 0.35),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.auto_awesome_outlined, size: 16, color: c.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    recs.isEmpty ? 'El DT no ve a nadie que encaje' : 'El DT sugiere',
-                    style: AppTypography.headline(size: 14, weight: FontWeight.w700),
+                Icon(Icons.auto_awesome_outlined, size: 14, color: c.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'LECTURA DEL DT',
+                  style: AppTypography.code(
+                    size: 10.5,
+                    weight: FontWeight.w700,
+                    color: c.primary,
                   ),
                 ),
+                const Spacer(),
                 if (recs.isNotEmpty)
                   TextButton(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
                     onPressed: () => setState(
                       () => _selected.addAll(recs.map((r) => r.playerId)),
                     ),
                     child: Text(recs.length == 1 ? 'Elegir' : 'Elegir a todos'),
                   ),
               ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              recs.isEmpty
+                  ? 'El DT no ve a nadie que encaje'
+                  : 'Recomendados para este partido',
+              style: AppTypography.headline(size: 14, weight: FontWeight.w700),
             ),
             for (final r in recs)
               Padding(

@@ -1,12 +1,15 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/coach_models.dart';
 import '../../core/services/ai_assist_service.dart';
 import '../../core/services/coach_service.dart';
-import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
+import '../../core/widgets/patea_activity_cover.dart';
+import '../../core/widgets/patea_card.dart';
 
 /// Cómo manda un mensaje al servidor: recibe lo que se escribió y los turnos
 /// anteriores, y devuelve la respuesta con sugerencias de preguntas.
@@ -140,13 +143,58 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final isCoach = widget.title.toLowerCase().contains('dt');
+    final coverImage = isCoach
+        ? 'assets/brand/patea_coach.webp'
+        : 'assets/brand/patea_locker_room.webp';
+    final subtitle = isCoach
+        ? 'Datos reales de tus partidos'
+        : 'Guía oficial de Pateá';
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text(
-          widget.title,
-          style: AppTypography.headline(size: 20, weight: FontWeight.w700),
+        title: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: c.primary.withValues(alpha: 0.14),
+                border: Border.all(color: c.primary.withValues(alpha: 0.3)),
+              ),
+              child: Icon(widget.icon, color: c.primary, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.title,
+                    style: AppTypography.headline(
+                      size: 18,
+                      weight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitle,
+                    style: AppTypography.body(
+                      size: 11.5,
+                      color: c.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       body: Column(
@@ -154,7 +202,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           Expanded(
             child: _messages.isEmpty
                 ? _Intro(
-                    icon: widget.icon,
+                    coverImage: coverImage,
                     title: widget.introTitle,
                     text: widget.introText,
                     starters: widget.starters,
@@ -195,35 +243,48 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                 ],
               ),
             ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 12, 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      minLines: 1,
-                      maxLines: 4,
-                      maxLength: 500,
-                      textCapitalization: TextCapitalization.sentences,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: _send,
-                      decoration: InputDecoration(
-                        hintText: widget.hint,
-                        counterText: '',
-                      ),
+          ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: c.popover.withValues(alpha: 0.92),
+                  border: Border(
+                    top: BorderSide(color: c.overlayLine),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _input,
+                            minLines: 1,
+                            maxLines: 4,
+                            maxLength: 500,
+                            textCapitalization: TextCapitalization.sentences,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: _send,
+                            decoration: InputDecoration(
+                              hintText: widget.hint,
+                              counterText: '',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: _sending ? null : () => _send(_input.text),
+                          icon: const Icon(Icons.arrow_upward_rounded),
+                          tooltip: 'Enviar',
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  IconButton.filled(
-                    onPressed: _sending ? null : () => _send(_input.text),
-                    icon: const Icon(Icons.arrow_upward_rounded),
-                    tooltip: 'Enviar',
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -234,13 +295,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 }
 
 class _Intro extends StatelessWidget {
-  final IconData icon;
+  final String coverImage;
   final String title;
   final String text;
   final List<String> starters;
   final ValueChanged<String> onPick;
   const _Intro({
-    required this.icon,
+    required this.coverImage,
     required this.title,
     required this.text,
     required this.starters,
@@ -251,28 +312,60 @@ class _Intro extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
       children: [
-        Icon(icon, size: 44, color: c.primary),
-        const SizedBox(height: 14),
-        Text(
-          title,
-          style: AppTypography.headline(size: 22, weight: FontWeight.w800),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          text,
-          style: AppTypography.body(size: 14, color: c.textSecondary),
+        PateaActivityCover(
+          image: coverImage,
+          compact: true,
+          title: title,
+          details: text,
         ),
         const SizedBox(height: 20),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final s in starters)
-              ActionChip(label: Text(s), onPressed: () => onPick(s)),
-          ],
+        Text(
+          'IDEAS PARA ARRANCAR',
+          style: AppTypography.code(
+            size: 11,
+            weight: FontWeight.w700,
+            color: c.primary,
+          ),
         ),
+        const SizedBox(height: 10),
+        for (final s in starters)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: PateaCard(
+              borderColor: c.border.withValues(alpha: 0.45),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => onPick(s),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          s,
+                          style: AppTypography.body(
+                            size: 14,
+                            weight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 18,
+                        color: c.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -286,6 +379,12 @@ class _Bubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final mine = message.role == ChatRole.user;
+    final radius = BorderRadius.only(
+      topLeft: const Radius.circular(16),
+      topRight: const Radius.circular(16),
+      bottomLeft: Radius.circular(mine ? 16 : 4),
+      bottomRight: Radius.circular(mine ? 4 : 16),
+    );
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -296,7 +395,7 @@ class _Bubble extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: mine ? c.primary : c.card,
-          borderRadius: AppRadii.cardAll,
+          borderRadius: radius,
           border: mine
               ? null
               : Border.all(color: c.border.withValues(alpha: 0.5)),

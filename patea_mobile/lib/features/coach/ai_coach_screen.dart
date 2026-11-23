@@ -114,7 +114,16 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
         _cover('Práctica con pelota, a partir de tu ficha.'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
+        Text(
+          'LECTURA DEL DT',
+          style: AppTypography.code(
+            size: 11,
+            weight: FontWeight.w700,
+            color: context.c.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
         const _AiEntry(
           icon: Icons.insights_rounded,
           title: 'Tu análisis con IA',
@@ -402,26 +411,61 @@ class _AiEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     return PateaCard(
-      borderColor: c.border.withValues(alpha: 0.5),
+      color: c.cardSurface.withValues(alpha: 0.72),
+      borderColor: c.primary.withValues(alpha: 0.28),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
         onTap: () => context.push(route),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, color: c.primary, size: 26),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.primary.withValues(alpha: 0.14),
+                  border: Border.all(color: c.primary.withValues(alpha: 0.3)),
+                ),
+                child: Icon(icon, color: c.primary, size: 22),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: AppTypography.headline(
-                        size: 15,
-                        weight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: AppTypography.headline(
+                              size: 15,
+                              weight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: c.primary.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            'IA',
+                            style: AppTypography.code(
+                              size: 10,
+                              weight: FontWeight.w800,
+                              color: c.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(

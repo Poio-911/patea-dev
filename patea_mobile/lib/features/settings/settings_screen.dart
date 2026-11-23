@@ -10,15 +10,18 @@ import '../../core/services/firestore_service.dart';
 import '../../core/services/push_permission.dart';
 import '../../core/services/social_service.dart';
 import '../../core/theme/app_insets.dart';
+import '../../core/theme/app_radii.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/patea_colors.dart';
 import '../../core/theme/theme_mode_provider.dart';
 import '../../core/utils/legal_links.dart';
 import '../../core/widgets/credits_store_sheet.dart';
+import '../../core/widgets/cropped_photo.dart';
 import '../../core/widgets/delete_account_flow.dart';
 import '../../core/widgets/patea_avatar.dart';
 import '../../core/widgets/patea_card.dart';
 import '../../core/widgets/patea_snack.dart';
+import '../../core/widgets/player_position_badge.dart';
 
 /// ¿Las notificaciones están permitidas en este teléfono? Se vuelve a leer
 /// cuando se pide el permiso (`ref.invalidate`).
@@ -38,13 +41,17 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final user = ref.watch(authStateProvider).value;
+    final user = ref.watch(authStateProvider).asData?.value;
     final uid = user?.uid ?? '';
     final player = uid.isEmpty
         ? null
-        : ref.watch(singlePlayerStreamProvider(uid)).value;
+        : ref.watch(singlePlayerStreamProvider(uid)).asData?.value;
     final notificationsOn = ref.watch(notificationsAllowedProvider).asData?.value;
-    final blocked = ref.watch(blockedUidsStreamProvider).value ?? const {};
+    final blocked =
+        ref.watch(blockedUidsStreamProvider).asData?.value ?? const {};
+    final selectedTheme = ref.watch(themeControllerProvider);
+    final creditsStoreOn =
+        ref.watch(creditsStoreEnabledProvider).asData?.value ?? false;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -65,141 +72,215 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           // Cuenta
           PateaCard(
-            padding: const EdgeInsets.all(16),
             borderColor: c.border.withValues(alpha: 0.55),
-            child: Row(
-              children: [
-                PateaAvatar(
-                  photoUrl: player?.photoUrl,
-                  seed: uid.isEmpty ? 'yo' : uid,
-                  size: 56,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        player?.name ?? user?.displayName ?? 'Jugador',
-                        style: AppTypography.headline(
-                          size: 17,
-                          weight: FontWeight.w700,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: uid.isEmpty ? null : () => context.push('/profile/edit'),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    ClipOval(
+                      child: CroppedPhoto(
+                        cropX: player?.cropX ?? 50,
+                        cropY: player?.cropY ?? 50,
+                        cropZoom: player?.cropZoom ?? 1,
+                        child: PateaAvatar(
+                          photoUrl: player?.photoUrl,
+                          seed: uid.isEmpty ? 'yo' : uid,
+                          size: 58,
                         ),
                       ),
-                      if ((user?.email ?? '').isNotEmpty)
-                        Text(
-                          user!.email!,
-                          style: AppTypography.body(
-                            size: 13,
-                            color: c.textSecondary,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                TextButton(
-                  onPressed: uid.isEmpty
-                      ? null
-                      : () => context.push('/profile/edit'),
-                  child: const Text('Editar'),
-                ),
-              ],
-            ),
-          ),
-
-          const _SectionTitle('Apariencia'),
-          PateaCard(
-            padding: const EdgeInsets.all(14),
-            borderColor: c.border.withValues(alpha: 0.45),
-            child: SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<PateaTheme>(
-                showSelectedIcon: false,
-                segments: [
-                  for (final t in PateaTheme.values)
-                    ButtonSegment(
-                      value: t,
-                      icon: Icon(
-                        t == PateaTheme.game
-                            ? Icons.sports_soccer_rounded
-                            : Icons.light_mode_rounded,
-                        size: 16,
-                      ),
-                      label: Text(t.etiqueta),
                     ),
-                ],
-                selected: {ref.watch(themeControllerProvider)},
-                onSelectionChanged: (s) =>
-                    ref.read(themeControllerProvider.notifier).elegir(s.first),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            player?.name ?? user?.displayName ?? 'Jugador',
+                            style: AppTypography.headline(
+                              size: 17,
+                              weight: FontWeight.w700,
+                            ),
+                          ),
+                          if ((user?.email ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 1),
+                            Text(
+                              user!.email!,
+                              style: AppTypography.body(
+                                size: 12.5,
+                                color: c.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          if (player != null) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                PlayerPositionBadge(
+                                  position: player.position,
+                                  dense: false,
+                                  fontSize: 11,
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: c.primary.withValues(alpha: 0.14),
+                                    borderRadius: AppRadii.hairAll,
+                                  ),
+                                  child: Text(
+                                    'OVR ${player.ovr}',
+                                    style: AppTypography.sportNumber(
+                                      size: 12,
+                                      weight: FontWeight.w800,
+                                      color: c.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (uid.isNotEmpty)
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: c.textSecondary,
+                        size: 22,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
 
+          const _SectionTitle('Apariencia'),
+          Row(
+            children: [
+              for (var i = 0; i < PateaTheme.values.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(
+                  child: _ThemePreviewCard(
+                    theme: PateaTheme.values[i],
+                    selected: selectedTheme == PateaTheme.values[i],
+                    onTap: () => ref
+                        .read(themeControllerProvider.notifier)
+                        .elegir(PateaTheme.values[i]),
+                  ),
+                ),
+              ],
+            ],
+          ),
+
           const _SectionTitle('Notificaciones'),
-          _Row(
-            icon: notificationsOn == true
-                ? Icons.notifications_active_rounded
-                : Icons.notifications_off_outlined,
-            title: 'Avisos de Pateá',
-            subtitle: switch (notificationsOn) {
-              true => 'Activados: partidos, invitaciones y recordatorios.',
-              false => 'Desactivados en este teléfono.',
-              null => 'Revisando…',
-            },
-            trailing: notificationsOn == false
-                ? TextButton(
+          _SettingsGroup(
+            children: [
+              _Row(
+                icon: notificationsOn == true
+                    ? Icons.notifications_active_rounded
+                    : Icons.notifications_off_outlined,
+                title: 'Avisos de Pateá',
+                subtitle: switch (notificationsOn) {
+                  true => 'Activados: partidos, invitaciones y recordatorios.',
+                  false => 'Desactivados en este teléfono.',
+                  null => 'Revisando…',
+                },
+                trailing: switch (notificationsOn) {
+                  true => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: c.success.withValues(alpha: 0.14),
+                      borderRadius: AppRadii.hairAll,
+                    ),
+                    child: Text(
+                      'ACTIVAS',
+                      style: AppTypography.code(
+                        size: 10.5,
+                        weight: FontWeight.w800,
+                        color: c.success,
+                      ),
+                    ),
+                  ),
+                  false => TextButton(
                     onPressed: () => _enableNotifications(context, ref),
                     child: const Text('Activar'),
-                  )
-                : null,
+                  ),
+                  null => null,
+                },
+              ),
+            ],
           ),
 
           const _SectionTitle('Privacidad'),
-          _Row(
-            icon: Icons.block_rounded,
-            title: 'Usuarios bloqueados',
-            subtitle: blocked.isEmpty
-                ? 'No bloqueaste a nadie.'
-                : '${blocked.length} ${blocked.length == 1 ? 'persona' : 'personas'}',
-            onTap: blocked.isEmpty
-                ? null
-                : () => _showBlockedSheet(context),
-          ),
-          _Row(
-            icon: Icons.privacy_tip_outlined,
-            title: 'Política de privacidad',
-            onTap: () => LegalLinks.open(context, LegalLinks.privacy),
-          ),
-          _Row(
-            icon: Icons.description_outlined,
-            title: 'Términos de uso',
-            onTap: () => LegalLinks.open(context, LegalLinks.terms),
+          _SettingsGroup(
+            children: [
+              _Row(
+                icon: Icons.block_rounded,
+                title: 'Usuarios bloqueados',
+                subtitle: blocked.isEmpty
+                    ? 'No bloqueaste a nadie.'
+                    : '${blocked.length} ${blocked.length == 1 ? 'persona' : 'personas'}',
+                onTap: blocked.isEmpty
+                    ? null
+                    : () => _showBlockedSheet(context),
+              ),
+              _Row(
+                icon: Icons.privacy_tip_outlined,
+                title: 'Política de privacidad',
+                onTap: () => LegalLinks.open(context, LegalLinks.privacy),
+              ),
+              _Row(
+                icon: Icons.description_outlined,
+                title: 'Términos de uso',
+                onTap: () => LegalLinks.open(context, LegalLinks.terms),
+              ),
+            ],
           ),
 
           // Solo en la versión de la App Store; en TestFlight y Android no existe.
-          if (ref.watch(creditsStoreEnabledProvider).value ?? false) ...[
+          if (creditsStoreOn) ...[
             const _SectionTitle('Créditos de IA'),
-            _Row(
-              icon: Icons.auto_awesome_outlined,
-              title: 'Comprar créditos',
-              subtitle: 'Para generar tu retrato con IA.',
-              onTap: () => showCreditsStoreSheet(context),
+            _SettingsGroup(
+              children: [
+                _Row(
+                  icon: Icons.auto_awesome_outlined,
+                  title: 'Comprar créditos',
+                  subtitle: 'Para generar tu retrato con IA.',
+                  onTap: () => showCreditsStoreSheet(context),
+                ),
+              ],
             ),
           ],
 
           const _SectionTitle('Sesión'),
-          _Row(
-            icon: Icons.logout_rounded,
-            title: 'Cerrar sesión',
-            color: c.destructive,
-            onTap: () => ref.read(authServiceProvider).signOut(),
-          ),
-          _Row(
-            icon: Icons.delete_forever_outlined,
-            title: 'Eliminar mi cuenta',
-            subtitle: 'Borra tu perfil y tus publicaciones. No se puede deshacer.',
-            color: c.destructive,
-            onTap: () => showDeleteAccountFlow(context),
+          _SettingsGroup(
+            children: [
+              _Row(
+                icon: Icons.logout_rounded,
+                title: 'Cerrar sesión',
+                color: c.destructive,
+                onTap: () => ref.read(authServiceProvider).signOut(),
+              ),
+              _Row(
+                icon: Icons.delete_forever_outlined,
+                title: 'Eliminar mi cuenta',
+                subtitle:
+                    'Borra tu perfil y tus publicaciones. No se puede deshacer.',
+                color: c.destructive,
+                onTap: () => showDeleteAccountFlow(context),
+              ),
+            ],
           ),
         ],
       ),
@@ -250,6 +331,144 @@ class _SectionTitle extends StatelessWidget {
   );
 }
 
+class _ThemePreviewCard extends StatelessWidget {
+  final PateaTheme theme;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemePreviewCard({
+    required this.theme,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final preview = theme == PateaTheme.game
+        ? PateaColors.game
+        : PateaColors.light;
+    return PateaCard(
+      borderColor: selected ? c.primary : c.border.withValues(alpha: 0.45),
+      borderWidth: selected ? 1.6 : 1,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Mini-preview del esquema de color sin literales hex.
+              Container(
+                height: 44,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: preview.background,
+                  borderRadius: AppRadii.chipAll,
+                  border: Border.all(
+                    color: preview.border.withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: preview.primary,
+                            borderRadius: AppRadii.hairAll,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: 10,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: preview.textSecondary.withValues(alpha: 0.5),
+                            borderRadius: AppRadii.hairAll,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: preview.card,
+                        borderRadius: AppRadii.hairAll,
+                        border: Border.all(
+                          color: preview.border.withValues(alpha: 0.45),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(
+                    theme == PateaTheme.game
+                        ? Icons.sports_soccer_rounded
+                        : Icons.light_mode_rounded,
+                    size: 16,
+                    color: selected ? c.primary : c.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      theme.etiqueta,
+                      style: AppTypography.body(
+                        size: 13.5,
+                        weight: selected ? FontWeight.w700 : FontWeight.w600,
+                        color: selected ? c.primary : c.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (selected)
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: c.primary,
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  final List<Widget> children;
+  const _SettingsGroup({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return PateaCard(
+      borderColor: c.border.withValues(alpha: 0.45),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) Divider(height: 1, thickness: 1, color: c.overlayLine),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _Row extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -271,55 +490,48 @@ class _Row extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tint = color ?? c.textPrimary;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: PateaCard(
-        borderColor: c.border.withValues(alpha: 0.45),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Icon(icon, color: tint, size: 22),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        child: Row(
+          children: [
+            Icon(icon, color: tint, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.body(
+                      size: 15,
+                      weight: FontWeight.w600,
+                      color: tint,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        subtitle!,
                         style: AppTypography.body(
-                          size: 15,
-                          weight: FontWeight.w600,
-                          color: tint,
+                          size: 12.5,
+                          color: c.textSecondary,
                         ),
                       ),
-                      if (subtitle != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            subtitle!,
-                            style: AppTypography.body(
-                              size: 12.5,
-                              color: c.textSecondary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                ?trailing,
-                if (trailing == null && onTap != null && color == null)
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: c.textSecondary,
-                    size: 20,
-                  ),
-              ],
+                    ),
+                ],
+              ),
             ),
-          ),
+            ?trailing,
+            if (trailing == null && onTap != null && color == null)
+              Icon(
+                Icons.chevron_right_rounded,
+                color: c.textSecondary,
+                size: 20,
+              ),
+          ],
         ),
       ),
     );
@@ -332,7 +544,7 @@ class _BlockedUsersSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final blocked = (ref.watch(blockedUidsStreamProvider).value ?? const {})
+    final blocked = (ref.watch(blockedUidsStreamProvider).asData?.value ?? const {})
         .toList();
     return PateaCard(
       color: c.popover,
@@ -408,7 +620,8 @@ class _BlockedTileState extends ConsumerState<_BlockedTile> {
 
   @override
   Widget build(BuildContext context) {
-    final player = ref.watch(singlePlayerStreamProvider(widget.uid)).value;
+    final player =
+        ref.watch(singlePlayerStreamProvider(widget.uid)).asData?.value;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: PateaAvatar(
